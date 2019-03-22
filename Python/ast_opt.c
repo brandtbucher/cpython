@@ -389,6 +389,99 @@ fold_compare(expr_ty node, PyArena *arena, int optimize)
     return 1;
 }
 
+static int
+fold_boolop(expr_ty node, PyArena *arena, int optimize)
+{
+
+    /*
+
+    values = []  # type: List[expr]
+
+    for value in node.values:
+
+        if not isinstance(value, Constant):
+            values.append(value)
+
+        elif isinstance(node.op, Or) if value.value else isinstance(node.op, And):
+            values.append(value)
+            break
+
+    if not values:
+        return value
+
+    if len(values) == 1:
+        return values[0]
+
+    node.values = values
+
+    return node
+    
+    */
+
+    boolop_ty op;
+    asdl_seq *values, *out_values;
+    expr_ty e;
+    int truth;
+    int modified;
+    Py_ssize_t size, new_size;
+
+    op = node->v.BoolOp.op;
+    size = asdl_seq_LEN(node->v.BoolOp.values);
+    new_size = 0;
+
+    values = _Py_asdl_seq_new(size, arena);
+    if (!values) {
+        return 0;
+    }
+
+    for (Py_ssize_t i = 0; i < size; ++i) {
+        e = (expr_ty) asdl_seq_GET(node->v.BoolOp.values, i);
+
+        if (e->kind != Constant_kind) {
+            asdl_seq_SET(values, new_size++, e);
+            continue;
+        }
+
+        if ((truth = PyObject_IsTrue(e->v.Constant.value)) < 0) {
+            return 0;
+        }
+
+        if (op == (truth ? Or : And)) {
+            asdl_seq_SET(values, new_size++, e);
+            break;
+        }
+        else if (i == size - 1) {
+            asdl_seq_SET(values, new_size++, e);
+        }
+        modified = 1;
+    }
+
+    if (!modified) {
+        return 1;
+    }
+
+    if (!new_size) {
+        COPY_NODE(node, e);
+    }
+    else if (new_size == 1) {
+        COPY_NODE(node, asdl_seq_GET(values, 0));
+    }
+    else {
+
+        out_values = _Py_asdl_seq_new(new_size, arena);
+
+        for (Py_ssize_t i = 0; i < new_size; ++i) {
+            asdl_seq_SET(out_values, i, asdl_seq_GET(values, i));
+        }
+        
+        node->v.BoolOp.values = out_values;
+    }
+
+    return 1;
+}
+
+
+
 static int astfold_mod(mod_ty node_, PyArena *ctx_, int optimize_);
 static int astfold_stmt(stmt_ty node_, PyArena *ctx_, int optimize_);
 static int astfold_expr(expr_ty node_, PyArena *ctx_, int optimize_);
@@ -477,6 +570,7 @@ astfold_expr(expr_ty node_, PyArena *ctx_, int optimize_)
     switch (node_->kind) {
     case BoolOp_kind:
         CALL_SEQ(astfold_expr, expr_ty, node_->v.BoolOp.values);
+        CALL(fold_boolop, expr_ty, node_);
         break;
     case BinOp_kind:
         CALL(astfold_expr, expr_ty, node_->v.BinOp.left);
