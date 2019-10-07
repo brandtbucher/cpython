@@ -908,39 +908,40 @@ stack_effect(int opcode, int oparg, int jump)
             return -2;
 
         /* Binary operators */
-        case BINARY_POWER:
-        case BINARY_MULTIPLY:
-        case BINARY_MATRIX_MULTIPLY:
-        case BINARY_MODULO:
-        case BINARY_ADD:
-        case BINARY_SUBTRACT:
+        case MATH:
+        // case BINARY_POWER:
+        // case BINARY_MULTIPLY:
+        // case BINARY_MATRIX_MULTIPLY:
+        // case BINARY_MODULO:
+        // case BINARY_ADD:
+        // case BINARY_SUBTRACT:
         case BINARY_SUBSCR:
-        case BINARY_FLOOR_DIVIDE:
-        case BINARY_TRUE_DIVIDE:
+        // case BINARY_FLOOR_DIVIDE:
+        // case BINARY_TRUE_DIVIDE:
             return -1;
-        case INPLACE_FLOOR_DIVIDE:
-        case INPLACE_TRUE_DIVIDE:
-            return -1;
+        // case INPLACE_FLOOR_DIVIDE:
+        // case INPLACE_TRUE_DIVIDE:
+        //     return -1;
 
-        case INPLACE_ADD:
-        case INPLACE_SUBTRACT:
-        case INPLACE_MULTIPLY:
-        case INPLACE_MATRIX_MULTIPLY:
-        case INPLACE_MODULO:
-            return -1;
+        // case INPLACE_ADD:
+        // case INPLACE_SUBTRACT:
+        // case INPLACE_MULTIPLY:
+        // case INPLACE_MATRIX_MULTIPLY:
+        // case INPLACE_MODULO:
+        //     return -1;
         case STORE_SUBSCR:
             return -3;
         case DELETE_SUBSCR:
             return -2;
 
-        case BINARY_LSHIFT:
-        case BINARY_RSHIFT:
-        case BINARY_AND:
-        case BINARY_XOR:
-        case BINARY_OR:
-            return -1;
-        case INPLACE_POWER:
-            return -1;
+        // case BINARY_LSHIFT:
+        // case BINARY_RSHIFT:
+        // case BINARY_AND:
+        // case BINARY_XOR:
+        // case BINARY_OR:
+        //     return -1;
+        // case INPLACE_POWER:
+        //     return -1;
         case GET_ITER:
             return 0;
 
@@ -948,12 +949,12 @@ stack_effect(int opcode, int oparg, int jump)
             return -1;
         case LOAD_BUILD_CLASS:
             return 1;
-        case INPLACE_LSHIFT:
-        case INPLACE_RSHIFT:
-        case INPLACE_AND:
-        case INPLACE_XOR:
-        case INPLACE_OR:
-            return -1;
+        // case INPLACE_LSHIFT:
+        // case INPLACE_RSHIFT:
+        // case INPLACE_AND:
+        // case INPLACE_XOR:
+        // case INPLACE_OR:
+        //     return -1;
 
         case SETUP_WITH:
             /* 1 in the normal flow.
@@ -4819,7 +4820,7 @@ compiler_visit_expr1(struct compiler *c, expr_ty e)
     case BinOp_kind:
         VISIT(c, expr, e->v.BinOp.left);
         VISIT(c, expr, e->v.BinOp.right);
-        ADDOP(c, binop(c, e->v.BinOp.op));
+        ADDOP_I(c, MATH, binop(c, e->v.BinOp.op));
         break;
     case UnaryOp_kind:
         VISIT(c, expr, e->v.UnaryOp.operand);
@@ -5017,7 +5018,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
             return 0;
         VISIT(c, expr, auge);
         VISIT(c, expr, s->v.AugAssign.value);
-        ADDOP(c, inplace_binop(c, s->v.AugAssign.op));
+        ADDOP_I(c, MATH, inplace_binop(c, s->v.AugAssign.op));
         auge->v.Attribute.ctx = AugStore;
         VISIT(c, expr, auge);
         break;
@@ -5029,7 +5030,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
             return 0;
         VISIT(c, expr, auge);
         VISIT(c, expr, s->v.AugAssign.value);
-        ADDOP(c, inplace_binop(c, s->v.AugAssign.op));
+        ADDOP_I(c, MATH, inplace_binop(c, s->v.AugAssign.op));
         auge->v.Subscript.ctx = AugStore;
         VISIT(c, expr, auge);
         break;
@@ -5037,7 +5038,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
         if (!compiler_nameop(c, e->v.Name.id, Load))
             return 0;
         VISIT(c, expr, s->v.AugAssign.value);
-        ADDOP(c, inplace_binop(c, s->v.AugAssign.op));
+        ADDOP_I(c, MATH, inplace_binop(c, s->v.AugAssign.op));
         return compiler_nameop(c, e->v.Name.id, Store);
     default:
         PyErr_Format(PyExc_SystemError,

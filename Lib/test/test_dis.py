@@ -157,7 +157,7 @@ dis_bug1333982 = """\
 
 %3d          18 LOAD_CONST               4 (1)
 
-%3d          20 BINARY_ADD
+%3d          20 MATH                    23
              22 CALL_FUNCTION            1
              24 RAISE_VARARGS            1
 
@@ -200,7 +200,7 @@ expr_str = "x + 1"
 dis_expr_str = """\
   1           0 LOAD_NAME                0 (x)
               2 LOAD_CONST               0 (1)
-              4 BINARY_ADD
+              4 MATH                    23
               6 RETURN_VALUE
 """
 
@@ -209,7 +209,7 @@ simple_stmt_str = "x = x + 1"
 dis_simple_stmt_str = """\
   1           0 LOAD_NAME                0 (x)
               2 LOAD_CONST               0 (1)
-              4 BINARY_ADD
+              4 MATH                    23
               6 STORE_NAME               0 (x)
               8 LOAD_CONST               1 (None)
              10 RETURN_VALUE
@@ -263,7 +263,7 @@ dis_compound_stmt_str = """\
 
   3     >>    4 LOAD_NAME                0 (x)
               6 LOAD_CONST               1 (1)
-              8 INPLACE_ADD
+              8 MATH                    55
              10 STORE_NAME               0 (x)
              12 JUMP_ABSOLUTE            4
              14 LOAD_CONST               2 (None)
@@ -275,7 +275,7 @@ dis_traceback = """\
 
 %3d           2 LOAD_CONST               1 (1)
               4 LOAD_CONST               2 (0)
-    -->       6 BINARY_TRUE_DIVIDE
+    -->       6 MATH                    27
               8 POP_TOP
              10 POP_BLOCK
              12 JUMP_FORWARD            40 (to 54)
@@ -390,7 +390,7 @@ Disassembly of <code object <listcomp> at 0x..., file "%s", line %d>:
               6 STORE_FAST               1 (z)
               8 LOAD_DEREF               0 (x)
              10 LOAD_FAST                1 (z)
-             12 BINARY_ADD
+             12 MATH                    23
              14 LIST_APPEND              2
              16 JUMP_ABSOLUTE            4
         >>   18 RETURN_VALUE
@@ -499,7 +499,7 @@ class DisTests(unittest.TestCase):
             s = ['''\
            %*d LOAD_FAST                0 (x)
            %*d LOAD_CONST               1 (1)
-           %*d BINARY_ADD
+           %*d MATH                    23
            %*d STORE_FAST               0 (x)
 ''' % (w, 8*i, w, 8*i + 2, w, 8*i + 4, w, 8*i + 6)
                  for i in range(count)]
@@ -960,7 +960,7 @@ expected_opinfo_jumpy = [
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=62, starts_line=None, is_jump_target=False),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=64, starts_line=13, is_jump_target=False),
   Instruction(opname='LOAD_CONST', opcode=100, arg=5, argval=1, argrepr='1', offset=66, starts_line=None, is_jump_target=False),
-  Instruction(opname='INPLACE_SUBTRACT', opcode=56, arg=None, argval=None, argrepr='', offset=68, starts_line=None, is_jump_target=False),
+  Instruction(opname='MATH', opcode=121, arg=56, argval=56, argrepr='', offset=68, starts_line=None, is_jump_target=False),
   Instruction(opname='STORE_FAST', opcode=125, arg=0, argval='i', argrepr='i', offset=70, starts_line=None, is_jump_target=False),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=72, starts_line=14, is_jump_target=False),
   Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=6, argrepr='6', offset=74, starts_line=None, is_jump_target=False),
@@ -981,7 +981,7 @@ expected_opinfo_jumpy = [
   Instruction(opname='SETUP_FINALLY', opcode=122, arg=12, argval=118, argrepr='to 118', offset=104, starts_line=None, is_jump_target=False),
   Instruction(opname='LOAD_CONST', opcode=100, arg=5, argval=1, argrepr='1', offset=106, starts_line=21, is_jump_target=False),
   Instruction(opname='LOAD_CONST', opcode=100, arg=8, argval=0, argrepr='0', offset=108, starts_line=None, is_jump_target=False),
-  Instruction(opname='BINARY_TRUE_DIVIDE', opcode=27, arg=None, argval=None, argrepr='', offset=110, starts_line=None, is_jump_target=False),
+  Instruction(opname='MATH', opcode=121, arg=27, argval=27, argrepr='', offset=110, starts_line=None, is_jump_target=False),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=112, starts_line=None, is_jump_target=False),
   Instruction(opname='POP_BLOCK', opcode=87, arg=None, argval=None, argrepr='', offset=114, starts_line=None, is_jump_target=False),
   Instruction(opname='JUMP_FORWARD', opcode=110, arg=28, argval=146, argrepr='to 146', offset=116, starts_line=None, is_jump_target=False),

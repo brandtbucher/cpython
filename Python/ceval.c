@@ -1326,6 +1326,138 @@ main_loop:
             FAST_DISPATCH();
         }
 
+        case TARGET(MATH): {
+            PyObject *right = POP();
+            PyObject *left = TOP();
+            PyObject *res;
+            switch (oparg) {
+                case BINARY_POWER:
+                    res = PyNumber_Power(left, right, Py_None);
+                    break;
+                case BINARY_MULTIPLY:
+                    res = PyNumber_Multiply(left, right);
+                    break;
+                case BINARY_MATRIX_MULTIPLY:
+                    res = PyNumber_MatrixMultiply(left, right);
+                    break;
+                case BINARY_TRUE_DIVIDE:
+                    res = PyNumber_TrueDivide(left, right);
+                    break;
+                case BINARY_FLOOR_DIVIDE:
+                    res = PyNumber_FloorDivide(left, right);
+                    break;
+                case BINARY_MODULO:
+                    if (PyUnicode_CheckExact(left) && (
+                        !PyUnicode_Check(right) || PyUnicode_CheckExact(right))) {
+                        // fast path; string formatting, but not if the RHS is a str subclass
+                        // (see issue28598)
+                        res = PyUnicode_Format(left, right);
+                    } else {
+                        res = PyNumber_Remainder(left, right);
+                    }
+                    break;
+                case BINARY_ADD:
+                    /* NOTE(haypo): Please don't try to micro-optimize int+int on
+                    CPython using bytecode, it is simply worthless.
+                    See http://bugs.python.org/issue21955 and
+                    http://bugs.python.org/issue10044 for the discussion. In short,
+                    no patch shown any impact on a realistic benchmark, only a minor
+                    speedup on microbenchmarks. */
+                    if (PyUnicode_CheckExact(left) && PyUnicode_CheckExact(right)) {
+                        res = unicode_concatenate(tstate, left, right, f, next_instr);
+                        /* unicode_concatenate consumed the ref to left */
+                        Py_INCREF(res);
+                        left = res;
+                    }
+                    else {
+                        res = PyNumber_Add(left, right);
+                    }
+                    break;
+                case BINARY_SUBTRACT:
+                    res = PyNumber_Subtract(left, right);
+                    break;
+                // case BINARY_SUBSCR:
+                //     res = PyObject_GetItem(left, right);
+                //     break;
+                case BINARY_LSHIFT:
+                    res = PyNumber_Lshift(left, right);
+                    break;
+                case BINARY_RSHIFT:
+                    res = PyNumber_Rshift(left, right);
+                    break;
+                case BINARY_AND:
+                    res = PyNumber_And(left, right);
+                    break;
+                case BINARY_XOR:
+                    res = PyNumber_Xor(left, right);
+                    break;
+                case BINARY_OR:
+                    res = PyNumber_Or(left, right);
+                    break;
+                case INPLACE_POWER:
+                    res = PyNumber_InPlacePower(left, right, Py_None);
+                    break;
+                case INPLACE_MULTIPLY:
+                    res = PyNumber_InPlaceMultiply(left, right);
+                    break;
+                case INPLACE_MATRIX_MULTIPLY:
+                    res = PyNumber_InPlaceMatrixMultiply(left, right);
+                    break;
+                case INPLACE_TRUE_DIVIDE:
+                    res = PyNumber_InPlaceTrueDivide(left, right);
+                    break;
+                case INPLACE_FLOOR_DIVIDE:
+                    res = PyNumber_InPlaceFloorDivide(left, right);
+                    break;
+                case INPLACE_MODULO:
+                    res = PyNumber_InPlaceRemainder(left, right);
+                    break;
+                case INPLACE_ADD:
+                    if (PyUnicode_CheckExact(left) && PyUnicode_CheckExact(right)) {
+                        res = unicode_concatenate(tstate, left, right, f, next_instr);
+                        /* unicode_concatenate consumed the ref to left */
+                        Py_INCREF(res);
+                        left = res;
+                    }
+                    else {
+                        res = PyNumber_InPlaceAdd(left, right);
+                    }
+                    break;
+                case INPLACE_SUBTRACT:
+                    res = PyNumber_InPlaceSubtract(left, right);
+                    break;
+                case INPLACE_LSHIFT:
+                    res = PyNumber_InPlaceLshift(left, right);
+                    break;
+                case INPLACE_RSHIFT:
+                    res = PyNumber_InPlaceRshift(left, right);
+                    break;
+                case INPLACE_AND:
+                    res = PyNumber_InPlaceAnd(left, right);
+                    break;
+                case INPLACE_XOR:
+                    res = PyNumber_InPlaceXor(left, right);
+                    break;
+                case INPLACE_OR:
+                    res = PyNumber_InPlaceOr(left, right);
+                    break;
+                default:
+                    fprintf(stderr,
+                        "XXX lineno: %d, opcode: %d oparg: %d\n",
+                        PyFrame_GetLineNumber(f),
+                        opcode, oparg);
+                    _PyErr_SetString(tstate, PyExc_SystemError, "unknown opcode");
+                    goto error;
+                Py_UNREACHABLE();
+            }
+            Py_DECREF(left);
+            Py_DECREF(right);
+            SET_TOP(res);
+            if (res == NULL)
+                goto error;
+            DISPATCH();
+        }
+
         case TARGET(LOAD_FAST): {
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
@@ -1456,123 +1588,123 @@ main_loop:
             DISPATCH();
         }
 
-        case TARGET(BINARY_POWER): {
-            PyObject *exp = POP();
-            PyObject *base = TOP();
-            PyObject *res = PyNumber_Power(base, exp, Py_None);
-            Py_DECREF(base);
-            Py_DECREF(exp);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_POWER): {
+        //     PyObject *exp = POP();
+        //     PyObject *base = TOP();
+        //     PyObject *res = PyNumber_Power(base, exp, Py_None);
+        //     Py_DECREF(base);
+        //     Py_DECREF(exp);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_MULTIPLY): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_Multiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_MULTIPLY): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_Multiply(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_MATRIX_MULTIPLY): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_MatrixMultiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_MATRIX_MULTIPLY): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_MatrixMultiply(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_TRUE_DIVIDE): {
-            PyObject *divisor = POP();
-            PyObject *dividend = TOP();
-            PyObject *quotient = PyNumber_TrueDivide(dividend, divisor);
-            Py_DECREF(dividend);
-            Py_DECREF(divisor);
-            SET_TOP(quotient);
-            if (quotient == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_TRUE_DIVIDE): {
+        //     PyObject *divisor = POP();
+        //     PyObject *dividend = TOP();
+        //     PyObject *quotient = PyNumber_TrueDivide(dividend, divisor);
+        //     Py_DECREF(dividend);
+        //     Py_DECREF(divisor);
+        //     SET_TOP(quotient);
+        //     if (quotient == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_FLOOR_DIVIDE): {
-            PyObject *divisor = POP();
-            PyObject *dividend = TOP();
-            PyObject *quotient = PyNumber_FloorDivide(dividend, divisor);
-            Py_DECREF(dividend);
-            Py_DECREF(divisor);
-            SET_TOP(quotient);
-            if (quotient == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_FLOOR_DIVIDE): {
+        //     PyObject *divisor = POP();
+        //     PyObject *dividend = TOP();
+        //     PyObject *quotient = PyNumber_FloorDivide(dividend, divisor);
+        //     Py_DECREF(dividend);
+        //     Py_DECREF(divisor);
+        //     SET_TOP(quotient);
+        //     if (quotient == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_MODULO): {
-            PyObject *divisor = POP();
-            PyObject *dividend = TOP();
-            PyObject *res;
-            if (PyUnicode_CheckExact(dividend) && (
-                  !PyUnicode_Check(divisor) || PyUnicode_CheckExact(divisor))) {
-              // fast path; string formatting, but not if the RHS is a str subclass
-              // (see issue28598)
-              res = PyUnicode_Format(dividend, divisor);
-            } else {
-              res = PyNumber_Remainder(dividend, divisor);
-            }
-            Py_DECREF(divisor);
-            Py_DECREF(dividend);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_MODULO): {
+        //     PyObject *divisor = POP();
+        //     PyObject *dividend = TOP();
+        //     PyObject *res;
+        //     if (PyUnicode_CheckExact(dividend) && (
+        //           !PyUnicode_Check(divisor) || PyUnicode_CheckExact(divisor))) {
+        //       // fast path; string formatting, but not if the RHS is a str subclass
+        //       // (see issue28598)
+        //       res = PyUnicode_Format(dividend, divisor);
+        //     } else {
+        //       res = PyNumber_Remainder(dividend, divisor);
+        //     }
+        //     Py_DECREF(divisor);
+        //     Py_DECREF(dividend);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_ADD): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *sum;
-            /* NOTE(haypo): Please don't try to micro-optimize int+int on
-               CPython using bytecode, it is simply worthless.
-               See http://bugs.python.org/issue21955 and
-               http://bugs.python.org/issue10044 for the discussion. In short,
-               no patch shown any impact on a realistic benchmark, only a minor
-               speedup on microbenchmarks. */
-            if (PyUnicode_CheckExact(left) &&
-                     PyUnicode_CheckExact(right)) {
-                sum = unicode_concatenate(tstate, left, right, f, next_instr);
-                /* unicode_concatenate consumed the ref to left */
-            }
-            else {
-                sum = PyNumber_Add(left, right);
-                Py_DECREF(left);
-            }
-            Py_DECREF(right);
-            SET_TOP(sum);
-            if (sum == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_ADD): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *sum;
+        //     /* NOTE(haypo): Please don't try to micro-optimize int+int on
+        //        CPython using bytecode, it is simply worthless.
+        //        See http://bugs.python.org/issue21955 and
+        //        http://bugs.python.org/issue10044 for the discussion. In short,
+        //        no patch shown any impact on a realistic benchmark, only a minor
+        //        speedup on microbenchmarks. */
+        //     if (PyUnicode_CheckExact(left) &&
+        //              PyUnicode_CheckExact(right)) {
+        //         sum = unicode_concatenate(tstate, left, right, f, next_instr);
+        //         /* unicode_concatenate consumed the ref to left */
+        //     }
+        //     else {
+        //         sum = PyNumber_Add(left, right);
+        //         Py_DECREF(left);
+        //     }
+        //     Py_DECREF(right);
+        //     SET_TOP(sum);
+        //     if (sum == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_SUBTRACT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *diff = PyNumber_Subtract(left, right);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            SET_TOP(diff);
-            if (diff == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_SUBTRACT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *diff = PyNumber_Subtract(left, right);
+        //     Py_DECREF(right);
+        //     Py_DECREF(left);
+        //     SET_TOP(diff);
+        //     if (diff == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
         case TARGET(BINARY_SUBSCR): {
             PyObject *sub = POP();
@@ -1586,65 +1718,65 @@ main_loop:
             DISPATCH();
         }
 
-        case TARGET(BINARY_LSHIFT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_Lshift(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_LSHIFT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_Lshift(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_RSHIFT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_Rshift(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_RSHIFT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_Rshift(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_AND): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_And(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_AND): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_And(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_XOR): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_Xor(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_XOR): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_Xor(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(BINARY_OR): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_Or(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(BINARY_OR): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_Or(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
         case TARGET(LIST_APPEND): {
             PyObject *v = POP();
@@ -1670,168 +1802,168 @@ main_loop:
             DISPATCH();
         }
 
-        case TARGET(INPLACE_POWER): {
-            PyObject *exp = POP();
-            PyObject *base = TOP();
-            PyObject *res = PyNumber_InPlacePower(base, exp, Py_None);
-            Py_DECREF(base);
-            Py_DECREF(exp);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_POWER): {
+        //     PyObject *exp = POP();
+        //     PyObject *base = TOP();
+        //     PyObject *res = PyNumber_InPlacePower(base, exp, Py_None);
+        //     Py_DECREF(base);
+        //     Py_DECREF(exp);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_MULTIPLY): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceMultiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_MULTIPLY): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceMultiply(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_MATRIX_MULTIPLY): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceMatrixMultiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_MATRIX_MULTIPLY): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceMatrixMultiply(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_TRUE_DIVIDE): {
-            PyObject *divisor = POP();
-            PyObject *dividend = TOP();
-            PyObject *quotient = PyNumber_InPlaceTrueDivide(dividend, divisor);
-            Py_DECREF(dividend);
-            Py_DECREF(divisor);
-            SET_TOP(quotient);
-            if (quotient == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_TRUE_DIVIDE): {
+        //     PyObject *divisor = POP();
+        //     PyObject *dividend = TOP();
+        //     PyObject *quotient = PyNumber_InPlaceTrueDivide(dividend, divisor);
+        //     Py_DECREF(dividend);
+        //     Py_DECREF(divisor);
+        //     SET_TOP(quotient);
+        //     if (quotient == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_FLOOR_DIVIDE): {
-            PyObject *divisor = POP();
-            PyObject *dividend = TOP();
-            PyObject *quotient = PyNumber_InPlaceFloorDivide(dividend, divisor);
-            Py_DECREF(dividend);
-            Py_DECREF(divisor);
-            SET_TOP(quotient);
-            if (quotient == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_FLOOR_DIVIDE): {
+        //     PyObject *divisor = POP();
+        //     PyObject *dividend = TOP();
+        //     PyObject *quotient = PyNumber_InPlaceFloorDivide(dividend, divisor);
+        //     Py_DECREF(dividend);
+        //     Py_DECREF(divisor);
+        //     SET_TOP(quotient);
+        //     if (quotient == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_MODULO): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *mod = PyNumber_InPlaceRemainder(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(mod);
-            if (mod == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_MODULO): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *mod = PyNumber_InPlaceRemainder(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(mod);
+        //     if (mod == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_ADD): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *sum;
-            if (PyUnicode_CheckExact(left) && PyUnicode_CheckExact(right)) {
-                sum = unicode_concatenate(tstate, left, right, f, next_instr);
-                /* unicode_concatenate consumed the ref to left */
-            }
-            else {
-                sum = PyNumber_InPlaceAdd(left, right);
-                Py_DECREF(left);
-            }
-            Py_DECREF(right);
-            SET_TOP(sum);
-            if (sum == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_ADD): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *sum;
+        //     if (PyUnicode_CheckExact(left) && PyUnicode_CheckExact(right)) {
+        //         sum = unicode_concatenate(tstate, left, right, f, next_instr);
+        //         /* unicode_concatenate consumed the ref to left */
+        //     }
+        //     else {
+        //         sum = PyNumber_InPlaceAdd(left, right);
+        //         Py_DECREF(left);
+        //     }
+        //     Py_DECREF(right);
+        //     SET_TOP(sum);
+        //     if (sum == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_SUBTRACT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *diff = PyNumber_InPlaceSubtract(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(diff);
-            if (diff == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_SUBTRACT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *diff = PyNumber_InPlaceSubtract(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(diff);
+        //     if (diff == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_LSHIFT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceLshift(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_LSHIFT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceLshift(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_RSHIFT): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceRshift(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_RSHIFT): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceRshift(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_AND): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceAnd(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_AND): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceAnd(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_XOR): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceXor(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_XOR): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceXor(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
-        case TARGET(INPLACE_OR): {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceOr(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
+        // case TARGET(INPLACE_OR): {
+        //     PyObject *right = POP();
+        //     PyObject *left = TOP();
+        //     PyObject *res = PyNumber_InPlaceOr(left, right);
+        //     Py_DECREF(left);
+        //     Py_DECREF(right);
+        //     SET_TOP(res);
+        //     if (res == NULL)
+        //         goto error;
+        //     DISPATCH();
+        // }
 
         case TARGET(STORE_SUBSCR): {
             PyObject *sub = TOP();

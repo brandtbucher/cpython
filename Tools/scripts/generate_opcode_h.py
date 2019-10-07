@@ -22,6 +22,32 @@ footer = """
    remaining private.*/
 #define EXCEPT_HANDLER 257
 
+#define BINARY_MATRIX_MULTIPLY  16
+#define INPLACE_MATRIX_MULTIPLY 17
+#define BINARY_POWER            19
+#define BINARY_MULTIPLY         20
+#define BINARY_MODULO           22
+#define BINARY_ADD              23
+#define BINARY_SUBTRACT         24
+#define BINARY_FLOOR_DIVIDE     26
+#define BINARY_TRUE_DIVIDE      27
+#define INPLACE_FLOOR_DIVIDE    28
+#define INPLACE_TRUE_DIVIDE     29
+#define INPLACE_ADD             55
+#define INPLACE_SUBTRACT        56
+#define INPLACE_MULTIPLY        57
+#define INPLACE_MODULO          59
+#define BINARY_LSHIFT           62
+#define BINARY_RSHIFT           63
+#define BINARY_AND              64
+#define BINARY_XOR              65
+#define BINARY_OR               66
+#define INPLACE_POWER           67
+#define INPLACE_LSHIFT          75
+#define INPLACE_RSHIFT          76
+#define INPLACE_AND             77
+#define INPLACE_XOR             78
+#define INPLACE_OR              79
 
 enum cmp_op {PyCmp_LT=Py_LT, PyCmp_LE=Py_LE, PyCmp_EQ=Py_EQ, PyCmp_NE=Py_NE,
                 PyCmp_GT=Py_GT, PyCmp_GE=Py_GE, PyCmp_IN, PyCmp_NOT_IN,
