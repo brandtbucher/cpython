@@ -65,6 +65,7 @@ extern "C" {
 #define SETUP_ANNOTATIONS        85
 #define YIELD_VALUE              86
 #define POP_BLOCK                87
+#define BUILD_CONST_MAP          88
 #define POP_EXCEPT               89
 #define HAVE_ARGUMENT            90
 #define STORE_NAME               90

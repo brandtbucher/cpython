@@ -2820,6 +2820,18 @@ main_loop:
             DISPATCH();
         }
 
+        case TARGET(BUILD_CONST_MAP): {
+            PyObject *items = TOP();
+            PyObject *map = _PyDict_NewPresized(PyTuple_GET_SIZE(items));
+            if (map == NULL || PyDict_MergeFromSeq2(map, items, 1)) {
+                Py_XDECREF(map);
+                goto error;
+            }
+            Py_DECREF(POP());
+            PUSH(map);
+            DISPATCH();
+        }
+
         case TARGET(BUILD_MAP_UNPACK): {
             Py_ssize_t i;
             PyObject *sum = PyDict_New();

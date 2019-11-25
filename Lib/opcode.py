@@ -68,7 +68,6 @@ def_op('UNARY_NEGATIVE', 11)
 def_op('UNARY_NOT', 12)
 
 def_op('UNARY_INVERT', 15)
-
 def_op('BINARY_MATRIX_MULTIPLY', 16)
 def_op('INPLACE_MATRIX_MULTIPLY', 17)
 
@@ -106,7 +105,6 @@ def_op('BINARY_OR', 66)
 def_op('INPLACE_POWER', 67)
 def_op('GET_ITER', 68)
 def_op('GET_YIELD_FROM_ITER', 69)
-
 def_op('PRINT_EXPR', 70)
 def_op('LOAD_BUILD_CLASS', 71)
 def_op('YIELD_FROM', 72)
@@ -123,7 +121,7 @@ def_op('IMPORT_STAR', 84)
 def_op('SETUP_ANNOTATIONS', 85)
 def_op('YIELD_VALUE', 86)
 def_op('POP_BLOCK', 87)
-
+def_op('BUILD_CONST_MAP', 88)
 def_op('POP_EXCEPT', 89)
 
 HAVE_ARGUMENT = 90              # Opcodes from here have an argument:
