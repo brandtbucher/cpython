@@ -1017,6 +1017,8 @@ stack_effect(int opcode, int oparg, int jump)
             return 1 - 2*oparg;
         case BUILD_CONST_KEY_MAP:
             return -oparg;
+        case BUILD_CONST_MAP:
+            return 0;
         case LOAD_ATTR:
             return 0;
         case COMPARE_OP:
@@ -3770,6 +3772,27 @@ compiler_subdict(struct compiler *c, expr_ty e, Py_ssize_t begin, Py_ssize_t end
     Py_ssize_t i, n = end - begin;
     PyObject *keys, *key;
     if (n > 1 && are_all_items_const(e->v.Dict.keys, begin, end)) {
+        if (are_all_items_const(e->v.Dict.values, begin, end)) {
+            PyObject *items = PyTuple_New(n);
+            if (items == NULL) {
+                return 0;
+            }
+            PyObject *pair;
+            for (i = begin; i < end; i++) {
+                pair = PyTuple_Pack(2,
+                    ((expr_ty)asdl_seq_GET(e->v.Dict.keys, i))->v.Constant.value,
+                    ((expr_ty)asdl_seq_GET(e->v.Dict.values, i))->v.Constant.value
+                );
+                if (pair == NULL) {
+                    Py_DECREF(items);
+                    return 0;
+                }
+                PyTuple_SET_ITEM(items, i-begin, pair);
+            }
+            ADDOP_LOAD_CONST_NEW(c, items);
+            ADDOP(c, BUILD_CONST_MAP);
+            return 1;
+        }
         for (i = begin; i < end; i++) {
             VISIT(c, expr, (expr_ty)asdl_seq_GET(e->v.Dict.values, i));
         }
