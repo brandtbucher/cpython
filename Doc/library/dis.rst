@@ -751,6 +751,14 @@ iterations of the loop.
    .. versionadded:: 3.2
 
 
+.. opcode:: BUILD_CONST_MAP
+
+   The version of :opcode:`BUILD_MAP` specialized for constant keys *and* values.
+   The top element on the stack contains a tuple of (key, value) tuple pairs.
+
+   .. versionadded:: 3.9
+
+
 All of the following opcodes use their arguments.
 
 .. opcode:: STORE_NAME (namei)
