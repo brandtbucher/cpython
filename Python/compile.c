@@ -1128,6 +1128,9 @@ stack_effect(int opcode, int oparg, int jump)
             return jump > 0 ? -2 : -1;
         case MATCH_SEQ_STAR:
             return jump > 0 ? -3 : -2;
+        case MATCH_START:
+        case MATCH_END:
+            return 0;
         default:
             return PY_INVALID_STACK_EFFECT;
     }
@@ -2771,7 +2774,11 @@ compiler_pattern_load(struct compiler *c, expr_ty p, basicblock *fail)
     assert(p->kind != Name_kind || p->v.Name.ctx == Load);
     VISIT(c, expr, p);
     ADDOP_COMPARE(c, Eq);
-    ADDOP_JABS(c, POP_JUMP_IF_FALSE, fail);
+    basicblock *b = compiler_new_block(c);
+    ADDOP_JABS(c, POP_JUMP_IF_TRUE, b);
+    ADDOP(c, MATCH_END);
+    ADDOP_JREL(c, JUMP_FORWARD, fail);
+    compiler_use_next_block(c, b);
     return 1;
 }
 
@@ -2923,7 +2930,9 @@ compiler_pattern_or(struct compiler *c, expr_ty p, basicblock *fail, PyObject* n
         CHECK(names_copy  = PySet_New(names));
         CHECK(block = compiler_new_block(c));
         ADDOP(c, DUP_TOP);
+        ADDOP(c, MATCH_START);
         CHECK(compiler_pattern(c, asdl_seq_GET(p->v.BoolOp.values, i), block, names_copy));
+        ADDOP(c, MATCH_END);
         ADDOP(c, POP_TOP);
         ADDOP_JREL(c, JUMP_FORWARD, end);
         compiler_use_next_block(c, block);
@@ -2953,6 +2962,7 @@ compiler_pattern_or(struct compiler *c, expr_ty p, basicblock *fail, PyObject* n
     }
     assert(control);
     Py_DECREF(control);
+    ADDOP(c, MATCH_END);
     ADDOP(c, POP_TOP);
     ADDOP_JREL(c, JUMP_FORWARD, fail);
     compiler_use_next_block(c, end);
@@ -3051,9 +3061,11 @@ compiler_match(struct compiler *c, stmt_ty s)
         if (!names) {
             return 0;
         }
+        ADDOP(c, MATCH_START);
         int result = compiler_pattern(c, m->pattern, next, names);
         Py_DECREF(names);
         CHECK(result);
+        ADDOP(c, MATCH_END);
         if (m->guard) {
             CHECK(compiler_jump_if(c, m->guard, next, 0));
         }

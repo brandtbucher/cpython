@@ -3585,6 +3585,7 @@ main_loop:
                 if (_PyErr_Occurred(tstate)) {
                     goto error;
                 }
+                PyFrame_BlockPop(f);
                 JUMPBY(oparg);
                 DISPATCH();
             }
@@ -3609,6 +3610,7 @@ main_loop:
                 STACK_SHRINK(2);
                 Py_DECREF(keys);
                 Py_DECREF(target);
+                PyFrame_BlockPop(f);
                 JUMPBY(oparg);
                 DISPATCH();
             }
@@ -3635,6 +3637,7 @@ main_loop:
                 STACK_SHRINK(2);
                 Py_DECREF(keys);
                 Py_DECREF(target);
+                PyFrame_BlockPop(f);
                 JUMPBY(oparg);
                 DISPATCH();
             }
@@ -3681,6 +3684,7 @@ main_loop:
                 STACK_SHRINK(2);
                 Py_DECREF(_size);
                 Py_DECREF(target);
+                PyFrame_BlockPop(f);
                 JUMPBY(oparg);
                 DISPATCH();
             }
@@ -3696,6 +3700,7 @@ main_loop:
                     STACK_SHRINK(2);
                     Py_DECREF(_size);
                     Py_DECREF(target);
+                    PyFrame_BlockPop(f);
                     JUMPBY(oparg);
                     DISPATCH();
                 }
@@ -3716,6 +3721,7 @@ main_loop:
                 STACK_SHRINK(2);
                 Py_DECREF(_size);
                 Py_DECREF(target);
+                PyFrame_BlockPop(f);
                 JUMPBY(oparg);
                 DISPATCH();
             }
@@ -3747,6 +3753,23 @@ main_loop:
             Py_DECREF(target);
             PREDICT(LIST_POP);
             PREDICT(POP_TOP);
+            DISPATCH();
+        }
+
+        case TARGET(MATCH_START): {
+            PyObject *res = POP();
+            PyFrame_BlockSetup(f, MATCH_START, INSTR_OFFSET(),
+                               STACK_LEVEL());
+            PUSH(res);
+            DISPATCH();
+        }
+
+        case TARGET(MATCH_END): {
+            PyObject *res = POP();
+            /* Setup the finally block before pushing the result
+               of __aenter__ on the stack. */
+            PyFrame_BlockPop(f);
+            PUSH(res);
             DISPATCH();
         }
 
