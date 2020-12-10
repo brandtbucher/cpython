@@ -1716,14 +1716,14 @@ def _typeddict_new(cls, typename, fields=None, /, *, total=True, **kwargs):
         raise TypeError("TypedDict takes either a dict or keyword arguments,"
                         " but not both")
 
-    ns = {'__annotations__': dict(fields), '__total__': total}
+    ns = {'__annotations__': dict(fields)}
     try:
         # Setting correct module is necessary to make typed dict classes pickleable.
         ns['__module__'] = sys._getframe(1).f_globals.get('__name__', '__main__')
     except (AttributeError, ValueError):
         pass
 
-    return _TypedDictMeta(typename, (), ns)
+    return _TypedDictMeta(typename, (), ns, total=total)
 
 
 def _check_fails(cls, other):
