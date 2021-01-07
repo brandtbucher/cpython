@@ -1136,13 +1136,13 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, PyFrameObject *f, int throwflag)
         oparg = _Py_OPARG(word); \
         next_instr++; \
     } while (0)
-#define _JUMPTO(x)       (next_instr = first_instr + (x) / sizeof(_Py_CODEUNIT))
+#define JUMPTO(x)       (next_instr = first_instr + (x) / sizeof(_Py_CODEUNIT))
+#define _JUMPBY(x)       (next_instr += (x) / sizeof(_Py_CODEUNIT))
 #if defined(__GNUC__) || defined(__clang__)
-#define JUMPTO(x)  __builtin_prefetch(_JUMPTO(x))
+#define JUMPBY(x)  __builtin_prefetch(_JUMPBY(x))
 #else
-#define JUMPTO(x)  _JUMPTO(x)
+#define JUMPBY(x)  _JUMPBY(x)
 #endif
-#define JUMPBY(x)       (next_instr += (x) / sizeof(_Py_CODEUNIT))
 
 /* OpCode prediction macros
     Some opcodes tend to come in pairs thus making it possible to
