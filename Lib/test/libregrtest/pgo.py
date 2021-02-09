@@ -35,7 +35,6 @@ PGO_TESTS = [
     'test_memoryview',
     'test_operator',
     'test_ordered_dict',
-    'test_patma',
     'test_pickle',
     'test_pprint',
     'test_re',
