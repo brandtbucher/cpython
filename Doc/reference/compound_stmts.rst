@@ -1057,7 +1057,7 @@ subject value:
 
       * If this raises an exception, the exception bubbles up.
 
-      * If the returned value is not a list or tuple, the conversion fails and
+      * If the returned value is not a tuple, the conversion fails and
         :exc:`TypeError` is raised.
 
       * If there are more positional patterns than ``len(cls.__match_args__)``,

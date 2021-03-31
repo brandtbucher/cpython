@@ -756,6 +756,8 @@ class Mapping(Collection):
     methods except for __getitem__, __iter__, and __len__.
     """
 
+    __match_map__ = True
+
     __slots__ = ()
 
     @abstractmethod
@@ -972,6 +974,8 @@ class Sequence(Reversible, Collection):
     Concrete subclasses must override __new__ or __init__,
     __getitem__, and __len__.
     """
+
+    __match_seq__ = True
 
     __slots__ = ()
 

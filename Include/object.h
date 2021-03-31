@@ -315,6 +315,10 @@ Code can use PyType_HasFeature(type_ob, flag_value) to test whether the
 given type object has a specified feature.
 */
 
+// Set if the type matches mapping or sequence patterns:
+#define Py_TPFLAGS_MATCH_MAP (1UL << 7)
+#define Py_TPFLAGS_MATCH_SEQ (1UL << 8)
+
 /* Set if the type object is dynamically allocated */
 #define Py_TPFLAGS_HEAPTYPE (1UL << 9)
 

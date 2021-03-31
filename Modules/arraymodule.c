@@ -2832,7 +2832,7 @@ static PyType_Slot array_slots[] = {
 static PyType_Spec array_spec = {
     .name = "array.array",
     .basicsize = sizeof(arrayobject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_MATCH_SEQ,
     .slots = array_slots,
 };
 

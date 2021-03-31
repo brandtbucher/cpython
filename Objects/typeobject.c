@@ -2417,6 +2417,8 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
     _Py_IDENTIFIER(__qualname__);
     _Py_IDENTIFIER(__slots__);
     _Py_IDENTIFIER(__classcell__);
+    _Py_IDENTIFIER(__match_map__);
+    _Py_IDENTIFIER(__match_seq__);
 
     assert(args != NULL && PyTuple_Check(args));
     assert(kwds == NULL || PyDict_Check(kwds));
@@ -2642,6 +2644,41 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
     // an instance on one of its parents:
     type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE |
         Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC;
+
+    // Translate __match_map__ -> Py_TPFLAGS_MATCH_MAP:
+    PyObject *match_map = _PyDict_GetItemIdWithError(dict, &PyId___match_map__);
+    if (match_map == NULL) {
+        if (PyErr_Occurred()) {
+            goto error;
+        }
+        // Inherit:
+        type->tp_flags |= base->tp_flags & Py_TPFLAGS_MATCH_MAP;
+    }
+    else if (match_map == Py_True) {
+        type->tp_flags |= Py_TPFLAGS_MATCH_MAP;
+    }
+    else if (match_map != Py_False) {
+        PyErr_Format(PyExc_TypeError,
+                     "__match_map__ must be True or False (got %R)", match_map);
+        goto error;
+    }
+    // Translate __match_seq__ -> Py_TPFLAGS_MATCH_SEQ:
+    PyObject *match_seq = _PyDict_GetItemIdWithError(dict, &PyId___match_seq__);
+    if (match_seq == NULL) {
+        if (PyErr_Occurred()) {
+            goto error;
+        }
+        // Inherit:
+        type->tp_flags |= base->tp_flags & Py_TPFLAGS_MATCH_SEQ;
+    }
+    else if (match_seq == Py_True) {
+        type->tp_flags |= Py_TPFLAGS_MATCH_SEQ;
+    }
+    else if (match_seq != Py_False) {
+        PyErr_Format(PyExc_TypeError,
+                     "__match_seq__ must be True or False (got %R)", match_seq);
+        goto error;
+    }
 
     /* Initialize essential fields */
     type->tp_as_async = &et->as_async;

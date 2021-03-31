@@ -1662,8 +1662,8 @@ static PyTypeObject deque_type = {
     PyObject_GenericGetAttr,            /* tp_getattro */
     0,                                  /* tp_setattro */
     0,                                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
-                                        /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
+        Py_TPFLAGS_MATCH_SEQ,           /* tp_flags */
     deque_doc,                          /* tp_doc */
     (traverseproc)deque_traverse,       /* tp_traverse */
     (inquiry)deque_clear,               /* tp_clear */
@@ -2268,8 +2268,10 @@ static PyTypeObject defdict_type = {
     PyObject_GenericGetAttr,            /* tp_getattro */
     0,                                  /* tp_setattro */
     0,                                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
-                                    /* tp_flags */
+    Py_TPFLAGS_DEFAULT |
+        Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC |
+        Py_TPFLAGS_MATCH_MAP,           /* tp_flags */
     defdict_doc,                        /* tp_doc */
     defdict_traverse,                   /* tp_traverse */
     (inquiry)defdict_tp_clear,          /* tp_clear */
