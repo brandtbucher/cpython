@@ -939,10 +939,6 @@ stack_effect(int opcode, int oparg, int jump)
         /* Stack manipulation */
         case POP_TOP:
             return -1;
-        case ROT_TWO:
-        case ROT_THREE:
-        case ROT_FOUR:
-            return 0;
         case DUP_TOP:
             return 1;
         case DUP_TOP_TWO:
@@ -1188,6 +1184,8 @@ stack_effect(int opcode, int oparg, int jump)
             return 1;
         case MATCH_KEYS:
             return 2;
+        case ROTATE:
+            return 0;
         default:
             return PY_INVALID_STACK_EFFECT;
     }
@@ -1754,7 +1752,7 @@ compiler_unwind_fblock(struct compiler *c, struct fblockinfo *info,
         case FOR_LOOP:
             /* Pop the iterator */
             if (preserve_tos) {
-                ADDOP(c, ROT_TWO);
+                ADDOP_I(c, ROTATE, 2)
             }
             ADDOP(c, POP_TOP);
             return 1;
@@ -1784,13 +1782,13 @@ compiler_unwind_fblock(struct compiler *c, struct fblockinfo *info,
 
         case FINALLY_END:
             if (preserve_tos) {
-                ADDOP(c, ROT_FOUR);
+                ADDOP_I(c, ROTATE, 4)
             }
             ADDOP(c, POP_TOP);
             ADDOP(c, POP_TOP);
             ADDOP(c, POP_TOP);
             if (preserve_tos) {
-                ADDOP(c, ROT_FOUR);
+                ADDOP_I(c, ROTATE, 4)
             }
             ADDOP(c, POP_EXCEPT);
             return 1;
@@ -1799,7 +1797,7 @@ compiler_unwind_fblock(struct compiler *c, struct fblockinfo *info,
         case ASYNC_WITH:
             ADDOP(c, POP_BLOCK);
             if (preserve_tos) {
-                ADDOP(c, ROT_TWO);
+                ADDOP_I(c, ROTATE, 2)
             }
             if(!compiler_call_exit_with_nones(c)) {
                 return 0;
@@ -1817,7 +1815,7 @@ compiler_unwind_fblock(struct compiler *c, struct fblockinfo *info,
                 ADDOP(c, POP_BLOCK);
             }
             if (preserve_tos) {
-                ADDOP(c, ROT_FOUR);
+                ADDOP_I(c, ROTATE, 4)
             }
             ADDOP(c, POP_EXCEPT);
             if (info->fb_datum) {
@@ -1829,7 +1827,7 @@ compiler_unwind_fblock(struct compiler *c, struct fblockinfo *info,
 
         case POP_VALUE:
             if (preserve_tos) {
-                ADDOP(c, ROT_TWO);
+                ADDOP_I(c, ROTATE, 2)
             }
             ADDOP(c, POP_TOP);
             return 1;
@@ -2668,7 +2666,7 @@ compiler_jump_if(struct compiler *c, expr_ty e, basicblock *next, int cond)
                 VISIT(c, expr,
                     (expr_ty)asdl_seq_GET(e->v.Compare.comparators, i));
                 ADDOP(c, DUP_TOP);
-                ADDOP(c, ROT_THREE);
+                ADDOP_I(c, ROTATE, 3)
                 ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, i));
                 ADDOP_JUMP(c, POP_JUMP_IF_FALSE, cleanup);
                 NEXT_BLOCK(c);
@@ -3272,7 +3270,7 @@ compiler_import_as(struct compiler *c, identifier name, identifier asname)
             if (dot == -1) {
                 break;
             }
-            ADDOP(c, ROT_TWO);
+            ADDOP_I(c, ROTATE, 2)
             ADDOP(c, POP_TOP);
         }
         if (!compiler_nameop(c, asname, Store)) {
@@ -4050,7 +4048,7 @@ compiler_compare(struct compiler *c, expr_ty e)
             VISIT(c, expr,
                 (expr_ty)asdl_seq_GET(e->v.Compare.comparators, i));
             ADDOP(c, DUP_TOP);
-            ADDOP(c, ROT_THREE);
+            ADDOP_I(c, ROTATE, 3)
             ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, i));
             ADDOP_JUMP(c, JUMP_IF_FALSE_OR_POP, cleanup);
             NEXT_BLOCK(c);
@@ -4062,7 +4060,7 @@ compiler_compare(struct compiler *c, expr_ty e)
             return 0;
         ADDOP_JUMP_NOLINE(c, JUMP_FORWARD, end);
         compiler_use_next_block(c, cleanup);
-        ADDOP(c, ROT_TWO);
+        ADDOP_I(c, ROTATE, 2)
         ADDOP(c, POP_TOP);
         compiler_use_next_block(c, end);
     }
@@ -5330,11 +5328,11 @@ compiler_augassign(struct compiler *c, stmt_ty s)
     switch (e->kind) {
     case Attribute_kind:
         c->u->u_lineno = e->end_lineno;
-        ADDOP(c, ROT_TWO);
+        ADDOP_I(c, ROTATE, 2)
         ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
         break;
     case Subscript_kind:
-        ADDOP(c, ROT_THREE);
+        ADDOP_I(c, ROTATE, 3)
         ADDOP(c, STORE_SUBSCR);
         break;
     case Name_kind:
@@ -7079,12 +7077,15 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                             bb->b_instr[i+1].i_opcode = NOP;
                             break;
                         case 2:
-                            inst->i_opcode = ROT_TWO;
+                            inst->i_opcode = ROTATE;
+                            inst->i_oparg = 2;
                             bb->b_instr[i+1].i_opcode = NOP;
                             break;
                         case 3:
-                            inst->i_opcode = ROT_THREE;
-                            bb->b_instr[i+1].i_opcode = ROT_TWO;
+                            inst->i_opcode = ROTATE;
+                            inst->i_oparg = 3;
+                            bb->b_instr[i+1].i_opcode = ROTATE;
+                            bb->b_instr[i+1].i_oparg = 2;
                     }
                     break;
                 }
