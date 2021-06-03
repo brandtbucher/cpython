@@ -1660,17 +1660,15 @@ _PyDict_DelItemIf(PyObject *op, PyObject *key,
         return 0;
 }
 
-
-void
-PyDict_Clear(PyObject *op)
+// This is broken out from PyDict_Clear because _frozendict needs it for its
+// tp_clear slot... but we don't want PyDict_Clear to work on _frozendicts!
+static void
+clear(PyObject *op)
 {
     PyDictObject *mp;
     PyDictKeysObject *oldkeys;
     PyObject **oldvalues;
     Py_ssize_t i, n;
-
-    if (!_PyAnyDict_Check(op))
-        return;
     mp = ((PyDictObject *)op);
     oldkeys = mp->ma_keys;
     oldvalues = mp->ma_values;
@@ -1695,6 +1693,15 @@ PyDict_Clear(PyObject *op)
        dictkeys_decref(oldkeys);
     }
     ASSERT_CONSISTENT(mp);
+}
+
+
+void
+PyDict_Clear(PyObject *op)
+{
+    if (PyDict_Check(op)) {
+        clear(op);
+    }
 }
 
 /* Internal version of PyDict_Next that returns a hash value in addition
@@ -3024,7 +3031,7 @@ dict_setdefault_impl(PyDictObject *self, PyObject *key,
 static PyObject *
 dict_clear(PyDictObject *mp, PyObject *Py_UNUSED(ignored))
 {
-    PyDict_Clear((PyObject *)mp);
+    clear((PyObject *)mp);
     Py_RETURN_NONE;
 }
 
