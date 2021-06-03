@@ -1660,6 +1660,7 @@ _PyDict_DelItemIf(PyObject *op, PyObject *key,
         return 0;
 }
 
+
 // This is broken out from PyDict_Clear because _frozendict needs it for its
 // tp_clear slot... but we don't want PyDict_Clear to work on _frozendicts!
 static void
@@ -1669,6 +1670,7 @@ clear(PyObject *op)
     PyDictKeysObject *oldkeys;
     PyObject **oldvalues;
     Py_ssize_t i, n;
+
     mp = ((PyDictObject *)op);
     oldkeys = mp->ma_keys;
     oldvalues = mp->ma_values;
@@ -1694,7 +1696,6 @@ clear(PyObject *op)
     }
     ASSERT_CONSISTENT(mp);
 }
-
 
 void
 PyDict_Clear(PyObject *op)
@@ -3479,20 +3480,21 @@ static PyMappingMethods frozendict_as_mapping = {
 static Py_hash_t
 frozendict_hash(_PyFrozenDictObject *self)
 {
-    if (self->fd_hash == -1) {
-        PyObject *items = dict_items((PyDictObject*)self);
-        if (items == NULL) {
-            return -1;
-        }
-        // This will fail if any values are unhashable:
-        PyObject *frozenset = PyFrozenSet_New(items);
-        Py_DECREF(items);
-        if (frozenset == NULL) {
-            return -1;
-        }
-        self->fd_hash = PyObject_Hash(frozenset);
-        Py_DECREF(frozenset);
+    if (self->fd_hash != -1) {
+        return self->fd_hash;
     }
+    PyObject *items = dict_items((PyDictObject*)self);
+    if (items == NULL) {
+        return -1;
+    }
+    // This will fail if any values are unhashable:
+    PyObject *frozenset = PyFrozenSet_New(items);
+    Py_DECREF(items);
+    if (frozenset == NULL) {
+        return -1;
+    }
+    self->fd_hash = PyObject_Hash(frozenset);
+    Py_DECREF(frozenset);
     return self->fd_hash;
 }
 
