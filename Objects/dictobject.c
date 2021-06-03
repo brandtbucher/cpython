@@ -1489,7 +1489,7 @@ PyDict_SetItem(PyObject *op, PyObject *key, PyObject *value)
 {
     PyDictObject *mp;
     Py_hash_t hash;
-    if (!_PyAnyDict_Check(op)) {
+    if (!_PyAnyDict_CheckMutable(op)) {
         PyErr_BadInternalCall();
         return -1;
     }
@@ -2355,7 +2355,7 @@ PyDict_MergeFromSeq2(PyObject *d, PyObject *seq2, int override)
     PyObject *fast;     /* item as a 2-tuple or 2-list */
 
     assert(d != NULL);
-    assert(_PyAnyDict_Check(d));
+    assert(_PyAnyDict_CheckMutable(d));
     assert(seq2 != NULL);
 
     it = PyObject_GetIter(seq2);
@@ -2445,7 +2445,7 @@ dict_merge(PyObject *a, PyObject *b, int override)
      * things quite efficiently.  For the latter, we only require that
      * PyMapping_Keys() and PyObject_GetItem() be supported.
      */
-    if (a == NULL || !_PyAnyDict_Check(a) || b == NULL) {
+    if (a == NULL || !_PyAnyDict_CheckMutable(a) || b == NULL) {
         PyErr_BadInternalCall();
         return -1;
     }
@@ -3465,12 +3465,12 @@ PyTypeObject PyDict_Type = {
     .tp_vectorcall = dict_vectorcall,
 };
 
-static PyMappingMethods _frozendict_as_mapping = {
+static PyMappingMethods frozendict_as_mapping = {
     .mp_subscript = (binaryfunc)dict_subscript,
 };
 
 static Py_hash_t
-_frozendict_hash(_PyFrozenDictObject *self)
+frozendict_hash(_PyFrozenDictObject *self)
 {
     if (self->fd_hash == -1) {
         PyObject *items = dict_items((PyDictObject*)self);
@@ -3490,7 +3490,7 @@ _frozendict_hash(_PyFrozenDictObject *self)
 }
 
 static PyObject *
-_frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     PyObject *self = dict_new(type, args, kwds);
     if (!self || dict_update_common(self, args, kwds, type->tp_name)) {
@@ -3503,15 +3503,15 @@ _frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 PyTypeObject _PyFrozenDict_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     .tp_alloc = PyType_GenericAlloc,
-    .tp_as_mapping = &_frozendict_as_mapping,
+    .tp_as_mapping = &frozendict_as_mapping,
     .tp_basicsize = sizeof(_PyFrozenDictObject),
     .tp_clear = dict_tp_clear,
     .tp_dealloc = (destructor)dict_dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
     .tp_free = PyObject_GC_Del,
-    .tp_hash = (hashfunc)_frozendict_hash,
+    .tp_hash = (hashfunc)frozendict_hash,
     .tp_name = "_frozendict",
-    .tp_new = _frozendict_new,
+    .tp_new = frozendict_new,
     .tp_richcompare = dict_richcompare,
     .tp_traverse = dict_traverse,
 };

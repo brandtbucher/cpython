@@ -98,3 +98,6 @@ PyAPI_DATA(PyTypeObject) _PyFrozenDict_Type;
 #define _PyAnyDict_Check(op) (PyDict_Check(op) || _PyFrozenDict_Check(op))
 #define _PyAnyDict_CheckExact(op) \
     (PyDict_CheckExact(op) || _PyFrozenDict_Check(op))
+#define _PyAnyDict_CheckMutable(op) \
+    (PyDict_Check(op) || (_PyFrozenDict_Check(op) && Py_REFCNT(op) == 1 && \
+                          ((_PyFrozenDictObject*)op)->fd_hash == -1))
