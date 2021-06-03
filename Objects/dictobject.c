@@ -486,7 +486,7 @@ _PyDict_CheckConsistency(PyObject *op, int check_content)
     do { if (!(expr)) { _PyObject_ASSERT_FAILED_MSG(op, Py_STRINGIFY(expr)); } } while (0)
 
     assert(op != NULL);
-    CHECK(PyDict_Check(op));
+    CHECK(_PyAnyDict_Check(op));
     PyDictObject *mp = (PyDictObject *)op;
 
     PyDictKeysObject *keys = mp->ma_keys;
@@ -1489,7 +1489,7 @@ PyDict_SetItem(PyObject *op, PyObject *key, PyObject *value)
 {
     PyDictObject *mp;
     Py_hash_t hash;
-    if (!PyDict_Check(op)) {
+    if (!_PyAnyDict_Check(op)) {
         PyErr_BadInternalCall();
         return -1;
     }
@@ -1669,7 +1669,7 @@ PyDict_Clear(PyObject *op)
     PyObject **oldvalues;
     Py_ssize_t i, n;
 
-    if (!PyDict_Check(op))
+    if (!_PyAnyDict_Check(op))
         return;
     mp = ((PyDictObject *)op);
     oldkeys = mp->ma_keys;
@@ -1711,7 +1711,7 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     PyDictKeyEntry *entry_ptr;
     PyObject *value;
 
-    if (!PyDict_Check(op))
+    if (!_PyAnyDict_Check(op))
         return 0;
     mp = (PyDictObject *)op;
     i = *ppos;
@@ -2084,7 +2084,7 @@ dict_subscript(PyDictObject *mp, PyObject *key)
     if (ix == DKIX_ERROR)
         return NULL;
     if (ix == DKIX_EMPTY || value == NULL) {
-        if (!PyDict_CheckExact(mp)) {
+        if (!_PyAnyDict_CheckExact(mp)) {
             /* Look up __missing__ method if we're a subclass. */
             PyObject *missing, *res;
             _Py_IDENTIFIER(__missing__);
@@ -2287,7 +2287,7 @@ dict_fromkeys_impl(PyTypeObject *type, PyObject *iterable, PyObject *value)
 static int
 dict_update_arg(PyObject *self, PyObject *arg)
 {
-    if (PyDict_CheckExact(arg)) {
+    if (_PyAnyDict_CheckExact(arg)) {
         return PyDict_Merge(self, arg, 1);
     }
     _Py_IDENTIFIER(keys);
@@ -2355,7 +2355,7 @@ PyDict_MergeFromSeq2(PyObject *d, PyObject *seq2, int override)
     PyObject *fast;     /* item as a 2-tuple or 2-list */
 
     assert(d != NULL);
-    assert(PyDict_Check(d));
+    assert(_PyAnyDict_Check(d));
     assert(seq2 != NULL);
 
     it = PyObject_GetIter(seq2);
@@ -2445,7 +2445,7 @@ dict_merge(PyObject *a, PyObject *b, int override)
      * things quite efficiently.  For the latter, we only require that
      * PyMapping_Keys() and PyObject_GetItem() be supported.
      */
-    if (a == NULL || !PyDict_Check(a) || b == NULL) {
+    if (a == NULL || !_PyAnyDict_Check(a) || b == NULL) {
         PyErr_BadInternalCall();
         return -1;
     }
@@ -2822,7 +2822,7 @@ dict_richcompare(PyObject *v, PyObject *w, int op)
     int cmp;
     PyObject *res;
 
-    if (!PyDict_Check(v) || !PyDict_Check(w)) {
+    if (!_PyAnyDict_Check(v) || !_PyAnyDict_Check(w)) {
         res = Py_NotImplemented;
     }
     else if (op == Py_EQ || op == Py_NE) {
@@ -3463,6 +3463,42 @@ PyTypeObject PyDict_Type = {
     dict_new,                                   /* tp_new */
     PyObject_GC_Del,                            /* tp_free */
     .tp_vectorcall = dict_vectorcall,
+};
+
+static PyMappingMethods _frozendict_as_mapping = {
+    .mp_subscript = (binaryfunc)dict_subscript,
+};
+
+static Py_hash_t
+_frozendict_hash(PyObject *self)
+{
+    return 0;
+}
+
+static PyObject *
+_frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    PyObject *self = dict_new(type, args, kwds);
+    if (!self || dict_update_common(self, args, kwds, "_frozendict")) {
+        Py_CLEAR(self);
+    }
+    return self;
+}
+
+PyTypeObject _PyFrozenDict_Type = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    .tp_alloc = PyType_GenericAlloc,
+    .tp_as_mapping = &_frozendict_as_mapping,
+    .tp_basicsize = sizeof(PyDictObject),
+    .tp_clear = dict_tp_clear,
+    .tp_dealloc = (destructor)dict_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_free = PyObject_GC_Del,
+    .tp_hash = _frozendict_hash,
+    .tp_name = "_frozendict",
+    .tp_new = _frozendict_new,
+    .tp_richcompare = dict_richcompare,
+    .tp_traverse = dict_traverse,
 };
 
 /* For backward compatibility with old dictionary interface */

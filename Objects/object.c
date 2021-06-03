@@ -1881,6 +1881,7 @@ _PyTypes_Init(void)
     INIT_TYPE(_PyWeakref_ProxyType);
     INIT_TYPE(_PyWeakref_RefType);
     INIT_TYPE(_Py_UnionType);
+    INIT_TYPE(_PyFrozenDict_Type);
 
     return _PyStatus_OK();
 #undef INIT_TYPE

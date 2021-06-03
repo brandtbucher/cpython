@@ -60,6 +60,7 @@ module marshal
 #define TYPE_TUPLE              '('
 #define TYPE_LIST               '['
 #define TYPE_DICT               '{'
+#define TYPE_FROZENDICT         'd'
 #define TYPE_CODE               'c'
 #define TYPE_UNICODE            'u'
 #define TYPE_UNKNOWN            '?'
@@ -480,10 +481,10 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
             w_object(PyList_GET_ITEM(v, i), p);
         }
     }
-    else if (PyDict_CheckExact(v)) {
+    else if (_PyAnyDict_CheckExact(v)) {
         Py_ssize_t pos;
         PyObject *key, *value;
-        W_TYPE(TYPE_DICT, p);
+        W_TYPE(PyDict_CheckExact(v) ? TYPE_DICT : TYPE_FROZENDICT, p);
         /* This one is NULL object terminated! */
         pos = 0;
         while (PyDict_Next(v, &pos, &key, &value)) {
@@ -1210,6 +1211,7 @@ r_object(RFILE *p)
         break;
 
     case TYPE_DICT:
+    case TYPE_FROZENDICT:
         v = PyDict_New();
         R_REF(v);
         if (v == NULL)
@@ -1236,7 +1238,14 @@ r_object(RFILE *p)
             Py_DECREF(v);
             v = NULL;
         }
-        retval = v;
+        else if (type == TYPE_FROZENDICT) {
+            retval = PyObject_CallFunctionObjArgs(
+                (PyObject*)&_PyFrozenDict_Type, v, NULL);
+            Py_DECREF(v);
+        }
+        else {
+            retval = v;
+        }
         break;
 
     case TYPE_SET:

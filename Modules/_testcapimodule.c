@@ -7287,6 +7287,9 @@ PyInit__testcapi(void)
     if (PyModule_AddObject(m, "ContainerNoGC",
                            (PyObject *) &ContainerNoGC_type) < 0)
         return NULL;
+    if (PyModule_AddType(m, &_PyFrozenDict_Type)) {
+        return NULL;
+    }
 
     PyState_AddModule(m, &_testcapimodule);
     return m;
