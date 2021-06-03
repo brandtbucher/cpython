@@ -3031,7 +3031,7 @@ dict_setdefault_impl(PyDictObject *self, PyObject *key,
 static PyObject *
 dict_clear(PyDictObject *mp, PyObject *Py_UNUSED(ignored))
 {
-    clear((PyObject *)mp);
+    PyDict_Clear((PyObject *)mp);
     Py_RETURN_NONE;
 }
 
@@ -3158,7 +3158,7 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
 static int
 dict_tp_clear(PyObject *op)
 {
-    PyDict_Clear(op);
+    clear(op);
     return 0;
 }
 
