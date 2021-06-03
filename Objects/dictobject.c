@@ -3493,10 +3493,13 @@ static PyObject *
 frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     PyObject *self = dict_new(type, args, kwds);
-    if (!self || dict_update_common(self, args, kwds, type->tp_name)) {
-        Py_CLEAR(self);
+    if (self == NULL) {
+        return NULL;
     }
     ((_PyFrozenDictObject*)self)->fd_hash = -1;
+    if (dict_update_common(self, args, kwds, type->tp_name)) {
+        Py_CLEAR(self);
+    }
     return self;
 }
 
