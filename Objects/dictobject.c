@@ -3470,18 +3470,33 @@ static PyMappingMethods _frozendict_as_mapping = {
 };
 
 static Py_hash_t
-_frozendict_hash(PyObject *self)
+_frozendict_hash(_PyFrozenDictObject *self)
 {
-    return 0;
+    if (self->fd_hash == -1) {
+        PyObject *items = dict_items((PyDictObject*)self);
+        if (items == NULL) {
+            return -1;
+        }
+        // This will fail if any values are unhashable:
+        PyObject *frozenset = PyFrozenSet_New(items);
+        Py_DECREF(items);
+        if (frozenset == NULL) {
+            return -1;
+        }
+        self->fd_hash = PyObject_Hash(frozenset);
+        Py_DECREF(frozenset);
+    }
+    return self->fd_hash;
 }
 
 static PyObject *
 _frozendict_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     PyObject *self = dict_new(type, args, kwds);
-    if (!self || dict_update_common(self, args, kwds, "_frozendict")) {
+    if (!self || dict_update_common(self, args, kwds, type->tp_name)) {
         Py_CLEAR(self);
     }
+    ((_PyFrozenDictObject*)self)->fd_hash = -1;
     return self;
 }
 
@@ -3489,12 +3504,12 @@ PyTypeObject _PyFrozenDict_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     .tp_alloc = PyType_GenericAlloc,
     .tp_as_mapping = &_frozendict_as_mapping,
-    .tp_basicsize = sizeof(PyDictObject),
+    .tp_basicsize = sizeof(_PyFrozenDictObject),
     .tp_clear = dict_tp_clear,
     .tp_dealloc = (destructor)dict_dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
     .tp_free = PyObject_GC_Del,
-    .tp_hash = _frozendict_hash,
+    .tp_hash = (hashfunc)_frozendict_hash,
     .tp_name = "_frozendict",
     .tp_new = _frozendict_new,
     .tp_richcompare = dict_richcompare,

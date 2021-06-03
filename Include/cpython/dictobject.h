@@ -87,6 +87,11 @@ PyAPI_FUNC(PyObject *) _PyDictView_Intersect(PyObject* self, PyObject *other);
  * Returns the version number, or zero if it was not possible to get a version number. */
 uint32_t _PyDictKeys_GetVersionForCurrentState(PyDictObject *dict);
 
+typedef struct {
+    PyDictObject fd_dict;
+    Py_hash_t fd_hash;
+} _PyFrozenDictObject;
+
 PyAPI_DATA(PyTypeObject) _PyFrozenDict_Type;
 
 #define _PyFrozenDict_Check(op) Py_IS_TYPE(op, &_PyFrozenDict_Type)
