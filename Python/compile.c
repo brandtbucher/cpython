@@ -5752,6 +5752,206 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // PEP 634: Structural Pattern Matching
 
+////////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+    PT_BLOCK,
+    PT_GUARD,
+    PT_LENGTH_EQ,
+    PT_LENGTH_GE,
+    PT_MAPPING,
+    PT_SEQUENCE,
+    PT_SINGLETON,
+    PT_VALUE,
+} pt_node_kind;
+
+typedef struct {
+    basicblock *b;
+} pt_block;
+
+struct pt_node;
+
+typedef struct {
+    struct pt_node *p;
+    basicblock *g;
+} pt_guard;
+
+typedef struct {
+    Py_ssize_t l;
+} pt_length_eq;
+
+typedef struct {
+    Py_ssize_t l;
+} pt_length_ge;
+
+typedef struct {
+} pt_mapping;
+
+typedef struct {
+} pt_sequence;
+
+typedef struct {
+    PyObject *s;
+} pt_singleton;
+
+typedef struct {
+    PyObject *v;
+} pt_value;
+
+typedef struct {
+    basicblock *y;
+    basicblock *n;
+    int lineno;
+    int col_offset;
+    int end_lineno;
+    int end_col_offset;
+    pt_node_kind kind;
+    union {
+        pt_block block;
+        pt_guard guard;
+        pt_length_eq length_eq;
+        pt_length_ge length_ge;
+        pt_mapping mapping;
+        pt_sequence sequence;
+        pt_singleton singleton;
+        pt_value value;
+    } node;
+} pt_node;
+
+
+static pt_node *pt_node_parse_pattern(struct compiler *, pattern_ty);
+
+static pt_node *
+pt_node_parse_match(struct compiler *c, stmt_ty m)
+{
+    assert(m->kind == Match_kind);
+    asdl_match_case_seq *cases = m->v.Match.cases;
+    Py_ssize_t ncases = asdl_seq_LEN(cases);
+    for (Py_ssize_t i = 0; i < ncases; i++) {
+        pattern_ty p = asdl_seq_GET(cases, i)->pattern;
+        pt_node *n = pt_node_parse_pattern(c, p);
+        if (n == NULL) {
+            goto error;
+        }
+    }
+error:
+    return NULL;
+}
+
+static pt_node *
+pt_node_parse_pattern(struct compiler *c, pattern_ty p)
+{
+    switch (p->kind) {
+        case MatchAs_kind:
+            return NULL;
+        case MatchClass_kind:
+            return NULL;
+        case MatchMapping_kind:
+            return NULL;
+        case MatchOr_kind:
+            return NULL;
+        case MatchSequence_kind:
+            return NULL;
+        case MatchSingleton_kind:
+            return NULL;
+        case MatchStar_kind:
+            return NULL;
+        case MatchValue_kind:
+            return NULL;
+    }
+    Py_UNREACHABLE();
+}
+
+static int
+pt_node_optimize(struct compiler *c, pt_node *n)
+{
+    return 1;
+    // pt_node_optimize(c, n->y);
+    // pt_node_optimize(c, n->n);
+    // switch (n->kind) {
+    //     case PT_BLOCK:
+    //         return n;
+    //     case PT_GUARD:
+    //         pt_node_optimize(c, n->node.guard.p);
+    //         return n;
+    //     case PT_LENGTH_EQ:
+    //         return n;
+    //     case PT_LENGTH_GE:
+    //         return n;
+    //     case PT_MAPPING:
+    //         return n;
+    //     case PT_SEQUENCE:
+    //         return n;
+    //     case PT_SINGLETON:
+    //         return n;
+    //     case PT_VALUE:
+    //         return n;
+    // }
+    // Py_UNREACHABLE();
+}
+
+static basicblock *
+pt_node_compile(struct compiler *c, pt_node *p)
+{
+    basicblock *y, *n;
+    switch (p->kind) {
+        case PT_BLOCK:
+            compiler_use_next_block(c, p->node.block.b);
+            return NULL;
+        case PT_GUARD:
+            // pt_node_compile_
+            // VISIT(c, expr, n->node.guard.g);
+            // ADDOP_JUMP(c, POP_JUMP_IF_FALSE, )
+            // compiler_use_next_block(c, n->node.block.b);
+            // pt_node_compile(c, n->y);
+            return NULL;
+        case PT_LENGTH_EQ:
+            return NULL;
+        case PT_LENGTH_GE:
+            return NULL;
+        case PT_MAPPING:
+            return NULL;
+        case PT_SEQUENCE:
+            return NULL;
+        case PT_SINGLETON:
+            return NULL;
+        case PT_VALUE:
+            return NULL;
+    }
+    Py_UNREACHABLE();
+}
+
+
+static void
+pt_node_free(pt_node *n)
+{
+    switch (n->kind) {
+        case PT_BLOCK:
+            goto done;
+        case PT_GUARD:
+            pt_node_free((pt_node *)n->node.guard.p);
+        case PT_LENGTH_EQ:
+        case PT_LENGTH_GE:
+        case PT_MAPPING:
+        case PT_SEQUENCE:
+            goto done;
+        case PT_SINGLETON:
+            Py_DECREF(n->node.singleton.s);
+            goto done;
+        case PT_VALUE:
+            Py_DECREF(n->node.value.v);
+            goto done;
+    }
+    Py_UNREACHABLE();
+done:
+    PyMem_Free(n);
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
 // To keep things simple, all compiler_pattern_* and pattern_helper_* routines
 // follow the convention of consuming TOS (the subject for the given pattern)
 // and calling jump_to_fail_pop on failure (no match).
