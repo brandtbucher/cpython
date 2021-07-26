@@ -5754,198 +5754,404 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-    PT_BLOCK,
-    PT_GUARD,
-    PT_LENGTH_EQ,
-    PT_LENGTH_GE,
-    PT_MAPPING,
-    PT_SEQUENCE,
-    PT_SINGLETON,
-    PT_VALUE,
-} pt_node_kind;
 
-typedef struct {
-    basicblock *b;
-} pt_block;
+// typedef struct pt_node pt_node;
 
-struct pt_node;
+// struct pt_node {
+//     pt_node *y;
+//     pt_node *n;
+//     basicblock *b;
+//     pattern_ty *p;
+//     enum {
+//         PT_Guard_Kind,
+//         PT_Instance_Kind,
+//         PT_LengthEq_Kind,
+//         PT_LengthGe_Kind,
+//         PT_Mapping_Kind,
+//         PT_Sequence_Kind,
+//         PT_SequenceItems_Kind,
+//         PT_SequenceItemsStar_Kind,
+//         PT_Singleton_Kind,
+//         PT_Value_Kind,
+//     } kind;
+//     union {
+//         struct {
+//             expr_ty e;
+//         } guard;
+//         struct {
+//             char *n;
+//         } instance;
+//         struct {
+//             Py_ssize_t l;
+//         } length_eq;
+//         struct {
+//             Py_ssize_t l;
+//         } length_ge;
+//         struct {
+//             Py_ssize_t l;
+//         } sequence_items;
+//         struct {
+//             Py_ssize_t h;
+//             Py_ssize_t t;
+//         } sequence_items_star;
+//         struct {
+//             PyObject *s;
+//         } singleton;
+//         struct {
+//             expr_ty v;
+//         } value;
+//     } v;
+// };
 
-typedef struct {
-    struct pt_node *p;
-    basicblock *g;
-} pt_guard;
+// static pt_node *
+// pt_node_create(struct compiler *c, pattern_ty p)
+// {
+//     basicblock *b = compiler_new_block(c);
+//     if (b == NULL) {
+//         return NULL;
+//     }
+//     pt_node *n = PyMem_Malloc(sizeof(pt_node));
+//     if (n == NULL) {
+//         return NULL;
+//     }
+//     n->y = NULL;
+//     n->n = NULL;
+//     n->b = b;
+//     n->p = p;
+// }
 
-typedef struct {
-    Py_ssize_t l;
-} pt_length_eq;
+// // TODO
+// static pt_node *
+// pt_node_parse_pattern(struct compiler *c, pattern_ty p)
+// {
+//     pt_node *n = pt_node_create(c, p);
+//     if (n == NULL) {
+//         return NULL;
+//     }
+//     switch (p->kind) {
+//         case MatchAs_kind:
+//             // TODO
+//             return n;
+//         case MatchClass_kind:
+//             // TODO
+//             return n;
+//         case MatchMapping_kind:
+//             // TODO
+//             return n;
+//         case MatchOr_kind:
+//             // TODO
+//             return n;
+//         case MatchSequence_kind:
+//             // TODO
+//             return n;
+//         case MatchSingleton_kind:
+//             n->kind = PT_Singleton_Kind;
+//             n->v.singleton.s = p->v.MatchSingleton.value;
+//             return n;
+//         case MatchStar_kind:
+//             // TODO
+//             return n;
+//         case MatchValue_kind:
+//             n->kind = PT_Value_Kind;
+//             n->v.value.v = p->v.MatchValue.value;
+//             return n;
+//     }
+//     Py_UNREACHABLE();
+// }
 
-typedef struct {
-    Py_ssize_t l;
-} pt_length_ge;
+// static pt_node *
+// pt_node_parse_match(struct compiler *c, stmt_ty m)
+// {
+//     assert(m->kind == Match_kind);
+//     asdl_match_case_seq *cases = m->v.Match.cases;
+//     Py_ssize_t ncases = asdl_seq_LEN(cases);
+//     for (Py_ssize_t i = 0; i < ncases; i++) {
+//         pattern_ty p = asdl_seq_GET(cases, i)->pattern;
+//         pt_node *n = pt_node_parse_pattern(c, p);
+//         if (n == NULL) {
+//             goto error;
+//         }
+//     }
+// error:
+//     return NULL;
+// }
 
-typedef struct {
-} pt_mapping;
+// static void
+// pt_node_optimize(struct compiler *c, pt_node *n)
+// {
+//     return;
+// }
 
-typedef struct {
-} pt_sequence;
+// // TODO
+// static int
+// pt_node_compile_inner(struct compiler *c, pt_node *n, pattern_context *pc)
+// {
+//     SET_LOC(c, n->p);
+//     compiler_use_next_block(c, n->b);
+//     switch (n->kind) {
+//         case PT_Capture_Kind: {
+//             int duplicate = PySequence_Contains(pc->stores, n);
+//             if (duplicate < 0) {
+//                 return 0;
+//             }
+//             if (duplicate) {
+//                 return compiler_error_duplicate_store(c, n);
+//             }
+//             // Rotate this object underneath any items we need to preserve:
+//             ADDOP_I(c, ROT_N, pc->on_top + PyList_GET_SIZE(pc->stores) + 1);
+//             return !PyList_Append(pc->stores, n);
+//         }
+//         case PT_LengthEq_Kind: {
+//             ADDOP(c, GET_LEN);
+//             ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(n->v.length_eq.l));
+//             ADDOP_COMPARE(c, Eq);
+//             goto done;
+//         }
+//         case PT_LengthGe_Kind: {
+//             ADDOP(c, GET_LEN);
+//             ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(n->v.length_ge.l));
+//             ADDOP_COMPARE(c, GtE);
+//             goto done;
+//         }
+//         case PT_Mapping_Kind: {
+//             ADDOP(c, MATCH_MAPPING);
+//             goto done;
+//         }
+//         case PT_Sequence_Kind: {
+//             ADDOP(c, MATCH_SEQUENCE);
+//             goto done;
+//         }
+//         case PT_SequenceItems_Kind: {
+//             ADDOP_I(c, UNPACK_SEQUENCE, n->v.sequence_items.l);
+//             pc->on_top += n->v.sequence_items.l - 1;
+//             assert(n->n == NULL);
+//             return pt_node_compile(c, n->y);
+//         }
+//         case PT_Singleton_Kind: {
+//             ADDOP_LOAD_CONST(c, n->v.singleton.s);
+//             ADDOP_I(c, IS_OP, 0);
+//             goto done;
+//         }
+//         case PT_Value_Kind: {
+//             VISIT(c, expr, n->v.value.v);
+//             ADDOP_COMPARE(c, Eq);
+//             goto done;
+//         }
+//     }
+//     Py_UNREACHABLE();
+// done:
+//     ADDOP_JUMP(c, POP_JUMP_IF_FALSE, n->n->b);
+//     return pt_node_compile(c, n->y) && pt_node_compile(c, n->n);
+// }
 
-typedef struct {
-    PyObject *s;
-} pt_singleton;
+// static void
+// pt_node_free(pt_node *n)
+// {
+//     pt_node_free(n->y);
+//     pt_node_free(n->n);
+//     switch (n->kind) {
+//         case PT_LengthEq_Kind:
+//         case PT_LengthGe_Kind:
+//         case PT_Mapping_Kind:
+//         case PT_Sequence_Kind:
+//             goto done;
+//         case PT_Singleton_Kind:
+//             Py_DECREF(n->v.singleton.s);
+//             goto done;
+//         case PT_Value_Kind:
+//             goto done;
+//     }
+//     Py_UNREACHABLE();
+// done:
+//     PyMem_Free(n);
+// }
 
-typedef struct {
-    PyObject *v;
-} pt_value;
-
-typedef struct {
-    basicblock *y;
-    basicblock *n;
-    int lineno;
-    int col_offset;
-    int end_lineno;
-    int end_col_offset;
-    pt_node_kind kind;
-    union {
-        pt_block block;
-        pt_guard guard;
-        pt_length_eq length_eq;
-        pt_length_ge length_ge;
-        pt_mapping mapping;
-        pt_sequence sequence;
-        pt_singleton singleton;
-        pt_value value;
-    } node;
-} pt_node;
-
-
-static pt_node *pt_node_parse_pattern(struct compiler *, pattern_ty);
-
-static pt_node *
-pt_node_parse_match(struct compiler *c, stmt_ty m)
-{
-    assert(m->kind == Match_kind);
-    asdl_match_case_seq *cases = m->v.Match.cases;
-    Py_ssize_t ncases = asdl_seq_LEN(cases);
-    for (Py_ssize_t i = 0; i < ncases; i++) {
-        pattern_ty p = asdl_seq_GET(cases, i)->pattern;
-        pt_node *n = pt_node_parse_pattern(c, p);
-        if (n == NULL) {
-            goto error;
-        }
-    }
-error:
-    return NULL;
-}
-
-static pt_node *
-pt_node_parse_pattern(struct compiler *c, pattern_ty p)
-{
-    switch (p->kind) {
-        case MatchAs_kind:
-            return NULL;
-        case MatchClass_kind:
-            return NULL;
-        case MatchMapping_kind:
-            return NULL;
-        case MatchOr_kind:
-            return NULL;
-        case MatchSequence_kind:
-            return NULL;
-        case MatchSingleton_kind:
-            return NULL;
-        case MatchStar_kind:
-            return NULL;
-        case MatchValue_kind:
-            return NULL;
-    }
-    Py_UNREACHABLE();
-}
-
-static int
-pt_node_optimize(struct compiler *c, pt_node *n)
-{
-    return 1;
-    // pt_node_optimize(c, n->y);
-    // pt_node_optimize(c, n->n);
-    // switch (n->kind) {
-    //     case PT_BLOCK:
-    //         return n;
-    //     case PT_GUARD:
-    //         pt_node_optimize(c, n->node.guard.p);
-    //         return n;
-    //     case PT_LENGTH_EQ:
-    //         return n;
-    //     case PT_LENGTH_GE:
-    //         return n;
-    //     case PT_MAPPING:
-    //         return n;
-    //     case PT_SEQUENCE:
-    //         return n;
-    //     case PT_SINGLETON:
-    //         return n;
-    //     case PT_VALUE:
-    //         return n;
-    // }
-    // Py_UNREACHABLE();
-}
-
-static basicblock *
-pt_node_compile(struct compiler *c, pt_node *p)
-{
-    basicblock *y, *n;
-    switch (p->kind) {
-        case PT_BLOCK:
-            compiler_use_next_block(c, p->node.block.b);
-            return NULL;
-        case PT_GUARD:
-            // pt_node_compile_
-            // VISIT(c, expr, n->node.guard.g);
-            // ADDOP_JUMP(c, POP_JUMP_IF_FALSE, )
-            // compiler_use_next_block(c, n->node.block.b);
-            // pt_node_compile(c, n->y);
-            return NULL;
-        case PT_LENGTH_EQ:
-            return NULL;
-        case PT_LENGTH_GE:
-            return NULL;
-        case PT_MAPPING:
-            return NULL;
-        case PT_SEQUENCE:
-            return NULL;
-        case PT_SINGLETON:
-            return NULL;
-        case PT_VALUE:
-            return NULL;
-    }
-    Py_UNREACHABLE();
-}
+// static int
+// pt_node_compile(struct compiler *c, pt_node *n)
+// {
+//     pattern_context pc;
+//     pc.allow_irrefutable = 0;
+//     pc.fail_pop = NULL;
+//     pc.fail_pop_size = 0;
+//     pc.on_top = 1;
+//     pc.stores = PyList_New(0);
+//     if (pc.stores == NULL) {
+//         return 0;
+//     }
+//     int result = pt_node_compile_inner(c, n, &pc);
+//     pt_node_free(n);
+//     return result;
+// }
 
 
-static void
-pt_node_free(pt_node *n)
-{
-    switch (n->kind) {
-        case PT_BLOCK:
-            goto done;
-        case PT_GUARD:
-            pt_node_free((pt_node *)n->node.guard.p);
-        case PT_LENGTH_EQ:
-        case PT_LENGTH_GE:
-        case PT_MAPPING:
-        case PT_SEQUENCE:
-            goto done;
-        case PT_SINGLETON:
-            Py_DECREF(n->node.singleton.s);
-            goto done;
-        case PT_VALUE:
-            Py_DECREF(n->node.value.v);
-            goto done;
-    }
-    Py_UNREACHABLE();
-done:
-    PyMem_Free(n);
-}
+// static int
+// compiler_match(struct compiler *c, stmt_ty m)
+// {
+//     pt_node *n = pt_node_parse_match(c, m);
+//     if (n == NULL) {
+//         return 0;
+//     }
+//     pt_node_optimize(c, n);
+//     return pt_node_compile(c, n);
+// }
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+// typedef struct pre_instr pre_instr;
+// // TODO: Just use normal compilation?
+// struct pre_instr {
+//     int opcode;
+//     int oparg;
+//     basicblock *block;
+//     pre_instr *target;
+//     pre_instr *next;
+//     expr_ty expr;
+//     asdl_stmt_seq *body;
+//     pattern_ty node;
+//     bool compiled;
+// };
+
+// static pre_instr *
+// pmtree_parse_match(struct compiler *c, stmt_ty m)
+// {
+//     assert(m->kind == Match_kind);
+//     basicblock *b = compiler_new_block(c);
+//     if (b == NULL) {
+//         return NULL;
+//     }
+//     pre_instr *l = NULL;
+//     pre_instr *t;
+//     Py_ssize_t i = asdl_seq_LEN(m->v.Match.cases);
+//     while (i--) {
+//         match_case_ty mc = asdl_seq_GET(m->v.Match.cases, i);
+//         t = pmtree_parse_pattern(c, mc->pattern, mc->guard, mc->body, b);
+//         if (t == NULL) {
+//             pmtree_free(l);
+//             return NULL;
+//         }
+//         b = t->block;
+//         l = t;
+//     }
+//     return t;
+// }
+
+// static pre_instr *
+// pmtree_new(struct compiler *c, pattern_ty p)
+// {
+//     pre_instr *t = PyMem_Malloc(sizeof(pre_instr));
+//     if (t == NULL) {
+//         return NULL;
+//     }
+//     t->next = NULL;
+//     t->target = NULL;
+//     t->compiled = false;
+//     t->node = p;
+//     t->expr = NULL;
+//     t->body = NULL;
+//     t->block = compiler_new_block(c);
+//     if (t->block == NULL) {
+//         pmtree_free(t);
+//         return NULL;
+//     }
+//     return t;
+// }
+
+// static pre_instr *
+// pmtree_parse_pattern(struct compiler *c, pattern_ty p, expr_ty g, asdl_stmt_seq *b, basicblock *f)
+// {
+//     pre_instr *t = pmtree_new(c, p);
+//     if (t == NULL) {
+//         return NULL;
+//     }
+//     switch (p->kind) {
+//         case MatchAs_kind:
+//             // TODO
+//             return t;
+//         case MatchClass_kind:
+//             // TODO
+//             return t;
+//         case MatchMapping_kind:
+//             // TODO
+//             return t;
+//         case MatchOr_kind:
+//             // TODO
+//             return t;
+//         case MatchSequence_kind:
+//             // TODO
+//             return t;
+//         case MatchSingleton_kind:
+//             // TODO
+//             return t;
+//         case MatchStar_kind:
+//             // TODO
+//             return t;
+//         case MatchValue_kind:
+//             // TODO
+//             return t;
+//     }
+//     Py_UNREACHABLE();
+// }
+
+// static pre_instr *
+// pmtree_optimize(struct compiler *c, pre_instr *t)
+// {
+//     return t;
+// }
+
+// static int
+// pmtree_compile(struct compiler *c, pre_instr *t)
+// {
+//     if (t->compiled) {
+//         return 1;
+//     }
+//     t->compiled = true;
+//     SET_LOC(c, t->node);
+//     compiler_use_next_block(c, t->block);
+//     if (t->opcode == NOP) {
+//         if (t->expr) {
+//             VISIT(c, expr, t->expr);
+//         }
+//         else if (t->body) {
+//             VISIT_SEQ(c, stmt, t->body);
+//         }
+//     }
+//     else if (is_jump(t->opcode)) {
+//         ADDOP_JUMP(c, t->opcode, t->target->block);
+//         return pmtree_compile(c, t->next) && pmtree_compile(c, t->target);
+//     }
+//     else if (HAS_ARG(t->opcode)) {
+//         ADDOP_I(c, t->opcode, t->oparg);
+//     }
+//     else {
+//         ADDOP(c, t->opcode);
+//     }
+//     return pmtree_compile(c, t->next);
+// }
+
+// static void
+// pmtree_free(pre_instr *t)
+// {
+//     if (t) {
+//         pmtree_free(t->next);
+//         PyMem_Free(t);
+//     }
+// }
+
+// static int
+// compiler_match(struct compiler *c, stmt_ty m)
+// {
+//     assert(m->kind == Match_kind);
+//     VISIT(c, expr, m->v.Match.subject);
+//     pre_instr *t = pmtree_parse_match(c, m);
+//     if (t == NULL) {
+//         return 0;
+//     }
+//     pmtree_optimize(c, t);
+//     int result = pmtree_compile(c, t);
+//     pmtree_free(t); 
+//     return result;
+// }
 
 
 
@@ -6627,10 +6833,17 @@ compiler_pattern(struct compiler *c, pattern_ty p, pattern_context *pc)
     return compiler_error(c, e, p->kind);
 }
 
+static void
+compiler_optimize_match(struct compiler *c, basicblock *start)
+{
+     // stop when stack size == 0
+}
+
 static int
 compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
 {
     VISIT(c, expr, s->v.Match.subject);
+    basicblock *start = c->u->u_curblock;
     basicblock *end;
     RETURN_IF_FALSE(end = compiler_new_block(c));
     Py_ssize_t cases = asdl_seq_LEN(s->v.Match.cases);
@@ -6694,6 +6907,7 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
         VISIT_SEQ(c, stmt, m->body);
     }
     compiler_use_next_block(c, end);
+    compiler_optimize_match(c, start);
     return 1;
 }
 
