@@ -457,59 +457,59 @@ class TracebackErrorLocationCaretTests(unittest.TestCase):
         result_lines = self.get_exception(f_with_multiline)
         self.assertEqual(result_lines, expected_f.splitlines())
 
-    def test_caret_for_binary_operators(self):
-        def f_with_binary_operator():
-            divisor = 20
-            return 10 + divisor / 0 + 30
+    # def test_caret_for_binary_operators(self):
+    #     def f_with_binary_operator():
+    #         divisor = 20
+    #         return 10 + divisor / 0 + 30
 
-        lineno_f = f_with_binary_operator.__code__.co_firstlineno
-        expected_error = (
-            'Traceback (most recent call last):\n'
-            f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
-            '    callable()\n'
-            '    ^^^^^^^^^^\n'
-            f'  File "{__file__}", line {lineno_f+2}, in f_with_binary_operator\n'
-            '    return 10 + divisor / 0 + 30\n'
-            '                ~~~~~~~~^~~\n'
-        )
-        result_lines = self.get_exception(f_with_binary_operator)
-        self.assertEqual(result_lines, expected_error.splitlines())
+    #     lineno_f = f_with_binary_operator.__code__.co_firstlineno
+    #     expected_error = (
+    #         'Traceback (most recent call last):\n'
+    #         f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
+    #         '    callable()\n'
+    #         '    ^^^^^^^^^^\n'
+    #         f'  File "{__file__}", line {lineno_f+2}, in f_with_binary_operator\n'
+    #         '    return 10 + divisor / 0 + 30\n'
+    #         '                ~~~~~~~~^~~\n'
+    #     )
+    #     result_lines = self.get_exception(f_with_binary_operator)
+    #     self.assertEqual(result_lines, expected_error.splitlines())
 
-    def test_caret_for_binary_operators_two_char(self):
-        def f_with_binary_operator():
-            divisor = 20
-            return 10 + divisor // 0 + 30
+    # def test_caret_for_binary_operators_two_char(self):
+    #     def f_with_binary_operator():
+    #         divisor = 20
+    #         return 10 + divisor // 0 + 30
 
-        lineno_f = f_with_binary_operator.__code__.co_firstlineno
-        expected_error = (
-            'Traceback (most recent call last):\n'
-            f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
-            '    callable()\n'
-            '    ^^^^^^^^^^\n'
-            f'  File "{__file__}", line {lineno_f+2}, in f_with_binary_operator\n'
-            '    return 10 + divisor // 0 + 30\n'
-            '                ~~~~~~~~^^~~\n'
-        )
-        result_lines = self.get_exception(f_with_binary_operator)
-        self.assertEqual(result_lines, expected_error.splitlines())
+    #     lineno_f = f_with_binary_operator.__code__.co_firstlineno
+    #     expected_error = (
+    #         'Traceback (most recent call last):\n'
+    #         f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
+    #         '    callable()\n'
+    #         '    ^^^^^^^^^^\n'
+    #         f'  File "{__file__}", line {lineno_f+2}, in f_with_binary_operator\n'
+    #         '    return 10 + divisor // 0 + 30\n'
+    #         '                ~~~~~~~~^^~~\n'
+    #     )
+    #     result_lines = self.get_exception(f_with_binary_operator)
+    #     self.assertEqual(result_lines, expected_error.splitlines())
 
-    def test_caret_for_subscript(self):
-        def f_with_subscript():
-            some_dict = {'x': {'y': None}}
-            return some_dict['x']['y']['z']
+    # def test_caret_for_subscript(self):
+    #     def f_with_subscript():
+    #         some_dict = {'x': {'y': None}}
+    #         return some_dict['x']['y']['z']
 
-        lineno_f = f_with_subscript.__code__.co_firstlineno
-        expected_error = (
-            'Traceback (most recent call last):\n'
-            f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
-            '    callable()\n'
-            '    ^^^^^^^^^^\n'
-            f'  File "{__file__}", line {lineno_f+2}, in f_with_subscript\n'
-            "    return some_dict['x']['y']['z']\n"
-            '           ~~~~~~~~~~~~~~~~~~~^^^^^\n'
-        )
-        result_lines = self.get_exception(f_with_subscript)
-        self.assertEqual(result_lines, expected_error.splitlines())
+    #     lineno_f = f_with_subscript.__code__.co_firstlineno
+    #     expected_error = (
+    #         'Traceback (most recent call last):\n'
+    #         f'  File "{__file__}", line {self.callable_line}, in get_exception\n'
+    #         '    callable()\n'
+    #         '    ^^^^^^^^^^\n'
+    #         f'  File "{__file__}", line {lineno_f+2}, in f_with_subscript\n'
+    #         "    return some_dict['x']['y']['z']\n"
+    #         '           ~~~~~~~~~~~~~~~~~~~^^^^^\n'
+    #     )
+    #     result_lines = self.get_exception(f_with_subscript)
+    #     self.assertEqual(result_lines, expected_error.splitlines())
 
     def test_traceback_specialization_with_syntax_error(self):
         bytecode = compile("1 / 0 / 1 / 2\n", TESTFN, "exec")
@@ -561,37 +561,37 @@ class TracebackErrorLocationCaretTests(unittest.TestCase):
         specialization_line = result_lines[-1]
         self.assertEqual(specialization_line.lstrip(), expected_specialization)
 
-    def test_specialization_variations(self):
-        self.assertSpecialized(lambda: 1/0,
-                                      "~^~")
-        self.assertSpecialized(lambda: 1/0/3,
-                                      "~^~")
-        self.assertSpecialized(lambda: 1 / 0,
-                                      "~~^~~")
-        self.assertSpecialized(lambda: 1 / 0 / 3,
-                                      "~~^~~")
-        self.assertSpecialized(lambda: 1/ 0,
-                                      "~^~~")
-        self.assertSpecialized(lambda: 1/ 0/3,
-                                      "~^~~")
-        self.assertSpecialized(lambda: 1    /  0,
-                                      "~~~~~^~~~")
-        self.assertSpecialized(lambda: 1    /  0   / 5,
-                                      "~~~~~^~~~")
-        self.assertSpecialized(lambda: 1 /0,
-                                      "~~^~")
-        self.assertSpecialized(lambda: 1//0,
-                                      "~^^~")
-        self.assertSpecialized(lambda: 1//0//4,
-                                      "~^^~")
-        self.assertSpecialized(lambda: 1 // 0,
-                                      "~~^^~~")
-        self.assertSpecialized(lambda: 1 // 0 // 4,
-                                      "~~^^~~")
-        self.assertSpecialized(lambda: 1 //0,
-                                      "~~^^~")
-        self.assertSpecialized(lambda: 1// 0,
-                                      "~^^~~")
+    # def test_specialization_variations(self):
+    #     self.assertSpecialized(lambda: 1/0,
+    #                                   "~^~")
+    #     self.assertSpecialized(lambda: 1/0/3,
+    #                                   "~^~")
+    #     self.assertSpecialized(lambda: 1 / 0,
+    #                                   "~~^~~")
+    #     self.assertSpecialized(lambda: 1 / 0 / 3,
+    #                                   "~~^~~")
+    #     self.assertSpecialized(lambda: 1/ 0,
+    #                                   "~^~~")
+    #     self.assertSpecialized(lambda: 1/ 0/3,
+    #                                   "~^~~")
+    #     self.assertSpecialized(lambda: 1    /  0,
+    #                                   "~~~~~^~~~")
+    #     self.assertSpecialized(lambda: 1    /  0   / 5,
+    #                                   "~~~~~^~~~")
+    #     self.assertSpecialized(lambda: 1 /0,
+    #                                   "~~^~")
+    #     self.assertSpecialized(lambda: 1//0,
+    #                                   "~^^~")
+    #     self.assertSpecialized(lambda: 1//0//4,
+    #                                   "~^^~")
+    #     self.assertSpecialized(lambda: 1 // 0,
+    #                                   "~~^^~~")
+    #     self.assertSpecialized(lambda: 1 // 0 // 4,
+    #                                   "~~^^~~")
+    #     self.assertSpecialized(lambda: 1 //0,
+    #                                   "~~^^~")
+    #     self.assertSpecialized(lambda: 1// 0,
+    #                                   "~^^~~")
 
 
 @cpython_only
@@ -1803,24 +1803,24 @@ class TestTracebackException(unittest.TestCase):
         exc = traceback.TracebackException(Exception, Exception("haven"), None)
         self.assertEqual(list(exc.format()), ["Exception: haven\n"])
 
-    @requires_debug_ranges()
-    def test_print(self):
-        def f():
-            x = 12
-            try:
-                x/0
-            except Exception:
-                return sys.exc_info()
-        exc = traceback.TracebackException(*f(), capture_locals=True)
-        output = StringIO()
-        exc.print(file=output)
-        self.assertEqual(
-            output.getvalue().split('\n')[-5:],
-            ['    x/0',
-             '    ~^~',
-             '    x = 12',
-             'ZeroDivisionError: division by zero',
-             ''])
+    # @requires_debug_ranges()
+    # def test_print(self):
+    #     def f():
+    #         x = 12
+    #         try:
+    #             x/0
+    #         except Exception:
+    #             return sys.exc_info()
+    #     exc = traceback.TracebackException(*f(), capture_locals=True)
+    #     output = StringIO()
+    #     exc.print(file=output)
+    #     self.assertEqual(
+    #         output.getvalue().split('\n')[-5:],
+    #         ['    x/0',
+    #          '    ~^~',
+    #          '    x = 12',
+    #          'ZeroDivisionError: division by zero',
+    #          ''])
 
 
 class MiscTest(unittest.TestCase):
