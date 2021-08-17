@@ -856,6 +856,14 @@ compiler_use_next_block(struct compiler *c, basicblock *block)
 }
 
 static basicblock *
+compiler_use_block(struct compiler *c, basicblock *block)
+{
+    assert(block != NULL);
+    c->u->u_curblock = block;
+    return block;
+}
+
+static basicblock *
 compiler_copy_block(struct compiler *c, basicblock *block)
 {
     /* Cannot copy a block if it has a fallthrough, since
@@ -5786,10 +5794,234 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // PEP 634: Structural Pattern Matching ////////////////////////////////////////////////
 
+// Compare two (limited) expr nodes for structural equality.
+static int
+patma_same_expr(expr_ty a, expr_ty b)
+{
+    // TODO
+    return 0;
+}
+
+// Compile several patterns in parallel, attempting to merge any contiguous patterns
+// with overlapping checks. Recursive calls may operate on a subset of the caller's
+// subpatterns, but each call is responsible for compiling all patterns passed to it.
+static int
+patma_compile(struct compiler *c, Py_ssize_t ncases, pattern_ty patterns[],
+              basicblock *pattern_starts[], basicblock *pattern_stops[])
+{
+    // TODO: For each loop, we need to fully compile patterns i-k. The only thing we
+    // change is that, while overlapping, save the current subject and jump straight to
+    // the next non-overlapping part on failure.
+    Py_ssize_t k;
+    for (Py_ssize_t i = 0; i < ncases; i = k) {
+        compiler_use_next_block(c, pattern_starts[i]);
+        pattern_ty pattern = patterns[i];
+        k = i;
+        while (++k < ncases && pattern->kind == patterns[k]->kind);
+        switch (pattern->kind) {
+            case MatchAs_kind: {
+                // MatchAs(pattern? pattern, identifier? name)
+                Py_ssize_t sub_ncases = k - i;
+                pattern_ty sub_patterns[sub_ncases];
+                basicblock *sub_pattern_starts[sub_ncases]; // +1?
+                basicblock *sub_pattern_stops[sub_ncases];
+                for (Py_ssize_t ix = 0; ix < sub_ncases; ix++) {
+                    sub_patterns[ix] = patterns[ix]->v.MatchAs.pattern;
+                    sub_pattern_starts[ix] = pattern_starts[ix];
+                    sub_pattern_stops[ix] = pattern_stops[ix];
+                }
+                if (!patma_compile(c, sub_ncases, sub_patterns, sub_pattern_starts, sub_pattern_stops)) {
+                    return 0;
+                }
+                // TODO: This isn't correct, right? Check out MatchStar...
+                while (sub_ncases--) {
+                    compiler_use_block(c, pattern_stops[sub_ncases]);
+                    PyObject *name = patterns[sub_ncases]->v.MatchAs.name;
+                    if (name) {
+                        ADDOP_NAME(c, STORE_NAME, name, names);
+                    }
+                    else {
+                        ADDOP(c, POP_TOP);
+                    }
+                }
+                compiler_use_next_block(c, sub_pattern_starts[i]);
+                continue;
+            }
+            case MatchClass_kind:{
+                // MatchClass(expr cls, pattern* patterns, identifier* kwd_attrs,
+                //            pattern* kwd_patterns)
+                expr_ty u = pattern->v.MatchClass.cls;
+                for (Py_ssize_t kx = i + 1; kx < k; kx++) {
+                    if (!patma_same_expr(u, patterns[kx]->v.MatchClass.cls)) {
+                        k = kx;
+                        break;
+                    }
+                }
+                VISIT(c, expr, u);
+                // TODO
+                continue;
+            }
+            case MatchMapping_kind: {
+                // MatchMapping(expr* keys, pattern* patterns, identifier? rest)
+                ADDOP(c, MATCH_MAPPING);
+                ADDOP_JUMP(c, POP_JUMP_IF_FALSE, pattern_starts[k]);
+                pattern_stops[i] = compiler_next_block(c);
+                if (pattern_stops[i] == NULL) {
+                    return 0;
+                }
+                // TODO
+                continue;
+            }
+            case MatchOr_kind: {
+                // MatchOr(pattern* patterns)
+                // Sort of a pain. Flatten out all of the patterns and recurse.
+                Py_ssize_t sub_ncases = 0;
+                for (Py_ssize_t ix = i; ix < k; ix++) {
+                    sub_ncases += asdl_seq_LEN(patterns[ix]->v.MatchOr.patterns);
+                }
+                pattern_ty sub_patterns[sub_ncases];
+                basicblock *sub_pattern_starts[sub_ncases]; // +1?
+                basicblock *sub_pattern_stops[sub_ncases];
+                Py_ssize_t sub_ncasesx = 0;
+                for (Py_ssize_t ix = i; ix < k; ix++) {
+                    Py_ssize_t npatterns = asdl_seq_LEN(patterns[ix]->v.MatchOr.patterns);
+                    for (Py_ssize_t ixx = 0; ixx < npatterns; ixx++) {
+                        sub_patterns[sub_ncasesx] = asdl_seq_GET(patterns[ix]->v.MatchOr.patterns, ixx);
+                        sub_pattern_starts[sub_ncasesx] = compiler_new_block(c);
+                        sub_pattern_stops[sub_ncasesx] = sub_pattern_starts[sub_ncasesx];
+                        if (sub_pattern_starts[sub_ncasesx] == NULL) {
+                            return 0;
+                        }
+                        sub_ncasesx++;
+                    }
+                }
+                assert(sub_ncasesx == sub_ncases);
+                if (!patma_compile(c, sub_ncases, sub_patterns, sub_pattern_starts, sub_pattern_stops)) {
+                    return 0;
+                }
+                compiler_use_next_block(c, sub_pattern_starts[i]);
+                pattern_stops[i] = compiler_new_block(c);
+                if (pattern_stops[i] == NULL) {
+                    return 0;
+                }
+                while (sub_ncases--) {
+                    compiler_use_block(c, pattern_stops[sub_ncases]);
+                    ADDOP_JUMP(c, JUMP_FORWARD, pattern_stops[i]);
+                }
+                continue;
+            }
+            case MatchSequence_kind: {
+                // MatchSequence(pattern* patterns)
+                ADDOP(c, MATCH_SEQUENCE);
+                ADDOP_JUMP(c, POP_JUMP_IF_FALSE, pattern_starts[k]);
+                pattern_stops[i] = compiler_next_block(c);
+                if (pattern_stops[i] == NULL) {
+                    return 0;
+                }
+                // TODO
+                continue;
+            }
+            case MatchSingleton_kind: {
+                // MatchSingleton(constant value)
+                PyObject *value = pattern->v.MatchSingleton.value;
+                for (Py_ssize_t kx = i + 1; kx < k; kx++) {
+                    if (value != patterns[kx]->v.MatchSingleton.value) {
+                        k = kx;
+                        break;
+                    }
+                }
+                ADDOP_LOAD_CONST(c, value);
+                ADDOP_COMPARE(c, Py_Is);
+                ADDOP_JUMP(c, POP_JUMP_IF_FALSE, pattern_starts[k]);
+                pattern_stops[i] = compiler_next_block(c);
+                if (pattern_stops[i] == NULL) {
+                    return 0;
+                }
+                continue;
+            }
+            case MatchStar_kind: {
+                // MatchStar(identifier? name)
+                PyObject *name = patterns[i]->v.MatchStar.name;
+                if (name) {
+                    for (Py_ssize_t kx = i + 1; kx < k; kx++) {
+                        if (!_PyUnicode_EQ(name, patterns[kx]->v.MatchStar.name)) {
+                            k = kx;
+                            break;
+                        }
+                    }
+                    ADDOP_NAME(c, STORE_NAME, name, names);
+                }
+                else {
+                    for (Py_ssize_t kx = i + 1; kx < k; kx++) {
+                        if (patterns[kx]->v.MatchStar.name) {
+                            break;
+                        }
+                    }
+                    ADDOP(c, POP_TOP);
+                }
+                continue;
+            }
+            case MatchValue_kind: {
+                // MatchValue(expr value)
+                expr_ty u = pattern->v.MatchValue.value;
+                for (Py_ssize_t kx = i + 1; kx < k; kx++) {
+                    if (!patma_same_expr(u, patterns[kx]->v.MatchValue.value)) {
+                        k = kx;
+                        break;
+                    }
+                }
+                VISIT(c, expr, u);
+                ADDOP_COMPARE(c, Py_EQ);
+                ADDOP_JUMP(c, POP_JUMP_IF_FALSE, pattern_starts[k]);
+                pattern_stops[i] = compiler_next_block(c);
+                if (pattern_stops[i] == NULL) {
+                    return 0;
+                }
+                continue;
+            }
+        }
+        Py_UNREACHABLE();
+    }
+    return 1;
+}
 
 static int
 compiler_match(struct compiler *c, stmt_ty s)
 {
+    VISIT(c, expr, s->v.Match.subject);
+    Py_ssize_t ncases = asdl_seq_LEN(s->v.Match.cases);
+    basicblock *pattern_starts[ncases+1];
+    basicblock *pattern_stops[ncases];
+    pattern_ty patterns[ncases];
+    for (Py_ssize_t i = 0; i < ncases; i++) {
+        patterns[i] = asdl_seq_GET(s->v.Match.cases, i)->pattern;
+        pattern_starts[i] = compiler_new_block(c);
+        pattern_stops[i] = pattern_starts[i];
+        if (pattern_starts[i] == NULL) {
+            return 0;
+        }
+    }
+    pattern_starts[ncases] = compiler_new_block(c);
+    if (pattern_starts[ncases] == NULL) {
+        return 0;
+    }
+    if (!patma_compile(c, ncases, patterns, pattern_starts, pattern_stops)) {
+        return 0;
+    }
+    for (Py_ssize_t i = 0; i < ncases; i++) {
+        compiler_use_block(c, pattern_stops[i]);
+        match_case_ty match_case = asdl_seq_GET(s->v.Match.cases, i);
+        expr_ty guard = match_case->guard;
+        // We intentionally jump to the *very* start of the next pattern, since the
+        // guard's arbitrary code execution essentially invalidates any useful
+        // information we've learned about the subject.
+        if (guard && !compiler_jump_if(c, guard, pattern_starts[i+1], 0)) {
+            return 0;
+        }
+        VISIT_SEQ(c, stmt, asdl_seq_GET(s->v.Match.cases, i)->body);
+        ADDOP_JUMP(c, JUMP_FORWARD, pattern_starts[ncases]);
+    }
+    compiler_use_next_block(c, pattern_starts[ncases]);
     return 1;
 }
 
