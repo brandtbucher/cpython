@@ -164,6 +164,14 @@ typedef struct basicblock_ {
     int b_offset;
     /* Exception stack at start of block, used by assembler to create the exception handling table */
     ExceptStack *b_exceptstack;
+    // TODO
+    enum {
+        PATMA_TAG_NOTHING,
+        PATMA_TAG_SUCCEED,
+        PATMA_TAG_FAIL,
+    } b_patma_tag;
+    // TODO
+    bool b_case;
 } basicblock;
 
 /* fblockinfo tracks the current frame block.
@@ -5834,6 +5842,105 @@ compiler_slice(struct compiler *c, expr_ty s)
 #define MATCH_VALUE_EXPR(N) \
     ((N)->kind == Constant_kind || (N)->kind == Attribute_kind)
 
+static void
+optimize_match(struct compiler *c, basicblock *blocks[], Py_ssize_t cases,
+               pattern_ty nodes_if_not_guarded[], bool or)
+{
+    assert(cases);
+    // TODO: Why reversed.
+    while (--cases) {
+        basicblock *block_a = blocks[cases-1];
+        Py_ssize_t i_a = 0;
+        basicblock *block_b = blocks[cases];
+        Py_ssize_t i_b = 0;
+        // Stage 1 /////////////////////////////////////////////////////////////
+        // The idea behind this first optimization is simple, yet powerful: as
+        // long as the operations in patterns a and b are identical, we can
+        // redirect all of a's "failure" jumps to b's corresponding targets
+        // instead (effectively "jumping over" b).
+        ////////////////////////////////////////////////////////////////////////
+        while (1) {
+            while (block_a->b_iused == i_a) {
+                block_a = block_a->b_next;
+                i_a = 0;
+            }
+            if (block_a->b_patma_tag == PATMA_TAG_SUCCEED) {
+                break;
+            }
+            while (block_b->b_iused == i_b) {
+                block_b = block_b->b_next;
+                i_b = 0;
+            }
+            assert(block_b->b_patma_tag != PATMA_TAG_SUCCEED);
+            struct instr *op_a = &block_a->b_instr[i_a];
+            struct instr *op_b = &block_b->b_instr[i_b];
+            if (op_a->i_opcode != op_b->i_opcode) {
+                break;
+            }
+            if (HAVE_ARGUMENT <= op_a->i_opcode) {
+                if (is_jump(op_a)) {
+                    assert(op_a->i_target->b_patma_tag == PATMA_TAG_FAIL);
+                    assert(op_b->i_target->b_patma_tag == PATMA_TAG_FAIL);
+                    // TODO: The SO example trips these...
+                    // if (op_a->i_target->b_patma_tag != PATMA_TAG_FAIL ||
+                    //     op_b->i_target->b_patma_tag != PATMA_TAG_FAIL)
+                    // {
+                    //     break;
+                    // }
+                    op_a->i_target = op_b->i_target;
+                }
+                else if (op_a->i_oparg != op_b->i_oparg) {
+                    break;
+                }
+            }
+            i_a++;
+            i_b++;
+        }
+        // Stage 2 /////////////////////////////////////////////////////////////
+        // Not an optimization, but a pretty cheap way to check for clear errors
+        // in patterns. Again, the idea is simple: if a is unguarded and doesn't
+        // have any more jumps, then b will be totally unreachable... we've
+        // already retargeted all of a's prior jumps to skip over b!
+        // >>> match ...:
+        // ...     case {} | {"foo": "bar"}: pass
+        // ...     case [first, *_]: pass
+        // ...     case [*_, last]: pass
+        // ... 
+        // <stdin>:2: SyntaxWarning: this alternative makes the following one
+        // unreachable (consider reordering)
+        // <stdin>:3: SyntaxWarning: this pattern makes the following one
+        // unreachable (consider guarding or reordering)
+        ////////////////////////////////////////////////////////////////////////
+        pattern_ty node = nodes_if_not_guarded[cases-1];
+        while (node) {
+            while (block_a->b_iused == i_a) {
+                block_a = block_a->b_next;
+                i_a = 0;
+            }
+            if (block_a->b_patma_tag == PATMA_TAG_SUCCEED) {
+                const char *e = "this %s makes the following one unreachable "
+                                "(consider %sreordering)";
+                const char *what = or ? "alternative" : "pattern";
+                const char *how = or ? "" : "guarding or ";
+                SET_LOC(c, node);
+                compiler_warn(c, e, what, how);
+                break;
+            }
+            if (is_jump(&block_a->b_instr[i_a])) {
+                break;
+            };
+            i_a++;
+        }
+        // TODO: jumping into redundant checks...
+    }
+    // Clear all tags:
+    basicblock *block = blocks[0];
+    while (block) {
+        block->b_patma_tag = PATMA_TAG_NOTHING;
+        block = block->b_next;
+    }
+}
+
 // Allocate or resize pc->fail_pop to allow for n items to be popped on failure.
 static int
 ensure_fail_pop(struct compiler *c, pattern_context *pc, Py_ssize_t n)
@@ -5877,10 +5984,12 @@ emit_and_reset_fail_pop(struct compiler *c, pattern_context *pc)
     if (!pc->fail_pop_size) {
         assert(pc->fail_pop == NULL);
         NEXT_BLOCK(c);
+        c->u->u_curblock->b_patma_tag = PATMA_TAG_FAIL;
         return 1;
     }
     while (--pc->fail_pop_size) {
         compiler_use_next_block(c, pc->fail_pop[pc->fail_pop_size]);
+        c->u->u_curblock->b_patma_tag = PATMA_TAG_FAIL;
         if (!compiler_addop(c, POP_TOP)) {
             pc->fail_pop_size = 0;
             PyObject_Free(pc->fail_pop);
@@ -5891,6 +6000,7 @@ emit_and_reset_fail_pop(struct compiler *c, pattern_context *pc)
     compiler_use_next_block(c, pc->fail_pop[0]);
     PyObject_Free(pc->fail_pop);
     pc->fail_pop = NULL;
+    c->u->u_curblock->b_patma_tag = PATMA_TAG_FAIL;
     return 1;
 }
 
@@ -6280,9 +6390,12 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
     // for checking different name bindings in alternatives, and for correcting
     // the order in which extracted elements are placed on the stack.
     PyObject *control = NULL;
+    basicblock *blocks[size];
+    pattern_ty nodes_if_not_guarded[size];
     // NOTE: We can't use returning macros anymore! goto error on error.
     for (Py_ssize_t i = 0; i < size; i++) {
         pattern_ty alt = asdl_seq_GET(p->v.MatchOr.patterns, i);
+        nodes_if_not_guarded[i] = alt;
         SET_LOC(c, alt);
         PyObject *pc_stores = PyList_New(0);
         if (pc_stores == NULL) {
@@ -6294,10 +6407,16 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
         pc->fail_pop = NULL;
         pc->fail_pop_size = 0;
         pc->on_top = 0;
-        if (!compiler_addop(c, DUP_TOP) || !compiler_pattern(c, alt, pc)) {
+        blocks[i] = compiler_next_block(c);
+        if (blocks[i] == NULL ||
+            !compiler_addop(c, DUP_TOP) ||
+            !compiler_pattern(c, alt, pc))
+        {
             goto error;
         }
         // Success!
+        NEXT_BLOCK(c);
+        c->u->u_curblock->b_patma_tag = PATMA_TAG_SUCCEED;
         Py_ssize_t nstores = PyList_GET_SIZE(pc->stores);
         if (!i) {
             // This is the first alternative, so save its stores as a "control"
@@ -6372,6 +6491,7 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
         goto error;
     }
     compiler_use_next_block(c, end);
+    optimize_match(c, blocks, size, nodes_if_not_guarded, true);
     Py_ssize_t nstores = PyList_GET_SIZE(control);
     // There's a bunch of stuff on the stack between any where the new stores
     // are and where they need to be:
@@ -6536,44 +6656,44 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
     assert(cases > 0);
     match_case_ty m = asdl_seq_GET(s->v.Match.cases, cases - 1);
     int has_default = WILDCARD_CHECK(m->pattern) && 1 < cases;
+    // TODO: Expand top-level or-patterns:
+    Py_ssize_t virtual_cases = cases - has_default;
+    for (Py_ssize_t i = 0; i < cases - has_default; i++) {
+    }
+    basicblock *blocks[cases - has_default];
+    pattern_ty nodes_if_not_guarded[cases - has_default];
     for (Py_ssize_t i = 0; i < cases - has_default; i++) {
         m = asdl_seq_GET(s->v.Match.cases, i);
         SET_LOC(c, m->pattern);
-        // Only copy the subject if we're *not* on the last case:
-        if (i != cases - has_default - 1) {
-            ADDOP(c, DUP_TOP);
-        }
+        RETURN_IF_FALSE(blocks[i] = compiler_next_block(c));
+        ADDOP(c, DUP_TOP);
         RETURN_IF_FALSE(pc->stores = PyList_New(0));
         // Irrefutable cases must be either guarded, last, or both:
         pc->allow_irrefutable = m->guard != NULL || i == cases - 1;
         pc->fail_pop = NULL;
         pc->fail_pop_size = 0;
         pc->on_top = 0;
-        // NOTE: Can't use returning macros here (they'll leak pc->stores)!
-        if (!compiler_pattern(c, m->pattern, pc)) {
-            Py_DECREF(pc->stores);
-            return 0;
-        }
+        RETURN_IF_FALSE(compiler_pattern(c, m->pattern, pc));
         assert(!pc->on_top);
+        NEXT_BLOCK(c);
+        c->u->u_curblock->b_patma_tag = PATMA_TAG_SUCCEED;
         // It's a match! Store all of the captured names (they're on the stack).
         Py_ssize_t nstores = PyList_GET_SIZE(pc->stores);
         for (Py_ssize_t n = 0; n < nstores; n++) {
             PyObject *name = PyList_GET_ITEM(pc->stores, n);
-            if (!compiler_nameop(c, name, Store)) {
-                Py_DECREF(pc->stores);
-                return 0;
-            }
+            RETURN_IF_FALSE(compiler_nameop(c, name, Store));
         }
-        Py_DECREF(pc->stores);
-        // NOTE: Returning macros are safe again.
+        Py_CLEAR(pc->stores);
         if (m->guard) {
+            nodes_if_not_guarded[i] = NULL;
             RETURN_IF_FALSE(ensure_fail_pop(c, pc, 0));
             RETURN_IF_FALSE(compiler_jump_if(c, m->guard, pc->fail_pop[0], 0));
         }
-        // Success! Pop the subject off, we're done with it:
-        if (i != cases - has_default - 1) {
-            ADDOP(c, POP_TOP);
+        else {
+            nodes_if_not_guarded[i] = m->pattern;
         }
+        // Success! Pop the subject off, we're done with it:
+        ADDOP(c, POP_TOP);
         VISIT_SEQ(c, stmt, m->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
         // If the pattern fails to match, we want the line number of the
@@ -6582,25 +6702,22 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
         SET_LOC(c, m->pattern);
         RETURN_IF_FALSE(emit_and_reset_fail_pop(c, pc));
     }
+    // Done with the subject:
+    ADDOP(c, POP_TOP);
     if (has_default) {
         // A trailing "case _" is common, and lets us save a bit of redundant
         // pushing and popping in the loop above:
         m = asdl_seq_GET(s->v.Match.cases, cases - 1);
         SET_LOC(c, m->pattern);
-        if (cases == 1) {
-            // No matches. Done with the subject:
-            ADDOP(c, POP_TOP);
-        }
-        else {
-            // Show line coverage for default case (it doesn't create bytecode)
-            ADDOP(c, NOP);
-        }
+        // Show line coverage for default case (it doesn't create bytecode)
+        ADDOP(c, NOP);
         if (m->guard) {
             RETURN_IF_FALSE(compiler_jump_if(c, m->guard, end, 0));
         }
         VISIT_SEQ(c, stmt, m->body);
     }
     compiler_use_next_block(c, end);
+    optimize_match(c, blocks, cases - has_default, nodes_if_not_guarded, false);
     return 1;
 }
 
@@ -6609,8 +6726,10 @@ compiler_match(struct compiler *c, stmt_ty s)
 {
     pattern_context pc;
     pc.fail_pop = NULL;
+    pc.stores = NULL;
     int result = compiler_match_inner(c, s, &pc);
     PyObject_Free(pc.fail_pop);
+    Py_XDECREF(pc.stores);
     return result;
 }
 
