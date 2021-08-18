@@ -4516,6 +4516,16 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(ISINSTANCE): {
+            // PUSH(isinstance(TOS1, TOS))
+            int isinstance = PyObject_IsInstance(SECOND(), TOP());
+            if (isinstance < 0) {
+                goto error;
+            }
+            PUSH(PyBool_FromLong(isinstance));
+            DISPATCH();
+        }
+
         TARGET(EXTENDED_ARG): {
             int oldoparg = oparg;
             NEXTOPARG();
