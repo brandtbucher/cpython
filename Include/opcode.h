@@ -13,6 +13,7 @@ extern "C" {
 #define DUP_TOP                   4
 #define DUP_TOP_TWO               5
 #define ROT_FOUR                  6
+#define ISINSTANCE                7
 #define NOP                       9
 #define UNARY_POSITIVE           10
 #define UNARY_NEGATIVE           11
@@ -136,15 +137,23 @@ extern "C" {
 #define DICT_MERGE              164
 #define DICT_UPDATE             165
 #define CALL_METHOD_KW          166
-#define JUMP_ABSOLUTE_QUICK       7
-#define LOAD_ATTR_ADAPTIVE        8
-#define LOAD_ATTR_SPLIT_KEYS     13
-#define LOAD_ATTR_WITH_HINT      14
-#define LOAD_ATTR_SLOT           18
-#define LOAD_ATTR_MODULE         21
-#define LOAD_GLOBAL_ADAPTIVE     36
-#define LOAD_GLOBAL_MODULE       38
-#define LOAD_GLOBAL_BUILTIN      39
+#define BINARY_SUBSCR_ADAPTIVE    8
+#define BINARY_SUBSCR_LIST_INT   13
+#define BINARY_SUBSCR_TUPLE_INT  14
+#define BINARY_SUBSCR_DICT       18
+#define JUMP_ABSOLUTE_QUICK      21
+#define LOAD_ATTR_ADAPTIVE       36
+#define LOAD_ATTR_SPLIT_KEYS     38
+#define LOAD_ATTR_WITH_HINT      39
+#define LOAD_ATTR_SLOT           40
+#define LOAD_ATTR_MODULE         41
+#define LOAD_GLOBAL_ADAPTIVE     42
+#define LOAD_GLOBAL_MODULE       43
+#define LOAD_GLOBAL_BUILTIN      44
+#define STORE_ATTR_ADAPTIVE      45
+#define STORE_ATTR_SPLIT_KEYS    46
+#define STORE_ATTR_SLOT          47
+#define STORE_ATTR_WITH_HINT     48
 #ifdef NEED_OPCODE_JUMP_TABLES
 static uint32_t _PyOpcode_RelativeJump[8] = {
     0U,
