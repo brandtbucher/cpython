@@ -3118,25 +3118,25 @@ class TestTracing(unittest.TestCase):
 #         self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
 #         self.assertListEqual(self._trace(f, "spam"), [1, 2, 4])
 
-#     def test_only_default_wildcard(self):
-#         def f(command):               # 0
-#             match command.split():    # 1
-#                 case _:               # 2
-#                     return "default"  # 3
+    def test_only_default_wildcard(self):
+        def f(command):               # 0
+            match command.split():    # 1
+                case _:               # 2
+                    return "default"  # 3
 
-#         self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
-#         self.assertListEqual(self._trace(f, "go x"), [1, 2, 3])
-#         self.assertListEqual(self._trace(f, "spam"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go x"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "spam"), [1, 2, 3])
 
-#     def test_only_default_capture(self):
-#         def f(command):             # 0
-#             match command.split():  # 1
-#                 case x:             # 2
-#                     return x        # 3
+    def test_only_default_capture(self):
+        def f(command):             # 0
+            match command.split():  # 1
+                case x:             # 2
+                    return x        # 3
 
-#         self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
-#         self.assertListEqual(self._trace(f, "go x"), [1, 2, 3])
-#         self.assertListEqual(self._trace(f, "spam"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go x"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "spam"), [1, 2, 3])
 
 
 if __name__ == "__main__":
