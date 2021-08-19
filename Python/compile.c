@@ -5795,7 +5795,7 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // PEP 634: Structural Pattern Matching ////////////////////////////////////////
 
-// TODO: Solve stack size descrepancies between jumps.
+// TODO: Solve stack size discrepancies between jumps.
 
 #define PATMA_OPTIMIZE
 
