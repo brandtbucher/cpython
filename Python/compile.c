@@ -6018,7 +6018,7 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
                             VISIT_SEQ(c, expr, patterns[i]->v.MatchMapping.keys);
                             ADDOP_I(c, BUILD_TUPLE, asdl_seq_LEN(patterns[i]->v.MatchMapping.keys));
                             ADDOP(c, MATCH_KEYS);
-                            pcs[i].on_top += 2;  // keys, values or None
+                            pcs[i].on_top += 2;  // keys, values
                         PATMA_LOOP_END_POP_JUMP_IF_FALSE;
                         PATMA_LOOP_BEGIN;  // XXX
                             ADDOP(c, POP_TOP);  // XXX
