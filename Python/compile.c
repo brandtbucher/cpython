@@ -5815,6 +5815,7 @@ compiler_slice(struct compiler *c, expr_ty s)
                     break;                       \
                 }                                \
             }                                    \
+            _outer_i = j;                        \
             basicblock *_starts[j + 1];          \
             for (Py_ssize_t k = i; k < j; k++) { \
                 _starts[k] = stops[k];           \
@@ -5823,10 +5824,9 @@ compiler_slice(struct compiler *c, expr_ty s)
             {                                    \
                 basicblock **starts = _starts;
 
-// TODO: Can this be simplified?
+// TODO: Can this be simplified? Make the while loops for loops, so continue works as expected!
 #define _PATMA_GROUP_END     \
             }                \
-            _outer_i = j;    \
         }                    \
         i = _outer_i;        \
     }
@@ -5845,6 +5845,7 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // TODO: Have "no block" version of this?
 // TODO: Can this be simplified?
+// TODO: Might need to loop backwards and jump to patched starts? My brain hurts...
 #define PATMA_LOOP_BEGIN                                           \
             for (Py_ssize_t _loop_i = i; _loop_i < j; _loop_i++) { \
                 Py_ssize_t i = _loop_i;                            \
@@ -5930,10 +5931,25 @@ patma_same_expr(expr_ty a, expr_ty b)
         return 0;
     }
     if (a->kind == Constant_kind) {
-        return PyObject_RichCompareBool(a->v.Constant.value,
-                                        b->v.Constant.value, Py_EQ);
+        return PyObject_RichCompareBool(a->v.Constant.value, b->v.Constant.value, Py_EQ);
     }
     return 0;
+}
+
+// Compare two sequences of (limited) expr nodes for syntactic equality.
+static int
+patma_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
+{
+    if (asdl_seq_LEN(as) != asdl_seq_LEN(bs)) {
+        return 0;
+    }
+    for (Py_ssize_t i = 0; i < asdl_seq_LEN(as); i++) {
+        int same = patma_same_expr(asdl_seq_GET(as, i), asdl_seq_GET(bs, i));
+        if (same <= 0) {
+            return same;
+        }
+    }
+    return 1;
 }
 
 // Compile several patterns in parallel, attempting to merge any contiguous
@@ -6005,15 +6021,27 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
                     ADDOP(c, MATCH_MAPPING);
                 PATMA_LOOP_END;
                 PATMA_GROUP_BEGIN(asdl_seq_LEN(patterns[i]->v.MatchMapping.keys) == asdl_seq_LEN(patterns[j]->v.MatchMapping.keys));
-                    if (asdl_seq_LEN(patterns[i]->v.MatchMapping.keys)) {
-                        PATMA_LOOP_BEGIN;
-                            ADDOP(c, GET_LEN);
-                            ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(asdl_seq_LEN(patterns[i]->v.MatchMapping.keys)));
-                            ADDOP_COMPARE(c, GtE);
-                        PATMA_LOOP_END;
+                    if (!asdl_seq_LEN(patterns[i]->v.MatchMapping.keys)) {
+                        continue;
                     }
+                    PATMA_LOOP_BEGIN;
+                        ADDOP(c, GET_LEN);
+                        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(asdl_seq_LEN(patterns[i]->v.MatchMapping.keys)));
+                        ADDOP_COMPARE(c, GtE);
+                    PATMA_LOOP_END;
+                    PATMA_GROUP_BEGIN(patma_same_exprs(patterns[i]->v.MatchMapping.keys, patterns[j]->v.MatchMapping.keys));
+                        PATMA_LOOP_BEGIN;
+                            VISIT_SEQ(c, expr, patterns[i]->v.MatchMapping.keys);
+                            ADDOP_I(c, BUILD_TUPLE, asdl_seq_LEN(patterns[i]->v.MatchMapping.keys));
+                            ADDOP(c, MATCH_KEYS);
+                            ADDOP(c, ROT_TWO);  // XXX
+                            ADDOP(c, POP_TOP);  // XXX
+                            ADDOP(c, ROT_TWO);  // XXX
+                            ADDOP(c, POP_TOP);  // XXX
+                        PATMA_LOOP_END;
+                        // TODO
+                    PATMA_GROUP_END;
                 PATMA_GROUP_END;
-                // TODO
                 break;
             case MatchOr_kind:
                 // MatchOr(pattern* patterns)
@@ -6120,7 +6148,6 @@ compiler_match(struct compiler *c, stmt_ty s)
         // We intentionally jump to the *very* start of the next pattern, since
         // the guard's arbitrary code execution essentially invalidates any
         // useful information we've learned about the subject.
-        // TODO: Guards are broken (bad stack calculation)
         if (guard && !compiler_jump_if(c, guard, starts[i+1], 0)) {
             return 0;
         }
@@ -6136,9 +6163,6 @@ compiler_match(struct compiler *c, stmt_ty s)
     compiler_use_next_block(c, end);
     return 1;
 }
-
-#undef PATMA_GROUP_BEGIN
-#undef PATMA_GROUP_END
 
 /* End of the compiler section, beginning of the assembler section */
 
