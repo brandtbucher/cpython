@@ -5795,41 +5795,29 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // PEP 634: Structural Pattern Matching ////////////////////////////////////////
 
+// TODO: Solve stack size descrepancies between jumps.
+
 #define PATMA_OPTIMIZE
 
 // TODO: This madness deserves an explanation (and probably a rewrite):
 // TODO: Make more things const here to catch errors:
-#define _PATMA_GROUP_BEGIN(C)                    \
-    {                                            \
-        Py_ssize_t _outer_i = i;                 \
-        Py_ssize_t _outer_j = j;                 \
-        while (_outer_i < _outer_j) {            \
-            Py_ssize_t i = _outer_i;             \
-            Py_ssize_t j = _outer_i;             \
-            while (++j < _outer_j) {             \
-                int _in_group = (C);             \
-                if (_in_group < 0) {             \
-                    return 0;                    \
-                }                                \
-                if (!_in_group) {                \
-                    break;                       \
-                }                                \
-            }                                    \
-            _outer_i = j;                        \
-            basicblock *_starts[j + 1];          \
-            for (Py_ssize_t k = i; k < j; k++) { \
-                _starts[k] = stops[k];           \
-            }                                    \
-            _starts[j] = starts[j];              \
-            {                                    \
-                basicblock **starts = _starts;
-
-// TODO: Can this be simplified? Make the while loops for loops, so continue works as expected!
-#define _PATMA_GROUP_END     \
-            }                \
-        }                    \
-        i = _outer_i;        \
-    }
+#define _PATMA_GROUP_BEGIN(C)         \
+    {                                 \
+        Py_ssize_t _outer_i = i;      \
+        Py_ssize_t _outer_j = j;      \
+        while (_outer_i < _outer_j) { \
+            Py_ssize_t i = _outer_i;  \
+            Py_ssize_t j = _outer_i;  \
+            while (++j < _outer_j) {  \
+                int _in_group = (C);  \
+                if (_in_group < 0) {  \
+                    return 0;         \
+                }                     \
+                if (!_in_group) {     \
+                    break;            \
+                }                     \
+            }                         \
+            _outer_i = j;
 
 // TODO: Can this be simplified?
 #define _PATMA_DUMMY_GROUP_BEGIN(C)                        \
@@ -5839,36 +5827,33 @@ compiler_slice(struct compiler *c, expr_ty s)
         for (Py_ssize_t i = _outer_i; i < _outer_j; i++) { \
             Py_ssize_t j = i + 1;
 
-#define _PATMA_DUMMY_GROUP_END \
-        }                      \
+#define PATMA_GROUP_END \
+        }               \
     }
 
 // TODO: Have "no block" version of this?
 // TODO: Can this be simplified?
-// TODO: Might need to loop backwards and jump to patched starts? My brain hurts...
-#define PATMA_LOOP_BEGIN                                           \
-            for (Py_ssize_t _loop_i = i; _loop_i < j; _loop_i++) { \
-                Py_ssize_t i = _loop_i;                            \
-                SET_LOC(c, patterns[i]);                           \
-                compiler_use_block(c, stops[i]);                   \
+#define PATMA_LOOP_BEGIN                                   \
+    for (Py_ssize_t _loop_i = i; _loop_i < j; _loop_i++) { \
+        Py_ssize_t i = _loop_i;                            \
+        SET_LOC(c, patterns[i]);                           \
+        compiler_use_block(c, stops[i]);
 
 // TODO: Have "no check"/"no block" versions of this?
-#define PATMA_LOOP_END                                    \
-                if (!patma_check(c, pcs[i], starts[j])) { \
-                    return 0;                             \
-                }                                         \
-                stops[i] = compiler_next_block(c);        \
-                if (stops[i] == NULL) {                   \
-                    return 0;                             \
-                }                                         \
-            }                                             \
+#define PATMA_LOOP_END                           \
+        if (!patma_check(c, pcs[i], stops[j])) { \
+            return 0;                            \
+        }                                        \
+        stops[i] = compiler_next_block(c);       \
+        if (stops[i] == NULL) {                  \
+            return 0;                            \
+        }                                        \
+    }
 
 #ifdef PATMA_OPTIMIZE
     #define PATMA_GROUP_BEGIN _PATMA_GROUP_BEGIN
-    #define PATMA_GROUP_END _PATMA_GROUP_END
 #else
     #define PATMA_GROUP_BEGIN _PATMA_DUMMY_GROUP_BEGIN
-    #define PATMA_GROUP_END _PATMA_DUMMY_GROUP_END
 #endif
 
 typedef struct {
@@ -5882,12 +5867,17 @@ typedef struct {
 static int
 patma_check(struct compiler *c, pattern_context pc, basicblock *target)
 {
+    Py_ssize_t pops = pc.on_top + PyList_GET_SIZE(pc.names);
+    if (pops == 0) {
+        ADDOP_JUMP(c, POP_JUMP_IF_FALSE, target);
+        NEXT_BLOCK(c);
+        return 1;
+    }
     basicblock *end = compiler_new_block(c);
     if (end == NULL) {
         return 0;
     }
     ADDOP_JUMP(c, POP_JUMP_IF_TRUE, end);
-    Py_ssize_t pops = pc.on_top + PyList_GET_SIZE(pc.names);
     NEXT_BLOCK(c);
     while (pops--) {
         ADDOP(c, POP_TOP);
@@ -5977,9 +5967,8 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
     Py_ssize_t i = 0;
     Py_ssize_t j = npatterns;
     PATMA_GROUP_BEGIN(patterns[i]->kind == patterns[j]->kind);
-        compiler_use_next_block(c, starts[i]);  // TODO: Should this really be *next* block?
         switch (patterns[i]->kind) {
-            case MatchAs_kind: {
+            case MatchAs_kind:
                 PATMA_GROUP_BEGIN(!patterns[i]->v.MatchAs.pattern == !patterns[j]->v.MatchAs.pattern);
                     if (patterns[i]->v.MatchAs.pattern) {
                         // MatchAs(pattern? pattern, identifier? name)
@@ -6002,7 +5991,6 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
                     PATMA_LOOP_END;
                 PATMA_GROUP_END;
                 break;
-            }
             case MatchClass_kind:
                 // MatchClass(expr cls, pattern* patterns,
                 //            identifier* kwd_attrs, pattern* kwd_patterns)
@@ -6034,10 +6022,13 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
                             VISIT_SEQ(c, expr, patterns[i]->v.MatchMapping.keys);
                             ADDOP_I(c, BUILD_TUPLE, asdl_seq_LEN(patterns[i]->v.MatchMapping.keys));
                             ADDOP(c, MATCH_KEYS);
-                            ADDOP(c, ROT_TWO);  // XXX
+                            pcs[i].on_top += 2;  // keys, values or None
+                        PATMA_LOOP_END;
+                        PATMA_LOOP_BEGIN;
                             ADDOP(c, POP_TOP);  // XXX
-                            ADDOP(c, ROT_TWO);  // XXX
                             ADDOP(c, POP_TOP);  // XXX
+                            pcs[i].on_top -= 2;
+                            ADDOP_LOAD_CONST(c, Py_True);
                         PATMA_LOOP_END;
                         // TODO
                     PATMA_GROUP_END;
@@ -6100,7 +6091,7 @@ compiler_match(struct compiler *c, stmt_ty s)
     pattern_context pcs[npatterns];
     pattern_ty patterns[npatterns];
     basicblock *starts[npatterns+1];
-    basicblock *stops[npatterns];
+    basicblock *stops[npatterns+1];
     for (Py_ssize_t i = 0; i < npatterns; i++) {
         pcs[i].names = PyList_New(0);
         if (pcs[i].names == NULL) {
@@ -6120,6 +6111,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         }
     }
     starts[npatterns] = compiler_new_block(c);
+    stops[npatterns] = starts[npatterns];
     if (starts[npatterns] == NULL) {
         return 0;
     }
@@ -6127,6 +6119,7 @@ compiler_match(struct compiler *c, stmt_ty s)
     if (end == NULL) {
         return 0;
     }
+    compiler_use_next_block(c, starts[0]);
     if (!patma_compile(c, pcs, npatterns, patterns, starts, stops)) {
         return 0;
     }
