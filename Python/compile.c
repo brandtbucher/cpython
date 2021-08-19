@@ -5796,31 +5796,36 @@ compiler_slice(struct compiler *c, expr_ty s)
 // PEP 634: Structural Pattern Matching ////////////////////////////////////////
 
 // TODO: This madness deserves an explanation... and possibly a rewrite:
-// TODO: Clean up restoring i.
-#define PATMA_GROUP_BEGIN(C)                     \
-    {Py_ssize_t _i = i;                           \
-    while (i < j) {                              \
-        Py_ssize_t _j = i;                       \
-        while (++_j < j) {                       \
-            Py_ssize_t j = _j;                   \
-            if (!(C)) {                          \
-                break;                           \
-            }                                    \
-        }                                        \
-        for (Py_ssize_t _i = i; _i < _j; _i++) { \
-            Py_ssize_t i = _i;                   \
-            Py_ssize_t j = _j;                   \
-            compiler_use_block(c, stops[i]);     \
-            SET_LOC(c, patterns[i]);             \
+#define PATMA_GROUP_BEGIN(C)                         \
+    {                                                \
+        Py_ssize_t _i = i;                           \
+        while (i < j) {                              \
+            Py_ssize_t _j = i;                       \
+            while (++_j < j) {                       \
+                Py_ssize_t j = _j;                   \
+                assert(i < j);                       \
+                if (!(C)) {                          \
+                    break;                           \
+                }                                    \
+            }                                        \
+            for (Py_ssize_t _i = i; _i < _j; _i++) { \
+                Py_ssize_t i = _i;                   \
+                Py_ssize_t j = _j;                   \
+                assert(i < j);                       \
+                compiler_use_block(c, stops[i]);     \
+                SET_LOC(c, patterns[i]);             \
 
-#define PATMA_GROUP_END()                      \
-            stops[i] = compiler_next_block(c); \
-            if (stops[i] == NULL) {            \
-                return 0;                      \
-            }                                  \
-        }                                      \
-        i = _j;                                \
-    } i = _i;}
+
+#define PATMA_GROUP_END()                          \
+                stops[i] = compiler_next_block(c); \
+                if (stops[i] == NULL) {            \
+                    return 0;                      \
+                }                                  \
+            }                                      \
+            i = _j;                                \
+        }                                          \
+        i = _i;                                    \
+    }
 
 typedef struct {
     PyObject *names;
@@ -6136,6 +6141,15 @@ compiler_match(struct compiler *c, stmt_ty s)
         compiler_use_next_block(c, starts[i]);
         compiler_use_block(c, stops[i]);
         SET_LOC(c, patterns[i]);
+        Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
+        if (pcs[i].preserve) {
+            ADDOP_I(c, ROT_N, j + 1);
+        }
+        while (j--) {
+            if (!compiler_nameop(c, PyList_GET_ITEM(pcs[i].names, j), Store)) {
+                return 0;
+            }
+        }
         match_case_ty match_case = asdl_seq_GET(s->v.Match.cases, i);
         expr_ty guard = match_case->guard;
         // We intentionally jump to the *very* start of the next pattern, since
@@ -6147,12 +6161,6 @@ compiler_match(struct compiler *c, stmt_ty s)
         }
         if (pcs[i].preserve) {
             ADDOP(c, POP_TOP);
-        }
-        Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
-        while (j--) {
-            if (!compiler_nameop(c, PyList_GET_ITEM(pcs[i].names, j), Store)) {
-                return 0;
-            }
         }
         VISIT_SEQ(c, stmt, asdl_seq_GET(s->v.Match.cases, i)->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
