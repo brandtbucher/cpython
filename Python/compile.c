@@ -5843,7 +5843,7 @@ compiler_slice(struct compiler *c, expr_ty s)
         if (stops[i] == NULL) {                  \
             return 0;                            \
         }                                        \
-    }
+    PATMA_LOOP_END
 
 #define PATMA_LOOP_END \
     }
@@ -5967,9 +5967,9 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
     PATMA_GROUP_BEGIN(patterns[i]->kind == patterns[j]->kind);
         switch (patterns[i]->kind) {
             case MatchAs_kind:
+                // MatchAs(pattern? pattern, identifier? name)
                 PATMA_GROUP_BEGIN(!patterns[i]->v.MatchAs.pattern == !patterns[j]->v.MatchAs.pattern);
                     if (patterns[i]->v.MatchAs.pattern) {
-                        // MatchAs(pattern? pattern, identifier? name)
                         pattern_ty sub_patterns[j - i];
                         Py_ssize_t sub_npatterns = 0;
                         PATMA_LOOP_BEGIN;
@@ -5996,6 +5996,10 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
                         pcs[i].on_top++;  // cls
                         ADDOP(c, ISINSTANCE);
                     PATMA_LOOP_END_POP_JUMP_IF_FALSE;
+                    PATMA_LOOP_BEGIN;  // XXX
+                        ADDOP(c, POP_TOP);  // XXX
+                        pcs[i].on_top--;  // XXX
+                    PATMA_LOOP_END;  // XXX
                     // TODO
                 PATMA_GROUP_END;
                 break;
