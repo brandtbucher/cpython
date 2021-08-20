@@ -5835,14 +5835,14 @@ compiler_slice(struct compiler *c, expr_ty s)
         SET_LOC(c, patterns[i]);                           \
         compiler_use_block(c, blocks[i]);
 
-#define PATMA_LOOP_END_POP_JUMP_IF_FALSE          \
-        if (!patma_check(c, pcs[i], blocks[j])) { \
-            return 0;                             \
-        }                                         \
-        blocks[i] = compiler_next_block(c);       \
-        if (blocks[i] == NULL) {                  \
-            return 0;                             \
-        }                                         \
+#define PATMA_LOOP_END_POP_JUMP_IF_FALSE                  \
+        if (!patma_check(c, pcs[i], pcs[j], blocks[j])) { \
+            return 0;                                     \
+        }                                                 \
+        blocks[i] = compiler_next_block(c);               \
+        if (blocks[i] == NULL) {                          \
+            return 0;                                     \
+        }                                                 \
     PATMA_LOOP_END
 
 #define PATMA_LOOP_END \
@@ -5858,13 +5858,16 @@ typedef struct {
     PyObject *names;
     Py_ssize_t on_top;
     bool preserve;
+    bool unreachable;
 } pattern_context;
 
 
 // TODO: Might need target's pc to compute the stack diff!
 static int
-patma_check(struct compiler *c, pattern_context pc, basicblock *target)
+patma_check(struct compiler *c, pattern_context pc, pattern_context pctarget, basicblock *target)
 {
+    // TODO: Does it matter if pc is unreachable?
+    pctarget.unreachable = false;
     Py_ssize_t pops = pc.on_top + PyList_GET_SIZE(pc.names);
     if (pops == 0) {
         ADDOP_JUMP(c, POP_JUMP_IF_FALSE, target);
@@ -5965,6 +5968,7 @@ patma_compile(struct compiler *c, pattern_context *pcs, Py_ssize_t npatterns,
     Py_ssize_t i = 0;
     Py_ssize_t j = npatterns;
     PATMA_GROUP_BEGIN(patterns[i]->kind == patterns[j]->kind);
+        pcs[i].unreachable = false;
         switch (patterns[i]->kind) {
             case MatchAs_kind:
                 // MatchAs(pattern? pattern, identifier? name)
@@ -6101,6 +6105,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         }
         pcs[i].on_top = 0;
         pcs[i].preserve = 1;
+        pcs[i].unreachable = i ? !asdl_seq_GET(s->v.Match.cases, i - 1)->guard : true;
         patterns[i] = asdl_seq_GET(s->v.Match.cases, i)->pattern;
         blocks[i] = compiler_new_block(c);
         starts[i] = blocks[i];
@@ -6120,6 +6125,14 @@ compiler_match(struct compiler *c, stmt_ty s)
     compiler_use_next_block(c, starts[0]);
     if (!patma_compile(c, pcs, npatterns, patterns, blocks)) {
         return 0;
+    }
+    for (Py_ssize_t i = 0; i < npatterns; i++) {
+        if (pcs[i].unreachable) {
+            SET_LOC(c, patterns[i]);
+            if (!compiler_warn(c, "pattern is unreachable")) {
+                return 0;
+            }
+        }
     }
     for (Py_ssize_t i = 0; i < npatterns; i++) {
         compiler_use_block(c, blocks[i]);
