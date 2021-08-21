@@ -13,7 +13,7 @@ extern "C" {
 #define DUP_TOP                   4
 #define DUP_TOP_TWO               5
 #define ROT_FOUR                  6
-#define ISINSTANCE                7
+#define IS_INSTANCE               7
 #define NOP                       9
 #define UNARY_POSITIVE           10
 #define UNARY_NEGATIVE           11

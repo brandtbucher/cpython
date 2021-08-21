@@ -935,16 +935,7 @@ static PyObject*
 match_class(PyThreadState *tstate, PyObject *subject, PyObject *type,
             Py_ssize_t nargs, PyObject *kwargs)
 {
-    if (!PyType_Check(type)) {
-        const char *e = "called match pattern must be a type";
-        _PyErr_Format(tstate, PyExc_TypeError, e);
-        return NULL;
-    }
     assert(PyTuple_CheckExact(kwargs));
-    // First, an isinstance check:
-    if (PyObject_IsInstance(subject, type) <= 0) {
-        return NULL;
-    }
     // So far so good:
     PyObject *seen = PySet_New(NULL);
     if (seen == NULL) {
@@ -4695,8 +4686,13 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(ISINSTANCE): {
+        TARGET(IS_INSTANCE): {
             // PUSH(isinstance(TOS1, TOS))
+            if (!PyType_Check(TOP())) {
+                const char *e = "called match pattern must be a type";
+                _PyErr_Format(tstate, PyExc_TypeError, e);
+                goto error;
+            }
             int isinstance = PyObject_IsInstance(SECOND(), TOP());
             if (isinstance < 0) {
                 goto error;
