@@ -5858,13 +5858,12 @@ compiler_slice(struct compiler *c, expr_ty s)
 #endif
 
 typedef struct {
-    PyObject *names;
     Py_ssize_t stacksize;
     basicblock *start;
     basicblock *block;
-    bool preserve;
-    bool is_preserved;
+    PyObject *names;
     bool reachable;
+    bool preserve;
 } pattern_context;
 
 static int
@@ -6220,14 +6219,16 @@ compiler_match(struct compiler *c, stmt_ty s)
         if (pcs[i].names == NULL) {
             return 0;
         }
+        // All these returning macros are a refcounting nightmare. Deallocating
+        // this list is the arena's problem now:
         if (_PyArena_AddPyObject(c->c_arena, pcs[i].names) < 0) {
             Py_DECREF(pcs[i].names);
             return 0;
         }
+        patterns[i] = i < npatterns ? asdl_seq_GET(s->v.Match.cases, i)->pattern : NULL;
         pcs[i].stacksize = (i == 0) || (i < npatterns - has_default);
         pcs[i].preserve = i < npatterns - has_default - 1;
         pcs[i].reachable = i == 0;
-        patterns[i] = i < npatterns ? asdl_seq_GET(s->v.Match.cases, i)->pattern : NULL;
         pcs[i].block = compiler_new_block(c);
         pcs[i].start = pcs[i].block;
         if (pcs[i].block  == NULL) {
