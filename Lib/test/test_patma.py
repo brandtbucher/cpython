@@ -2712,12 +2712,12 @@ class TestSyntaxErrors(unittest.TestCase):
                 pass
         """)
 
-    # def test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {f"": _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {f"": _}:
+                pass
+        """)
 
     def test_multiple_assignments_to_name_in_pattern_0(self):
         self.assert_syntax_error("""
@@ -2782,14 +2782,14 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_name_capture_makes_remaining_patterns_unreachable_1(self):
-    #     self.assert_syntax_error("""
-    #     match 42:
-    #         case x:
-    #             pass
-    #         case y:
-    #             pass
-    #     """)
+    def test_name_capture_makes_remaining_patterns_unreachable_1(self):
+        self.assert_syntax_error("""
+        match 42:
+            case x:
+                pass
+            case y:
+                pass
+        """)
 
     # def test_name_capture_makes_remaining_patterns_unreachable_2(self):
     #     self.assert_syntax_error("""
@@ -2798,23 +2798,23 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_name_capture_makes_remaining_patterns_unreachable_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case x:
-    #             pass
-    #         case [x] if x:
-    #             pass
-    #     """)
+    def test_name_capture_makes_remaining_patterns_unreachable_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case x:
+                pass
+            case [x] if x:
+                pass
+        """)
 
-    # def test_name_capture_makes_remaining_patterns_unreachable_4(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case x:
-    #             pass
-    #         case _:
-    #             pass
-    #     """)
+    def test_name_capture_makes_remaining_patterns_unreachable_4(self):
+        self.assert_syntax_error("""
+        match ...:
+            case x:
+                pass
+            case _:
+                pass
+        """)
 
     # def test_patterns_may_only_match_literals_and_attribute_lookups_0(self):
     #     self.assert_syntax_error("""
@@ -2879,14 +2879,14 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_wildcard_makes_remaining_patterns_unreachable_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case _:
-    #             pass
-    #         case None:
-    #             pass
-    #     """)
+    def test_wildcard_makes_remaining_patterns_unreachable_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case _:
+                pass
+            case None:
+                pass
+        """)
 
     # def test_wildcard_makes_remaining_patterns_unreachable_4(self):
     #     self.assert_syntax_error("""
@@ -2902,40 +2902,40 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_mapping_pattern_duplicate_key(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {"a": _, "a": _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {"a": _, "a": _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, False: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, False: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, 0.0: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, 0.0: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_2(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, -0: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_2(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, -0: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, 0j: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, 0j: _}:
+                pass
+        """)
 
 # class TestTypeErrors(unittest.TestCase):
 
