@@ -1799,24 +1799,24 @@ class TestPatma(unittest.TestCase):
     #     self.assertIs(http_error("400"), None)
     #     self.assertIs(http_error(401 | 403 | 404), None)  # 407
 
-    # def test_patma_176(self):
-    #     def whereis(point):
-    #         match point:
-    #             case (0, 0):
-    #                 return "Origin"
-    #             case (0, y):
-    #                 return f"Y={y}"
-    #             case (x, 0):
-    #                 return f"X={x}"
-    #             case (x, y):
-    #                 return f"X={x}, Y={y}"
-    #             case _:
-    #                 return "Not a point"
-    #     self.assertEqual(whereis((0, 0)), "Origin")
-    #     self.assertEqual(whereis((0, -1.0)), "Y=-1.0")
-    #     self.assertEqual(whereis(("X", 0)), "X=X")
-    #     self.assertEqual(whereis((None, 1j)), "X=None, Y=1j")
-    #     self.assertEqual(whereis(42), "Not a point")
+    def test_patma_176(self):
+        def whereis(point):
+            match point:
+                case (0, 0):
+                    return "Origin"
+                case (0, y):
+                    return f"Y={y}"
+                case (x, 0):
+                    return f"X={x}"
+                case (x, y):
+                    return f"X={x}, Y={y}"
+                case _:
+                    return "Not a point"
+        self.assertEqual(whereis((0, 0)), "Origin")
+        self.assertEqual(whereis((0, -1.0)), "Y=-1.0")
+        self.assertEqual(whereis(("X", 0)), "X=X")
+        self.assertEqual(whereis((None, 1j)), "X=None, Y=1j")
+        self.assertEqual(whereis(42), "Not a point")
 
 #     def test_patma_177(self):
 #         def whereis(point):

@@ -5795,8 +5795,6 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 // PEP 634: Structural Pattern Matching ////////////////////////////////////////
 
-// TODO: Solve stack size discrepancies between jumps.
-
 #define PATMA_OPTIMIZE
 
 // TODO: This madness deserves an explanation:
@@ -5874,21 +5872,25 @@ patma_check(struct compiler *c, pattern_context pcs[], Py_ssize_t i,
         pcs[j].reachable = true;
     }
     basicblock *target;
-    Py_ssize_t pops;
+    Py_ssize_t stack_pops;
+    Py_ssize_t names_pops;
     if (guard) {
         // We intentionally jump to the *very* start of the next pattern, since
         // the guard's arbitrary code execution essentially invalidates any
         // useful information we've learned about the subject.
         target = pcs[j].start;
-        pops = 0;
+        stack_pops = 0;
+        names_pops = 0;
     }
     else {
         target = pcs[j].block; 
-        pops = pcs[i].stacksize - pcs[j].stacksize;
+        stack_pops = pcs[i].stacksize - pcs[j].stacksize;
+        names_pops = PyList_GET_SIZE(pcs[i].names) - PyList_GET_SIZE(pcs[j].names);
     }
-    // printf("%d: %ld (%ld) -> %ld (%ld) | %ld\n", c->u->u_lineno, i, pcs[i].stacksize, j, pcs[j].stacksize, pops);
-    assert(0 <= pops);
-    if (pops == 0) {
+    // printf("%d: %ld (%ld %ld) -> %ld (%ld %ld) | %ld %ld\n", c->u->u_lineno, i, pcs[i].stacksize, PyList_GET_SIZE(pcs[i].names), j, pcs[j].stacksize, PyList_GET_SIZE(pcs[j].names), stack_pops, names_pops);
+    assert(0 <= stack_pops);
+    assert(0 <= names_pops);
+    if (stack_pops + names_pops == 0) {
         ADDOP_JUMP(c, POP_JUMP_IF_FALSE, target);
         PATMA_NEXT_BLOCK;
         return 1;
@@ -5899,12 +5901,19 @@ patma_check(struct compiler *c, pattern_context pcs[], Py_ssize_t i,
     }
     ADDOP_JUMP(c, POP_JUMP_IF_TRUE, end);
     PATMA_NEXT_BLOCK;
-    while (pops--) {
+    while (stack_pops--) {
+        ADDOP(c, POP_TOP);
+    }
+    Py_ssize_t rots = pcs[j].stacksize;
+    while (rots--) {
+        ADDOP_I(c, ROT_N, PyList_GET_SIZE(pcs[i].names) + pcs[j].stacksize);
+    }
+    while (names_pops--) {
         ADDOP(c, POP_TOP);
     }
     ADDOP_JUMP(c, JUMP_FORWARD, target);
     compiler_use_next_block(c, end);
-    PATMA_NEXT_BLOCK
+    PATMA_NEXT_BLOCK;
     return 1;
 }
 
@@ -5925,9 +5934,11 @@ patma_store_name(struct compiler *c, pattern_context *pc, PyObject *name)
         }
         if (pc->preserve) {
             ADDOP(c, DUP_TOP);
-            pc->stacksize++;
         }
-        ADDOP_I(c, ROT_N, pc->stacksize);
+        else {
+            pc->stacksize--;
+        }
+        ADDOP_I(c, ROT_N, pc->stacksize + 1);
     }
     else if (!pc->preserve) {
         ADDOP(c, POP_TOP);
@@ -5987,7 +5998,6 @@ patma_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
 //     return 1;
 // }
 
-// TODO: Need to make stacksize not include pc.stores (since they need to be popped separately on failure?)
 // TODO: Sequence length checks/unpacking.
 // Mapping pattern **rest.
 // TODO: Class patterns.
@@ -6176,6 +6186,18 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
             case MatchStar_kind:
                 // MatchStar(identifier? name)
                 PATMA_LOOP_BEGIN;
+                    // if (patterns[i]->v.MatchStar.name) {
+                    //     if (pcs[i].preserve) {
+                    //         ADDOP(c, DUP_TOP);
+                    //     }
+                    //     else {
+                    //         pcs[i].stacksize--;
+                    //     }
+                    // }
+                    // else if (!pcs[i].preserve) {
+                    //     ADDOP(c, POP_TOP);
+                    //     pcs[i].stacksize--;
+                    // }
                     if (!patma_store_name(c, &pcs[i], patterns[i]->v.MatchStar.name)) {
                         return 0;
                     }
@@ -6238,11 +6260,15 @@ compiler_match(struct compiler *c, stmt_ty s)
     for (Py_ssize_t i = 0; i < npatterns; i++) {
         compiler_use_block(c, pcs[i].block);
         SET_LOC(c, patterns[i]);
+        assert(pcs[i].stacksize == pcs[i].preserve);
         if (pcs[i].preserve) {
-            ADDOP_I(c, ROT_N, pcs[i].stacksize);
+            ADDOP_I(c, ROT_N, PyList_GET_SIZE(pcs[i].names) + 1);
         }
-        // Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
-        for (Py_ssize_t j = 0; j < PyList_GET_SIZE(pcs[i].names); j++) {
+        // TODO: Is it a problem that this binds names in reverse order? We
+        // would have to do more expensive rotations if so (or at least a
+        // BUILD_TUPLE/UNPACK_SEQUENCE pair).
+        Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
+        while (j--) {
             if (!compiler_nameop(c, PyList_GET_ITEM(pcs[i].names, j), Store)) {
                 return 0;
             }
@@ -6262,8 +6288,6 @@ compiler_match(struct compiler *c, stmt_ty s)
                 return 0;
             }
         }
-        // printf("%ld %ld %ld\n", pcs[i].stacksize, PyList_GET_SIZE(pcs[i].names), pcs[i].preserve);
-        assert(pcs[i].stacksize - PyList_GET_SIZE(pcs[i].names) == pcs[i].preserve);
         if (pcs[i].preserve) {
             ADDOP(c, POP_TOP);
         }
