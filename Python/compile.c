@@ -5987,16 +5987,12 @@ patma_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
 //     return 1;
 // }
 
-
 // TODO: Need to make stacksize not include pc.stores (since they need to be popped separately on failure?)
 // TODO: Sequence length checks/unpacking.
+// Mapping pattern **rest.
 // TODO: Class patterns.
 // TODO: Or-patterns!
 
-// static int
-// patma_compile_patterns(struct compiler *c, pattern_context pcs[],
-//                        Py_ssize_t npatterns, pattern_ty patterns[],
-//                        basicblock *blocks[]) {};
 
 // Compile several patterns in parallel, attempting to merge any contiguous
 // patterns with overlapping checks.
