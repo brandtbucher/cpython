@@ -5859,7 +5859,7 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 typedef struct {
     PyObject *names;
-    Py_ssize_t on_top;
+    Py_ssize_t stacksize;
     basicblock *start;
     basicblock *block;
     bool preserve;
@@ -5875,17 +5875,19 @@ patma_check(struct compiler *c, pattern_context pcs[], Py_ssize_t i,
         pcs[j].reachable = true;
     }
     basicblock *target;
-    Py_ssize_t pops = pcs[i].on_top - pcs[j].on_top;
+    Py_ssize_t pops;
     if (guard) {
         // We intentionally jump to the *very* start of the next pattern, since
         // the guard's arbitrary code execution essentially invalidates any
         // useful information we've learned about the subject.
         target = pcs[j].start;
+        pops = 0;
     }
     else {
         target = pcs[j].block; 
-        pops += PyList_GET_SIZE(pcs[i].names) - PyList_GET_SIZE(pcs[j].names);
+        pops = pcs[i].stacksize - pcs[j].stacksize;
     }
+    // printf("%d: %ld (%ld) -> %ld (%ld) | %ld\n", c->u->u_lineno, i, pcs[i].stacksize, j, pcs[j].stacksize, pops);
     assert(0 <= pops);
     if (pops == 0) {
         ADDOP_JUMP(c, POP_JUMP_IF_FALSE, target);
@@ -5908,10 +5910,10 @@ patma_check(struct compiler *c, pattern_context pcs[], Py_ssize_t i,
 }
 
 static int
-patma_store_name(struct compiler *c, pattern_context pc, PyObject *name)
+patma_store_name(struct compiler *c, pattern_context *pc, PyObject *name)
 {
     if (name) {
-        int in = PySequence_Contains(pc.names, name);
+        int in = PySequence_Contains(pc->names, name);
         if (in < 0) {
             return 0;
         }
@@ -5919,16 +5921,18 @@ patma_store_name(struct compiler *c, pattern_context pc, PyObject *name)
             const char *e = "multiple assignments to name %R in pattern";
             return compiler_error(c, e, name);
         }
-        if (PyList_Append(pc.names, name) < 0) {
+        if (PyList_Append(pc->names, name) < 0) {
             return 0;
         }
-        if (pc.preserve) {
+        if (pc->preserve) {
             ADDOP(c, DUP_TOP);
+            pc->stacksize++;
         }
-        ADDOP_I(c, ROT_N, pc.on_top + 1);
+        ADDOP_I(c, ROT_N, pc->stacksize);
     }
-    else if (!pc.preserve) {
+    else if (!pc->preserve) {
         ADDOP(c, POP_TOP);
+        pc->stacksize--;
     }
     return 1;
 }
@@ -5985,6 +5989,11 @@ patma_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
 // }
 
 
+// TODO: Need to make stacksize not include pc.stores (since they need to be popped separately on failure?)
+// TODO: Sequence length checks/unpacking.
+// TODO: Class patterns.
+// TODO: Or-patterns!
+
 // static int
 // patma_compile_patterns(struct compiler *c, pattern_context pcs[],
 //                        Py_ssize_t npatterns, pattern_ty patterns[],
@@ -6027,22 +6036,23 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                             sub_patterns[sub_npatterns] = patterns[i]->v.MatchAs.pattern;
                             sub_pcs[sub_npatterns] = pcs[i];
                             sub_pcs[sub_npatterns].preserve = 1;
-                            sub_pcs[sub_npatterns].on_top = 1;
                             sub_npatterns++;
                         PATMA_LOOP_END;
                         sub_pcs[sub_npatterns] = pcs[j];
-                        sub_pcs[sub_npatterns].preserve = 1;
+                        sub_pcs[sub_npatterns].preserve = 0;
                         assert(sub_npatterns == j - i);
                         if (!patma_compile_patterns(c, sub_pcs, sub_npatterns, sub_patterns)) {
                             return 0;
                         }
                         sub_npatterns = 0;
                         PATMA_LOOP_BEGIN;
-                            pcs[i].block = sub_pcs[sub_npatterns++].block;
+                            pcs[i].block = sub_pcs[sub_npatterns].block;
+                            pcs[i].stacksize = sub_pcs[sub_npatterns].stacksize;
+                            sub_npatterns++;
                         PATMA_LOOP_END;
                     }
                     PATMA_LOOP_BEGIN;
-                        if (!patma_store_name(c, pcs[i], patterns[i]->v.MatchAs.name)) {
+                        if (!patma_store_name(c, &pcs[i], patterns[i]->v.MatchAs.name)) {
                             return 0;
                         }
                     PATMA_LOOP_END;
@@ -6054,12 +6064,16 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                 PATMA_GROUP_BEGIN(patma_same_expr(patterns[i]->v.MatchClass.cls, patterns[j]->v.MatchClass.cls));
                     PATMA_LOOP_BEGIN;
                         VISIT(c, expr, patterns[i]->v.MatchClass.cls);
-                        pcs[i].on_top++;  // cls
+                        pcs[i].stacksize++;  // cls
                         ADDOP(c, IS_INSTANCE);
                     PATMA_LOOP_END_POP_JUMP_IF_FALSE;
                     PATMA_LOOP_BEGIN;  // XXX
                         ADDOP(c, POP_TOP);  // XXX
-                        pcs[i].on_top--;  // XXX
+                        pcs[i].stacksize--;  // XXX
+                        if (!pcs[i].preserve) {
+                            ADDOP(c, POP_TOP);
+                            pcs[i].stacksize--;
+                        }
                     PATMA_LOOP_END;  // XXX
                     // TODO
                 PATMA_GROUP_END;
@@ -6071,6 +6085,12 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                 PATMA_LOOP_END_POP_JUMP_IF_FALSE;
                 PATMA_GROUP_BEGIN(asdl_seq_LEN(patterns[i]->v.MatchMapping.keys) == asdl_seq_LEN(patterns[j]->v.MatchMapping.keys));
                     if (!asdl_seq_LEN(patterns[i]->v.MatchMapping.keys)) {
+                        PATMA_LOOP_BEGIN
+                            if (!pcs[i].preserve) {
+                                ADDOP(c, POP_TOP);
+                                pcs[i].stacksize--;
+                            }
+                        PATMA_LOOP_END;
                         continue;
                     }
                     PATMA_LOOP_BEGIN;
@@ -6083,24 +6103,29 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                             VISIT_SEQ(c, expr, patterns[i]->v.MatchMapping.keys);
                             ADDOP_I(c, BUILD_TUPLE, asdl_seq_LEN(patterns[i]->v.MatchMapping.keys));
                             ADDOP(c, MATCH_KEYS);
-                            pcs[i].on_top += 2;  // keys, values
+                            pcs[i].stacksize += 2;  // keys, values
                         PATMA_LOOP_END_POP_JUMP_IF_FALSE;
                         PATMA_LOOP_BEGIN;
+                            ADDOP_I(c, UNPACK_SEQUENCE, asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns));
+                            pcs[i].stacksize += asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns) - 1;  // *values
+                            // TODO: Implement and use patma_compile_pattern_seqs!
+                            pattern_context *sub_pcs = &pcs[i];
+                            bool preserve = pcs[i].preserve;
+                            pcs[i].preserve = 0;
+                            Py_ssize_t sub_npatterns = 1;
+                            for (Py_ssize_t k = 0; k < asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns); k++) {
+                                pattern_ty *sub_patterns = &asdl_seq_GET(patterns[i]->v.MatchMapping.patterns, k);
+                                if (!patma_compile_patterns(c, sub_pcs, sub_npatterns, sub_patterns)) {
+                                    return 0;
+                                }
+                            }
+                            pcs[i].preserve = preserve;
                             ADDOP(c, POP_TOP);  // XXX
-                            ADDOP(c, POP_TOP);  // XXX
-                            pcs[i].on_top -= 2;
-                            // ADDOP_I(c, UNPACK_SEQUENCE, asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns));
-                            // pcs[i].on_top += asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns) - 1;  // *values
-                            // // TODO: Implement and use patma_compile_pattern_seqs!
-                            // pattern_context *sub_pcs = &pcs[i];
-                            // Py_ssize_t sub_npatterns = 1;
-                            // for (Py_ssize_t k = 0; k < asdl_seq_LEN(patterns[i]->v.MatchMapping.patterns); k++) {
-                            //     pcs[i].on_top--;
-                            //     pattern_ty *sub_patterns = &asdl_seq_GET(patterns[i]->v.MatchMapping.patterns, k);
-                            //     if (!patma_compile_patterns(c, sub_pcs, sub_npatterns, sub_patterns)) {
-                            //         return 0;
-                            //     }
-                            // }
+                            pcs[i].stacksize--;  // XXX
+                            if (!pcs[i].preserve) {
+                                ADDOP(c, POP_TOP);
+                                pcs[i].stacksize--;
+                            }
                         PATMA_LOOP_END;
                     PATMA_GROUP_END;
                 PATMA_GROUP_END;
@@ -6114,12 +6139,29 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                 PATMA_LOOP_BEGIN;
                     ADDOP(c, MATCH_SEQUENCE);
                 PATMA_LOOP_END_POP_JUMP_IF_FALSE;
-                PATMA_LOOP_BEGIN;
-                    if (!pcs[i].preserve) {
-                        ADDOP(c, POP_TOP);
-                    }
-                PATMA_LOOP_END;
-                // TODO
+                // TODO: group by len
+                PATMA_GROUP_BEGIN(asdl_seq_LEN(patterns[i]->v.MatchSequence.patterns) == asdl_seq_LEN(patterns[j]->v.MatchSequence.patterns));
+                    PATMA_LOOP_BEGIN;
+                        if (pcs[i].preserve) {
+                            ADDOP(c, DUP_TOP);
+                            pcs[i].stacksize++;
+                        }
+                        ADDOP_I(c, UNPACK_SEQUENCE, asdl_seq_LEN(patterns[i]->v.MatchSequence.patterns));
+                        pcs[i].stacksize += asdl_seq_LEN(patterns[i]->v.MatchSequence.patterns) - 1;  // *values
+                        // TODO: Implement and use patma_compile_pattern_seqs!
+                        pattern_context *sub_pcs = &pcs[i];
+                        bool preserve = pcs[i].preserve;
+                        pcs[i].preserve = 0;
+                        Py_ssize_t sub_npatterns = 1;
+                        for (Py_ssize_t k = 0; k < asdl_seq_LEN(patterns[i]->v.MatchSequence.patterns); k++) {
+                            pattern_ty *sub_patterns = &asdl_seq_GET(patterns[i]->v.MatchSequence.patterns, k);
+                            if (!patma_compile_patterns(c, sub_pcs, sub_npatterns, sub_patterns)) {
+                                return 0;
+                            }
+                        }
+                        pcs[i].preserve = preserve;
+                    PATMA_LOOP_END;
+                PATMA_GROUP_END;
                 break;
             case MatchSingleton_kind:
                 // MatchSingleton(constant value)
@@ -6127,6 +6169,9 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                     PATMA_LOOP_BEGIN;
                         if (pcs[i].preserve) {
                             ADDOP(c, DUP_TOP);
+                        }
+                        else {
+                            pcs[i].stacksize--;
                         }
                         ADDOP_LOAD_CONST(c, patterns[i]->v.MatchSingleton.value);
                         ADDOP_COMPARE(c, Is);
@@ -6136,7 +6181,7 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
             case MatchStar_kind:
                 // MatchStar(identifier? name)
                 PATMA_LOOP_BEGIN;
-                    if (!patma_store_name(c, pcs[i], patterns[i]->v.MatchStar.name)) {
+                    if (!patma_store_name(c, &pcs[i], patterns[i]->v.MatchStar.name)) {
                         return 0;
                     }
                 PATMA_LOOP_END;
@@ -6147,6 +6192,9 @@ patma_compile_patterns(struct compiler *c, pattern_context pcs[],
                     PATMA_LOOP_BEGIN;
                         if (pcs[i].preserve) {
                             ADDOP(c, DUP_TOP);
+                        }
+                        else {
+                            pcs[i].stacksize--;
                         }
                         VISIT(c, expr, patterns[i]->v.MatchValue.value);
                         ADDOP_COMPARE(c, Eq);
@@ -6163,6 +6211,8 @@ compiler_match(struct compiler *c, stmt_ty s)
 {
     VISIT(c, expr, s->v.Match.subject);
     Py_ssize_t npatterns = asdl_seq_LEN(s->v.Match.cases);
+    pattern_ty last = asdl_seq_GET(s->v.Match.cases, npatterns - 1)->pattern;
+    bool has_default = (1 < npatterns && last->kind == MatchAs_kind && last->v.MatchAs.pattern == NULL && last->v.MatchAs.name == NULL);
     pattern_context pcs[npatterns+1];
     pattern_ty patterns[npatterns+1];
     for (Py_ssize_t i = 0; i < npatterns + 1; i++) {
@@ -6174,8 +6224,8 @@ compiler_match(struct compiler *c, stmt_ty s)
             Py_DECREF(pcs[i].names);
             return 0;
         }
-        pcs[i].on_top = i < npatterns;
-        pcs[i].preserve = i < npatterns;
+        pcs[i].stacksize = (i == 0) || (i < npatterns - has_default);
+        pcs[i].preserve = i < npatterns - has_default - 1;
         pcs[i].reachable = i == 0;
         patterns[i] = i < npatterns ? asdl_seq_GET(s->v.Match.cases, i)->pattern : NULL;
         pcs[i].block = compiler_new_block(c);
@@ -6185,17 +6235,17 @@ compiler_match(struct compiler *c, stmt_ty s)
         }
     }
     compiler_use_next_block(c, pcs[0].start);
-    if (!patma_compile_patterns(c, pcs, npatterns, patterns)) {
+    if (!patma_compile_patterns(c, pcs, npatterns - has_default, patterns)) {
         return 0;
     }
     for (Py_ssize_t i = 0; i < npatterns; i++) {
         compiler_use_block(c, pcs[i].block);
         SET_LOC(c, patterns[i]);
-        Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
         if (pcs[i].preserve) {
-            ADDOP_I(c, ROT_N, j + 1);
+            ADDOP_I(c, ROT_N, pcs[i].stacksize);
         }
-        while (j--) {
+        // Py_ssize_t j = PyList_GET_SIZE(pcs[i].names);
+        for (Py_ssize_t j = 0; j < PyList_GET_SIZE(pcs[i].names); j++) {
             if (!compiler_nameop(c, PyList_GET_ITEM(pcs[i].names, j), Store)) {
                 return 0;
             }
@@ -6209,12 +6259,14 @@ compiler_match(struct compiler *c, stmt_ty s)
             }
             PATMA_NEXT_BLOCK;
         }
+        SET_LOC(c, patterns[i]);
         if (!pcs[i].reachable) {
-            SET_LOC(c, patterns[i]);
             if (!compiler_warn(c, "pattern is unreachable")) {
                 return 0;
             }
         }
+        // printf("%ld %ld %ld\n", pcs[i].stacksize, PyList_GET_SIZE(pcs[i].names), pcs[i].preserve);
+        assert(pcs[i].stacksize - PyList_GET_SIZE(pcs[i].names) == pcs[i].preserve);
         if (pcs[i].preserve) {
             ADDOP(c, POP_TOP);
         }
