@@ -3987,25 +3987,23 @@ check_eval_breaker:
         }
 
         TARGET(MATCH_CLASS): {
-            // Pop TOS. On success, set TOS to True and TOS1 to a tuple of
-            // attributes. On failure, set TOS to False.
-            PyObject *names = POP();
-            PyObject *type = TOP();
-            PyObject *subject = SECOND();
+            // On success, set push True and set TOS to a tuple of attributes.
+            // On failure, push False.
+            PyObject *names = TOP();
+            PyObject *type = SECOND();
+            PyObject *subject = THIRD();
             assert(PyTuple_CheckExact(names));
             PyObject *attrs = match_class(tstate, subject, type, oparg, names);
-            Py_DECREF(names);
             if (attrs) {
                 // Success!
                 assert(PyTuple_CheckExact(attrs));
-                Py_DECREF(subject);
-                SET_SECOND(attrs);
+                Py_DECREF(names);
+                SET_TOP(attrs);
             }
             else if (_PyErr_Occurred(tstate)) {
                 goto error;
             }
-            Py_DECREF(type);
-            SET_TOP(PyBool_FromLong(!!attrs));
+            PUSH(PyBool_FromLong(!!attrs));
             DISPATCH();
         }
 
