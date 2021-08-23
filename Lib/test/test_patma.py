@@ -1929,18 +1929,18 @@ class TestPatma(unittest.TestCase):
                 y = 0
         self.assertEqual(y, 0)
 
-#     def test_patma_186(self):
-#         class Seq(collections.abc.Sequence):
-#             def __getitem__(self, i):
-#                 return i
-#             def __len__(self):
-#                 return 42
-#         match Seq():
-#             case [x, *_, y]:
-#                 z = 0
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 41)
-#         self.assertEqual(z, 0)
+    def test_patma_186(self):
+        class Seq(collections.abc.Sequence):
+            def __getitem__(self, i):
+                return i
+            def __len__(self):
+                return 42
+        match Seq():
+            case [x, *_, y]:
+                z = 0
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 41)
+        self.assertEqual(z, 0)
 
     def test_patma_187(self):
         w = range(10)
@@ -1975,35 +1975,35 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(z, 0)
         self.assertEqual(rest, list(range(2, 1000)))
 
-#     def test_patma_190(self):
-#         w = range(1 << 10)
-#         match w:
-#             case [x, y, *_]:
-#                 z = 0
-#         self.assertEqual(w, range(1 << 10))
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, 0)
+    def test_patma_190(self):
+        w = range(1 << 10)
+        match w:
+            case [x, y, *_]:
+                z = 0
+        self.assertEqual(w, range(1 << 10))
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 1)
+        self.assertEqual(z, 0)
 
-#     def test_patma_191(self):
-#         w = range(1 << 20)
-#         match w:
-#             case (x, y, *_):
-#                 z = 0
-#         self.assertEqual(w, range(1 << 20))
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, 0)
+    def test_patma_191(self):
+        w = range(1 << 20)
+        match w:
+            case (x, y, *_):
+                z = 0
+        self.assertEqual(w, range(1 << 20))
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 1)
+        self.assertEqual(z, 0)
 
-#     def test_patma_192(self):
-#         w = range(1 << 30)
-#         match w:
-#             case x, y, *_:
-#                 z = 0
-#         self.assertEqual(w, range(1 << 30))
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, 0)
+    def test_patma_192(self):
+        w = range(1 << 30)
+        match w:
+            case x, y, *_:
+                z = 0
+        self.assertEqual(w, range(1 << 30))
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 1)
+        self.assertEqual(z, 0)
 
     def test_patma_193(self):
         x = {"bandwidth": 0, "latency": 1}
@@ -2964,6 +2964,7 @@ class TestSyntaxErrors(unittest.TestCase):
             case {0: _, 0j: _}:
                 pass
         """)
+
 
 class TestTypeErrors(unittest.TestCase):
 

@@ -6033,6 +6033,7 @@ patma_sequence_unpack(asdl_pattern_seq *seq)
     return length;
 }
 
+// TODO: Change this to be no_star = 0, star = 1, star_wildcard = -1
 static Py_ssize_t
 patma_sequence_star(asdl_pattern_seq *seq)
 {
@@ -6293,6 +6294,17 @@ patma_compile_mapping(struct compiler *c, pattern_context pcs[],
     return 1;
 }
 
+// MatchOr(pattern* patterns)
+static int
+patma_compile_or(struct compiler *c, pattern_context pcs[],
+                 pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j)
+{
+    PATMA_LOOP_BEGIN;
+        // TODO
+    PATMA_LOOP_END;
+    return 1;
+}
+
 // MatchSequence(pattern* patterns)
 static int
 patma_compile_sequence(struct compiler *c, pattern_context pcs[],
@@ -6347,23 +6359,44 @@ patma_compile_sequence(struct compiler *c, pattern_context pcs[],
             patterns[i]->v.MatchSequence.patterns);
         PATMA_LOOP_BEGIN;
             // TODO: Implement and use patma_compile_pattern_seqs!
-            ADDOP(c, DUP_TOP);
-            if (0 <= unpack) {
-                ADDOP_I(c, UNPACK_SEQUENCE, unpack);
+            if (star) {
+                ADDOP(c, DUP_TOP);
+                if (0 <= unpack) {
+                    ADDOP_I(c, UNPACK_SEQUENCE, unpack);
+                }
+                else {
+                    ADDOP_I(c, UNPACK_EX, -(unpack + 1));
+                }
+                pcs[i].stacksize += npatterns;  // *values
             }
-            else {
-                ADDOP_I(c, UNPACK_EX, -(unpack + 1));
-            }
-            // TODO: Use indexing for star == 0.
-            pcs[i].stacksize += npatterns;  // *values
             pattern_context *sub_pcs = &pcs[i];
             bool preserve = pcs[i].preserve;
             bool allow_irrefutable = pcs[i].allow_irrefutable;
             pcs[i].preserve = 0;
             pcs[i].allow_irrefutable = 1;
+            bool seen_star = false;
             for (Py_ssize_t k = 0; k < npatterns; k++) {
                 pattern_ty *sub_patterns = &asdl_seq_GET(
                     patterns[i]->v.MatchSequence.patterns, k);
+                if (!star) {
+                    if (sub_patterns[0]->kind == MatchStar_kind) {
+                        assert(sub_patterns[0]->v.MatchStar.name == NULL);
+                        assert(!seen_star);
+                        seen_star = true;
+                        continue;
+                    }
+                    ADDOP(c, DUP_TOP);
+                    if (seen_star) {
+                        ADDOP(c, GET_LEN);
+                        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(npatterns - k));
+                        ADDOP(c, BINARY_SUBTRACT);
+                    }
+                    else {
+                        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(k));
+                    }
+                    ADDOP(c, BINARY_SUBSCR);
+                    pcs[i].stacksize++;
+                }
                 if (!patma_compile(c, sub_pcs, sub_patterns, 0, 1)) {
                     return 0;
                 }
@@ -6474,8 +6507,7 @@ patma_compile(struct compiler *c, pattern_context pcs[],
                 f = patma_compile_mapping;
                 break;
             case MatchOr_kind:
-                // MatchOr(pattern* patterns)
-                Py_UNREACHABLE();  // TODO
+                f = patma_compile_or;
                 break;
             case MatchSequence_kind:
                 f = patma_compile_sequence;
