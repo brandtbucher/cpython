@@ -6103,12 +6103,12 @@ patma_compile_class(struct compiler *c, pattern_context pcs[],
                 patterns[i]->v.MatchClass.kwd_attrs);
             if (!nargs && !nkwargs) {
                 PATMA_LOOP_BEGIN;
-                ADDOP(c, POP_TOP);
-                pcs[i].stacksize--;
-                if (!pcs[i].preserve) {
                     ADDOP(c, POP_TOP);
                     pcs[i].stacksize--;
-                }
+                    if (!pcs[i].preserve) {
+                        ADDOP(c, POP_TOP);
+                        pcs[i].stacksize--;
+                    }
                 PATMA_LOOP_END;
                 continue;
             }
@@ -6299,9 +6299,65 @@ static int
 patma_compile_or(struct compiler *c, pattern_context pcs[],
                  pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j)
 {
+    Py_ssize_t npatterns = 0;
+    for (Py_ssize_t k = i; k < j; k++) {
+        npatterns += asdl_seq_LEN(patterns[k]->v.MatchOr.patterns);
+    }
+    pattern_ty sub_patterns[npatterns];
+    pattern_context sub_pcs[npatterns + 1];
+    npatterns = 0;
     PATMA_LOOP_BEGIN;
-        // TODO
+        Py_ssize_t nalts = asdl_seq_LEN(patterns[i]->v.MatchOr.patterns);
+        for (Py_ssize_t k = 0; k < nalts; k++) {
+            sub_patterns[npatterns] = asdl_seq_GET(
+                patterns[i]->v.MatchOr.patterns, k);
+            sub_pcs[npatterns] = pcs[i];
+            sub_pcs[npatterns].preserve = 1;
+            sub_pcs[npatterns].allow_irrefutable &= k == nalts - 1;
+            sub_pcs[npatterns].reachable = k == 0;
+            sub_pcs[npatterns].block = compiler_new_block(c);
+            sub_pcs[npatterns].start = sub_pcs[npatterns].block;
+            if (sub_pcs[npatterns].block == NULL) {
+                return 0;
+            }
+            npatterns++;
+        }
     PATMA_LOOP_END;
+    sub_pcs[npatterns] = pcs[j];
+    // if (!patma_compile(c, sub_pcs, sub_patterns, 0, npatterns)) {
+    //     return 0;
+    // }
+    compiler_use_block(c, pcs[0].block);
+    ADDOP_JUMP(c, JUMP_ABSOLUTE, sub_pcs[0].start);
+    pcs[0].block = compiler_new_block(c);
+    for (Py_ssize_t k = 0; k < npatterns; k++) {
+        compiler_use_block(c , sub_pcs[k].block);
+        ADDOP_JUMP(c, JUMP_ABSOLUTE, pcs[0].block);
+    }
+    compiler_use_block(c, pcs[0].block);
+    if (!pcs[0].preserve) {
+        ADDOP(c, POP_TOP);
+        pcs[0].stacksize--;
+    }
+
+
+    // PATMA_LOOP_BEGIN;
+    //     ADDOP_JUMP(c, JUMP_ABSOLUTE, sub_pcs[npatterns].start);
+    //     // compiler_use_next_block(c, sub_pcs[npatterns].start);
+    //     PATMA_NEXT_BLOCK;
+    //     Py_ssize_t nalts = asdl_seq_LEN(patterns[i]->v.MatchOr.patterns);
+    //     for (Py_ssize_t k = 0; k < nalts; k++) {
+    //         compiler_use_block(c, sub_pcs[npatterns++].block);
+    //         ADDOP_JUMP(c, JUMP_ABSOLUTE, pcs[i].block);  // XXX: JUMP_FORWARD
+    //     }
+    //     if (!pcs[i].preserve) {
+    //         compiler_use_block(c, pcs[i].block);
+    //         ADDOP(c, POP_TOP);
+    //         pcs[i].stacksize--;
+    //     }
+    // PATMA_LOOP_END;
+    // TODO: Shuffle names.
+    // TODO: Check reachability
     return 1;
 }
 
