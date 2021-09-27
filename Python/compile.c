@@ -5794,6 +5794,8 @@ compiler_slice(struct compiler *c, expr_ty s)
 }
 
 // The Structural Pattern Matching (or "SPaM") Compiler ////////////////////////
+// Detailed description goes here...
+////////////////////////////////////////////////////////////////////////////////
 
 #define SPM_OPTIMIZE true
 
@@ -6133,7 +6135,7 @@ spm_compile_class(struct compiler *c, spm_context scs[], pattern_ty patterns[],
                 scs[i].stacksize++;  // values
             SPM_LOOP_END_POP_JUMP_IF_FALSE;
             SPM_LOOP_BEGIN;
-                // TODO: Implement and use spm_compile_pattern_seqs!;
+                // TODO: Implement and use spm_compile_pattern_seqs!
                 ADDOP(c, DUP_TOP);
                 ADDOP_I(c, UNPACK_SEQUENCE, nargs + nkwargs);
                 scs[i].stacksize += nargs + nkwargs;
@@ -6333,12 +6335,14 @@ spm_compile_or(struct compiler *c, spm_context scs[], pattern_ty patterns[],
     scs[0].block = compiler_new_block(c);
     for (Py_ssize_t k = 0; k < npatterns; k++) {
         compiler_use_block(c , sub_scs[k].block);
-        ADDOP_JUMP(c, JUMP_ABSOLUTE, scs[0].block);
-    }
-    compiler_use_block(c, scs[0].block);
-    if (!scs[0].preserve) {
+        ADDOP_LOAD_CONST_NEW(c, Py_None);
         ADDOP(c, POP_TOP);
-        scs[0].stacksize--;
+        ADDOP_JUMP(c, JUMP_ABSOLUTE, scs[j].block);
+    }
+    compiler_use_block(c, scs[j].block);
+    if (!scs[j].preserve) {
+        ADDOP(c, POP_TOP);
+        scs[j].stacksize--;
     }
 
 
