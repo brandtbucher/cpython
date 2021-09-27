@@ -2642,6 +2642,19 @@ class TestPatma(unittest.TestCase):
 #         self.assertEqual(f((False, range(10, 20), True)), alts[4])
 
     def test_patma_248(self):
+        class C(dict):
+            @staticmethod
+            def get(key, default=None):
+                return 'bar'
+
+        x = C({'foo': 'bar'})
+        match x:
+            case {'foo': bar}:
+                y = bar
+
+        self.assertEqual(y, 'bar')
+
+    def test_patma_249(self):
         x = {0: 1, 2: 3}
         match x:
             case {0: 1, 2: 1}:
@@ -2652,10 +2665,10 @@ class TestPatma(unittest.TestCase):
                 y = 2
             case {}:
                 y = 3
-        self.assertEqual(x, {0: 0})
+        self.assertEqual(x, {0: 1, 2: 3})
         self.assertEqual(y, 2)
 
-    def test_patma_248(self):
+    def test_patma_250(self):
         x = Point(0, 1)
         match x:
             case Point(0, 0):
@@ -2668,7 +2681,7 @@ class TestPatma(unittest.TestCase):
                 y = 3
         self.assertEqual(x, Point(0, 1))
         self.assertEqual(y, 2)
-        
+
 
 class TestSyntaxErrors(unittest.TestCase):
 
