@@ -5803,205 +5803,185 @@ compiler_slice(struct compiler *c, expr_ty s)
 // Detailed description goes here...
 ////////////////////////////////////////////////////////////////////////////////
 
+// XXX: Revert to 1fa0207d4a56513cfe2028f90169b2f921ebbd73 if this doesn't work!
+
 #define SPM_OPTIMIZE true
 
-#define SPM_GROUP_BEGIN(TEST)                      \
-    {                                              \
-        assert(i < j);                             \
-        const Py_ssize_t _j = j;                   \
-        for (Py_ssize_t j = i; i < _j; i = j) {    \
-            while (++j < _j) {                     \
-                {                                  \
-                    const Py_ssize_t i = j;        \
-                    assert(TEST);                  \
-                }                                  \
-                int _in_group = (TEST);            \
-                if (_in_group < 0) {               \
-                    return 0;                      \
-                }                                  \
-                if (!SPM_OPTIMIZE || !_in_group) { \
-                    break;                         \
-                }                                  \
+// TODO: Update these for linked-list patterns.
+// TODO: Break off groups!
+#define SPM_GROUP_BEGIN(TEST)                                                  \
+    {                                                                          \
+        while (n) {                                                            \
+            pattern_ty p;                                                      \
+            pattern_ty q;                                                      \
+            while (n->next) {                                                  \
+                p = n->subpatterns->pattern;                                   \
+                /* Sanity check: a pattern should always group with itself! */ \
+                q = p;                                                         \
+                assert((TEST));                                                \
+                assert(n->next->subpatterns);                                  \
+                q = n->next->subpatterns->pattern;                             \
+                /* TEST is always evaluated, even if we're not optimizing: */  \
+                int _in_group = (TEST);                                        \
+                if (_in_group < 0) {                                           \
+                    return 0;                                                  \
+                }                                                              \
+                if (!SPM_OPTIMIZE || !_in_group) {                             \
+                    break;                                                     \
+                }                                                              \
+                n = n->next;                                                   \
             }
 
 #define SPM_GROUP_END \
         }             \
     }
 
-#define SPM_LOOP_BEGIN                           \
-    {                                            \
-        const Py_ssize_t _i = i;                 \
-        for (Py_ssize_t i = _i; i < j; i++) {    \
-            SET_LOC(c, patterns[i]);             \
-            compiler_use_block(c, scs[i].block);
+#define SPM_LOOP_BEGIN                                   \
+    {                                                    \
+        spm_node_pattern *_n = n;                        \
+        for (spm_node_pattern *n = _n; n; n = n->next) { \
+            assert(n->subpatterns);                      \
+            SET_LOC(c, n->subpatterns->pattern);         \
+            compiler_use_block(c, n->block_tail);        \
 
 #define SPM_LOOP_END_POP_JUMP_IF_FALSE         \
-        if (!spm_check(c, scs, i, j, false)) { \
+        /* TODO: spm_check! */                 \
+        if (!spm_check(c, n)) { \
             return 0;                          \
         }                                      \
         SPM_NEXT_BLOCK;                        \
     SPM_LOOP_END;
 
-#define SPM_NEXT_BLOCK                     \
-    scs[i].block = compiler_next_block(c); \
-    if (scs[i].block == NULL) {            \
-        return 0;                          \
+#define SPM_NEXT_BLOCK                      \
+    n->block_tail = compiler_next_block(c); \
+    if (n->block_tail == NULL) {            \
+        return 0;                           \
     }
 
 #define SPM_LOOP_END \
         }            \
     }
 
-typedef struct {
-    basicblock *start;
-    basicblock *block;
-    PyObject *names;
-    Py_ssize_t stacksize;
-    bool allow_irrefutable;
-    bool reachable;
-    bool preserve;
-} spm_context;
+// typedef struct {
+//     basicblock *start;
+//     basicblock *block;
+//     PyObject *names;
+//     Py_ssize_t stacksize;
+//     bool allow_irrefutable;
+//     bool reachable;
+//     bool preserve;
+// } spm_context;
 
-typedef int spm_compiler(struct compiler *c, spm_context scs[],
-                         pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j);
+// // Compile several patterns in parallel, attempting to merge any contiguous
+// // patterns with overlapping checks.
+// //
+// // The core idea is pretty simple, but the getting the control-flow right can be
+// // a bit tricky: for contiguous overlapping patterns i-j (where j is the first
+// // "different" pattern), we compile each pattern as normal, but jump to j in all
+// // failure cases (rather than just to the next pattern).
+// //
+// // This isn't just for totally identical patterns. For example, if we have a
+// // bunch of different sequence patterns, we can still jump to j when failing the
+// // first MATCH_SEQUENCE check, and jump *after* it in the next pattern if any
+// // sub-patterns fail.
+// //
+// // It's important, though, that every part of each pattern actually gets
+// // compiled, since failing guards need to start from scratch at the next
+// // pattern. It's much easier to just rely on the assembler to eliminate any dead
+// // code during reachability analysis.
+
+typedef struct spm_node_subpattern spm_node_subpattern;
+
+struct spm_node_subpattern {
+    spm_node_subpattern *next;
+    pattern_ty pattern;
+};
+
+typedef struct spm_node_pattern spm_node_pattern;
+
+struct spm_node_pattern {
+    spm_node_subpattern *subpatterns;
+    spm_node_pattern *next;
+    basicblock *block_tail;
+    basicblock *block_body;
+    Py_ssize_t stacksize;
+    bool preserve;
+};
+
+typedef int spm_compiler(struct compiler *c, spm_node_pattern *n);
 
 static spm_compiler spm_compile;
 
-static int
-spm_check(struct compiler *c, spm_context scs[], Py_ssize_t i, Py_ssize_t j,
-          bool guard)
+static spm_node_pattern *
+spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty pattern)
 {
-    if (scs[i].reachable) {
-        scs[j].reachable = true;
+    spm_node_pattern *n = _PyArena_Malloc(c->c_arena, sizeof(spm_node_pattern));
+    if (n == NULL) {
+        return NULL;
     }
-    basicblock *target;
-    Py_ssize_t stack_pops;
-    Py_ssize_t names_pops;
-    if (guard) {
-        // We intentionally jump to the *very* start of the next pattern, since
-        // the guard's arbitrary code execution essentially invalidates any
-        // useful information we've learned about the subject.
-        target = scs[j].start;
-        stack_pops = 0;
-        names_pops = 0;
+    if (pattern) {
+        n->subpatterns = _PyArena_Malloc(c->c_arena, sizeof(spm_node_subpattern));
+        if (n->subpatterns == NULL) {
+            return NULL;
+        }
+        n->subpatterns->next = NULL;
+        n->subpatterns->pattern = pattern;
     }
     else {
-        target = scs[j].block; 
-        stack_pops = scs[i].stacksize - scs[j].stacksize;
-        names_pops = PyList_GET_SIZE(scs[i].names) - 
-                     PyList_GET_SIZE(scs[j].names);
+        n->subpatterns = NULL;
     }
-    // printf("%d: %ld (%ld %ld) -> %ld (%ld %ld) | %ld %ld\n", c->u->u_lineno,
-    //        i, scs[i].stacksize, PyList_GET_SIZE(scs[i].names),
-    //        j, scs[j].stacksize, PyList_GET_SIZE(scs[j].names),
-    //        stack_pops, names_pops);
-    assert(0 <= stack_pops);
-    assert(0 <= names_pops);
-    if (stack_pops + names_pops == 0) {
-        ADDOP_JUMP(c, POP_JUMP_IF_FALSE, target);
-        SPM_NEXT_BLOCK;
-        return 1;
+    n->next = next;
+    n->block_tail = compiler_new_block(c);
+    if (n->block_tail == NULL) {
+        return NULL;
     }
-    basicblock *end = compiler_new_block(c);
-    if (end == NULL) {
-        return 0;
+    n->block_body = compiler_new_block(c);
+    if (n->block_body == NULL) {
+        return NULL;
     }
-    ADDOP_JUMP(c, POP_JUMP_IF_TRUE, end);
-    SPM_NEXT_BLOCK;
-    while (stack_pops--) {
-        ADDOP(c, POP_TOP);
-    }
-    Py_ssize_t rots = scs[j].stacksize;
-    while (rots--) {
-        ADDOP_I(c, ROT_N, PyList_GET_SIZE(scs[i].names) + scs[j].stacksize);
-    }
-    while (names_pops--) {
-        ADDOP(c, POP_TOP);
-    }
-    ADDOP_JUMP(c, JUMP_FORWARD, target);
-    compiler_use_next_block(c, end);
-    SPM_NEXT_BLOCK;
-    return 1;
-}
-
-static int
-spm_store_name(struct compiler *c, spm_context *sc, PyObject *name)
-{
-    if (!sc->allow_irrefutable) {
-        const char *m = "makes remaining patterns unreachable (consider "
-                        "reordering)";
-        if (name) {
-            return compiler_error(c, "name capture %R %s", name, m);
-        }
-        return compiler_error(c, "wildcard '_' %s", m);
-    }
-    if (name) {
-        int in = PySequence_Contains(sc->names, name);
-        if (in < 0) {
-            return 0;
-        }
-        if (in) {
-            const char *e = "multiple assignments to name %R in pattern";
-            return compiler_error(c, e, name);
-        }
-        if (PyList_Append(sc->names, name) < 0) {
-            return 0;
-        }
-        if (sc->preserve) {
-            ADDOP(c, DUP_TOP);
-        }
-        else {
-            sc->stacksize--;
-        }
-        ADDOP_I(c, ROT_N, sc->stacksize + 1);
-    }
-    else if (!sc->preserve) {
-        ADDOP(c, POP_TOP);
-        sc->stacksize--;
-    }
-    return 1;
+    n->stacksize = 1;
+    n->preserve = true;
+    return n;
 }
 
 // Compare two (limited) expr nodes for syntactic equality.
 static int
-spm_same_expr(expr_ty a, expr_ty b)
+spm_same_expr(expr_ty p, expr_ty q)
 {
-    if (a->kind != b->kind) {
+    if (p->kind != q->kind) {
         return 0;
     }
-    if (a->kind == Constant_kind) {
-        return PyObject_RichCompareBool(a->v.Constant.value,
-                                        b->v.Constant.value, Py_EQ);
+    if (p->kind == Constant_kind) {
+        return PyObject_RichCompareBool(p->v.Constant.value, q->v.Constant.value, Py_EQ);
     }
-    if (a->kind == Attribute_kind) {
-        while (a->kind == Attribute_kind && b->kind == Attribute_kind) {
-            int eq = PyObject_RichCompareBool(a->v.Attribute.attr,
-                                              b->v.Attribute.attr, Py_EQ);
+    if (p->kind == Attribute_kind) {
+        while (p->kind == Attribute_kind && q->kind == Attribute_kind) {
+            int eq = PyObject_RichCompareBool(p->v.Attribute.attr, q->v.Attribute.attr, Py_EQ);
             if (eq <= 0) {
                 return eq;
             }
-            a = a->v.Attribute.value;
-            b = b->v.Attribute.value;
+            p = p->v.Attribute.value;
+            q = q->v.Attribute.value;
         }
-        if (a->kind != Name_kind || b->kind != Name_kind) {
+        if (p->kind != Name_kind || q->kind != Name_kind) {
             return 0;
         }
     }
-    if (a->kind == Name_kind) {
-        return PyObject_RichCompareBool(a->v.Name.id, b->v.Name.id, Py_EQ);
+    if (p->kind == Name_kind) {
+        return PyObject_RichCompareBool(p->v.Name.id, q->v.Name.id, Py_EQ);
     }
     return 0;
 }
 
 // Compare two sequences of (limited) expr nodes for syntactic equality.
 static int
-spm_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
+spm_same_exprs(asdl_expr_seq *ps, asdl_expr_seq *qs)
 {
-    if (asdl_seq_LEN(as) != asdl_seq_LEN(bs)) {
+    if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
         return 0;
     }
-    for (Py_ssize_t i = 0; i < asdl_seq_LEN(as); i++) {
-        int same = spm_same_expr(asdl_seq_GET(as, i), asdl_seq_GET(bs, i));
+    for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
+        int same = spm_same_expr(asdl_seq_GET(ps, i), asdl_seq_GET(qs, i));
         if (same <= 0) {
             return same;
         }
@@ -6011,14 +5991,13 @@ spm_same_exprs(asdl_expr_seq *as, asdl_expr_seq *bs)
 
 // Compare two sequences of identifiers for equality.
 static int
-spm_same_identifiers(asdl_identifier_seq *as, asdl_identifier_seq *bs)
+spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
 {
-    if (asdl_seq_LEN(as) != asdl_seq_LEN(bs)) {
+    if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
         return 0;
     }
-    for (Py_ssize_t i = 0; i < asdl_seq_LEN(as); i++) {
-        int eq = PyObject_RichCompareBool(asdl_seq_GET(as, i),
-                                          asdl_seq_GET(bs, i), Py_EQ);
+    for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
+        int eq = PyObject_RichCompareBool(asdl_seq_GET(ps, i), asdl_seq_GET(qs, i), Py_EQ);
         if (eq <= 0) {
             return eq;
         }
@@ -6026,573 +6005,169 @@ spm_same_identifiers(asdl_identifier_seq *as, asdl_identifier_seq *bs)
     return 1;
 }
 
-// TODO: ...
-static Py_ssize_t
-spm_sequence_unpack(asdl_pattern_seq *seq)
-{
-    Py_ssize_t length = asdl_seq_LEN(seq);
-    for (Py_ssize_t i = 0; i < length; i++) {
-        if (asdl_seq_GET(seq, i)->kind == MatchStar_kind) {
-            // TODO: Raise if these aren't true:
-            assert(i < (1 << 8));
-            assert(length - i - 1 < (INT_MAX >> 8));
-            return -(i + ((length - i - 1) << 8)) - 1;
-        }
-    }
-    return length;
-}
-
-// TODO: Change this to be no_star = 0, star = 1, star_wildcard = -1
-static Py_ssize_t
-spm_sequence_star(asdl_pattern_seq *seq)
-{
-    Py_ssize_t length = asdl_seq_LEN(seq);
-    for (Py_ssize_t i = 0; i < length; i++) {
-        if (asdl_seq_GET(seq, i)->kind == MatchStar_kind) {
-            return !!asdl_seq_GET(seq, i)->v.MatchStar.name;
-        }
-    }
-    return -1;
-}
-
-// MatchAs(pattern? pattern, identifier? name)
 static int
-spm_compile_as(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-               Py_ssize_t i, Py_ssize_t j)
+spm_expand_or(struct compiler *c, spm_node_pattern *n)
 {
-    SPM_GROUP_BEGIN(!patterns[i]->v.MatchAs.pattern == 
-                      !patterns[j]->v.MatchAs.pattern)
-        if (patterns[i]->v.MatchAs.pattern) {
-            pattern_ty sub_patterns[j - i];
-            spm_context sub_scs[j - i + 1];
-            for (Py_ssize_t ix = i; ix < j; ix++) {
-                sub_patterns[ix - i] = patterns[ix]->v.MatchAs.pattern;
-                sub_scs[ix - i] = scs[ix];
-                sub_scs[ix - i].preserve = 1;
-            }
-            sub_scs[j - i] = scs[j];
-            sub_scs[j - i].preserve = 0;
-            if (!spm_compile(c, sub_scs, sub_patterns, 0, j - i)) {
-                return 0;
-            }
-            for (Py_ssize_t ix = i; ix < j; ix++) {
-                scs[ix].block = sub_scs[ix - i].block;
-                scs[ix].stacksize = sub_scs[ix - i].stacksize;
-            }
-        }
-        SPM_LOOP_BEGIN;
-            if (!spm_store_name(c, &scs[i], patterns[i]->v.MatchAs.name)) {
-                return 0;
-            }
-        SPM_LOOP_END;
-    SPM_GROUP_END;
-    return 1;        
-}
-
-// MatchClass(expr cls, pattern* patterns, identifier* kwd_attrs,
-//            pattern* kwd_patterns)
-static int
-spm_compile_class(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-                  Py_ssize_t i, Py_ssize_t j)
-{
-    SPM_GROUP_BEGIN(spm_same_expr(patterns[i]->v.MatchClass.cls,
-                                  patterns[j]->v.MatchClass.cls));
-        SPM_LOOP_BEGIN;
-            VISIT(c, expr, patterns[i]->v.MatchClass.cls);
-            scs[i].stacksize++;  // cls
-            ADDOP(c, IS_INSTANCE);
-        SPM_LOOP_END_POP_JUMP_IF_FALSE;
-        SPM_GROUP_BEGIN(asdl_seq_LEN(patterns[i]->v.MatchClass.patterns) ==
-                        asdl_seq_LEN(patterns[j]->v.MatchClass.patterns) &&
-                        spm_same_identifiers(
-                            patterns[i]->v.MatchClass.kwd_attrs,
-                            patterns[j]->v.MatchClass.kwd_attrs));
-            Py_ssize_t nargs = asdl_seq_LEN(patterns[i]->v.MatchClass.patterns);
-            Py_ssize_t nkwargs = asdl_seq_LEN(
-                patterns[i]->v.MatchClass.kwd_attrs);
-            if (!nargs && !nkwargs) {
-                SPM_LOOP_BEGIN;
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                    if (!scs[i].preserve) {
-                        ADDOP(c, POP_TOP);
-                        scs[i].stacksize--;
-                    }
-                SPM_LOOP_END;
-                continue;
-            }
-            PyObject *names = PyTuple_New(nkwargs);
-            if (names == NULL) {
-                return 0;
-            }
-            if (_PyArena_AddPyObject(c->c_arena, names)) {
-                Py_DECREF(names);
-                return 0;
-            }
-            for (Py_ssize_t ix = 0; ix < nkwargs; ix++) {
-                PyObject *key = asdl_seq_GET(
-                    patterns[i]->v.MatchClass.kwd_attrs, ix);
-                Py_INCREF(key);
-                PyTuple_SET_ITEM(names, ix, key);
-            }
-            SPM_LOOP_BEGIN;
-                ADDOP_LOAD_CONST(c, names);
-                ADDOP_I(c, MATCH_CLASS, nargs);
-                scs[i].stacksize++;  // values
-            SPM_LOOP_END_POP_JUMP_IF_FALSE;
-            SPM_LOOP_BEGIN;
-                // TODO: Implement and use spm_compile_pattern_seqs!
-                ADDOP(c, DUP_TOP);
-                ADDOP_I(c, UNPACK_SEQUENCE, nargs + nkwargs);
-                scs[i].stacksize += nargs + nkwargs;
-                spm_context *sub_scs = &scs[i];
-                bool preserve = scs[i].preserve;
-                bool allow_irrefutable = scs[i].allow_irrefutable;
-                scs[i].preserve = 0;
-                scs[i].allow_irrefutable = 1;
-                for (Py_ssize_t k = 0; k < nargs; k++) {
-                    pattern_ty *sub_patterns = &asdl_seq_GET(
-                        patterns[i]->v.MatchClass.patterns, k);
-                    if (!spm_compile(c, sub_scs, sub_patterns, 0, 1)) {
-                        return 0;
-                    }
-                }
-                for (Py_ssize_t k = 0; k < nkwargs; k++) {
-                    pattern_ty *sub_patterns = &asdl_seq_GET(
-                        patterns[i]->v.MatchClass.kwd_patterns, k);
-                    if (!spm_compile(c, sub_scs, sub_patterns, 0, 1)) {
-                        return 0;
-                    }
-                }
-                scs[i].preserve = preserve;
-                scs[i].allow_irrefutable = allow_irrefutable;
-                ADDOP(c, POP_TOP);
-                ADDOP(c, POP_TOP);
-                scs[i].stacksize -= 2;
-                if (!scs[i].preserve) {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-            SPM_LOOP_END;
-        SPM_GROUP_END;
-    SPM_GROUP_END;
-    return 1;
-}
-
-// MatchMapping(expr* keys, pattern* patterns, identifier? rest)
-static int
-spm_compile_mapping(struct compiler *c, spm_context scs[],
-                    pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j)
-{
-    SPM_LOOP_BEGIN;
-        ADDOP(c, MATCH_MAPPING);
-    SPM_LOOP_END_POP_JUMP_IF_FALSE;
-    SPM_GROUP_BEGIN(asdl_seq_LEN(patterns[i]->v.MatchMapping.keys) ==
-                    asdl_seq_LEN(patterns[j]->v.MatchMapping.keys) &&
-                    !patterns[i]->v.MatchMapping.rest ==
-                    !patterns[j]->v.MatchMapping.rest);
-        Py_ssize_t nkeys = asdl_seq_LEN(patterns[i]->v.MatchMapping.keys);
-        if (!nkeys) {
-            SPM_LOOP_BEGIN;
-                // TODO: This is (mostly) repeated below:
-                if (patterns[i]->v.MatchMapping.rest) {
-                    ADDOP_I(c, BUILD_TUPLE, 0);
-                    ADDOP(c, COPY_DICT_WITHOUT_KEYS);
-                    scs[i].stacksize++;
-                    if (!spm_store_name(c, &scs[i],
-                                        patterns[i]->v.MatchMapping.rest))
-                    {
-                        return 0;
-                    }
-                }
-                if (!scs[i].preserve) {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-            SPM_LOOP_END;
-            continue;
-        }
-        SPM_LOOP_BEGIN;
-            ADDOP(c, GET_LEN);
-            ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(nkeys));
-            ADDOP_COMPARE(c, GtE);
-        SPM_LOOP_END_POP_JUMP_IF_FALSE;
-        SPM_GROUP_BEGIN(spm_same_exprs(patterns[i]->v.MatchMapping.keys,
-                                       patterns[j]->v.MatchMapping.keys));
-            SPM_LOOP_BEGIN;
-                PyObject *seen = PySet_New(NULL);
-                if (seen == NULL) {
+    while (n->subpatterns) {
+        assert(n->subpatterns->next == NULL);
+        pattern_ty pattern = n->subpatterns->pattern;
+        if (pattern->kind == MatchOr_kind) {
+            asdl_pattern_seq *patterns = pattern->v.MatchOr.patterns;
+            Py_ssize_t nalts = asdl_seq_LEN(patterns);
+            while (--nalts) {
+                pattern_ty alt = asdl_seq_GET(patterns, nalts);
+                spm_node_pattern *new = spm_node_pattern_new(c, n->next, alt);
+                if (new == NULL) {
                     return 0;
                 }
-                if (_PyArena_AddPyObject(c->c_arena, seen)) {
-                    Py_DECREF(seen);
-                    return 0;
-                }
-                for (Py_ssize_t k = 0; k < nkeys; k++) {
-                    expr_ty key = asdl_seq_GET(patterns[i]->v.MatchMapping.keys,
-                                               k);
-                    if (key->kind == Constant_kind) {
-                        int in_seen = PySet_Contains(seen,
-                                                     key->v.Constant.value);
-                        if (in_seen < 0) {
-                            return 0;
-                        }
-                        if (in_seen) {
-                            const char *e = "mapping pattern checks duplicate "
-                                            "key (%R)";
-                            compiler_error(c, e, key->v.Constant.value);
-                            return 0;
-                        }
-                        if (PySet_Add(seen, key->v.Constant.value)) {
-                            return 0;
-                        }
-                    }
-                    else if (key->kind != Attribute_kind) {
-                        const char *e = "mapping pattern keys may only match "
-                                        "literals and attribute lookups";
-                        compiler_error(c, e);
-                        return 0;
-                    }
-                    VISIT(c, expr, key);
-                }
-                ADDOP_I(c, BUILD_TUPLE, nkeys);
-                ADDOP(c, MATCH_KEYS);
-                scs[i].stacksize += 2;  // keys, values
-            SPM_LOOP_END_POP_JUMP_IF_FALSE;
-            SPM_LOOP_BEGIN;
-                // TODO: Implement and use spm_compile_pattern_seqs!
-                ADDOP(c, DUP_TOP);
-                ADDOP_I(c, UNPACK_SEQUENCE, nkeys);
-                scs[i].stacksize += nkeys;  // *values
-                spm_context *sub_scs = &scs[i];
-                bool preserve = scs[i].preserve;
-                bool allow_irrefutable = scs[i].allow_irrefutable;
-                scs[i].preserve = 0;
-                scs[i].allow_irrefutable = 1;
-                for (Py_ssize_t k = 0; k < nkeys; k++) {
-                    pattern_ty *sub_patterns = &asdl_seq_GET(
-                        patterns[i]->v.MatchMapping.patterns, k);
-                    if (!spm_compile(c, sub_scs, sub_patterns, 0, 1)) {
-                        return 0;
-                    }
-                }
-                scs[i].preserve = preserve;
-                scs[i].allow_irrefutable = allow_irrefutable;
-                ADDOP(c, POP_TOP);
-                scs[i].stacksize--;
-                // TODO: This is (mostly) repeated above:
-                if (patterns[i]->v.MatchMapping.rest) {
-                    ADDOP(c, COPY_DICT_WITHOUT_KEYS);
-                    if (!spm_store_name(c, &scs[i],
-                                          patterns[i]->v.MatchMapping.rest))
-                    {
-                        return 0;
-                    }
-                }
-                else {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-                if (!scs[i].preserve) {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-            SPM_LOOP_END;
-        SPM_GROUP_END;
-    SPM_GROUP_END;
-    return 1;
-}
-
-// MatchOr(pattern* patterns)
-static int
-spm_compile_or(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-               Py_ssize_t i, Py_ssize_t j)
-{
-    Py_ssize_t npatterns = 0;
-    for (Py_ssize_t k = i; k < j; k++) {
-        npatterns += asdl_seq_LEN(patterns[k]->v.MatchOr.patterns);
-    }
-    pattern_ty sub_patterns[npatterns];
-    spm_context sub_scs[npatterns + 1];
-    npatterns = 0;
-    SPM_LOOP_BEGIN;
-        Py_ssize_t nalts = asdl_seq_LEN(patterns[i]->v.MatchOr.patterns);
-        for (Py_ssize_t k = 0; k < nalts; k++) {
-            sub_patterns[npatterns] = asdl_seq_GET(
-                patterns[i]->v.MatchOr.patterns, k);
-            sub_scs[npatterns] = scs[i];
-            sub_scs[npatterns].preserve = 1;
-            sub_scs[npatterns].allow_irrefutable &= k == nalts - 1;
-            sub_scs[npatterns].reachable = k == 0;
-            sub_scs[npatterns].block = compiler_new_block(c);
-            sub_scs[npatterns].start = sub_scs[npatterns].block;
-            if (sub_scs[npatterns].block == NULL) {
-                return 0;
+                // TODO: We just throw away a perfectly good block here...
+                new->block_body = n->block_body;
+                n->next = new;
             }
-            npatterns++;
-        }
-    SPM_LOOP_END;
-    sub_scs[npatterns] = scs[j];
-    // if (!spm_compile(c, sub_scs, sub_patterns, 0, npatterns)) {
-    //     return 0;
-    // }
-    compiler_use_block(c, scs[0].block);
-    ADDOP_JUMP(c, JUMP_ABSOLUTE, sub_scs[0].start);
-    scs[0].block = compiler_new_block(c);
-    for (Py_ssize_t k = 0; k < npatterns; k++) {
-        compiler_use_block(c , sub_scs[k].block);
-        ADDOP_LOAD_CONST_NEW(c, Py_None);
-        ADDOP(c, POP_TOP);
-        ADDOP_JUMP(c, JUMP_ABSOLUTE, scs[j].block);
-    }
-    compiler_use_block(c, scs[j].block);
-    if (!scs[j].preserve) {
-        ADDOP(c, POP_TOP);
-        scs[j].stacksize--;
-    }
-
-
-    // SPM_LOOP_BEGIN;
-    //     ADDOP_JUMP(c, JUMP_ABSOLUTE, sub_scs[npatterns].start);
-    //     // compiler_use_next_block(c, sub_scs[npatterns].start);
-    //     SPM_NEXT_BLOCK;
-    //     Py_ssize_t nalts = asdl_seq_LEN(patterns[i]->v.MatchOr.patterns);
-    //     for (Py_ssize_t k = 0; k < nalts; k++) {
-    //         compiler_use_block(c, sub_scs[npatterns++].block);
-    //         ADDOP_JUMP(c, JUMP_ABSOLUTE, scs[i].block);  // XXX: JUMP_FORWARD
-    //     }
-    //     if (!scs[i].preserve) {
-    //         compiler_use_block(c, scs[i].block);
-    //         ADDOP(c, POP_TOP);
-    //         scs[i].stacksize--;
-    //     }
-    // SPM_LOOP_END;
-    // TODO: Shuffle names.
-    // TODO: Check reachability
-    return 1;
-}
-
-// MatchSequence(pattern* patterns)
-static int
-spm_compile_sequence(struct compiler *c, spm_context scs[],
-                     pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j)
-{
-    SPM_LOOP_BEGIN;
-        ADDOP(c, MATCH_SEQUENCE);
-    SPM_LOOP_END_POP_JUMP_IF_FALSE;
-    // TODO: Put all of this info into a single structure. Star, wildcard,
-    // only_wildcard, etc.
-    SPM_GROUP_BEGIN(
-        spm_sequence_star(patterns[i]->v.MatchSequence.patterns) ==
-        spm_sequence_star(patterns[j]->v.MatchSequence.patterns) && 
-        spm_sequence_unpack(patterns[i]->v.MatchSequence.patterns) ==
-        spm_sequence_unpack(patterns[j]->v.MatchSequence.patterns));
-        int star = spm_sequence_star(patterns[i]->v.MatchSequence.patterns);
-        Py_ssize_t npatterns = asdl_seq_LEN(
-            patterns[i]->v.MatchSequence.patterns);
-        if (star < 0) {
-            // No star.
-            SPM_LOOP_BEGIN;
-                ADDOP(c, GET_LEN);
-                ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(npatterns));
-                ADDOP_COMPARE(c, Eq);
-            SPM_LOOP_END_POP_JUMP_IF_FALSE;
-            if (!npatterns) {
-                if (!scs[i].preserve) {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-                continue;
-            }
+            assert(nalts == 0);
+            // NOTE: Might need to modify some other fields here in the future!
+            n->subpatterns->pattern = asdl_seq_GET(patterns, 0);
         }
         else {
-            // Star.
-            if (npatterns == 1 && !star) {
-                // Star wildcard only.
-                if (!scs[i].preserve) {
-                    ADDOP(c, POP_TOP);
-                    scs[i].stacksize--;
-                }
-                continue;
+            n = n->next;
+            if (n == NULL) {
+                break;
             }
-            SPM_LOOP_BEGIN;
-                ADDOP(c, GET_LEN);
-                ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(npatterns - 1));
-                ADDOP_COMPARE(c, GtE);
-            SPM_LOOP_END_POP_JUMP_IF_FALSE;
-            // TODO: Quit when only-wildcard.
         }
-        Py_ssize_t unpack = spm_sequence_unpack(
-            patterns[i]->v.MatchSequence.patterns);
-        SPM_LOOP_BEGIN;
-            // TODO: Implement and use spm_compile_pattern_seqs!
-            if (star) {
-                ADDOP(c, DUP_TOP);
-                if (0 <= unpack) {
-                    ADDOP_I(c, UNPACK_SEQUENCE, unpack);
-                }
-                else {
-                    ADDOP_I(c, UNPACK_EX, -(unpack + 1));
-                }
-                scs[i].stacksize += npatterns;  // *values
-            }
-            spm_context *sub_scs = &scs[i];
-            bool preserve = scs[i].preserve;
-            bool allow_irrefutable = scs[i].allow_irrefutable;
-            scs[i].preserve = 0;
-            scs[i].allow_irrefutable = 1;
-            bool seen_star = false;
-            for (Py_ssize_t k = 0; k < npatterns; k++) {
-                pattern_ty *sub_patterns = &asdl_seq_GET(
-                    patterns[i]->v.MatchSequence.patterns, k);
-                if (!star) {
-                    if (sub_patterns[0]->kind == MatchStar_kind) {
-                        assert(sub_patterns[0]->v.MatchStar.name == NULL);
-                        assert(!seen_star);
-                        seen_star = true;
-                        continue;
-                    }
-                    ADDOP(c, DUP_TOP);
-                    if (seen_star) {
-                        ADDOP(c, GET_LEN);
-                        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(npatterns - k));
-                        ADDOP(c, BINARY_SUBTRACT);
-                    }
-                    else {
-                        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(k));
-                    }
-                    ADDOP(c, BINARY_SUBSCR);
-                    scs[i].stacksize++;
-                }
-                if (!spm_compile(c, sub_scs, sub_patterns, 0, 1)) {
-                    return 0;
-                }
-            }
-            scs[i].preserve = preserve;
-            scs[i].allow_irrefutable = allow_irrefutable;
-            if (!scs[i].preserve) {
-                ADDOP(c, POP_TOP);
-                scs[i].stacksize--;
-            }
-        SPM_LOOP_END;
-    SPM_GROUP_END;
+    }
+    assert(n->next == NULL);
     return 1;
 }
 
-// MatchSingleton(constant value)
 static int
-spm_compile_singleton(struct compiler *c, spm_context scs[],
-                      pattern_ty patterns[], Py_ssize_t i, Py_ssize_t j)
-{
-    SPM_GROUP_BEGIN(patterns[i]->v.MatchSingleton.value ==
-                    patterns[j]->v.MatchSingleton.value);
-        SPM_LOOP_BEGIN;
-            if (scs[i].preserve) {
-                ADDOP(c, DUP_TOP);
-            }
-            else {
-                scs[i].stacksize--;
-            }
-            ADDOP_LOAD_CONST(c, patterns[i]->v.MatchSingleton.value);
-            ADDOP_COMPARE(c, Is);
-        SPM_LOOP_END_POP_JUMP_IF_FALSE;
-    SPM_GROUP_END;
+spm_check(struct compiler *c, spm_node_pattern *n) {
+    // TODO
     return 1;
 }
 
-// MatchStar(identifier? name)
 static int
-spm_compile_star(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-                 Py_ssize_t i, Py_ssize_t j)
+spm_compile_as(struct compiler *c, spm_node_pattern *n)
 {
-    SPM_LOOP_BEGIN;
-        if (!spm_store_name(c, &scs[i], patterns[i]->v.MatchStar.name)) {
-            return 0;
-        }
-    SPM_LOOP_END;
-    return 1;        
+    // TODO
+    return 1;
 }
 
-// MatchValue(expr value)
 static int
-spm_compile_value(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-                  Py_ssize_t i, Py_ssize_t j)
+spm_compile_class(struct compiler *c, spm_node_pattern *n)
 {
-    SPM_GROUP_BEGIN(spm_same_expr(patterns[i]->v.MatchValue.value,
-                                      patterns[j]->v.MatchValue.value));
-        SPM_LOOP_BEGIN;
-            if (scs[i].preserve) {
-                ADDOP(c, DUP_TOP);
-            }
-            else {
-                scs[i].stacksize--;
-            }
-            VISIT(c, expr, patterns[i]->v.MatchValue.value);
-            ADDOP_COMPARE(c, Eq);
-        SPM_LOOP_END_POP_JUMP_IF_FALSE;
-    SPM_GROUP_END;
-    return 1;        
+    // TODO
+    return 1;
 }
 
-// TODO: Sequence length checks/unpacking.
-// TODO: Mapping pattern **rest.
-// TODO: Class patterns.
-// TODO: Or-patterns!
-
-// Compile several patterns in parallel, attempting to merge any contiguous
-// patterns with overlapping checks.
-//
-// The core idea is pretty simple, but the getting the control-flow right can be
-// a bit tricky: for contiguous overlapping patterns i-j (where j is the first
-// "different" pattern), we compile each pattern as normal, but jump to j in all
-// failure cases (rather than just to the next pattern).
-//
-// This isn't just for totally identical patterns. For example, if we have a
-// bunch of different sequence patterns, we can still jump to j when failing the
-// first MATCH_SEQUENCE check, and jump *after* it in the next pattern if any
-// sub-patterns fail.
-//
-// It's important, though, that every part of each pattern actually gets
-// compiled, since failing guards need to start from scratch at the next
-// pattern. It's much easier to just rely on the assembler to eliminate any dead
-// code during reachability analysis.
 static int
-spm_compile(struct compiler *c, spm_context scs[], pattern_ty patterns[],
-            Py_ssize_t i, Py_ssize_t j)
+spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO: Just include pattern in spm_context?
-    SPM_GROUP_BEGIN(patterns[i]->kind == patterns[j]->kind);
-        spm_compiler *f;
-        switch (patterns[i]->kind) {
-            case MatchAs_kind:
-                f = spm_compile_as;
-                break;
-            case MatchClass_kind:
-                f = spm_compile_class;
-                break;
-            case MatchMapping_kind:
-                f = spm_compile_mapping;
-                break;
-            case MatchOr_kind:
-                f = spm_compile_or;
-                break;
-            case MatchSequence_kind:
-                f = spm_compile_sequence;
-                break;
-            case MatchSingleton_kind:
-                f = spm_compile_singleton;
-                break;
-            case MatchStar_kind:
-                f = spm_compile_star;
-                break;
-            case MatchValue_kind:
-                f = spm_compile_value;
-                break;
+    // TODO
+    return 1;
+}
+
+static int
+spm_compile_or(struct compiler *c, spm_node_pattern *n)
+{
+    // TODO
+    return 1;
+}
+
+static int
+spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
+{
+    // TODO
+    return 1;
+}
+
+static int
+spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
+{
+    // SPM_GROUP_BEGIN(p->v.MatchSingleton.value == q->v.MatchSingleton.value);
+    //     SPM_LOOP_BEGIN;
+    //         if (n->preserve) {
+    //             ADDOP(c, DUP_TOP);
+    //         }
+    //         else {
+    //             n->stacksize--;
+    //         }
+    //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
+    //         ADDOP_COMPARE(c, Eq);
+    //     SPM_LOOP_END_POP_JUMP_IF_FALSE;
+    // SPM_GROUP_END;
+    return 1;
+}
+
+static int
+spm_compile_star(struct compiler *c, spm_node_pattern *n)
+{
+    // TODO
+    return 1;
+}
+
+static int
+spm_compile_value(struct compiler *c, spm_node_pattern *n)
+{
+    // SPM_GROUP_BEGIN(spm_same_expr(p->v.MatchValue.value, q->v.MatchValue.value));
+    //     SPM_LOOP_BEGIN;
+    //         if (n->preserve) {
+    //             ADDOP(c, DUP_TOP);
+    //         }
+    //         else {
+    //             n->stacksize--;
+    //         }
+    //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
+    //         ADDOP_COMPARE(c, Eq);
+    //     SPM_LOOP_END_POP_JUMP_IF_FALSE;
+    // SPM_GROUP_END;
+    return 1;
+}
+
+static int
+spm_compile(struct compiler *c, spm_node_pattern *n)
+{
+    // SPM_GROUP_BEGIN(p->kind == q->kind);
+    //     spm_compiler *f;
+    //     switch (p->kind) {
+    //         case MatchAs_kind:
+    //             f = spm_compile_as;
+    //             break;
+    //         case MatchClass_kind:
+    //             f = spm_compile_class;
+    //             break;
+    //         case MatchMapping_kind:
+    //             f = spm_compile_mapping;
+    //             break;
+    //         case MatchOr_kind:
+    //             f = spm_compile_or;
+    //             break;
+    //         case MatchSequence_kind:
+    //             f = spm_compile_sequence;
+    //             break;
+    //         case MatchSingleton_kind:
+    //             f = spm_compile_singleton;
+    //             break;
+    //         case MatchStar_kind:
+    //             f = spm_compile_star;
+    //             break;
+    //         case MatchValue_kind:
+    //             f = spm_compile_value;
+    //             break;
+    //     }
+    //     if (!f(c, n)) {
+    //         return 0;
+    //     }
+    // SPM_GROUP_END;
+    // XXX
+    while (n->subpatterns) {
+        if (!n->preserve) {
+            ADDOP(c, POP_TOP);
         }
-        if (!f(c, scs, patterns, i, j)) {
-            return 0;
-        }
-    SPM_GROUP_END;
+        assert(n->block_body);
+        compiler_use_next_block(c, n->block_body);
+        n = n->next;
+        compiler_use_next_block(c, n->block_tail);
+    }
     return 1;
 }
 
@@ -6600,81 +6175,48 @@ static int
 compiler_match(struct compiler *c, stmt_ty s)
 {
     VISIT(c, expr, s->v.Match.subject);
-    Py_ssize_t npatterns = asdl_seq_LEN(s->v.Match.cases);
-    pattern_ty last = asdl_seq_GET(s->v.Match.cases, npatterns - 1)->pattern;
-    bool has_default = (1 < npatterns && last->kind == MatchAs_kind &&
-                        last->v.MatchAs.pattern == NULL &&
-                        last->v.MatchAs.name == NULL);
-    spm_context scs[npatterns+1];
-    pattern_ty patterns[npatterns+1];
-    for (Py_ssize_t i = 0; i < npatterns + 1; i++) {
-        scs[i].names = PyList_New(0);
-        if (scs[i].names == NULL) {
-            return 0;
-        }
-        // All these returning macros are a refcounting nightmare. Deallocating
-        // this list is the arena's problem now:
-        if (_PyArena_AddPyObject(c->c_arena, scs[i].names) < 0) {
-            Py_DECREF(scs[i].names);
-            return 0;
-        }
-        patterns[i] = i < npatterns ? asdl_seq_GET(s->v.Match.cases, i)->pattern
-                                    : NULL;
-        scs[i].allow_irrefutable = ((i == npatterns - 1) || 
-                                    (i < npatterns && 
-                                     asdl_seq_GET(s->v.Match.cases, i)->guard));
-        scs[i].stacksize = (i == 0) || (i < npatterns - has_default);
-        scs[i].preserve = i < npatterns - has_default - 1;
-        scs[i].reachable = i == 0;
-        scs[i].block = compiler_new_block(c);
-        scs[i].start = scs[i].block;
-        if (scs[i].block  == NULL) {
-            return 0;
-        }
-    }
-    compiler_use_next_block(c, scs[0].start);
-    if (!spm_compile(c, scs, patterns, 0, npatterns - has_default)) {
+    basicblock *top = c->u->u_curblock; 
+    spm_node_pattern *n = spm_node_pattern_new(c, NULL, NULL);
+    if (n == NULL) {
         return 0;
     }
-    for (Py_ssize_t i = 0; i < npatterns; i++) {
-        compiler_use_block(c, scs[i].block);
-        SET_LOC(c, patterns[i]);
-        assert(scs[i].stacksize == scs[i].preserve);
-        if (scs[i].preserve) {
-            ADDOP_I(c, ROT_N, PyList_GET_SIZE(scs[i].names) + 1);
+    compiler_use_block(c, n->block_tail);
+    compiler_use_next_block(c, n->block_body);
+    basicblock *fail = n->block_body;
+    basicblock *end = fail;
+    Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
+    bool last = true;
+    while (i--) {
+        match_case_ty match = asdl_seq_GET(s->v.Match.cases, i);
+        n = spm_node_pattern_new(c, n, match->pattern);
+        if (n == NULL) {
+            return 0;
         }
-        // TODO: Is it a problem that this binds names in reverse order? We
-        // would have to do more expensive rotations if so (or at least a
-        // BUILD_TUPLE/UNPACK_SEQUENCE pair).
-        Py_ssize_t j = PyList_GET_SIZE(scs[i].names);
-        while (j--) {
-            if (!compiler_nameop(c, PyList_GET_ITEM(scs[i].names, j), Store)) {
-                return 0;
-            }
+        if (last) {
+            n->preserve = false;
+            last = false;
         }
-        match_case_ty match_case = asdl_seq_GET(s->v.Match.cases, i);
-        expr_ty guard = match_case->guard;
-        if (guard) {
-            VISIT(c, expr, guard);
-            if (!spm_check(c, scs, i, i + 1, true)) {
-                return 0;
-            }
-            SPM_NEXT_BLOCK;
+        compiler_use_block(c, n->block_body);
+        if (match->guard) {
+            VISIT(c, expr, match->guard);
+            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, fail);
         }
-        SET_LOC(c, patterns[i]);
-        if (!scs[i].reachable) {
-            const char *e = "pattern is unreachable (consider reordering)";
-            if (!compiler_warn(c, e)) {
-                return 0;
-            }
-        }
-        if (scs[i].preserve) {
+        if (n->preserve) {
             ADDOP(c, POP_TOP);
         }
-        VISIT_SEQ(c, stmt, asdl_seq_GET(s->v.Match.cases, i)->body);
-        ADDOP_JUMP(c, JUMP_FORWARD, scs[npatterns].block);
-        compiler_use_next_block(c, scs[i + 1].start);
+        VISIT_SEQ(c, stmt, match->body);
+        ADDOP_JUMP(c, JUMP_FORWARD, end);
+        fail = n->block_tail;
     }
+    if (!spm_expand_or(c, n)) {
+        return 0;
+    }
+    compiler_use_block(c, top);
+    compiler_use_next_block(c, n->block_tail);
+    if (!spm_compile(c, n)) {
+        return 0;
+    }
+    compiler_use_block(c, end);
     return 1;
 }
 
@@ -8556,7 +8098,7 @@ eliminate_empty_basic_blocks(basicblock *entry) {
             while (next->b_iused == 0 && next->b_next) {
                 next = next->b_next;
             }
-            b->b_next = next;
+            b->b_next = next;  // XXX: HERE
         }
     }
     for (basicblock *b = entry; b != NULL; b = b->b_next) {
@@ -8757,15 +8299,15 @@ duplicate_exits_without_lineno(struct compiler *c)
                 b->b_instr[b->b_iused-1].i_target = new_target;
                 target->b_predecessors--;
                 new_target->b_predecessors = 1;
-                new_target->b_next = target->b_next;
-                target->b_next = new_target;
+                new_target->b_next = target->b_next;  // XXX: HERE
+                target->b_next = new_target;  // XXX: HERE
             }
         }
     }
     /* Eliminate empty blocks */
     for (basicblock *b = c->u->u_blocks; b != NULL; b = b->b_list) {
         while (b->b_next && b->b_next->b_iused == 0) {
-            b->b_next = b->b_next->b_next;
+            b->b_next = b->b_next->b_next;  // XXX: HERE
         }
     }
     /* Any remaining reachable exit blocks without line number can only be reached by
