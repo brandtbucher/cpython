@@ -6020,7 +6020,7 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
                 if (new == NULL) {
                     return 0;
                 }
-                // TODO: We just throw away a perfectly good block here...
+                // TODO: We need to link these blocks, can't just throw them away like this.
                 new->block_body = n->block_body;
                 n->next = new;
             }
@@ -6158,15 +6158,16 @@ spm_compile(struct compiler *c, spm_node_pattern *n)
     //         return 0;
     //     }
     // SPM_GROUP_END;
-    // XXX
-    while (n->subpatterns) {
+    while (n) {
+        compiler_use_next_block(c, n->block_tail);
         if (!n->preserve) {
             ADDOP(c, POP_TOP);
+            n->stacksize--;
         }
+        // TODO: Stores.
         assert(n->block_body);
         compiler_use_next_block(c, n->block_body);
         n = n->next;
-        compiler_use_next_block(c, n->block_tail);
     }
     return 1;
 }
@@ -6180,8 +6181,6 @@ compiler_match(struct compiler *c, stmt_ty s)
     if (n == NULL) {
         return 0;
     }
-    compiler_use_block(c, n->block_tail);
-    compiler_use_next_block(c, n->block_body);
     basicblock *fail = n->block_body;
     basicblock *end = fail;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
@@ -6212,11 +6211,9 @@ compiler_match(struct compiler *c, stmt_ty s)
         return 0;
     }
     compiler_use_block(c, top);
-    compiler_use_next_block(c, n->block_tail);
     if (!spm_compile(c, n)) {
         return 0;
     }
-    compiler_use_block(c, end);
     return 1;
 }
 
