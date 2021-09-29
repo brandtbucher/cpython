@@ -5843,6 +5843,7 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 #define SPM_LOOP_BEGIN                                                \
     {                                                                 \
+        spm_node_pattern *_n = n;                                     \
         for (spm_node_pattern *n = _n; n->subpatterns; n = n->next) { \
             SET_LOC(c, n->subpatterns->pattern);                      \
             compiler_use_block(c, n->block_tail);                     \
@@ -5852,11 +5853,9 @@ compiler_slice(struct compiler *c, expr_ty s)
     }
 
 #define SPM_POP_JUMP_IF_FALSE   \
-        /* TODO: spm_check! */  \
         if (!spm_check(c, n)) { \
             return 0;           \
-        }                       \
-        SPM_NEXT_BLOCK;
+        }
 
 #define SPM_NEXT_BLOCK                      \
     n->block_tail = compiler_next_block(c); \
@@ -6045,12 +6044,13 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
 static int
 spm_cleanup(struct compiler *c, spm_node_pattern *n)
 {
+    // TODO: We actually might be able to now... 
     // NOTE: Don't us SPM_LOOP_* here. We need to visit the last "dummy" pattern
     // node, and we don't want to call "compiler_use_block(n->block_tail)"" at
     // the top of each loop (we're linking *all* of the bodies/tails together in
     // this loop)!
     while (n) {
-        compiler_use_next_block(c, n->block_tail);
+        compiler_use_block(c, n->block_tail);
         if (!n->preserve) {
             ADDOP(c, POP_TOP);
             n->stacksize--;
@@ -6064,7 +6064,14 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
 
 static int
 spm_check(struct compiler *c, spm_node_pattern *n) {
-    // TODO
+    // TODO: Quadratic complexity, anyone?
+    spm_node_pattern *f = n;
+    while (f->subpatterns) {
+        f = f->next;
+    }
+    // TODO: We'll need to pop a bunch of stuff as this becomes more complicated...
+    ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block_tail);
+    SPM_NEXT_BLOCK;
     return 1;
 }
 
@@ -6085,7 +6092,15 @@ spm_compile_class(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO
+    SPM_LOOP_BEGIN;
+        ADDOP(c, MATCH_MAPPING);
+        // XXX
+        if (!n->preserve) {
+            ADDOP(c, ROT_TWO);
+            ADDOP(c, POP_TOP);
+        }
+        SPM_POP_JUMP_IF_FALSE;
+    SPM_LOOP_END;
     return 1;
 }
 
@@ -6099,7 +6114,15 @@ spm_compile_or(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO
+    SPM_LOOP_BEGIN;
+        ADDOP(c, MATCH_SEQUENCE);
+        // XXX
+        if (!n->preserve) {
+            ADDOP(c, ROT_TWO);
+            ADDOP(c, POP_TOP);
+        }
+        SPM_POP_JUMP_IF_FALSE;
+    SPM_LOOP_END;
     return 1;
 }
 
@@ -6195,8 +6218,9 @@ compiler_match(struct compiler *c, stmt_ty s)
     if (n == NULL) {
         return 0;
     }
-    basicblock *fail = n->block_body;
-    basicblock *end = fail;
+    n->preserve = false;
+    basicblock *fail = n->block_tail;
+    basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
     bool last = true;
     while (i--) {
@@ -6206,26 +6230,30 @@ compiler_match(struct compiler *c, stmt_ty s)
             return 0;
         }
         if (last) {
-            n->preserve = false;
+            // n->preserve = false;
             last = false;
         }
         compiler_use_block(c, n->block_body);
         if (match->guard) {
             VISIT(c, expr, match->guard);
             ADDOP_JUMP(c, POP_JUMP_IF_FALSE, fail);
+            NEXT_BLOCK(c);
         }
         if (n->preserve) {
             ADDOP(c, POP_TOP);
         }
         VISIT_SEQ(c, stmt, match->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
+        compiler_use_next_block(c, fail);
         fail = n->block_tail;
     }
-    if (!spm_expand_or(c, n)) {
-        return 0;
-    }
-    compiler_use_block(c, top);
-    return spm_compile(c, n) && spm_cleanup(c, n);
+    return (
+        spm_expand_or(c, n)
+        && compiler_use_block(c, top)
+        && compiler_use_next_block(c, n->block_tail)
+        && spm_compile(c, n)
+        && spm_cleanup(c, n)
+    );
 }
 
 /* End of the compiler section, beginning of the assembler section */

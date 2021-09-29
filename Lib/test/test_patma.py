@@ -41,91 +41,91 @@ class TestInheritance(unittest.TestCase):
             case [*_]:
                 return "seq"
 
-    # def test_multiple_inheritance_mapping(self):
-    #     class C:
-    #         pass
-    #     class M1(collections.UserDict, collections.abc.Sequence):
-    #         pass
-    #     class M2(C, collections.UserDict, collections.abc.Sequence):
-    #         pass
-    #     class M3(collections.UserDict, C, list):
-    #         pass
-    #     class M4(dict, collections.abc.Sequence, C):
-    #         pass
-    #     self.assertEqual(self.check_sequence_then_mapping(M1()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(M2()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(M3()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(M4()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(M1()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(M2()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(M3()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(M4()), "map")
+    def test_multiple_inheritance_mapping(self):
+        class C:
+            pass
+        class M1(collections.UserDict, collections.abc.Sequence):
+            pass
+        class M2(C, collections.UserDict, collections.abc.Sequence):
+            pass
+        class M3(collections.UserDict, C, list):
+            pass
+        class M4(dict, collections.abc.Sequence, C):
+            pass
+        self.assertEqual(self.check_sequence_then_mapping(M1()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(M2()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(M3()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(M4()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(M1()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(M2()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(M3()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(M4()), "map")
 
-    # def test_multiple_inheritance_sequence(self):
-    #     class C:
-    #         pass
-    #     class S1(collections.UserList, collections.abc.Mapping):
-    #         pass
-    #     class S2(C, collections.UserList, collections.abc.Mapping):
-    #         pass
-    #     class S3(list, C, collections.abc.Mapping):
-    #         pass
-    #     class S4(collections.UserList, dict, C):
-    #         pass
-    #     self.assertEqual(self.check_sequence_then_mapping(S1()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(S2()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(S3()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(S4()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(S1()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(S2()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(S3()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(S4()), "seq")
+    def test_multiple_inheritance_sequence(self):
+        class C:
+            pass
+        class S1(collections.UserList, collections.abc.Mapping):
+            pass
+        class S2(C, collections.UserList, collections.abc.Mapping):
+            pass
+        class S3(list, C, collections.abc.Mapping):
+            pass
+        class S4(collections.UserList, dict, C):
+            pass
+        self.assertEqual(self.check_sequence_then_mapping(S1()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(S2()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(S3()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(S4()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(S1()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(S2()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(S3()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(S4()), "seq")
 
-    # def test_late_registration_mapping(self):
-    #     class Parent:
-    #         pass
-    #     class ChildPre(Parent):
-    #         pass
-    #     class GrandchildPre(ChildPre):
-    #         pass
-    #     collections.abc.Mapping.register(Parent)
-    #     class ChildPost(Parent):
-    #         pass
-    #     class GrandchildPost(ChildPost):
-    #         pass
-    #     self.assertEqual(self.check_sequence_then_mapping(Parent()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(ChildPre()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(GrandchildPre()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(ChildPost()), "map")
-    #     self.assertEqual(self.check_sequence_then_mapping(GrandchildPost()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(Parent()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(ChildPre()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(GrandchildPre()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(ChildPost()), "map")
-    #     self.assertEqual(self.check_mapping_then_sequence(GrandchildPost()), "map")
+    def test_late_registration_mapping(self):
+        class Parent:
+            pass
+        class ChildPre(Parent):
+            pass
+        class GrandchildPre(ChildPre):
+            pass
+        collections.abc.Mapping.register(Parent)
+        class ChildPost(Parent):
+            pass
+        class GrandchildPost(ChildPost):
+            pass
+        self.assertEqual(self.check_sequence_then_mapping(Parent()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(ChildPre()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(GrandchildPre()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(ChildPost()), "map")
+        self.assertEqual(self.check_sequence_then_mapping(GrandchildPost()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(Parent()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(ChildPre()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(GrandchildPre()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(ChildPost()), "map")
+        self.assertEqual(self.check_mapping_then_sequence(GrandchildPost()), "map")
 
-    # def test_late_registration_sequence(self):
-    #     class Parent:
-    #         pass
-    #     class ChildPre(Parent):
-    #         pass
-    #     class GrandchildPre(ChildPre):
-    #         pass
-    #     collections.abc.Sequence.register(Parent)
-    #     class ChildPost(Parent):
-    #         pass
-    #     class GrandchildPost(ChildPost):
-    #         pass
-    #     self.assertEqual(self.check_sequence_then_mapping(Parent()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(ChildPre()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(GrandchildPre()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(ChildPost()), "seq")
-    #     self.assertEqual(self.check_sequence_then_mapping(GrandchildPost()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(Parent()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(ChildPre()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(GrandchildPre()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(ChildPost()), "seq")
-    #     self.assertEqual(self.check_mapping_then_sequence(GrandchildPost()), "seq")
+    def test_late_registration_sequence(self):
+        class Parent:
+            pass
+        class ChildPre(Parent):
+            pass
+        class GrandchildPre(ChildPre):
+            pass
+        collections.abc.Sequence.register(Parent)
+        class ChildPost(Parent):
+            pass
+        class GrandchildPost(ChildPost):
+            pass
+        self.assertEqual(self.check_sequence_then_mapping(Parent()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(ChildPre()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(GrandchildPre()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(ChildPost()), "seq")
+        self.assertEqual(self.check_sequence_then_mapping(GrandchildPost()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(Parent()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(ChildPre()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(GrandchildPre()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(ChildPost()), "seq")
+        self.assertEqual(self.check_mapping_then_sequence(GrandchildPost()), "seq")
 
 
 # class TestPatma(unittest.TestCase):
