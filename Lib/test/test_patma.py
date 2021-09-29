@@ -187,15 +187,15 @@ class TestPatma(unittest.TestCase):
                 x = True
         self.assertIs(x, False)
 
-#     def test_patma_008(self):
-#         x = 0
-#         class A:
-#             y = 1
-#         match x:
-#             case A.y as z:
-#                 pass
-#         self.assertEqual(x, 0)
-#         self.assertEqual(A.y, 1)
+    def test_patma_008(self):
+        x = 0
+        class A:
+            y = 1
+        match x:
+            case A.y as z:
+                pass
+        self.assertEqual(x, 0)
+        self.assertEqual(A.y, 1)
 
 #     def test_patma_009(self):
 #         class A:

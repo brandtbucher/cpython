@@ -5906,6 +5906,7 @@ struct spm_node_pattern {
     basicblock *block_tail;
     basicblock *block_body;
     Py_ssize_t stacksize;
+    bool reachable;
     // TODO: Probably need a better approach to this...
     bool preserve;
 };
@@ -5942,6 +5943,7 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
         return NULL;
     }
     n->stacksize = 1;
+    n->reachable = false;
     n->preserve = true;
     return n;
 }
@@ -6057,7 +6059,11 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
     // node, and we don't want to call "compiler_use_block(n->block_tail)"" at
     // the top of each loop (we're linking *all* of the bodies/tails together in
     // this loop)!
+    n->reachable = true;
     while (n) {
+        if (n->next && !n->reachable && !compiler_warn(c, "case is unreachable")) {
+            return 0;
+        }
         compiler_use_block(c, n->block_tail);
         if (!n->preserve) {
             ADDOP(c, POP_TOP);
@@ -6079,6 +6085,7 @@ spm_check(struct compiler *c, spm_node_pattern *n) {
     }
     // TODO: We'll need to pop a bunch of stuff as this becomes more complicated...
     ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block_tail);
+    f->reachable = true;
     SPM_NEXT_BLOCK;
     return 1;
 }
@@ -6227,7 +6234,6 @@ compiler_match(struct compiler *c, stmt_ty s)
         return 0;
     }
     n->preserve = false;
-    basicblock *fail = n->block_tail;
     basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
     while (i--) {
@@ -6239,7 +6245,8 @@ compiler_match(struct compiler *c, stmt_ty s)
         compiler_use_block(c, n->block_body);
         if (match->guard) {
             VISIT(c, expr, match->guard);
-            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, fail);
+            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, n->next->block_tail);
+            n->next->reachable = true;
             NEXT_BLOCK(c);
         }
         if (n->preserve) {
@@ -6247,16 +6254,11 @@ compiler_match(struct compiler *c, stmt_ty s)
         }
         VISIT_SEQ(c, stmt, match->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
-        compiler_use_next_block(c, fail);
-        fail = n->block_tail;
+        compiler_use_next_block(c, n->next->block_tail);
     }
-    return (
-        spm_expand_or(c, n)
-        && compiler_use_block(c, top)
-        && compiler_use_next_block(c, n->block_tail)
-        && spm_compile(c, n)
-        && spm_cleanup(c, n)
-    );
+    compiler_use_block(c, top);
+    compiler_use_next_block(c, n->block_tail);
+    return spm_expand_or(c, n) && spm_compile(c, n) && spm_cleanup(c, n);
 }
 
 /* End of the compiler section, beginning of the assembler section */
