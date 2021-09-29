@@ -5807,20 +5807,19 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 #define SPM_OPTIMIZE true
 
-// TODO: Update these for linked-list patterns.
-// TODO: Break off groups!
 #define SPM_GROUP_BEGIN(TEST)                                                  \
     {                                                                          \
-        while (n) {                                                            \
-            pattern_ty p;                                                      \
-            pattern_ty q;                                                      \
-            while (n->next) {                                                  \
-                p = n->subpatterns->pattern;                                   \
-                /* Sanity check: a pattern should always group with itself! */ \
-                q = p;                                                         \
-                assert((TEST));                                                \
-                assert(n->next->subpatterns);                                  \
-                q = n->next->subpatterns->pattern;                             \
+        spm_node_pattern *_n = n;                                              \
+        while (_n->subpatterns) {                                              \
+            pattern_ty p = _n->subpatterns->pattern;                           \
+            spm_node_pattern *_next = _n->next;                                \
+            while (_next->subpatterns) {                                       \
+                pattern_ty q = _next->subpatterns->pattern;                    \
+                /* Sanity check: patterns should group with themselves! */     \
+                {                                                              \
+                    pattern_ty p = q;                                          \
+                    assert((TEST));                                            \
+                }                                                              \
                 /* TEST is always evaluated, even if we're not optimizing: */  \
                 int _in_group = (TEST);                                        \
                 if (_in_group < 0) {                                           \
@@ -5829,39 +5828,42 @@ compiler_slice(struct compiler *c, expr_ty s)
                 if (!SPM_OPTIMIZE || !_in_group) {                             \
                     break;                                                     \
                 }                                                              \
-                n = n->next;                                                   \
-            }
+                _next = _next->next;                                           \
+            }                                                                  \
+            spm_node_subpattern *_s = _next->subpatterns;                      \
+            _next->subpatterns = NULL;\
+            spm_node_pattern *n = _n;
 
-#define SPM_GROUP_END \
-        }             \
+// TODO: Try to move this up to SPM_GROUP_BEGIN...
+#define SPM_GROUP_END                \
+            _next->subpatterns = _s; \
+            _n = _next;              \
+        }                            \
     }
 
-#define SPM_LOOP_BEGIN                                   \
-    {                                                    \
-        spm_node_pattern *_n = n;                        \
-        for (spm_node_pattern *n = _n; n; n = n->next) { \
-            assert(n->subpatterns);                      \
-            SET_LOC(c, n->subpatterns->pattern);         \
-            compiler_use_block(c, n->block_tail);        \
+#define SPM_LOOP_BEGIN                                                \
+    {                                                                 \
+        for (spm_node_pattern *n = _n; n->subpatterns; n = n->next) { \
+            SET_LOC(c, n->subpatterns->pattern);                      \
+            compiler_use_block(c, n->block_tail);                     \
 
-#define SPM_LOOP_END_POP_JUMP_IF_FALSE         \
-        /* TODO: spm_check! */                 \
+#define SPM_LOOP_END \
+        }            \
+    }
+
+#define SPM_POP_JUMP_IF_FALSE   \
+        /* TODO: spm_check! */  \
         if (!spm_check(c, n)) { \
-            return 0;                          \
-        }                                      \
-        SPM_NEXT_BLOCK;                        \
-    SPM_LOOP_END;
+            return 0;           \
+        }                       \
+        SPM_NEXT_BLOCK;
 
 #define SPM_NEXT_BLOCK                      \
     n->block_tail = compiler_next_block(c); \
     if (n->block_tail == NULL) {            \
         return 0;                           \
     }
-
-#define SPM_LOOP_END \
-        }            \
-    }
-
+    
 // typedef struct {
 //     basicblock *start;
 //     basicblock *block;
@@ -5905,6 +5907,7 @@ struct spm_node_pattern {
     basicblock *block_tail;
     basicblock *block_body;
     Py_ssize_t stacksize;
+    // TODO: Probably need a better approach to this...
     bool preserve;
 };
 
@@ -6040,6 +6043,26 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
 }
 
 static int
+spm_cleanup(struct compiler *c, spm_node_pattern *n)
+{
+    // NOTE: Don't us SPM_LOOP_* here. We need to visit the last "dummy" pattern
+    // node, and we don't want to call "compiler_use_block(n->block_tail)"" at
+    // the top of each loop (we're linking *all* of the bodies/tails together in
+    // this loop)!
+    while (n) {
+        compiler_use_next_block(c, n->block_tail);
+        if (!n->preserve) {
+            ADDOP(c, POP_TOP);
+            n->stacksize--;
+        }
+        // TODO: Stores.
+        compiler_use_next_block(c, n->block_body);
+        n = n->next;
+    }
+    return 1;
+}
+
+static int
 spm_check(struct compiler *c, spm_node_pattern *n) {
     // TODO
     return 1;
@@ -6092,8 +6115,9 @@ spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
     //             n->stacksize--;
     //         }
     //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
-    //         ADDOP_COMPARE(c, Eq);
-    //     SPM_LOOP_END_POP_JUMP_IF_FALSE;
+    //         ADDOP_COMPARE(c, Is);
+    //         SPM_POP_JUMP_IF_FALSE;
+    //     SPM_LOOP_END;
     // SPM_GROUP_END;
     return 1;
 }
@@ -6118,7 +6142,8 @@ spm_compile_value(struct compiler *c, spm_node_pattern *n)
     //         }
     //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
     //         ADDOP_COMPARE(c, Eq);
-    //     SPM_LOOP_END_POP_JUMP_IF_FALSE;
+    //         SPM_POP_JUMP_IF_FALSE;
+    //     SPM_LOOP_END;
     // SPM_GROUP_END;
     return 1;
 }
@@ -6126,49 +6151,38 @@ spm_compile_value(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile(struct compiler *c, spm_node_pattern *n)
 {
-    // SPM_GROUP_BEGIN(p->kind == q->kind);
-    //     spm_compiler *f;
-    //     switch (p->kind) {
-    //         case MatchAs_kind:
-    //             f = spm_compile_as;
-    //             break;
-    //         case MatchClass_kind:
-    //             f = spm_compile_class;
-    //             break;
-    //         case MatchMapping_kind:
-    //             f = spm_compile_mapping;
-    //             break;
-    //         case MatchOr_kind:
-    //             f = spm_compile_or;
-    //             break;
-    //         case MatchSequence_kind:
-    //             f = spm_compile_sequence;
-    //             break;
-    //         case MatchSingleton_kind:
-    //             f = spm_compile_singleton;
-    //             break;
-    //         case MatchStar_kind:
-    //             f = spm_compile_star;
-    //             break;
-    //         case MatchValue_kind:
-    //             f = spm_compile_value;
-    //             break;
-    //     }
-    //     if (!f(c, n)) {
-    //         return 0;
-    //     }
-    // SPM_GROUP_END;
-    while (n) {
-        compiler_use_next_block(c, n->block_tail);
-        if (!n->preserve) {
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
+    SPM_GROUP_BEGIN(p->kind == q->kind);
+        spm_compiler *f;
+        switch (p->kind) {
+            case MatchAs_kind:
+                f = spm_compile_as;
+                break;
+            case MatchClass_kind:
+                f = spm_compile_class;
+                break;
+            case MatchMapping_kind:
+                f = spm_compile_mapping;
+                break;
+            case MatchOr_kind:
+                f = spm_compile_or;
+                break;
+            case MatchSequence_kind:
+                f = spm_compile_sequence;
+                break;
+            case MatchSingleton_kind:
+                f = spm_compile_singleton;
+                break;
+            case MatchStar_kind:
+                f = spm_compile_star;
+                break;
+            case MatchValue_kind:
+                f = spm_compile_value;
+                break;
         }
-        // TODO: Stores.
-        assert(n->block_body);
-        compiler_use_next_block(c, n->block_body);
-        n = n->next;
-    }
+        if (!f(c, n)) {
+            return 0;
+        }
+    SPM_GROUP_END;
     return 1;
 }
 
@@ -6211,10 +6225,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         return 0;
     }
     compiler_use_block(c, top);
-    if (!spm_compile(c, n)) {
-        return 0;
-    }
-    return 1;
+    return spm_compile(c, n) && spm_cleanup(c, n);
 }
 
 /* End of the compiler section, beginning of the assembler section */
