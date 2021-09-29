@@ -128,64 +128,64 @@ class TestInheritance(unittest.TestCase):
         self.assertEqual(self.check_mapping_then_sequence(GrandchildPost()), "seq")
 
 
-# class TestPatma(unittest.TestCase):
+class TestPatma(unittest.TestCase):
 
-#     def test_patma_000(self):
-#         match 0:
-#             case 0:
-#                 x = True
-#         self.assertIs(x, True)
+    def test_patma_000(self):
+        match 0:
+            case 0:
+                x = True
+        self.assertIs(x, True)
 
-#     def test_patma_001(self):
-#         match 0:
-#             case 0 if False:
-#                 x = False
-#             case 0 if True:
-#                 x = True
-#         self.assertIs(x, True)
+    def test_patma_001(self):
+        match 0:
+            case 0 if False:
+                x = False
+            case 0 if True:
+                x = True
+        self.assertIs(x, True)
 
-#     def test_patma_002(self):
-#         match 0:
-#             case 0:
-#                 x = True
-#             case 0:
-#                 x = False
-#         self.assertIs(x, True)
+    def test_patma_002(self):
+        match 0:
+            case 0:
+                x = True
+            case 0:
+                x = False
+        self.assertIs(x, True)
 
-#     def test_patma_003(self):
-#         x = False
-#         match 0:
-#             case 0 | 1 | 2 | 3:
-#                 x = True
-#         self.assertIs(x, True)
+    def test_patma_003(self):
+        x = False
+        match 0:
+            case 0 | 1 | 2 | 3:
+                x = True
+        self.assertIs(x, True)
 
-#     def test_patma_004(self):
-#         x = False
-#         match 1:
-#             case 0 | 1 | 2 | 3:
-#                 x = True
-#         self.assertIs(x, True)
+    # def test_patma_004(self):
+    #     x = False
+    #     match 1:
+    #         case 0 | 1 | 2 | 3:
+    #             x = True
+    #     self.assertIs(x, True)
 
-#     def test_patma_005(self):
-#         x = False
-#         match 2:
-#             case 0 | 1 | 2 | 3:
-#                 x = True
-#         self.assertIs(x, True)
+    # def test_patma_005(self):
+    #     x = False
+    #     match 2:
+    #         case 0 | 1 | 2 | 3:
+    #             x = True
+    #     self.assertIs(x, True)
 
-#     def test_patma_006(self):
-#         x = False
-#         match 3:
-#             case 0 | 1 | 2 | 3:
-#                 x = True
-#         self.assertIs(x, True)
+    # def test_patma_006(self):
+    #     x = False
+    #     match 3:
+    #         case 0 | 1 | 2 | 3:
+    #             x = True
+    #     self.assertIs(x, True)
 
-#     def test_patma_007(self):
-#         x = False
-#         match 4:
-#             case 0 | 1 | 2 | 3:
-#                 x = True
-#         self.assertIs(x, False)
+    # def test_patma_007(self):
+    #     x = False
+    #     match 4:
+    #         case 0 | 1 | 2 | 3:
+    #             x = True
+    #     self.assertIs(x, False)
 
 #     def test_patma_008(self):
 #         x = 0

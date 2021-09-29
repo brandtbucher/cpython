@@ -6098,6 +6098,7 @@ spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
         if (!n->preserve) {
             ADDOP(c, ROT_TWO);
             ADDOP(c, POP_TOP);
+            n->stacksize--;
         }
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
@@ -6120,6 +6121,7 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
         if (!n->preserve) {
             ADDOP(c, ROT_TWO);
             ADDOP(c, POP_TOP);
+            n->stacksize--;
         }
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
@@ -6155,19 +6157,19 @@ spm_compile_star(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_value(struct compiler *c, spm_node_pattern *n)
 {
-    // SPM_GROUP_BEGIN(spm_same_expr(p->v.MatchValue.value, q->v.MatchValue.value));
-    //     SPM_LOOP_BEGIN;
-    //         if (n->preserve) {
-    //             ADDOP(c, DUP_TOP);
-    //         }
-    //         else {
-    //             n->stacksize--;
-    //         }
-    //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
-    //         ADDOP_COMPARE(c, Eq);
-    //         SPM_POP_JUMP_IF_FALSE;
-    //     SPM_LOOP_END;
-    // SPM_GROUP_END;
+    SPM_GROUP_BEGIN(spm_same_expr(p->v.MatchValue.value, q->v.MatchValue.value));
+        SPM_LOOP_BEGIN;
+            if (n->preserve) {
+                ADDOP(c, DUP_TOP);
+            }
+            else {
+                n->stacksize--;
+            }
+            VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
+            ADDOP_COMPARE(c, Eq);
+            SPM_POP_JUMP_IF_FALSE;
+        SPM_LOOP_END;
+    SPM_GROUP_END;
     return 1;
 }
 
@@ -6248,7 +6250,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         fail = n->block_tail;
     }
     return (
-        spm_expand_or(c, n)
+        spm_expand_or(c, n
         && compiler_use_block(c, top)
         && compiler_use_next_block(c, n->block_tail)
         && spm_compile(c, n)
