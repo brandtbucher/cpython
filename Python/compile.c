@@ -6022,8 +6022,16 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
                 if (new == NULL) {
                     return 0;
                 }
-                // TODO: We need to link these blocks, can't just throw them away like this.
-                new->block_body = n->block_body;
+                // TODO: Comment for this.
+                basicblock *tmp = n->block_tail;
+                n->block_tail = new->block_tail;
+                new->block_tail = tmp;
+                tmp = n->block_body;
+                n->block_body = new->block_body;
+                new->block_body = tmp;
+                compiler_use_block(c, n->block_body);
+                ADDOP_JUMP(c, JUMP_FORWARD, new->block_body);
+                compiler_use_next_block(c, new->block_tail);
                 n->next = new;
             }
             assert(nalts == 0);
@@ -6094,7 +6102,6 @@ spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_MAPPING);
-        // XXX
         if (!n->preserve) {
             ADDOP(c, ROT_TWO);
             ADDOP(c, POP_TOP);
@@ -6117,7 +6124,6 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_SEQUENCE);
-        // XXX
         if (!n->preserve) {
             ADDOP(c, ROT_TWO);
             ADDOP(c, POP_TOP);
@@ -6131,19 +6137,19 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
 {
-    // SPM_GROUP_BEGIN(p->v.MatchSingleton.value == q->v.MatchSingleton.value);
-    //     SPM_LOOP_BEGIN;
-    //         if (n->preserve) {
-    //             ADDOP(c, DUP_TOP);
-    //         }
-    //         else {
-    //             n->stacksize--;
-    //         }
-    //         VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
-    //         ADDOP_COMPARE(c, Is);
-    //         SPM_POP_JUMP_IF_FALSE;
-    //     SPM_LOOP_END;
-    // SPM_GROUP_END;
+    SPM_GROUP_BEGIN(p->v.MatchSingleton.value == q->v.MatchSingleton.value);
+        SPM_LOOP_BEGIN;
+            if (n->preserve) {
+                ADDOP(c, DUP_TOP);
+            }
+            else {
+                n->stacksize--;
+            }
+            ADDOP_LOAD_CONST(c, n->subpatterns->pattern->v.MatchSingleton.value);
+            ADDOP_COMPARE(c, Is);
+            SPM_POP_JUMP_IF_FALSE;
+        SPM_LOOP_END;
+    SPM_GROUP_END;
     return 1;
 }
 
@@ -6224,16 +6230,11 @@ compiler_match(struct compiler *c, stmt_ty s)
     basicblock *fail = n->block_tail;
     basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
-    bool last = true;
     while (i--) {
         match_case_ty match = asdl_seq_GET(s->v.Match.cases, i);
         n = spm_node_pattern_new(c, n, match->pattern);
         if (n == NULL) {
             return 0;
-        }
-        if (last) {
-            // n->preserve = false;
-            last = false;
         }
         compiler_use_block(c, n->block_body);
         if (match->guard) {
@@ -6250,7 +6251,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         fail = n->block_tail;
     }
     return (
-        spm_expand_or(c, n
+        spm_expand_or(c, n)
         && compiler_use_block(c, top)
         && compiler_use_next_block(c, n->block_tail)
         && spm_compile(c, n)
