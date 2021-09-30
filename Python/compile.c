@@ -6256,9 +6256,13 @@ compiler_match(struct compiler *c, stmt_ty s)
         ADDOP_JUMP(c, JUMP_FORWARD, end);
         compiler_use_next_block(c, n->next->block_tail);
     }
-    compiler_use_block(c, top);
-    compiler_use_next_block(c, n->block_tail);
-    return spm_expand_or(c, n) && spm_compile(c, n) && spm_cleanup(c, n);
+    return (
+        spm_expand_or(c, n)
+        && compiler_use_block(c, top)
+        && compiler_use_next_block(c, n->block_tail)
+        && spm_compile(c, n)
+        && spm_cleanup(c, n)
+    );
 }
 
 /* End of the compiler section, beginning of the assembler section */
@@ -8139,7 +8143,7 @@ eliminate_empty_basic_blocks(basicblock *entry) {
             while (next->b_iused == 0 && next->b_next) {
                 next = next->b_next;
             }
-            b->b_next = next;  // XXX: HERE
+            b->b_next = next;
         }
     }
     for (basicblock *b = entry; b != NULL; b = b->b_next) {
@@ -8340,15 +8344,15 @@ duplicate_exits_without_lineno(struct compiler *c)
                 b->b_instr[b->b_iused-1].i_target = new_target;
                 target->b_predecessors--;
                 new_target->b_predecessors = 1;
-                new_target->b_next = target->b_next;  // XXX: HERE
-                target->b_next = new_target;  // XXX: HERE
+                new_target->b_next = target->b_next;
+                target->b_next = new_target;
             }
         }
     }
     /* Eliminate empty blocks */
     for (basicblock *b = c->u->u_blocks; b != NULL; b = b->b_list) {
         while (b->b_next && b->b_next->b_iused == 0) {
-            b->b_next = b->b_next->b_next;  // XXX: HERE
+            b->b_next = b->b_next->b_next;
         }
     }
     /* Any remaining reachable exit blocks without line number can only be reached by
