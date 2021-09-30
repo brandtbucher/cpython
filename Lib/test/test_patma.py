@@ -187,36 +187,36 @@ class TestPatma(unittest.TestCase):
                 x = True
         self.assertIs(x, False)
 
-    # def test_patma_008(self):
-    #     x = 0
-    #     class A:
-    #         y = 1
-    #     match x:
-    #         case A.y as z:
-    #             pass
-    #     self.assertEqual(x, 0)
-    #     self.assertEqual(A.y, 1)
+    def test_patma_008(self):
+        x = 0
+        class A:
+            y = 1
+        match x:
+            case A.y as z:
+                pass
+        self.assertEqual(x, 0)
+        self.assertEqual(A.y, 1)
 
-#     def test_patma_009(self):
-#         class A:
-#             B = 0
-#         match 0:
-#             case x if x:
-#                 z = 0
-#             case _ as y if y == x and y:
-#                 z = 1
-#             case A.B:
-#                 z = 2
-#         self.assertEqual(A.B, 0)
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 2)
+    def test_patma_009(self):
+        class A:
+            B = 0
+        match 0:
+            case x if x:
+                z = 0
+            case _ as y if y == x and y:
+                z = 1
+            case A.B:
+                z = 2
+        self.assertEqual(A.B, 0)
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 2)
 
-#     def test_patma_010(self):
-#         match ():
-#             case []:
-#                 x = 0
-#         self.assertEqual(x, 0)
+    def test_patma_010(self):
+        match ():
+            case []:
+                x = 0
+        self.assertEqual(x, 0)
 
 #     def test_patma_011(self):
 #         match (0, 1, 2):

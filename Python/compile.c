@@ -5807,46 +5807,47 @@ compiler_slice(struct compiler *c, expr_ty s)
 
 #define SPM_OPTIMIZE true
 
-#define SPM_GROUP_BEGIN(TEST)                                                  \
-    {                                                                          \
-        spm_node_pattern *_n = n;                                              \
-        while (_n->subpatterns) {                                              \
-            pattern_ty p = _n->subpatterns->pattern;                           \
-            spm_node_pattern *_next = _n->next;                                \
-            while (_next->subpatterns) {                                       \
-                pattern_ty q = _next->subpatterns->pattern;                    \
-                /* Sanity check: patterns should group with themselves! */     \
-                {                                                              \
-                    pattern_ty p = q;                                          \
-                    assert((TEST));                                            \
-                }                                                              \
-                /* TEST is always evaluated, even if we're not optimizing: */  \
-                int _in_group = (TEST);                                        \
-                if (_in_group < 0) {                                           \
-                    return 0;                                                  \
-                }                                                              \
-                if (!SPM_OPTIMIZE || !_in_group) {                             \
-                    break;                                                     \
-                }                                                              \
-                _next = _next->next;                                           \
-            }                                                                  \
-            spm_node_subpattern *_s = _next->subpatterns;                      \
-            _next->subpatterns = NULL;\
+#define SPM_GROUP_BEGIN(TEST)                                                 \
+    {                                                                         \
+        spm_node_pattern *_n = n;                                             \
+        while (_n->pattern) {                                                 \
+            pattern_ty p = _n->subpatterns->pattern;                          \
+            spm_node_pattern *_next = _n->next;                               \
+            while (_next->pattern) {                                          \
+                pattern_ty q = _next->subpatterns->pattern;                   \
+                /* Sanity check: patterns should group with themselves! */    \
+                {                                                             \
+                    pattern_ty p = q;                                         \
+                    assert((TEST));                                           \
+                }                                                             \
+                /* TEST is always evaluated, even if we're not optimizing: */ \
+                int _in_group = (TEST);                                       \
+                if (_in_group < 0) {                                          \
+                    return 0;                                                 \
+                }                                                             \
+                if (!SPM_OPTIMIZE || !_in_group) {                            \
+                    break;                                                    \
+                }                                                             \
+                _next = _next->next;                                          \
+            }                                                                 \
+            pattern_ty _p = _next->pattern;                                   \
+            _next->pattern = NULL;                                            \
             spm_node_pattern *n = _n;
 
 // TODO: Try to move this up to SPM_GROUP_BEGIN...
-#define SPM_GROUP_END                \
-            _next->subpatterns = _s; \
-            _n = _next;              \
-        }                            \
+#define SPM_GROUP_END            \
+            _next->pattern = _p; \
+            _n = _next;          \
+        }                        \
     }
 
-#define SPM_LOOP_BEGIN                                                \
-    {                                                                 \
-        spm_node_pattern *_n = n;                                     \
-        for (spm_node_pattern *n = _n; n->subpatterns; n = n->next) { \
-            SET_LOC(c, n->subpatterns->pattern);                      \
-            compiler_use_block(c, n->block_tail);                     \
+#define SPM_LOOP_BEGIN                                            \
+    {                                                             \
+        spm_node_pattern *_n = n;                                 \
+        for (spm_node_pattern *n = _n; n->pattern; n = n->next) { \
+            pattern_ty p = n->subpatterns->pattern;               \
+            compiler_use_block(c, n->block_tail);                 \
+            SET_LOC(c, p);
 
 #define SPM_LOOP_END \
         }            \
@@ -5905,6 +5906,8 @@ struct spm_node_pattern {
     spm_node_pattern *next;
     basicblock *block_tail;
     basicblock *block_body;
+    pattern_ty pattern;
+    PyObject *stores;
     Py_ssize_t stacksize;
     bool reachable;
     // TODO: Probably need a better approach to this...
@@ -5915,6 +5918,18 @@ typedef int spm_compiler(struct compiler *c, spm_node_pattern *n);
 
 static spm_compiler spm_compile;
 
+static spm_node_subpattern *
+spm_node_subpattern_new(struct compiler *c, spm_node_subpattern *next, pattern_ty pattern)
+{
+    assert(pattern);
+    spm_node_subpattern *s = _PyArena_Malloc(c->c_arena, sizeof(spm_node_subpattern));
+    if (s) {
+        s->next = next;
+        s->pattern = pattern;
+    }
+    return s;
+}
+
 static spm_node_pattern *
 spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty pattern)
 {
@@ -5923,12 +5938,10 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
         return NULL;
     }
     if (pattern) {
-        n->subpatterns = _PyArena_Malloc(c->c_arena, sizeof(spm_node_subpattern));
+        n->subpatterns = spm_node_subpattern_new(c, NULL, pattern);
         if (n->subpatterns == NULL) {
             return NULL;
         }
-        n->subpatterns->next = NULL;
-        n->subpatterns->pattern = pattern;
     }
     else {
         n->subpatterns = NULL;
@@ -5941,6 +5954,11 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
     n->block_body = compiler_new_block(c);
     if (n->block_body == NULL) {
         return NULL;
+    }
+    n->pattern = pattern;
+    n->stores = PyList_New(0);
+    if (n->stores == NULL || _PyArena_AddPyObject(c->c_arena, n->stores)) {
+        return 0;
     }
     n->stacksize = 1;
     n->reachable = false;
@@ -6012,9 +6030,10 @@ spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
 static int
 spm_expand_or(struct compiler *c, spm_node_pattern *n)
 {
-    while (n->subpatterns) {
-        assert(n->subpatterns->next == NULL);
-        pattern_ty pattern = n->subpatterns->pattern;
+    while (n->pattern) {
+        // We must be top-level:
+        assert(n->pattern == n->subpatterns->pattern);
+        pattern_ty pattern = n->pattern;
         if (pattern->kind == MatchOr_kind) {
             asdl_pattern_seq *patterns = pattern->v.MatchOr.patterns;
             Py_ssize_t nalts = asdl_seq_LEN(patterns);
@@ -6038,7 +6057,8 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
             }
             assert(nalts == 0);
             // NOTE: Might need to modify some other fields here in the future!
-            n->subpatterns->pattern = asdl_seq_GET(patterns, 0);
+            n->pattern = asdl_seq_GET(patterns, 0);
+            n->subpatterns->pattern = n->pattern;
         }
         else {
             n = n->next;
@@ -6054,49 +6074,110 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
 static int
 spm_cleanup(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO: We actually might be able to now... 
-    // NOTE: Don't us SPM_LOOP_* here. We need to visit the last "dummy" pattern
-    // node, and we don't want to call "compiler_use_block(n->block_tail)"" at
-    // the top of each loop (we're linking *all* of the bodies/tails together in
-    // this loop)!
     n->reachable = true;
-    while (n) {
-        if (n->next && !n->reachable && !compiler_warn(c, "case is unreachable")) {
+    SPM_LOOP_BEGIN;
+        assert(n->stacksize == n->preserve);
+        Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
+        if (n->preserve) {
+            ADDOP_I(c, ROT_N, PyList_GET_SIZE(n->stores) + 1);
+        }
+        while (nstores--) {
+            if (!compiler_nameop(c, PyList_GET_ITEM(n->stores, nstores), Store)) {
+                return 0;
+            }
+        }
+        compiler_use_next_block(c, n->block_body);
+        SET_LOC(c, n->pattern);
+        if (n->next && !n->reachable && !compiler_warn(c, "pattern is unreachable")) {
             return 0;
         }
-        compiler_use_block(c, n->block_tail);
-        if (!n->preserve) {
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
+    SPM_LOOP_END;
+    return 1;
+}
+
+static int
+spm_check(struct compiler *c, spm_node_pattern *n)
+{
+    spm_node_pattern *f = n;
+    // TODO: This move is technically quadratic-time...
+    while (f->pattern) {
+        f = f->next;
+    }
+    f->reachable = true;
+    Py_ssize_t stack_pops = n->stacksize - f->stacksize;
+    assert(0 <= stack_pops);
+    Py_ssize_t keep = f->stacksize;
+    Py_ssize_t name_pops = PyList_GET_SIZE(n->stores) - PyList_GET_SIZE(f->stores);
+    assert(0 <= name_pops);
+    compiler_use_block(c, n->block_tail);
+    if (stack_pops || name_pops) {
+        basicblock *tail = compiler_new_block(c);
+        if (tail == NULL) {
+            return 0;
         }
-        // TODO: Stores.
-        compiler_use_next_block(c, n->block_body);
-        n = n->next;
+        ADDOP_JUMP(c, POP_JUMP_IF_TRUE, tail);
+        SPM_NEXT_BLOCK;
+        while (stack_pops--) {
+            ADDOP(c, POP_TOP);
+        }
+        for (Py_ssize_t i = 0; i < keep; i++) {
+            ADDOP_I(c, ROT_N, keep + name_pops);
+        }
+        while (name_pops--) {
+            ADDOP(c, POP_TOP);
+        }
+        ADDOP_JUMP(c, JUMP_FORWARD, f->block_tail);
+        n->block_tail = compiler_use_next_block(c, tail);
+    }
+    else {
+        ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block_tail);
+        SPM_NEXT_BLOCK;
     }
     return 1;
 }
 
 static int
-spm_check(struct compiler *c, spm_node_pattern *n) {
-    // TODO: Quadratic complexity, anyone?
-    spm_node_pattern *f = n;
-    while (f->subpatterns) {
-        f = f->next;
+spm_store(struct compiler *c, spm_node_pattern *n, PyObject *name)
+{
+    if (name) {
+        if (n->preserve) {
+            ADDOP(c, DUP_TOP);
+        }
+        else {
+            n->stacksize--;
+        }
+        if (PyList_Append(n->stores, name)) {
+            return 0;
+        }
+        ADDOP_I(c, ROT_N, n->stacksize);
     }
-    // TODO: We'll need to pop a bunch of stuff as this becomes more complicated...
-    ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block_tail);
-    f->reachable = true;
-    SPM_NEXT_BLOCK;
+    else if (!n->preserve) {
+        ADDOP(c, POP_TOP);
+        n->stacksize--;
+    }
     return 1;
 }
 
+// MatchAs(pattern? pattern, identifier? name)
 static int
 spm_compile_as(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO
+    SPM_LOOP_BEGIN;
+        if (!spm_store(c, n, p->v.MatchAs.name)) {
+            return 0;
+        }
+        if (p->v.MatchAs.pattern) {
+            // TODO: This might be common enough to break out.
+            n->subpatterns->next = spm_node_subpattern_new(c, n->subpatterns->next, p->v.MatchAs.pattern);
+            if (n->subpatterns->next == NULL) {
+                return 0;
+            }
+        }
+    SPM_LOOP_END;
     return 1;
 }
 
+// MatchClass(expr cls, pattern* patterns, identifier* kwd_attrs, pattern* kwd_patterns)
 static int
 spm_compile_class(struct compiler *c, spm_node_pattern *n)
 {
@@ -6104,6 +6185,7 @@ spm_compile_class(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchMapping(expr* keys, pattern* patterns, identifier? rest)
 static int
 spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
@@ -6119,6 +6201,7 @@ spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchOr(pattern* patterns)
 static int
 spm_compile_or(struct compiler *c, spm_node_pattern *n)
 {
@@ -6126,6 +6209,7 @@ spm_compile_or(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchSequence(pattern* patterns)
 static int
 spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 {
@@ -6141,6 +6225,7 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchSingleton(constant value)
 static int
 spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
 {
@@ -6152,7 +6237,7 @@ spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
             else {
                 n->stacksize--;
             }
-            ADDOP_LOAD_CONST(c, n->subpatterns->pattern->v.MatchSingleton.value);
+            ADDOP_LOAD_CONST(c, p->v.MatchSingleton.value);
             ADDOP_COMPARE(c, Is);
             SPM_POP_JUMP_IF_FALSE;
         SPM_LOOP_END;
@@ -6160,6 +6245,7 @@ spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchStar(identifier? name)
 static int
 spm_compile_star(struct compiler *c, spm_node_pattern *n)
 {
@@ -6167,6 +6253,7 @@ spm_compile_star(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
+// MatchValue(expr value)
 static int
 spm_compile_value(struct compiler *c, spm_node_pattern *n)
 {
@@ -6178,7 +6265,7 @@ spm_compile_value(struct compiler *c, spm_node_pattern *n)
             else {
                 n->stacksize--;
             }
-            VISIT(c, expr, n->subpatterns->pattern->v.MatchValue.value);
+            VISIT(c, expr, p->v.MatchValue.value);
             ADDOP_COMPARE(c, Eq);
             SPM_POP_JUMP_IF_FALSE;
         SPM_LOOP_END;
@@ -6229,11 +6316,19 @@ compiler_match(struct compiler *c, stmt_ty s)
 {
     VISIT(c, expr, s->v.Match.subject);
     basicblock *top = c->u->u_curblock; 
+    // TODO: If there is a trailing "case _: ...", combine it with this block!
     spm_node_pattern *n = spm_node_pattern_new(c, NULL, NULL);
     if (n == NULL) {
         return 0;
     }
     n->preserve = false;
+    compiler_use_block(c, n->block_tail);
+    if (!n->preserve) {
+        // No stacksize adjustment here, since the subject should be on the
+        // stack going *into* this block.
+        ADDOP(c, POP_TOP);
+    }
+    compiler_use_next_block(c, n->block_body);
     basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
     while (i--) {
@@ -6262,6 +6357,7 @@ compiler_match(struct compiler *c, stmt_ty s)
         && compiler_use_next_block(c, n->block_tail)
         && spm_compile(c, n)
         && spm_cleanup(c, n)
+        && compiler_use_block(c, end)
     );
 }
 
