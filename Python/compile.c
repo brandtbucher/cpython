@@ -5902,6 +5902,8 @@ typedef struct spm_node_subpattern spm_node_subpattern;
 struct spm_node_subpattern {
     spm_node_subpattern *next;
     pattern_ty pattern;
+    // TODO: Probably need a better approach to this...
+    bool preserve;
 };
 
 typedef struct spm_node_pattern spm_node_pattern;
@@ -5915,8 +5917,6 @@ struct spm_node_pattern {
     PyObject *stores;
     Py_ssize_t stacksize;
     bool reachable;
-    // TODO: Probably need a better approach to this...
-    bool preserve;
 };
 
 typedef int spm_compiler(struct compiler *c, spm_node_pattern *n);
@@ -5931,6 +5931,7 @@ spm_node_subpattern_new(struct compiler *c, spm_node_subpattern *next, pattern_t
     if (s) {
         s->next = next;
         s->pattern = pattern;
+        s->preserve = false;
     }
     return s;
 }
@@ -5947,6 +5948,7 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
         if (n->subpatterns == NULL) {
             return NULL;
         }
+        n->subpatterns->preserve = true;
     }
     else {
         n->subpatterns = NULL;
@@ -5967,7 +5969,6 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
     }
     n->stacksize = 1;
     n->reachable = false;
-    n->preserve = true;
     return n;
 }
 
@@ -6111,11 +6112,11 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
     while (n->pattern) {
         SET_LOC(c, n->pattern);
         compiler_use_block(c, n->block_tail);
-        assert(n->stacksize == n->preserve);
+        assert(n->stacksize == 1);
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
-        if (n->preserve) {
+        // if (n->preserve) {
             ADDOP_I(c, ROT_N, PyList_GET_SIZE(n->stores) + 1);
-        }
+        // }
         while (nstores--) {
             if (!compiler_nameop(c, PyList_GET_ITEM(n->stores, nstores), Store)) {
                 return 0;
@@ -6175,18 +6176,18 @@ static int
 spm_store(struct compiler *c, spm_node_pattern *n, PyObject *name)
 {
     if (name) {
-        if (n->preserve) {
+        if (n->subpatterns->preserve) {
             ADDOP(c, DUP_TOP);
-        }
-        else {
-            n->stacksize--;
         }
         if (PyList_Append(n->stores, name)) {
             return 0;
         }
         ADDOP_I(c, ROT_N, n->stacksize);
+        if (!n->subpatterns->preserve) {
+            n->stacksize--;
+        }
     }
-    else if (!n->preserve) {
+    else if (!n->subpatterns->preserve) {
         ADDOP(c, POP_TOP);
         n->stacksize--;
     }
@@ -6205,7 +6206,6 @@ static int
 spm_compile_as(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
-        // TODO: Probably need tp take n->preserve into account here...
         if (!spm_store(c, n, p->v.MatchAs.name)) {
             return 0;
         }
@@ -6230,7 +6230,7 @@ spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_MAPPING);
-        if (!n->preserve) {
+        if (!n->subpatterns->preserve) {
             ADDOP(c, ROT_TWO);
             ADDOP(c, POP_TOP);
             n->stacksize--;
@@ -6254,40 +6254,63 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_SEQUENCE);
-        if (!n->preserve) {
-            ADDOP(c, ROT_TWO);
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
-        }
+        // if (!n->subpatterns->preserve) {
+        //     ADDOP(c, ROT_TWO);
+        //     ADDOP(c, POP_TOP);
+        //     n->stacksize--;
+        // }
         SPM_POP_JUMP_IF_FALSE;
-        // SPM_GROUP_BEGIN(spm_sequence_len(p) == spm_sequence_len(q));
-        //     Py_ssize_t len = spm_sequence_len(p);
-        //     SPM_LOOP_BEGIN;
-        //         if (len != -1) {
-        //             // TODO: We can probably share this GET_LEN call across groups...
-        //             ADDOP(c, GET_LEN);
-        //             ADDOP_I(c, LOAD_CONST, len);
-        //             bool starred;
-        //             if (len < 0) {
-        //                 starred = true;
-        //                 len = -len - 1;
-        //             }
-        //             else {
-        //                 starred = false;
-        //             }
-        //             ADDOP_I(c, COMPARE_OP, starred ? Py_GT : Py_EQ);
-        //             SPM_POP_JUMP_IF_FALSE;
-        //             if (starred) {
-        //                 // TODO: This computation...
-        //                 ADDOP_I(c, UNPACK_EX, len);
-        //             }
-        //             else {
-        //                 ADDOP_I(c, UNPACK_SEQUENCE, len);
-        //             }
-        //             n->stacksize += len + starred;
-        //         }
-        //     SPM_LOOP_END;
-        // SPM_GROUP_END;
+        SPM_GROUP_BEGIN(spm_sequence_len(p) == spm_sequence_len(q));
+            Py_ssize_t len = spm_sequence_len(p);
+            SPM_LOOP_BEGIN;
+                bool starred;
+                if (len < 0) {
+                    starred = true;
+                    len = -len - 1;
+                }
+                else {
+                    starred = false;
+                }
+                if (len != -1) {
+                    // TODO: We can probably share this GET_LEN call across groups...
+                    ADDOP(c, GET_LEN);
+                    ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(len));
+                    ADDOP_I(c, COMPARE_OP, starred ? Py_GE : Py_EQ);
+                    SPM_POP_JUMP_IF_FALSE;
+                    if (n->subpatterns->preserve) {
+                        ADDOP(c, DUP_TOP);
+                        n->stacksize++;
+                    }
+                }
+                if (starred) {
+                    // TODO: Handle starred wildcards using indexing...
+                    SPM_GROUP_BEGIN(spm_sequence_star_index(p) == spm_sequence_star_index(q));
+                        Py_ssize_t star = spm_sequence_star_index(p);
+                        assert(0 <= star);
+                        SPM_LOOP_BEGIN;
+                            printf("star: %ld len: %ld\n", star, len);
+                            ADDOP_I(c, UNPACK_EX, (star + ((len - star) << 8)));
+                            n->stacksize += len;
+                        SPM_LOOP_END;
+                    SPM_GROUP_END;
+                    len += 1;
+                }
+                else {
+                    SPM_LOOP_BEGIN;
+                        ADDOP_I(c, UNPACK_SEQUENCE, len);
+                        n->stacksize += len - 1;
+                    SPM_LOOP_END;
+                }
+                SPM_LOOP_BEGIN;
+                    Py_ssize_t i = len;
+                    while (i--) {
+                        if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchSequence.patterns, i))) {
+                            return 0;
+                        }
+                    }
+                SPM_LOOP_END;
+            SPM_LOOP_END;
+        SPM_GROUP_END;
     SPM_LOOP_END;
     return 1;
 }
@@ -6298,7 +6321,7 @@ spm_compile_singleton(struct compiler *c, spm_node_pattern *n)
 {
     SPM_GROUP_BEGIN(p->v.MatchSingleton.value == q->v.MatchSingleton.value);
         SPM_LOOP_BEGIN;
-            if (n->preserve) {
+            if (n->subpatterns->preserve) {
                 ADDOP(c, DUP_TOP);
             }
             else {
@@ -6330,7 +6353,7 @@ spm_compile_value(struct compiler *c, spm_node_pattern *n)
 {
     SPM_GROUP_BEGIN(spm_same_expr(p->v.MatchValue.value, q->v.MatchValue.value));
         SPM_LOOP_BEGIN;
-            if (n->preserve) {
+            if (n->subpatterns->preserve) {
                 ADDOP(c, DUP_TOP);
             }
             else {
@@ -6405,13 +6428,13 @@ compiler_match(struct compiler *c, stmt_ty s)
     if (n == NULL) {
         return 0;
     }
-    n->preserve = false;
+    // n->preserve = false;
     compiler_use_block(c, n->block_tail);
-    if (!n->preserve) {
+    // if (!n->preserve) {
         // No stacksize adjustment here, since the subject should be on the
         // stack going *into* this block.
         ADDOP(c, POP_TOP);
-    }
+    // }
     compiler_use_next_block(c, n->block_body);
     basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
@@ -6428,9 +6451,9 @@ compiler_match(struct compiler *c, stmt_ty s)
             n->next->reachable = true;
             NEXT_BLOCK(c);
         }
-        if (n->preserve) {
+        // if (n->preserve) {
             ADDOP(c, POP_TOP);
-        }
+        // }
         VISIT_SEQ(c, stmt, match->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
         compiler_use_next_block(c, n->next->block_tail);
