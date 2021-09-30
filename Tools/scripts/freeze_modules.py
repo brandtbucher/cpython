@@ -221,6 +221,7 @@ def _parse_spec(spec, knownids=None, section=None):
         if ispkg:
             pkgid = frozenid
             pkgname = modname
+            pkgfiles = {pyfile: pkgid}
             def iter_subs():
                 for frozenid, pyfile, ispkg in resolved:
                     assert not knownids or frozenid not in knownids, (frozenid, spec)
@@ -228,6 +229,12 @@ def _parse_spec(spec, knownids=None, section=None):
                         modname = frozenid.replace(pkgid, pkgname, 1)
                     else:
                         modname = frozenid
+                    if pyfile:
+                        if pyfile in pkgfiles:
+                            frozenid = pkgfiles[pyfile]
+                            pyfile = None
+                        elif ispkg:
+                            pkgfiles[pyfile] = frozenid
                     yield frozenid, pyfile, modname, ispkg, section
             submodules = iter_subs()
 
@@ -322,10 +329,10 @@ def _iter_sources(modules):
 # generic helpers
 
 def _get_checksum(filename):
-    with open(filename) as infile:
-        text = infile.read()
+    with open(filename, "rb") as infile:
+        contents = infile.read()
     m = hashlib.sha256()
-    m.update(text.encode('utf8'))
+    m.update(contents)
     return m.hexdigest()
 
 
@@ -482,7 +489,7 @@ def regen_manifest(modules):
         modlines.append(' '.join(row).rstrip())
 
     print(f'# Updating {os.path.relpath(MANIFEST)}')
-    with open(MANIFEST, 'w') as outfile:
+    with open(MANIFEST, 'w', encoding="utf-8") as outfile:
         lines = (l + '\n' for l in modlines)
         outfile.writelines(lines)
 
