@@ -5808,6 +5808,7 @@ compiler_slice(struct compiler *c, expr_ty s)
 #define SPM_OPTIMIZE true
 
 #define SPM_GROUP_BEGIN(TEST)                                                  \
+    int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);                            \
     {                                                                          \
         spm_node_pattern *_n = n;                                              \
         while (_n->pattern) {                                                  \
@@ -5852,7 +5853,8 @@ compiler_slice(struct compiler *c, expr_ty s)
             }                                                     \
             pattern_ty p = n->subpatterns->pattern;               \
             compiler_use_block(c, n->block_tail);                 \
-            SET_LOC(c, p);
+            SET_LOC(c, p);                                        \
+            int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);
 
 #define SPM_LOOP_END \
         }            \
