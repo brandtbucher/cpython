@@ -6129,6 +6129,11 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
     while (n->pattern) {
         SET_LOC(c, n->pattern);
         compiler_use_block(c, n->block_tail);
+        // TODO: Why...? Is our stacksize wrong for a second repeated sequence pattern?
+        while (1 < n->stacksize) {
+            ADDOP(c, POP_TOP);
+            n->stacksize--;
+        }
         assert(n->stacksize == 1);
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
         // if (n->preserve) {
