@@ -6253,13 +6253,38 @@ spm_compile_mapping(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_MAPPING);
-        if (!n->subpatterns->preserve) {
-            ADDOP(c, ROT_TWO);
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
-        }
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
+    SPM_GROUP_BEGIN(spm_same_exprs(p->v.MatchMapping.keys, q->v.MatchMapping.keys));
+        SPM_LOOP_BEGIN;
+            VISIT_SEQ(c, expr, p->v.MatchMapping.keys);
+            ADDOP_I(c, BUILD_TUPLE, asdl_seq_LEN(p->v.MatchMapping.keys));
+            n->stacksize++;
+            ADDOP(c, MATCH_KEYS);
+            n->stacksize++;
+            SPM_POP_JUMP_IF_FALSE;
+            // XXX -->
+            ADDOP(c, ROT_THREE);
+            ADDOP(c, POP_TOP);
+            n->stacksize--;
+            if (!n->subpatterns->preserve) {
+                ADDOP(c, POP_TOP);
+                n->stacksize--;
+            }
+            else {
+                ADDOP(c, ROT_TWO);
+            }
+            // <-- XXX
+            ADDOP_I(c, UNPACK_SEQUENCE, asdl_seq_LEN(p->v.MatchMapping.patterns));
+            n->stacksize += asdl_seq_LEN(p->v.MatchMapping.patterns) - 1;
+            Py_ssize_t i = asdl_seq_LEN(p->v.MatchMapping.patterns);
+            while (i--) {
+                if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchMapping.patterns, i), false)) {
+                    return 0;
+                }
+            }
+        SPM_LOOP_END;
+    SPM_GROUP_END;
     return 1;
 }
 
@@ -6278,54 +6303,63 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_SEQUENCE);
         SPM_POP_JUMP_IF_FALSE;
-        SPM_GROUP_BEGIN(spm_sequence_len(p) == spm_sequence_len(q));
-            Py_ssize_t len = spm_sequence_len(p);
-            SPM_LOOP_BEGIN;
-                bool starred = len < 0;
-                if (len != -1) {
-                    // TODO: We can probably share this GET_LEN call across groups...
-                    ADDOP(c, GET_LEN);
-                    ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(asdl_seq_LEN(p->v.MatchSequence.patterns) - starred));
-                    ADDOP_I(c, COMPARE_OP, starred ? Py_GE : Py_EQ);
-                    SPM_POP_JUMP_IF_FALSE;
-                }
-                SPM_GROUP_BEGIN(spm_sequence_all_wildcards(p) == spm_sequence_all_wildcards(q));
-                    if (!spm_sequence_all_wildcards(p)) {
-                        if (n->subpatterns->preserve) {
-                            ADDOP(c, DUP_TOP);
-                            n->stacksize++;
-                        }
-                        if (starred) {
-                            len = -len - 1;
-                            // TODO: Handle starred wildcards using indexing...
-                            SPM_GROUP_BEGIN(spm_sequence_star_index(p) == spm_sequence_star_index(q));
-                                Py_ssize_t star = spm_sequence_star_index(p);
-                                assert(0 <= star);
-                                SPM_LOOP_BEGIN;
-                                    ADDOP_I(c, UNPACK_EX, (star + ((len - star) << 8)));
-                                    n->stacksize += len;
-                                SPM_LOOP_END;
-                            SPM_GROUP_END;
-                        }
-                        else {
-                            SPM_LOOP_BEGIN;
-                                ADDOP_I(c, UNPACK_SEQUENCE, len);
-                                n->stacksize += len - 1;
-                            SPM_LOOP_END;
-                        }
-                        SPM_LOOP_BEGIN;
-                            Py_ssize_t i = asdl_seq_LEN(p->v.MatchSequence.patterns);
-                            while (i--) {
-                                if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchSequence.patterns, i), false)) {
-                                    return 0;
-                                }
-                            }
-                        SPM_LOOP_END;
-                    }
-                SPM_GROUP_END;
-            SPM_LOOP_END;
-        SPM_GROUP_END;
     SPM_LOOP_END;
+    SPM_GROUP_BEGIN(spm_sequence_len(p) == spm_sequence_len(q));
+        Py_ssize_t len = spm_sequence_len(p);
+        bool starred = len < 0;
+        SPM_LOOP_BEGIN;
+            if (len != -1) {
+                // TODO: We can probably share this GET_LEN call across groups...
+                ADDOP(c, GET_LEN);
+                ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(asdl_seq_LEN(p->v.MatchSequence.patterns) - starred));
+                ADDOP_I(c, COMPARE_OP, starred ? Py_GE : Py_EQ);
+                SPM_POP_JUMP_IF_FALSE;
+            }
+        SPM_LOOP_END;
+        SPM_GROUP_BEGIN(spm_sequence_all_wildcards(p) == spm_sequence_all_wildcards(q));
+            if (!spm_sequence_all_wildcards(p)) {
+                SPM_LOOP_BEGIN;
+                    if (n->subpatterns->preserve) {
+                        ADDOP(c, DUP_TOP);
+                        n->stacksize++;
+                    }
+                SPM_LOOP_END;
+                if (starred) {
+                    len = -len - 1;
+                    // TODO: Handle starred wildcards using indexing...
+                    // TODO: Group inside of loop!!!
+                    SPM_GROUP_BEGIN(spm_sequence_star_index(p) == spm_sequence_star_index(q));
+                        Py_ssize_t star = spm_sequence_star_index(p);
+                        assert(0 <= star);
+                        SPM_LOOP_BEGIN;
+                            ADDOP_I(c, UNPACK_EX, (star + ((len - star) << 8)));
+                            n->stacksize += len;
+                        SPM_LOOP_END;
+                    SPM_GROUP_END;
+                }
+                else {
+                    SPM_LOOP_BEGIN;
+                        ADDOP_I(c, UNPACK_SEQUENCE, len);
+                        n->stacksize += len - 1;
+                    SPM_LOOP_END;
+                }
+                SPM_LOOP_BEGIN;
+                    Py_ssize_t i = asdl_seq_LEN(p->v.MatchSequence.patterns);
+                    while (i--) {
+                        if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchSequence.patterns, i), false)) {
+                            return 0;
+                        }
+                    }
+                SPM_LOOP_END;
+            }
+            else if (!n->subpatterns->preserve) {
+                SPM_LOOP_BEGIN;
+                    ADDOP(c, POP_TOP);
+                    n->stacksize--;
+                SPM_LOOP_END;
+            }
+        SPM_GROUP_END;
+    SPM_GROUP_END;
     return 1;
 }
 

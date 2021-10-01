@@ -311,41 +311,41 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {0: 0})
         self.assertEqual(y, 0)
 
-#     def test_patma_024(self):
-#         x = {}
-#         y = None
-#         match x:
-#             case {0: 0}:
-#                 y = 0
-#         self.assertEqual(x, {})
-#         self.assertIs(y, None)
+    def test_patma_024(self):
+        x = {}
+        y = None
+        match x:
+            case {0: 0}:
+                y = 0
+        self.assertEqual(x, {})
+        self.assertIs(y, None)
 
-#     def test_patma_025(self):
-#         x = {0: 0}
-#         match x:
-#             case {0: (0 | 1 | 2 as z)}:
-#                 y = 0
-#         self.assertEqual(x, {0: 0})
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 0)
+    def test_patma_025(self):
+        x = {0: 0}
+        match x:
+            case {0: (0 | 1 | 2 as z)}:
+                y = 0
+        self.assertEqual(x, {0: 0})
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 0)
 
-#     def test_patma_026(self):
-#         x = {0: 1}
-#         match x:
-#             case {0: (0 | 1 | 2 as z)}:
-#                 y = 0
-#         self.assertEqual(x, {0: 1})
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 1)
+    def test_patma_026(self):
+        x = {0: 1}
+        match x:
+            case {0: (0 | 1 | 2 as z)}:
+                y = 0
+        self.assertEqual(x, {0: 1})
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 1)
 
-#     def test_patma_027(self):
-#         x = {0: 2}
-#         match x:
-#             case {0: (0 | 1 | 2 as z)}:
-#                 y = 0
-#         self.assertEqual(x, {0: 2})
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 2)
+    def test_patma_027(self):
+        x = {0: 2}
+        match x:
+            case {0: (0 | 1 | 2 as z)}:
+                y = 0
+        self.assertEqual(x, {0: 2})
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 2)
 
 #     def test_patma_028(self):
 #         x = {0: 3}
