@@ -5835,7 +5835,7 @@ compiler_slice(struct compiler *c, expr_ty s)
                 _next->pattern = NULL;                                         \
                 spm_node_pattern *n = _n;
 
-// TODO: Try to move this up to SPM_GROUP_BEGIN...
+// TODO: Try to move this up to SPM_GROUP_BEGIN (so "continue" works)...
 #define SPM_GROUP_END                \
                 _next->pattern = _p; \
             }                        \
@@ -5924,14 +5924,14 @@ typedef int spm_compiler(struct compiler *c, spm_node_pattern *n);
 static spm_compiler spm_compile;
 
 static spm_node_subpattern *
-spm_node_subpattern_new(struct compiler *c, spm_node_subpattern *next, pattern_ty pattern)
+spm_node_subpattern_new(struct compiler *c, spm_node_subpattern *next, pattern_ty pattern, bool preserve)
 {
     assert(pattern);
     spm_node_subpattern *s = _PyArena_Malloc(c->c_arena, sizeof(spm_node_subpattern));
     if (s) {
         s->next = next;
         s->pattern = pattern;
-        s->preserve = false;
+        s->preserve = preserve;
     }
     return s;
 }
@@ -5944,11 +5944,10 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next, pattern_ty patt
         return NULL;
     }
     if (pattern) {
-        n->subpatterns = spm_node_subpattern_new(c, NULL, pattern);
+        n->subpatterns = spm_node_subpattern_new(c, NULL, pattern, true);
         if (n->subpatterns == NULL) {
             return NULL;
         }
-        n->subpatterns->preserve = true;
     }
     else {
         n->subpatterns = NULL;
@@ -6059,6 +6058,24 @@ spm_sequence_len(pattern_ty p)
     return -len;
 }
 
+// True if all wildcards, false otherwise.
+static bool
+spm_sequence_all_wildcards(pattern_ty p)
+{
+    assert(p->kind == MatchSequence_kind);
+    asdl_pattern_seq *ps = p->v.MatchSequence.patterns;
+    for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
+        pattern_ty elt = asdl_seq_GET(ps, i);
+        if (elt->kind == MatchAs_kind && elt->v.MatchAs.name == NULL) {
+            assert(elt->v.MatchAs.pattern == NULL);
+        }
+        else if (elt->kind != MatchStar_kind || elt->v.MatchStar.name) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static int
 spm_expand_or(struct compiler *c, spm_node_pattern *n)
 {
@@ -6141,6 +6158,7 @@ spm_check(struct compiler *c, spm_node_pattern *n)
     }
     f->reachable = true;
     Py_ssize_t stack_pops = n->stacksize - f->stacksize;
+    // printf("c->u->u_lineno: %d, n->stacksize: %ld, f->stacksize: %ld\n", c->u->u_lineno, n->stacksize, f->stacksize);
     assert(0 <= stack_pops);
     Py_ssize_t keep = f->stacksize;
     Py_ssize_t name_pops = PyList_GET_SIZE(n->stores) - PyList_GET_SIZE(f->stores);
@@ -6195,9 +6213,9 @@ spm_store(struct compiler *c, spm_node_pattern *n, PyObject *name)
 }
 
 static int
-spm_subpattern(struct compiler *c, spm_node_pattern *n, pattern_ty pattern)
+spm_subpattern(struct compiler *c, spm_node_pattern *n, pattern_ty pattern, bool preserve)
 {
-    n->subpatterns->next = spm_node_subpattern_new(c, n->subpatterns->next, pattern);
+    n->subpatterns->next = spm_node_subpattern_new(c, n->subpatterns->next, pattern, preserve);
     return n->subpatterns->next != NULL;
 }
 
@@ -6209,7 +6227,7 @@ spm_compile_as(struct compiler *c, spm_node_pattern *n)
         if (!spm_store(c, n, p->v.MatchAs.name)) {
             return 0;
         }
-        if (p->v.MatchAs.pattern && !spm_subpattern(c, n, p->v.MatchAs.pattern)) {
+        if (p->v.MatchAs.pattern && !spm_subpattern(c, n, p->v.MatchAs.pattern, n->subpatterns->preserve)) {
             return 0;
         }
     SPM_LOOP_END;
@@ -6254,61 +6272,52 @@ spm_compile_sequence(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_SEQUENCE);
-        // if (!n->subpatterns->preserve) {
-        //     ADDOP(c, ROT_TWO);
-        //     ADDOP(c, POP_TOP);
-        //     n->stacksize--;
-        // }
         SPM_POP_JUMP_IF_FALSE;
         SPM_GROUP_BEGIN(spm_sequence_len(p) == spm_sequence_len(q));
             Py_ssize_t len = spm_sequence_len(p);
             SPM_LOOP_BEGIN;
-                bool starred;
-                if (len < 0) {
-                    starred = true;
-                    len = -len - 1;
-                }
-                else {
-                    starred = false;
-                }
+                bool starred = len < 0;
                 if (len != -1) {
                     // TODO: We can probably share this GET_LEN call across groups...
                     ADDOP(c, GET_LEN);
-                    ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(len));
+                    ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(asdl_seq_LEN(p->v.MatchSequence.patterns) - starred));
                     ADDOP_I(c, COMPARE_OP, starred ? Py_GE : Py_EQ);
                     SPM_POP_JUMP_IF_FALSE;
-                    if (n->subpatterns->preserve) {
-                        ADDOP(c, DUP_TOP);
-                        n->stacksize++;
-                    }
                 }
-                if (starred) {
-                    // TODO: Handle starred wildcards using indexing...
-                    SPM_GROUP_BEGIN(spm_sequence_star_index(p) == spm_sequence_star_index(q));
-                        Py_ssize_t star = spm_sequence_star_index(p);
-                        assert(0 <= star);
-                        SPM_LOOP_BEGIN;
-                            printf("star: %ld len: %ld\n", star, len);
-                            ADDOP_I(c, UNPACK_EX, (star + ((len - star) << 8)));
-                            n->stacksize += len;
-                        SPM_LOOP_END;
-                    SPM_GROUP_END;
-                    len += 1;
-                }
-                else {
-                    SPM_LOOP_BEGIN;
-                        ADDOP_I(c, UNPACK_SEQUENCE, len);
-                        n->stacksize += len - 1;
-                    SPM_LOOP_END;
-                }
-                SPM_LOOP_BEGIN;
-                    Py_ssize_t i = len;
-                    while (i--) {
-                        if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchSequence.patterns, i))) {
-                            return 0;
+                SPM_GROUP_BEGIN(spm_sequence_all_wildcards(p) == spm_sequence_all_wildcards(q));
+                    if (!spm_sequence_all_wildcards(p)) {
+                        if (n->subpatterns->preserve) {
+                            ADDOP(c, DUP_TOP);
+                            n->stacksize++;
                         }
+                        if (starred) {
+                            len = -len - 1;
+                            // TODO: Handle starred wildcards using indexing...
+                            SPM_GROUP_BEGIN(spm_sequence_star_index(p) == spm_sequence_star_index(q));
+                                Py_ssize_t star = spm_sequence_star_index(p);
+                                assert(0 <= star);
+                                SPM_LOOP_BEGIN;
+                                    ADDOP_I(c, UNPACK_EX, (star + ((len - star) << 8)));
+                                    n->stacksize += len;
+                                SPM_LOOP_END;
+                            SPM_GROUP_END;
+                        }
+                        else {
+                            SPM_LOOP_BEGIN;
+                                ADDOP_I(c, UNPACK_SEQUENCE, len);
+                                n->stacksize += len - 1;
+                            SPM_LOOP_END;
+                        }
+                        SPM_LOOP_BEGIN;
+                            Py_ssize_t i = asdl_seq_LEN(p->v.MatchSequence.patterns);
+                            while (i--) {
+                                if (!spm_subpattern(c, n, asdl_seq_GET(p->v.MatchSequence.patterns, i), false)) {
+                                    return 0;
+                                }
+                            }
+                        SPM_LOOP_END;
                     }
-                SPM_LOOP_END;
+                SPM_GROUP_END;
             SPM_LOOP_END;
         SPM_GROUP_END;
     SPM_LOOP_END;
@@ -6340,7 +6349,7 @@ static int
 spm_compile_star(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
-        if (p->v.MatchStar.name && !spm_store(c, n, p->v.MatchStar.name)) {
+        if (!spm_store(c, n, p->v.MatchStar.name)) {
             return 0;
         }
     SPM_LOOP_END;
@@ -6370,41 +6379,38 @@ spm_compile_value(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile(struct compiler *c, spm_node_pattern *n)
 {
-    bool again = true;
-    while (again) {
-        SPM_GROUP_BEGIN(p->kind == q->kind);
-            spm_compiler *f;
-            switch (p->kind) {
-                case MatchAs_kind:
-                    f = spm_compile_as;
-                    break;
-                case MatchClass_kind:
-                    f = spm_compile_class;
-                    break;
-                case MatchMapping_kind:
-                    f = spm_compile_mapping;
-                    break;
-                case MatchOr_kind:
-                    f = spm_compile_or;
-                    break;
-                case MatchSequence_kind:
-                    f = spm_compile_sequence;
-                    break;
-                case MatchSingleton_kind:
-                    f = spm_compile_singleton;
-                    break;
-                case MatchStar_kind:
-                    f = spm_compile_star;
-                    break;
-                case MatchValue_kind:
-                    f = spm_compile_value;
-                    break;
-            }
-            if (!f(c, n)) {
-                return 0;
-            }
-        SPM_GROUP_END;
-        again = false;
+    SPM_GROUP_BEGIN(p->kind == q->kind);
+        spm_compiler *f;
+        switch (p->kind) {
+            case MatchAs_kind:
+                f = spm_compile_as;
+                break;
+            case MatchClass_kind:
+                f = spm_compile_class;
+                break;
+            case MatchMapping_kind:
+                f = spm_compile_mapping;
+                break;
+            case MatchOr_kind:
+                f = spm_compile_or;
+                break;
+            case MatchSequence_kind:
+                f = spm_compile_sequence;
+                break;
+            case MatchSingleton_kind:
+                f = spm_compile_singleton;
+                break;
+            case MatchStar_kind:
+                f = spm_compile_star;
+                break;
+            case MatchValue_kind:
+                f = spm_compile_value;
+                break;
+        }
+        if (!f(c, n)) {
+            return 0;
+        }
+        bool again = false;
         SPM_LOOP_BEGIN;
             // Remove the most-recently-compiled subpattern.
             assert(n->subpatterns);
@@ -6414,7 +6420,10 @@ spm_compile(struct compiler *c, spm_node_pattern *n)
                 again = true;
             }
         SPM_LOOP_END;
-    }
+        if (again && !spm_compile(c, n)) {
+            return 0;
+        }
+    SPM_GROUP_END;
     return 1;
 }
 
