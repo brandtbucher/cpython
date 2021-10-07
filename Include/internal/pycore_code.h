@@ -10,7 +10,7 @@ extern "C" {
 
 typedef struct {
     int32_t cache_count;
-    int32_t _; /* Force 8 byte size */
+    int32_t padding;
 } _PyEntryZero;
 
 typedef struct {

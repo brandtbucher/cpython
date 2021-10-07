@@ -1,3 +1,4 @@
+#include <stdbool.h>
 
 #include "Python.h"
 #include "pycore_code.h"
@@ -198,6 +199,11 @@ _Py_PrintSpecializationStats(void)
 #define SPECIALIZATION_FAIL(opcode, kind) ((void)0)
 #endif
 
+static int
+get_padding(SpecializedCacheOrInstruction *quickened) {
+    return quickened[0].entry.zero.padding;
+}
+
 static SpecializedCacheOrInstruction *
 allocate(int cache_count, int instruction_count)
 {
@@ -206,14 +212,18 @@ allocate(int cache_count, int instruction_count)
     assert(cache_count > 0);
     assert(instruction_count > 0);
     int count = cache_count + (instruction_count + INSTRUCTIONS_PER_ENTRY -1)/INSTRUCTIONS_PER_ENTRY;
+    bool align = 64 < sizeof(SpecializedCacheOrInstruction) * count;
     SpecializedCacheOrInstruction *array = (SpecializedCacheOrInstruction *)
-        PyMem_Malloc(sizeof(SpecializedCacheOrInstruction) * count);
+        PyMem_Malloc(sizeof(SpecializedCacheOrInstruction) * count + align * 48);
     if (array == NULL) {
         PyErr_NoMemory();
         return NULL;
     }
     _Py_QuickenedCount++;
     array[0].entry.zero.cache_count = cache_count;
+    array[0].entry.zero.padding = align * ((64 - ((uintptr_t)array & 63)) & 63) / sizeof(SpecializedCacheOrInstruction);
+    assert(array[0].entry.zero.padding * sizeof(SpecializedCacheOrInstruction) <= 48);
+    assert(align * (uintptr_t)&array[get_padding(array)] % 64 == 0);
     return array;
 }
 
@@ -296,7 +306,7 @@ entries_needed(const _Py_CODEUNIT *code, int len)
 static inline _Py_CODEUNIT *
 first_instruction(SpecializedCacheOrInstruction *quickened)
 {
-    return &quickened[get_cache_count(quickened)].code[0];
+    return &quickened[get_padding(quickened) + get_cache_count(quickened)].code[0];
 }
 
 /** Insert adaptive instructions and superinstructions.
