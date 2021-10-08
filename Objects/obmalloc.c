@@ -856,11 +856,11 @@ static int running_on_valgrind = -1;
  */
 
 #if SIZEOF_VOID_P > 4
-#define ALIGNMENT              16               /* must be 2^N */
-#define ALIGNMENT_SHIFT         4
+#define ALIGNMENT              64               /* must be 2^N */
+#define ALIGNMENT_SHIFT         6
 #else
-#define ALIGNMENT               8               /* must be 2^N */
-#define ALIGNMENT_SHIFT         3
+#define ALIGNMENT              64               /* must be 2^N */
+#define ALIGNMENT_SHIFT         6
 #endif
 
 /* Return the number of bytes in size class I, as a uint. */
