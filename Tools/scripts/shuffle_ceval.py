@@ -51,7 +51,9 @@ def get_opmap_full() -> dict[str, int]:
     if not hasattr(opcode, "_specialized_instructions"):
         raise RuntimeError(f"requires CPython 3.11+ {HINT}")
     opmap = {}
-    specialized_instructions = iter(opcode._specialized_instructions)  # type: ignore [attr-defined]
+    specialized_instructions = iter(
+        opcode._specialized_instructions  # type: ignore [attr-defined]
+    )
     name: str | None
     for i, name in enumerate(opcode.opname[1:], 1):
         assert isinstance(name, str), name
@@ -126,7 +128,9 @@ def main(*args: str) -> None:
     header, *bodies, footer = re.split(RE_BODY, PATH_CEVAL.read_text())
     bodies.append("")
     ops = []
-    groups = zip(bodies[::3], bodies[1::3], bodies[2::3], strict=True)  # type: ignore [call-overload]
+    groups = zip(  # type: ignore [call-overload]
+        bodies[::3], bodies[1::3], bodies[2::3], strict=True
+    )
     for body, name, empty in groups:
         assert re.match(RE_BODY, body) is not None, body
         assert re.match(RE_NAME, name) is not None, name
