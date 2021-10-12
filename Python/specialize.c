@@ -198,6 +198,8 @@ _Py_PrintSpecializationStats(void)
 #define SPECIALIZATION_FAIL(opcode, kind) ((void)0)
 #endif
 
+#define ALIGN 64
+
 static SpecializedCacheOrInstruction *
 allocate(int cache_count, int instruction_count)
 {
@@ -207,13 +209,20 @@ allocate(int cache_count, int instruction_count)
     assert(instruction_count > 0);
     int count = cache_count + (instruction_count + INSTRUCTIONS_PER_ENTRY -1)/INSTRUCTIONS_PER_ENTRY;
     SpecializedCacheOrInstruction *array = (SpecializedCacheOrInstruction *)
-        PyMem_Malloc(sizeof(SpecializedCacheOrInstruction) * count);
+        PyMem_Malloc(sizeof(SpecializedCacheOrInstruction) * (count - 1) + ALIGN);
     if (array == NULL) {
         PyErr_NoMemory();
         return NULL;
     }
     _Py_QuickenedCount++;
-    array[0].entry.zero.cache_count = cache_count;
+    // Align the data to the nearest cache line (assumed to be ALIGN bytes) by
+    // adding dummy cache entries. This gurantees that the combined cache
+    // entries and instructions occupy the minimum number of cache lines:
+    unsigned offset = (uintptr_t)&array[1] & (ALIGN - 1);
+    assert((ALIGN - offset) % sizeof(SpecializedCacheEntry) == 0);
+    unsigned dummy_count = (ALIGN - offset) / sizeof(SpecializedCacheEntry);
+    assert((uintptr_t)&array[dummy_count + 1] % ALIGN == 0);
+    array[0].entry.zero.cache_count = cache_count + dummy_count;
     return array;
 }
 
@@ -375,7 +384,7 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
             previous_oparg = oparg;
         }
     }
-    assert(cache_offset+1 == get_cache_count(quickened));
+    assert(cache_offset+1 <= get_cache_count(quickened));
 }
 
 int
