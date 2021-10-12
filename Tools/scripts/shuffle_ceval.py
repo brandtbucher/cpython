@@ -37,8 +37,8 @@ HINT = "(run this script using the same CPython version that's being shuffled)"
 
 PATH_CEVAL = pathlib.Path(__file__).parent.parent.parent / "Python" / "ceval.c"
 
-RE_NAME = r"[A-Z_]+"
-RE_BODY = r"( {8}TARGET\s*\(\s*(" + RE_NAME + r")\s*\)\s*\{(?s:.*?)\n {8}\}\s*\n+)"
+RE_NAME = r"([A-Z_]+)"
+RE_BODY = r"( {8}TARGET\s*\(\s*" + RE_NAME + r"\s*\)\s*\{(?s:.*?)\n {8}\}\s*\n+)"
 
 
 class Op(typing.NamedTuple):
