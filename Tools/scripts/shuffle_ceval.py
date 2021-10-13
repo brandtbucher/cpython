@@ -2,6 +2,11 @@
 Reorder the cases of _PyEval_EvalFrameDefault in-place. The order is random by
 default, but other orders can be specified:
 
+./python Tools/scripts/shuffle_ceval.py density
+    Run the PGO test suite and reorder the instructions by frequency of
+    execution divided by approximate case size (requires
+    -DDYNAMIC_EXECUTION_PROFILE).
+
 ./python Tools/scripts/shuffle_ceval.py frequency
     Run the PGO test suite and reorder the instructions by frequency of
     execution (requires -DDYNAMIC_EXECUTION_PROFILE).
@@ -16,7 +21,7 @@ default, but other orders can be specified:
     Randomly shuffle the instructions (this is the default).
 
 ./python Tools/scripts/shuffle_ceval.py size
-    Reorder the instructions by the size of each case.
+    Reorder the instructions by approximate case size.
 
 ./python Tools/scripts/shuffle_ceval.py value
     Reorder the instructions by numeric opcode value.
@@ -71,7 +76,7 @@ def get_opcode(op: Op) -> int:
     return opcode
 
 
-def order_frequency(ops: list[Op]) -> None:
+def get_profile() -> list[int]:
     if not hasattr(sys, "getdxp"):
         raise RuntimeError("requires -DDYNAMIC_EXECUTION_PROFILE")
     sys_argv = sys.argv[:]
@@ -82,11 +87,21 @@ def order_frequency(ops: list[Op]) -> None:
         pass
     finally:
         sys.argv[:] = sys_argv
-    dxp: list[int] = sys.getdxp()  # type: ignore [attr-defined]
-    if isinstance(dxp[0], list):
+    profile: list[int] = sys.getdxp()  # type: ignore [attr-defined]
+    if isinstance(profile[0], list):
         # DXPAIRS is turned on. Sum each sublist to get a "normal" profile:
-        dxp = list(map(sum, dxp))
-    ops.sort(key=lambda op: dxp[get_opcode(op)], reverse=True)
+        profile = list(map(sum, profile))
+    return profile
+
+
+def order_density(ops: list[Op]) -> None:
+    profile = get_profile()
+    ops.sort(key=lambda op: profile[get_opcode(op)] / len(op.body), reverse=True)
+
+
+def order_frequency(ops: list[Op]) -> None:
+    profile = get_profile()
+    ops.sort(key=lambda op: profile[get_opcode(op)], reverse=True)
 
 
 def order_name(ops: list[Op]) -> None:
@@ -110,6 +125,7 @@ def order_value(ops: list[Op]) -> None:
 
 
 ORDERS = {
+    "density": order_density,
     "frequency": order_frequency,
     "name": order_name,
     "original": order_original,
