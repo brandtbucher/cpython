@@ -1483,13 +1483,20 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
     record_cache_hit(cache0); \
     Py_INCREF(res);
 
-// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop.
-// "Less-dense" here means low pgo_hits / source_size ratio. Current ops are:
+// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop
+// ("less-dense" here means low pgo_hits / source_size ratio). To keep things 
+// simple, we're only considering basic push/pop instructions, so we don't
+// consider anything that jumps, accesses names, has an oparg, etc....
+// Current ops are:
 // - BEFORE_ASYNC_WITH
 // - GET_ANEXT
 
-#define SP_SETUP \
-    PyObject **stack_pointer = *sp
+#define SP_SETUP                                 \
+    PyObject **stack_pointer = *sp;              \
+    PyThreadState *tstate = PyThreadState_GET(); \
+    InterpreterFrame *frame = tstate->frame;     \
+    PyCodeObject *co = frame->f_code;
+
 #define SP_TEARDOWN      \
     int ret = 0;         \
     if (0) {             \
@@ -1497,11 +1504,10 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
         ret = -1;        \
     }                    \
     *sp = stack_pointer; \
-    return ret
+    return ret;
 
 static int
-before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
-                  PyCodeObject *co, PyObject ***sp)
+before_async_with(PyObject ***sp)
 {
     SP_SETUP;
     _Py_IDENTIFIER(__aenter__);
@@ -1540,8 +1546,7 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
 }
 
 static int
-get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
-          PyObject ***sp)
+get_anext(PyObject ***sp)
 {
     SP_SETUP;
     unaryfunc getter = NULL;
@@ -4876,7 +4881,7 @@ check_eval_breaker:
         }
 
         TARGET(GET_ANEXT) {
-            if (get_anext(tstate, frame, co, &stack_pointer)) {
+            if (get_anext(&stack_pointer)) {
                 goto error;
             }
             PREDICT(LOAD_CONST);
@@ -4916,7 +4921,7 @@ check_eval_breaker:
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            if (before_async_with(tstate, frame, co, &stack_pointer)) {
+            if (before_async_with(&stack_pointer)) {
                 goto error;
             }
             PREDICT(GET_AWAITABLE);
