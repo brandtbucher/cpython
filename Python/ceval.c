@@ -1483,15 +1483,32 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
     record_cache_hit(cache0); \
     Py_INCREF(res);
 
-// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop.
-// "Less-dense" here means low pgo_hits / source_size. Current ops are:
+// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop
+// ("less-dense" here means low pgo_hits / source_size ratio). To keep things 
+// simple, we're only considering basic push/pop instructions, so we don't
+// consider anything that jumps, accesses names, has an oparg, etc....
+// Current ops are:
 // - BEFORE_ASYNC_WITH
 
+#define SP_SETUP                                 \
+    PyObject **stack_pointer = *sp;              \
+    PyThreadState *tstate = PyThreadState_GET(); \
+    InterpreterFrame *frame = tstate->frame;     \
+    PyCodeObject *co = frame->f_code;
+
+#define SP_TEARDOWN      \
+    int ret = 0;         \
+    if (0) {             \
+    error:               \
+        ret = -1;        \
+    }                    \
+    *sp = stack_pointer; \
+    return ret;
+
 static int
-before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
-                  PyCodeObject *co, PyObject ***sp)
+before_async_with(PyObject ***sp)
 {
-    PyObject **stack_pointer = *sp;
+    SP_SETUP;
     _Py_IDENTIFIER(__aenter__);
     _Py_IDENTIFIER(__aexit__);
     PyObject *mgr = TOP();
@@ -1503,8 +1520,7 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
                             "asynchronous context manager protocol",
                             Py_TYPE(mgr)->tp_name);
         }
-        *sp = stack_pointer;
-        return -1;
+        goto error;
     }
     PyObject *exit = _PyObject_LookupSpecial(mgr, &PyId___aexit__);
     if (exit == NULL) {
@@ -1516,20 +1532,17 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
                             Py_TYPE(mgr)->tp_name);
         }
         Py_DECREF(enter);
-        *sp = stack_pointer;
-        return -1;
+        goto error;
     }
     SET_TOP(exit);
     Py_DECREF(mgr);
     PyObject *res = _PyObject_CallNoArgs(enter);
     Py_DECREF(enter);
     if (res == NULL) {
-        *sp = stack_pointer;
-        return -1;
+        goto error;
     }
     PUSH(res);
-    *sp = stack_pointer;
-    return 0;
+    SP_TEARDOWN;
 }
 
 static int
@@ -4898,7 +4911,7 @@ check_eval_breaker:
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            if (before_async_with(tstate, frame, co, &stack_pointer)) {
+            if (before_async_with(&stack_pointer)) {
                 goto error;
             }
             PREDICT(GET_AWAITABLE);
