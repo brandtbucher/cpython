@@ -1493,8 +1493,12 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
 // - GET_AITER
 // - INPLACE_MATRIX_MULTIPLY
 
-#define SP_SETUP \
-    PyObject **stack_pointer = *sp
+#define SP_SETUP                                 \
+    PyObject **stack_pointer = *sp;              \
+    PyThreadState *tstate = PyThreadState_GET(); \
+    InterpreterFrame *frame = tstate->frame;     \
+    PyCodeObject *co = frame->f_code;
+
 #define SP_TEARDOWN      \
     int ret = 0;         \
     if (0) {             \
@@ -1502,11 +1506,10 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
         ret = -1;        \
     }                    \
     *sp = stack_pointer; \
-    return ret
+    return ret;
 
 static int
-before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
-                  PyCodeObject *co, PyObject ***sp)
+before_async_with(PyObject ***sp)
 {
     SP_SETUP;
     _Py_IDENTIFIER(__aenter__);
@@ -1545,8 +1548,7 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
 }
 
 static int
-get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
-          PyObject ***sp)
+get_anext(PyObject ***sp)
 {
     SP_SETUP;
     unaryfunc getter = NULL;
@@ -1599,8 +1601,7 @@ get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
 }
 
 static int
-get_aiter(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
-          PyObject ***sp)
+get_aiter(PyObject ***sp)
 {
     SP_SETUP;
     unaryfunc getter = NULL;
@@ -1647,8 +1648,7 @@ get_aiter(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
 }
 
 static int
-inplace_matrix_multiply(PyThreadState *tstate, InterpreterFrame *frame,
-                        PyCodeObject *co, PyObject ***sp)
+inplace_matrix_multiply(PyObject ***sp)
 {
     SP_SETUP;
     PyObject *right = POP();
@@ -4889,21 +4889,21 @@ check_eval_breaker:
         }
 
         TARGET(INPLACE_MATRIX_MULTIPLY) {
-            if (inplace_matrix_multiply(tstate, frame, co, &stack_pointer)) {
+            if (inplace_matrix_multiply(&stack_pointer)) {
                 goto error;
             }
             DISPATCH();
         }
 
         TARGET(GET_AITER) {
-            if (get_aiter(tstate, frame, co, &stack_pointer)) {
+            if (get_aiter(&stack_pointer)) {
                 goto error;
             }
             DISPATCH();
         }
 
         TARGET(GET_ANEXT) {
-            if (get_anext(tstate, frame, co, &stack_pointer)) {
+            if (get_anext(&stack_pointer)) {
                 goto error;
             }
             PREDICT(LOAD_CONST);
@@ -4943,7 +4943,7 @@ check_eval_breaker:
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            if (before_async_with(tstate, frame, co, &stack_pointer)) {
+            if (before_async_with(&stack_pointer)) {
                 goto error;
             }
             PREDICT(GET_AWAITABLE);
