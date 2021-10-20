@@ -1336,7 +1336,7 @@ AC_ARG_VAR(PROFILE_TASK, Python args for PGO generation task)
 AC_MSG_CHECKING(PROFILE_TASK)
 if test -z "$PROFILE_TASK"
 then
-	PROFILE_TASK='Tools/scripts/pgo_benchmarks.py'
+	PROFILE_TASK='-m __pgo__'
 fi
 AC_MSG_RESULT($PROFILE_TASK)
 
