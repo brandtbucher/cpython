@@ -1492,9 +1492,17 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
 // - GET_ANEXT
 // - GET_AITER
 // - INPLACE_MATRIX_MULTIPLY
+// - BINARY_MATRIX_MULTIPLY
+// - COPY_DICT_WITHOUT_KEYS
+// - INPLACE_POWER
+// - LOAD_ASSERTION_ERROR
 
-#define SP_SETUP \
-    PyObject **stack_pointer = *sp
+#define SP_SETUP                                 \
+    PyObject **stack_pointer = *sp;              \
+    PyThreadState *tstate = PyThreadState_GET(); \
+    InterpreterFrame *frame = tstate->frame;     \
+    PyCodeObject *co = frame->f_code;
+
 #define SP_TEARDOWN      \
     int ret = 0;         \
     if (0) {             \
@@ -1502,11 +1510,10 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
         ret = -1;        \
     }                    \
     *sp = stack_pointer; \
-    return ret
+    return ret;
 
 static int
-before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
-                  PyCodeObject *co, PyObject ***sp)
+before_async_with(PyObject ***sp)
 {
     SP_SETUP;
     _Py_IDENTIFIER(__aenter__);
@@ -1545,8 +1552,7 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
 }
 
 static int
-get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
-          PyObject ***sp)
+get_anext(PyObject ***sp)
 {
     SP_SETUP;
     unaryfunc getter = NULL;
@@ -1599,8 +1605,7 @@ get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
 }
 
 static int
-get_aiter(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
-          PyObject ***sp)
+get_aiter(PyObject ***sp)
 {
     SP_SETUP;
     unaryfunc getter = NULL;
@@ -1647,8 +1652,7 @@ get_aiter(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
 }
 
 static int
-inplace_matrix_multiply(PyThreadState *tstate, InterpreterFrame *frame,
-                        PyCodeObject *co, PyObject ***sp)
+inplace_matrix_multiply(PyObject ***sp)
 {
     SP_SETUP;
     PyObject *right = POP();
@@ -1659,6 +1663,75 @@ inplace_matrix_multiply(PyThreadState *tstate, InterpreterFrame *frame,
     SET_TOP(res);
     if (res == NULL)
         goto error;
+    SP_TEARDOWN;
+}
+
+static int
+binary_matrix_multiply(PyObject ***sp)
+{
+    SP_SETUP;
+    PyObject *right = POP();
+    PyObject *left = TOP();
+    PyObject *res = PyNumber_MatrixMultiply(left, right);
+    Py_DECREF(left);
+    Py_DECREF(right);
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
+    SP_TEARDOWN;
+}
+
+static int
+copy_dict_without_keys(PyObject ***sp)
+{
+    SP_SETUP;
+    // rest = dict(TOS1)
+    // for key in TOS:
+    //     del rest[key]
+    // SET_TOP(rest)
+    PyObject *keys = TOP();
+    PyObject *subject = SECOND();
+    PyObject *rest = PyDict_New();
+    if (rest == NULL || PyDict_Update(rest, subject)) {
+        Py_XDECREF(rest);
+        goto error;
+    }
+    // This may seem a bit inefficient, but keys is rarely big enough to
+    // actually impact runtime.
+    assert(PyTuple_CheckExact(keys));
+    for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(keys); i++) {
+        if (PyDict_DelItem(rest, PyTuple_GET_ITEM(keys, i))) {
+            Py_DECREF(rest);
+            goto error;
+        }
+    }
+    Py_DECREF(keys);
+    SET_TOP(rest);
+    SP_TEARDOWN;
+}
+
+static int
+inplace_power(PyObject ***sp)
+{
+    SP_SETUP;
+    PyObject *exp = POP();
+    PyObject *base = TOP();
+    PyObject *res = PyNumber_InPlacePower(base, exp, Py_None);
+    Py_DECREF(base);
+    Py_DECREF(exp);
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
+    SP_TEARDOWN;
+}
+
+static int
+load_assertion_error(PyObject ***sp)
+{
+    SP_SETUP;
+    PyObject *value = PyExc_AssertionError;
+    Py_INCREF(value);
+    PUSH(value);
     SP_TEARDOWN;
 }
 
@@ -4791,59 +4864,30 @@ check_eval_breaker:
         }
 
         TARGET(LOAD_ASSERTION_ERROR) {
-            PyObject *value = PyExc_AssertionError;
-            Py_INCREF(value);
-            PUSH(value);
+            if (load_assertion_error(&stack_pointer)) {
+                goto error;
+            }
             DISPATCH();
         }
 
         TARGET(INPLACE_POWER) {
-            PyObject *exp = POP();
-            PyObject *base = TOP();
-            PyObject *res = PyNumber_InPlacePower(base, exp, Py_None);
-            Py_DECREF(base);
-            Py_DECREF(exp);
-            SET_TOP(res);
-            if (res == NULL)
+            if (inplace_power(&stack_pointer)) {
                 goto error;
+            }
             DISPATCH();
         }
 
         TARGET(COPY_DICT_WITHOUT_KEYS) {
-            // rest = dict(TOS1)
-            // for key in TOS:
-            //     del rest[key]
-            // SET_TOP(rest)
-            PyObject *keys = TOP();
-            PyObject *subject = SECOND();
-            PyObject *rest = PyDict_New();
-            if (rest == NULL || PyDict_Update(rest, subject)) {
-                Py_XDECREF(rest);
+            if (copy_dict_without_keys(&stack_pointer)) {
                 goto error;
             }
-            // This may seem a bit inefficient, but keys is rarely big enough to
-            // actually impact runtime.
-            assert(PyTuple_CheckExact(keys));
-            for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(keys); i++) {
-                if (PyDict_DelItem(rest, PyTuple_GET_ITEM(keys, i))) {
-                    Py_DECREF(rest);
-                    goto error;
-                }
-            }
-            Py_DECREF(keys);
-            SET_TOP(rest);
             DISPATCH();
         }
 
         TARGET(BINARY_MATRIX_MULTIPLY) {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_MatrixMultiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
+            if (binary_matrix_multiply(&stack_pointer)) {
                 goto error;
+            }
             DISPATCH();
         }
 
@@ -4889,21 +4933,21 @@ check_eval_breaker:
         }
 
         TARGET(INPLACE_MATRIX_MULTIPLY) {
-            if (inplace_matrix_multiply(tstate, frame, co, &stack_pointer)) {
+            if (inplace_matrix_multiply(&stack_pointer)) {
                 goto error;
             }
             DISPATCH();
         }
 
         TARGET(GET_AITER) {
-            if (get_aiter(tstate, frame, co, &stack_pointer)) {
+            if (get_aiter(&stack_pointer)) {
                 goto error;
             }
             DISPATCH();
         }
 
         TARGET(GET_ANEXT) {
-            if (get_anext(tstate, frame, co, &stack_pointer)) {
+            if (get_anext(&stack_pointer)) {
                 goto error;
             }
             PREDICT(LOAD_CONST);
@@ -4943,7 +4987,7 @@ check_eval_breaker:
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            if (before_async_with(tstate, frame, co, &stack_pointer)) {
+            if (before_async_with(&stack_pointer)) {
                 goto error;
             }
             PREDICT(GET_AWAITABLE);
