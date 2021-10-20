@@ -1483,10 +1483,15 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
     record_cache_hit(cache0); \
     Py_INCREF(res);
 
-// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop.
-// "Less-dense" here means low pgo_hits / source_size ratio. Current ops are:
+// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop
+// ("less-dense" here means low pgo_hits / source_size ratio). To keep things 
+// simple, we're only considering basic push/pop instructions, so we don't
+// consider anything that jumps, accesses names, has an oparg, etc....
+// Current ops are:
 // - BEFORE_ASYNC_WITH
 // - GET_ANEXT
+// - GET_AITER
+// - INPLACE_MATRIX_MULTIPLY
 
 #define SP_SETUP \
     PyObject **stack_pointer = *sp
@@ -1590,6 +1595,70 @@ get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
     }
 
     PUSH(awaitable);
+    SP_TEARDOWN;
+}
+
+static int
+get_aiter(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
+          PyObject ***sp)
+{
+    SP_SETUP;
+    unaryfunc getter = NULL;
+    PyObject *iter = NULL;
+    PyObject *obj = TOP();
+    PyTypeObject *type = Py_TYPE(obj);
+
+    if (type->tp_as_async != NULL) {
+        getter = type->tp_as_async->am_aiter;
+    }
+
+    if (getter != NULL) {
+        iter = (*getter)(obj);
+        Py_DECREF(obj);
+        if (iter == NULL) {
+            SET_TOP(NULL);
+            goto error;
+        }
+    }
+    else {
+        SET_TOP(NULL);
+        _PyErr_Format(tstate, PyExc_TypeError,
+                        "'async for' requires an object with "
+                        "__aiter__ method, got %.100s",
+                        type->tp_name);
+        Py_DECREF(obj);
+        goto error;
+    }
+
+    if (Py_TYPE(iter)->tp_as_async == NULL ||
+            Py_TYPE(iter)->tp_as_async->am_anext == NULL) {
+
+        SET_TOP(NULL);
+        _PyErr_Format(tstate, PyExc_TypeError,
+                        "'async for' received an object from __aiter__ "
+                        "that does not implement __anext__: %.100s",
+                        Py_TYPE(iter)->tp_name);
+        Py_DECREF(iter);
+        goto error;
+    }
+
+    SET_TOP(iter);
+    SP_TEARDOWN;
+}
+
+static int
+inplace_matrix_multiply(PyThreadState *tstate, InterpreterFrame *frame,
+                        PyCodeObject *co, PyObject ***sp)
+{
+    SP_SETUP;
+    PyObject *right = POP();
+    PyObject *left = TOP();
+    PyObject *res = PyNumber_InPlaceMatrixMultiply(left, right);
+    Py_DECREF(left);
+    Py_DECREF(right);
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
     SP_TEARDOWN;
 }
 
@@ -4820,58 +4889,16 @@ check_eval_breaker:
         }
 
         TARGET(INPLACE_MATRIX_MULTIPLY) {
-            PyObject *right = POP();
-            PyObject *left = TOP();
-            PyObject *res = PyNumber_InPlaceMatrixMultiply(left, right);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            SET_TOP(res);
-            if (res == NULL)
+            if (inplace_matrix_multiply(tstate, frame, co, &stack_pointer)) {
                 goto error;
+            }
             DISPATCH();
         }
 
         TARGET(GET_AITER) {
-            unaryfunc getter = NULL;
-            PyObject *iter = NULL;
-            PyObject *obj = TOP();
-            PyTypeObject *type = Py_TYPE(obj);
-
-            if (type->tp_as_async != NULL) {
-                getter = type->tp_as_async->am_aiter;
-            }
-
-            if (getter != NULL) {
-                iter = (*getter)(obj);
-                Py_DECREF(obj);
-                if (iter == NULL) {
-                    SET_TOP(NULL);
-                    goto error;
-                }
-            }
-            else {
-                SET_TOP(NULL);
-                _PyErr_Format(tstate, PyExc_TypeError,
-                              "'async for' requires an object with "
-                              "__aiter__ method, got %.100s",
-                              type->tp_name);
-                Py_DECREF(obj);
+            if (get_aiter(tstate, frame, co, &stack_pointer)) {
                 goto error;
             }
-
-            if (Py_TYPE(iter)->tp_as_async == NULL ||
-                    Py_TYPE(iter)->tp_as_async->am_anext == NULL) {
-
-                SET_TOP(NULL);
-                _PyErr_Format(tstate, PyExc_TypeError,
-                              "'async for' received an object from __aiter__ "
-                              "that does not implement __anext__: %.100s",
-                              Py_TYPE(iter)->tp_name);
-                Py_DECREF(iter);
-                goto error;
-            }
-
-            SET_TOP(iter);
             DISPATCH();
         }
 
