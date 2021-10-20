@@ -1484,14 +1484,26 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
     Py_INCREF(res);
 
 // EXPERIMENT: Break less-dense opcodes out of the main interpreter loop.
-// "Less-dense" here means low pgo_hits / source_size. Current ops are:
+// "Less-dense" here means low pgo_hits / source_size ratio. Current ops are:
 // - BEFORE_ASYNC_WITH
+// - GET_ANEXT
+
+#define SP_SETUP \
+    PyObject **stack_pointer = *sp
+#define SP_TEARDOWN      \
+    int ret = 0;         \
+    if (0) {             \
+    error:               \
+        ret = -1;        \
+    }                    \
+    *sp = stack_pointer; \
+    return ret
 
 static int
 before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
                   PyCodeObject *co, PyObject ***sp)
 {
-    PyObject **stack_pointer = *sp;
+    SP_SETUP;
     _Py_IDENTIFIER(__aenter__);
     _Py_IDENTIFIER(__aexit__);
     PyObject *mgr = TOP();
@@ -1503,8 +1515,7 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
                             "asynchronous context manager protocol",
                             Py_TYPE(mgr)->tp_name);
         }
-        *sp = stack_pointer;
-        return -1;
+        goto error;
     }
     PyObject *exit = _PyObject_LookupSpecial(mgr, &PyId___aexit__);
     if (exit == NULL) {
@@ -1516,20 +1527,70 @@ before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
                             Py_TYPE(mgr)->tp_name);
         }
         Py_DECREF(enter);
-        *sp = stack_pointer;
-        return -1;
+        goto error;
     }
     SET_TOP(exit);
     Py_DECREF(mgr);
     PyObject *res = _PyObject_CallNoArgs(enter);
     Py_DECREF(enter);
-    if (res == NULL) {
-        *sp = stack_pointer;
-        return -1;
-    }
+    if (res == NULL)
+        goto error;
     PUSH(res);
-    *sp = stack_pointer;
-    return 0;
+    SP_TEARDOWN;
+}
+
+static int
+get_anext(PyThreadState *tstate, InterpreterFrame *frame, PyCodeObject *co,
+          PyObject ***sp)
+{
+    SP_SETUP;
+    unaryfunc getter = NULL;
+    PyObject *next_iter = NULL;
+    PyObject *awaitable = NULL;
+    PyObject *aiter = TOP();
+    PyTypeObject *type = Py_TYPE(aiter);
+
+    if (PyAsyncGen_CheckExact(aiter)) {
+        awaitable = type->tp_as_async->am_anext(aiter);
+        if (awaitable == NULL) {
+            goto error;
+        }
+    } else {
+        if (type->tp_as_async != NULL){
+            getter = type->tp_as_async->am_anext;
+        }
+
+        if (getter != NULL) {
+            next_iter = (*getter)(aiter);
+            if (next_iter == NULL) {
+                goto error;
+            }
+        }
+        else {
+            _PyErr_Format(tstate, PyExc_TypeError,
+                            "'async for' requires an iterator with "
+                            "__anext__ method, got %.100s",
+                            type->tp_name);
+            goto error;
+        }
+
+        awaitable = _PyCoro_GetAwaitableIter(next_iter);
+        if (awaitable == NULL) {
+            _PyErr_FormatFromCause(
+                PyExc_TypeError,
+                "'async for' received an invalid object "
+                "from __anext__: %.100s",
+                Py_TYPE(next_iter)->tp_name);
+
+            Py_DECREF(next_iter);
+            goto error;
+        } else {
+            Py_DECREF(next_iter);
+        }
+    }
+
+    PUSH(awaitable);
+    SP_TEARDOWN;
 }
 
 static int
@@ -4815,52 +4876,9 @@ check_eval_breaker:
         }
 
         TARGET(GET_ANEXT) {
-            unaryfunc getter = NULL;
-            PyObject *next_iter = NULL;
-            PyObject *awaitable = NULL;
-            PyObject *aiter = TOP();
-            PyTypeObject *type = Py_TYPE(aiter);
-
-            if (PyAsyncGen_CheckExact(aiter)) {
-                awaitable = type->tp_as_async->am_anext(aiter);
-                if (awaitable == NULL) {
-                    goto error;
-                }
-            } else {
-                if (type->tp_as_async != NULL){
-                    getter = type->tp_as_async->am_anext;
-                }
-
-                if (getter != NULL) {
-                    next_iter = (*getter)(aiter);
-                    if (next_iter == NULL) {
-                        goto error;
-                    }
-                }
-                else {
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "'async for' requires an iterator with "
-                                  "__anext__ method, got %.100s",
-                                  type->tp_name);
-                    goto error;
-                }
-
-                awaitable = _PyCoro_GetAwaitableIter(next_iter);
-                if (awaitable == NULL) {
-                    _PyErr_FormatFromCause(
-                        PyExc_TypeError,
-                        "'async for' received an invalid object "
-                        "from __anext__: %.100s",
-                        Py_TYPE(next_iter)->tp_name);
-
-                    Py_DECREF(next_iter);
-                    goto error;
-                } else {
-                    Py_DECREF(next_iter);
-                }
+            if (get_anext(tstate, frame, co, &stack_pointer)) {
+                goto error;
             }
-
-            PUSH(awaitable);
             PREDICT(LOAD_CONST);
             DISPATCH();
         }
