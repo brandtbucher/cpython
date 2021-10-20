@@ -1483,6 +1483,55 @@ record_hit_inline(_Py_CODEUNIT *next_instr, int oparg)
     record_cache_hit(cache0); \
     Py_INCREF(res);
 
+// EXPERIMENT: Break less-dense opcodes out of the main interpreter loop.
+// "Less-dense" here means low pgo_hits / source_size. Current ops are:
+// - BEFORE_ASYNC_WITH
+
+static int
+before_async_with(PyThreadState *tstate, InterpreterFrame *frame,
+                  PyCodeObject *co, PyObject ***sp)
+{
+    PyObject **stack_pointer = *sp;
+    _Py_IDENTIFIER(__aenter__);
+    _Py_IDENTIFIER(__aexit__);
+    PyObject *mgr = TOP();
+    PyObject *enter = _PyObject_LookupSpecial(mgr, &PyId___aenter__);
+    if (enter == NULL) {
+        if (!_PyErr_Occurred(tstate)) {
+            _PyErr_Format(tstate, PyExc_TypeError,
+                            "'%.200s' object does not support the "
+                            "asynchronous context manager protocol",
+                            Py_TYPE(mgr)->tp_name);
+        }
+        *sp = stack_pointer;
+        return -1;
+    }
+    PyObject *exit = _PyObject_LookupSpecial(mgr, &PyId___aexit__);
+    if (exit == NULL) {
+        if (!_PyErr_Occurred(tstate)) {
+            _PyErr_Format(tstate, PyExc_TypeError,
+                            "'%.200s' object does not support the "
+                            "asynchronous context manager protocol "
+                            "(missed __aexit__ method)",
+                            Py_TYPE(mgr)->tp_name);
+        }
+        Py_DECREF(enter);
+        *sp = stack_pointer;
+        return -1;
+    }
+    SET_TOP(exit);
+    Py_DECREF(mgr);
+    PyObject *res = _PyObject_CallNoArgs(enter);
+    Py_DECREF(enter);
+    if (res == NULL) {
+        *sp = stack_pointer;
+        return -1;
+    }
+    PUSH(res);
+    *sp = stack_pointer;
+    return 0;
+}
+
 static int
 trace_function_entry(PyThreadState *tstate, InterpreterFrame *frame)
 {
@@ -4849,39 +4898,9 @@ check_eval_breaker:
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            _Py_IDENTIFIER(__aenter__);
-            _Py_IDENTIFIER(__aexit__);
-            PyObject *mgr = TOP();
-            PyObject *res;
-            PyObject *enter = _PyObject_LookupSpecial(mgr, &PyId___aenter__);
-            if (enter == NULL) {
-                if (!_PyErr_Occurred(tstate)) {
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "'%.200s' object does not support the "
-                                  "asynchronous context manager protocol",
-                                  Py_TYPE(mgr)->tp_name);
-                }
+            if (before_async_with(tstate, frame, co, &stack_pointer)) {
                 goto error;
             }
-            PyObject *exit = _PyObject_LookupSpecial(mgr, &PyId___aexit__);
-            if (exit == NULL) {
-                if (!_PyErr_Occurred(tstate)) {
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "'%.200s' object does not support the "
-                                  "asynchronous context manager protocol "
-                                  "(missed __aexit__ method)",
-                                  Py_TYPE(mgr)->tp_name);
-                }
-                Py_DECREF(enter);
-                goto error;
-            }
-            SET_TOP(exit);
-            Py_DECREF(mgr);
-            res = _PyObject_CallNoArgs(enter);
-            Py_DECREF(enter);
-            if (res == NULL)
-                goto error;
-            PUSH(res);
             PREDICT(GET_AWAITABLE);
             DISPATCH();
         }
