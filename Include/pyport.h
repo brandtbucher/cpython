@@ -205,8 +205,6 @@ typedef Py_ssize_t Py_ssize_clean_t;
  * see https://bugs.python.org/issue28126 */
 #define Py_MEMCPY memcpy
 
-#include <stdlib.h>
-
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>  /* needed for 'finite' declaration on some platforms */
 #endif
@@ -711,26 +709,6 @@ extern char * _getpty(int *, int, mode_t, int);
 #  define PY_BIG_ENDIAN 0
 #  define PY_LITTLE_ENDIAN 1
 #endif
-
-#ifdef Py_BUILD_CORE
-/*
- * Macros to protect CRT calls against instant termination when passed an
- * invalid parameter (issue23524).
- */
-#if defined _MSC_VER && _MSC_VER >= 1900
-
-extern _invalid_parameter_handler _Py_silent_invalid_parameter_handler;
-#define _Py_BEGIN_SUPPRESS_IPH { _invalid_parameter_handler _Py_old_handler = \
-    _set_thread_local_invalid_parameter_handler(_Py_silent_invalid_parameter_handler);
-#define _Py_END_SUPPRESS_IPH _set_thread_local_invalid_parameter_handler(_Py_old_handler); }
-
-#else
-
-#define _Py_BEGIN_SUPPRESS_IPH
-#define _Py_END_SUPPRESS_IPH
-
-#endif /* _MSC_VER >= 1900 */
-#endif /* Py_BUILD_CORE */
 
 #ifdef __ANDROID__
    /* The Android langinfo.h header is not used. */
