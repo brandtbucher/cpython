@@ -5027,6 +5027,47 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(NUMBER_OP) {
+            PyObject *right = POP();
+            PyObject *left = TOP();
+            PyObject *res = NULL;
+            switch (oparg) {
+                case BINARY_ADD:              res = PyNumber_Add(left, right);                   break;
+                case BINARY_AND:              res = PyNumber_And(left, right);                   break;
+                case BINARY_FLOOR_DIVIDE:     res = PyNumber_FloorDivide(left, right);           break;
+                case BINARY_LSHIFT:           res = PyNumber_Lshift(left, right);                break;
+                case BINARY_MATRIX_MULTIPLY:  res = PyNumber_MatrixMultiply(left, right);        break;
+                case BINARY_MODULO:           res = PyNumber_Remainder(left, right);             break;
+                case BINARY_MULTIPLY:         res = PyNumber_Multiply(left, right);              break;
+                case BINARY_OR:               res = PyNumber_Or(left, right);                    break;
+                case BINARY_POWER:            res = PyNumber_Power(left, right, Py_None);        break;
+                case BINARY_RSHIFT:           res = PyNumber_Rshift(left, right);                break;
+                case BINARY_SUBTRACT:         res = PyNumber_Subtract(left, right);              break;
+                case BINARY_TRUE_DIVIDE:      res = PyNumber_TrueDivide(left, right);            break;
+                case BINARY_XOR:              res = PyNumber_Xor(left, right);                   break;
+                case INPLACE_ADD:             res = PyNumber_InPlaceAdd(left, right);            break;
+                case INPLACE_AND:             res = PyNumber_InPlaceAnd(left, right);            break;
+                case INPLACE_FLOOR_DIVIDE:    res = PyNumber_InPlaceFloorDivide(left, right);    break;
+                case INPLACE_LSHIFT:          res = PyNumber_InPlaceLshift(left, right);         break;
+                case INPLACE_MATRIX_MULTIPLY: res = PyNumber_InPlaceMatrixMultiply(left, right); break;
+                case INPLACE_MODULO:          res = PyNumber_InPlaceRemainder(left, right);      break;
+                case INPLACE_MULTIPLY:        res = PyNumber_InPlaceMultiply(left, right);       break;
+                case INPLACE_OR:              res = PyNumber_InPlaceOr(left, right);             break;
+                case INPLACE_POWER:           res = PyNumber_InPlacePower(left, right, Py_None); break;
+                case INPLACE_RSHIFT:          res = PyNumber_InPlaceRshift(left, right);         break;
+                case INPLACE_SUBTRACT:        res = PyNumber_InPlaceSubtract(left, right);       break;
+                case INPLACE_TRUE_DIVIDE:     res = PyNumber_InPlaceTrueDivide(left, right);     break;
+                case INPLACE_XOR:             res = PyNumber_InPlaceXor(left, right);            break;
+            }
+            Py_DECREF(left);
+            Py_DECREF(right);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
+        }
+
         TARGET(EXTENDED_ARG) {
             int oldoparg = oparg;
             NEXTOPARG();

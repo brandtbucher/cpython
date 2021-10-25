@@ -1260,6 +1260,8 @@ stack_effect(int opcode, int oparg, int jump)
             return 2;
         case ROT_N:
             return 0;
+        case NUMBER_OP:
+            return -1;
         default:
             return PY_INVALID_STACK_EFFECT;
     }
