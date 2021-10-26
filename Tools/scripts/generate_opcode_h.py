@@ -84,6 +84,12 @@ def main(opcode_py, outfile='Include/opcode.h'):
             fobj.write(f"\n    || ((op) == {op}) \\")
         fobj.write("\n    )\n")
 
+        fobj.write("\n")
+        fobj.write("typedef enum {\n")
+        for name, _ in opcode["_binops"]:
+            fobj.write(f"    {name},\n")
+        fobj.write("} _PyOpcode_BinOp;\n")
+
         fobj.write(footer)
 
 

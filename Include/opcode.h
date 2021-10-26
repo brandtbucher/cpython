@@ -18,18 +18,10 @@ extern "C" {
 #define UNARY_NEGATIVE           11
 #define UNARY_NOT                12
 #define UNARY_INVERT             15
-#define BINARY_MATRIX_MULTIPLY   16
-#define INPLACE_MATRIX_MULTIPLY  17
 #define BINARY_POWER             19
 #define BINARY_MULTIPLY          20
-#define BINARY_MODULO            22
 #define BINARY_ADD               23
-#define BINARY_SUBTRACT          24
 #define BINARY_SUBSCR            25
-#define BINARY_FLOOR_DIVIDE      26
-#define BINARY_TRUE_DIVIDE       27
-#define INPLACE_FLOOR_DIVIDE     28
-#define INPLACE_TRUE_DIVIDE      29
 #define GET_LEN                  30
 #define MATCH_MAPPING            31
 #define MATCH_SEQUENCE           32
@@ -44,16 +36,9 @@ extern "C" {
 #define BEFORE_WITH              53
 #define END_ASYNC_FOR            54
 #define INPLACE_ADD              55
-#define INPLACE_SUBTRACT         56
 #define INPLACE_MULTIPLY         57
-#define INPLACE_MODULO           59
 #define STORE_SUBSCR             60
 #define DELETE_SUBSCR            61
-#define BINARY_LSHIFT            62
-#define BINARY_RSHIFT            63
-#define BINARY_AND               64
-#define BINARY_XOR               65
-#define BINARY_OR                66
 #define INPLACE_POWER            67
 #define GET_ITER                 68
 #define GET_YIELD_FROM_ITER      69
@@ -62,11 +47,6 @@ extern "C" {
 #define YIELD_FROM               72
 #define GET_AWAITABLE            73
 #define LOAD_ASSERTION_ERROR     74
-#define INPLACE_LSHIFT           75
-#define INPLACE_RSHIFT           76
-#define INPLACE_AND              77
-#define INPLACE_XOR              78
-#define INPLACE_OR               79
 #define LIST_TO_TUPLE            82
 #define RETURN_VALUE             83
 #define IMPORT_STAR              84
@@ -104,7 +84,7 @@ extern "C" {
 #define IS_OP                   117
 #define CONTAINS_OP             118
 #define RERAISE                 119
-#define NUMBER_OP               120
+#define BINARY_OP               120
 #define JUMP_IF_NOT_EXC_MATCH   121
 #define LOAD_FAST               124
 #define STORE_FAST              125
@@ -141,43 +121,43 @@ extern "C" {
 #define BINARY_ADD_INT            8
 #define BINARY_ADD_FLOAT         13
 #define BINARY_ADD_UNICODE       14
-#define BINARY_ADD_UNICODE_INPLACE_FAST  18
-#define BINARY_MULTIPLY_ADAPTIVE  21
-#define BINARY_MULTIPLY_INT      36
-#define BINARY_MULTIPLY_FLOAT    38
-#define BINARY_SUBSCR_ADAPTIVE   39
-#define BINARY_SUBSCR_LIST_INT   40
-#define BINARY_SUBSCR_TUPLE_INT  41
-#define BINARY_SUBSCR_DICT       42
-#define CALL_FUNCTION_ADAPTIVE   43
-#define CALL_FUNCTION_BUILTIN_O  44
-#define CALL_FUNCTION_BUILTIN_FAST  45
-#define CALL_FUNCTION_LEN        46
-#define CALL_FUNCTION_ISINSTANCE  47
-#define CALL_FUNCTION_PY_SIMPLE  48
-#define JUMP_ABSOLUTE_QUICK      58
-#define LOAD_ATTR_ADAPTIVE       80
-#define LOAD_ATTR_INSTANCE_VALUE  81
-#define LOAD_ATTR_WITH_HINT      87
-#define LOAD_ATTR_SLOT           88
-#define LOAD_ATTR_MODULE        122
-#define LOAD_GLOBAL_ADAPTIVE    123
-#define LOAD_GLOBAL_MODULE      127
-#define LOAD_GLOBAL_BUILTIN     128
-#define LOAD_METHOD_ADAPTIVE    134
-#define LOAD_METHOD_CACHED      140
-#define LOAD_METHOD_CLASS       143
-#define LOAD_METHOD_MODULE      149
-#define LOAD_METHOD_NO_DICT     150
-#define STORE_ATTR_ADAPTIVE     151
-#define STORE_ATTR_INSTANCE_VALUE 153
-#define STORE_ATTR_SLOT         154
-#define STORE_ATTR_WITH_HINT    158
-#define LOAD_FAST__LOAD_FAST    159
-#define STORE_FAST__LOAD_FAST   167
-#define LOAD_FAST__LOAD_CONST   168
-#define LOAD_CONST__LOAD_FAST   169
-#define STORE_FAST__STORE_FAST  170
+#define BINARY_ADD_UNICODE_INPLACE_FAST  16
+#define BINARY_MULTIPLY_ADAPTIVE  17
+#define BINARY_MULTIPLY_INT      18
+#define BINARY_MULTIPLY_FLOAT    21
+#define BINARY_SUBSCR_ADAPTIVE   22
+#define BINARY_SUBSCR_LIST_INT   24
+#define BINARY_SUBSCR_TUPLE_INT  26
+#define BINARY_SUBSCR_DICT       27
+#define CALL_FUNCTION_ADAPTIVE   28
+#define CALL_FUNCTION_BUILTIN_O  29
+#define CALL_FUNCTION_BUILTIN_FAST  36
+#define CALL_FUNCTION_LEN        38
+#define CALL_FUNCTION_ISINSTANCE  39
+#define CALL_FUNCTION_PY_SIMPLE  40
+#define JUMP_ABSOLUTE_QUICK      41
+#define LOAD_ATTR_ADAPTIVE       42
+#define LOAD_ATTR_INSTANCE_VALUE  43
+#define LOAD_ATTR_WITH_HINT      44
+#define LOAD_ATTR_SLOT           45
+#define LOAD_ATTR_MODULE         46
+#define LOAD_GLOBAL_ADAPTIVE     47
+#define LOAD_GLOBAL_MODULE       48
+#define LOAD_GLOBAL_BUILTIN      56
+#define LOAD_METHOD_ADAPTIVE     58
+#define LOAD_METHOD_CACHED       59
+#define LOAD_METHOD_CLASS        62
+#define LOAD_METHOD_MODULE       63
+#define LOAD_METHOD_NO_DICT      64
+#define STORE_ATTR_ADAPTIVE      65
+#define STORE_ATTR_INSTANCE_VALUE  66
+#define STORE_ATTR_SLOT          75
+#define STORE_ATTR_WITH_HINT     76
+#define LOAD_FAST__LOAD_FAST     77
+#define STORE_FAST__LOAD_FAST    78
+#define LOAD_FAST__LOAD_CONST    79
+#define LOAD_CONST__LOAD_FAST    80
+#define STORE_FAST__STORE_FAST   81
 #define DO_TRACING              255
 #ifdef NEED_OPCODE_JUMP_TABLES
 static uint32_t _PyOpcode_RelativeJump[8] = {
@@ -205,6 +185,29 @@ static uint32_t _PyOpcode_Jump[8] = {
 #define HAS_CONST(op) (false\
     || ((op) == 100) \
     )
+
+typedef enum {
+    NB_AND,
+    NB_FLOOR_DIVIDE,
+    NB_LSHIFT,
+    NB_MATRIX_MULTIPLY,
+    NB_OR,
+    NB_REMAINDER,
+    NB_RSHIFT,
+    NB_SUBTRACT,
+    NB_TRUE_DIVIDE,
+    NB_XOR,
+    NB_INPLACE_AND,
+    NB_INPLACE_FLOOR_DIVIDE,
+    NB_INPLACE_LSHIFT,
+    NB_INPLACE_MATRIX_MULTIPLY,
+    NB_INPLACE_OR,
+    NB_INPLACE_REMAINDER,
+    NB_INPLACE_RSHIFT,
+    NB_INPLACE_SUBTRACT,
+    NB_INPLACE_TRUE_DIVIDE,
+    NB_INPLACE_XOR,
+} _PyOpcode_BinOp;
 
 #define HAS_ARG(op) ((op) >= HAVE_ARGUMENT)
 

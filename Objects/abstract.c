@@ -1,6 +1,7 @@
 /* Abstract Object Interface (many thanks to Jim Fulton) */
 
 #include "Python.h"
+#include "opcode.h"
 #include "pycore_abstract.h"      // _PyIndex_Check()
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_ceval.h"         // _Py_EnterRecursiveCall()
@@ -1712,6 +1713,99 @@ PyNumber_ToBase(PyObject *n, int base)
     PyObject *res = _PyLong_Format(index, base);
     Py_DECREF(index);
     return res;
+}
+
+static size_t nb_binary_slots[] = {
+    [NB_AND] = NB_SLOT(nb_and),
+    [NB_FLOOR_DIVIDE] = NB_SLOT(nb_floor_divide),
+    [NB_LSHIFT] = NB_SLOT(nb_lshift),
+    [NB_MATRIX_MULTIPLY] = NB_SLOT(nb_matrix_multiply),
+    [NB_OR] = NB_SLOT(nb_or),
+    [NB_REMAINDER] = NB_SLOT(nb_remainder),
+    [NB_RSHIFT] = NB_SLOT(nb_rshift),
+    [NB_SUBTRACT] = NB_SLOT(nb_subtract),
+    [NB_TRUE_DIVIDE] = NB_SLOT(nb_true_divide),
+    [NB_XOR] = NB_SLOT(nb_xor),
+    [NB_INPLACE_AND] = NB_SLOT(nb_and),
+    [NB_INPLACE_FLOOR_DIVIDE] = NB_SLOT(nb_floor_divide),
+    [NB_INPLACE_LSHIFT] = NB_SLOT(nb_lshift),
+    [NB_INPLACE_MATRIX_MULTIPLY] = NB_SLOT(nb_matrix_multiply),
+    [NB_INPLACE_OR] = NB_SLOT(nb_or),
+    [NB_INPLACE_REMAINDER] = NB_SLOT(nb_remainder),
+    [NB_INPLACE_RSHIFT] = NB_SLOT(nb_rshift),
+    [NB_INPLACE_SUBTRACT] = NB_SLOT(nb_subtract),
+    [NB_INPLACE_TRUE_DIVIDE] = NB_SLOT(nb_true_divide),
+    [NB_INPLACE_XOR] = NB_SLOT(nb_xor),
+};
+
+static size_t nb_inplace_slots[] = {
+    [NB_INPLACE_AND] = NB_SLOT(nb_inplace_and),
+    [NB_INPLACE_FLOOR_DIVIDE] = NB_SLOT(nb_inplace_floor_divide),
+    [NB_INPLACE_LSHIFT] = NB_SLOT(nb_inplace_lshift),
+    [NB_INPLACE_MATRIX_MULTIPLY] = NB_SLOT(nb_inplace_matrix_multiply),
+    [NB_INPLACE_OR] = NB_SLOT(nb_inplace_or),
+    [NB_INPLACE_REMAINDER] = NB_SLOT(nb_inplace_remainder),
+    [NB_INPLACE_RSHIFT] = NB_SLOT(nb_inplace_rshift),
+    [NB_INPLACE_SUBTRACT] = NB_SLOT(nb_inplace_subtract),
+    [NB_INPLACE_TRUE_DIVIDE] = NB_SLOT(nb_inplace_true_divide),
+    [NB_INPLACE_XOR] = NB_SLOT(nb_inplace_xor),
+};
+
+static const char *nb_binary_names[] = {
+    [NB_AND] = "&",
+    [NB_FLOOR_DIVIDE] = "//",
+    [NB_LSHIFT] = "<<",
+    [NB_MATRIX_MULTIPLY] = "@",
+    [NB_OR] = "|",
+    [NB_REMAINDER] = "%",
+    [NB_RSHIFT] = ">>",
+    [NB_SUBTRACT] = "-",
+    [NB_TRUE_DIVIDE] = "/",
+    [NB_XOR] = "^",
+    [NB_INPLACE_AND] = "&=",
+    [NB_INPLACE_FLOOR_DIVIDE] = "//=",
+    [NB_INPLACE_LSHIFT] = "<<=",
+    [NB_INPLACE_MATRIX_MULTIPLY] = "@=",
+    [NB_INPLACE_OR] = "|=",
+    [NB_INPLACE_REMAINDER] = "%=",
+    [NB_INPLACE_RSHIFT] = ">>=",
+    [NB_INPLACE_SUBTRACT] = "-=",
+    [NB_INPLACE_TRUE_DIVIDE] = "/=",
+    [NB_INPLACE_XOR] = "^=",
+};
+
+PyObject *
+_PyNumber_BinaryOp(PyObject *o1, PyObject *o2, int op)
+{
+    if (op < NB_INPLACE_AND) {
+        return binary_op(o1, o2, nb_binary_slots[op], nb_binary_names[op]);
+    }
+    return binary_iop(o1, o2, nb_inplace_slots[op], nb_binary_slots[op],
+                      nb_binary_names[op]);
+}
+
+PyObject *
+_PyNumber_BinaryOpCached(PyObject *o1, PyObject *o2, int op, binaryfunc inplace,
+                         binaryfunc binary)
+{
+    assert(Py_IS_TYPE(o1, Py_TYPE(o2)));
+    PyObject *res;
+    if (inplace) {
+        assert(NB_INPLACE_AND <= op);
+        res = inplace(o1, o2);
+        if (res != Py_NotImplemented) {
+            return res;
+        }
+        Py_DECREF(res);
+    }
+    if (binary) {
+        res = binary(o1, o2);
+        if (res != Py_NotImplemented) {
+            return res;
+        }
+        Py_DECREF(res);
+    }
+    return binop_type_error(o1, o2, nb_binary_names[op]);
 }
 
 

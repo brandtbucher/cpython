@@ -364,7 +364,7 @@ _code_type = type(_write_atomic.__code__)
 #     Python 3.11a1 3459 (PEP 657: add end line numbers and column offsets for instructions)
 #     Python 3.11a1 3460 (Add co_qualname field to PyCodeObject bpo-44530)
 #     Python 3.11a1 3461 (JUMP_ABSOLUTE must jump backwards)
-#     Python 3.11a2 3462 (Merge BINARY_* and INPLACE_* into NUMBER_OP)
+#     Python 3.11a2 3462 (Merge BINARY_* and INPLACE_* into BINARY_OP)
 
 #
 # MAGIC must change whenever the bytecode emitted by the compiler may no

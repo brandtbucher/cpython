@@ -633,6 +633,12 @@ PyAPI_FUNC(PyObject *) PyNumber_InPlaceOr(PyObject *o1, PyObject *o2);
    If n is not an int object, it is converted with PyNumber_Index first. */
 PyAPI_FUNC(PyObject *) PyNumber_ToBase(PyObject *n, int base);
 
+PyAPI_FUNC(PyObject *) _PyNumber_BinaryOp(PyObject *o1, PyObject *o2, int op);
+
+PyAPI_FUNC(PyObject *) _PyNumber_BinaryOpCached(PyObject *o1, PyObject *o2,
+                                                int op, binaryfunc inplace,
+                                                binaryfunc binary);
+
 
 /* === Sequence protocol ================================================ */
 
