@@ -639,6 +639,9 @@ PyAPI_FUNC(PyObject *) _PyNumber_BinaryOpCached(PyObject *o1, PyObject *o2,
                                                 int op, binaryfunc inplace,
                                                 binaryfunc binary);
 
+PyAPI_FUNC(void) _PyNumber_LoadBinarySlots(PyTypeObject *type, int op,
+                                           binaryfunc *inplace,
+                                           binaryfunc *binary);
 
 /* === Sequence protocol ================================================ */
 

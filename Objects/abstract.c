@@ -1784,26 +1784,39 @@ _PyNumber_BinaryOp(PyObject *o1, PyObject *o2, int op)
                       nb_binary_names[op]);
 }
 
+void
+_PyNumber_LoadBinarySlots(PyTypeObject *type, int op, binaryfunc *inplace,
+                          binaryfunc *binary)
+{
+    PyNumberMethods *nb_methods = type->tp_as_number;
+    if (nb_methods) {
+        *inplace = NB_BINOP(nb_methods, nb_inplace_slots[op]);
+        *binary = NB_BINOP(nb_methods, nb_binary_slots[op]);
+    }
+    else {
+        *inplace = NULL;
+        *binary = NULL;
+    }
+}
+
 PyObject *
 _PyNumber_BinaryOpCached(PyObject *o1, PyObject *o2, int op, binaryfunc inplace,
                          binaryfunc binary)
 {
     assert(Py_IS_TYPE(o1, Py_TYPE(o2)));
-    PyObject *res;
-    if (inplace) {
-        assert(NB_INPLACE_AND <= op);
-        res = inplace(o1, o2);
-        if (res != Py_NotImplemented) {
-            return res;
+    if (inplace && NB_INPLACE_AND <= op) {
+        PyObject *ires = inplace(o1, o2);
+        if (ires != Py_NotImplemented) {
+            return ires;
         }
-        Py_DECREF(res);
+        Py_DECREF(ires);
     }
     if (binary) {
-        res = binary(o1, o2);
-        if (res != Py_NotImplemented) {
-            return res;
+        PyObject *bres = binary(o1, o2);
+        if (bres != Py_NotImplemented) {
+            return bres;
         }
-        Py_DECREF(res);
+        Py_DECREF(bres);
     }
     return binop_type_error(o1, o2, nb_binary_names[op]);
 }

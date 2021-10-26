@@ -41,6 +41,10 @@ typedef struct {
     uint16_t defaults_len;
 } _PyCallCache;
 
+typedef struct {
+    binaryfunc f;
+} _PyBinOpCache;
+
 /* Add specialized versions of entries to this union.
  *
  * Do not break the invariant: sizeof(SpecializedCacheEntry) == 8
@@ -58,6 +62,7 @@ typedef union {
     _PyLoadGlobalCache load_global;
     _PyObjectCache obj;
     _PyCallCache call;
+    _PyBinOpCache binop;
 } SpecializedCacheEntry;
 
 #define INSTRUCTIONS_PER_ENTRY (sizeof(SpecializedCacheEntry)/sizeof(_Py_CODEUNIT))
@@ -270,6 +275,7 @@ int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_CODEUNIT
 int _Py_Specialize_BinaryAdd(PyObject *left, PyObject *right, _Py_CODEUNIT *instr);
 int _Py_Specialize_BinaryMultiply(PyObject *left, PyObject *right, _Py_CODEUNIT *instr);
 int _Py_Specialize_CallFunction(PyObject *callable, _Py_CODEUNIT *instr, int nargs, SpecializedCacheEntry *cache, PyObject *builtins);
+void _Py_Specialize_BinaryOp(PyObject *left, PyObject *right, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
 
 #define PRINT_SPECIALIZATION_STATS 0
 #define PRINT_SPECIALIZATION_STATS_DETAILED 0

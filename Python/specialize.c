@@ -129,6 +129,7 @@ _Py_GetSpecializationStats(void) {
     err += add_stat_dict(stats, BINARY_SUBSCR, "binary_subscr");
     err += add_stat_dict(stats, STORE_ATTR, "store_attr");
     err += add_stat_dict(stats, CALL_FUNCTION, "call_function");
+    err += add_stat_dict(stats, BINARY_OP, "binary_op");
     if (err < 0) {
         Py_DECREF(stats);
         return NULL;
@@ -187,6 +188,7 @@ _Py_PrintSpecializationStats(void)
     print_stats(out, &_specialization_stats[BINARY_SUBSCR], "binary_subscr");
     print_stats(out, &_specialization_stats[STORE_ATTR], "store_attr");
     print_stats(out, &_specialization_stats[CALL_FUNCTION], "call_function");
+    print_stats(out, &_specialization_stats[BINARY_OP], "binary_op");
     if (out != stderr) {
         fclose(out);
     }
@@ -239,6 +241,7 @@ static uint8_t adaptive_opcodes[256] = {
     [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
     [CALL_FUNCTION] = CALL_FUNCTION_ADAPTIVE,
     [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
+    [BINARY_OP] = BINARY_OP_ADAPTIVE,
 };
 
 /* The number of cache entries required for a "family" of instructions. */
@@ -251,6 +254,7 @@ static uint8_t cache_requirements[256] = {
     [BINARY_SUBSCR] = 0,
     [CALL_FUNCTION] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
+    [BINARY_OP] = 4, /* _PyAdaptiveEntry, _PyAttrCache, _PyBinOpCache, _PyBinOpCache */
 };
 
 /* Return the oparg for the cache_offset and instruction index.
@@ -1447,4 +1451,28 @@ _Py_Specialize_CallFunction(
         cache0->counter = initial_counter_value();
     }
     return 0;
+}
+
+void
+_Py_Specialize_BinaryOp(PyObject *left, PyObject *right, _Py_CODEUNIT *instr,
+                        SpecializedCacheEntry *caches)
+{
+    PyTypeObject *type = Py_TYPE(left);
+    if (!Py_IS_TYPE(right, type)) {
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
+        STAT_INC(BINARY_OP, specialization_failure);
+        assert(!PyErr_Occurred());
+        cache_backoff(&caches->adaptive);
+        return;
+    }
+    _PyAttrCache *version = &caches[-3].attr;
+    _PyBinOpCache *inplace = &caches[-2].binop;
+    _PyBinOpCache *binary = &caches[-1].binop;
+    version->tp_version = type->tp_version_tag;
+    _PyNumber_LoadBinarySlots(type, caches->adaptive.original_oparg,
+                              &(inplace->f), &(binary->f));
+    *instr = _Py_MAKECODEUNIT(BINARY_OP_SAME_TYPE, _Py_OPARG(*instr));
+    STAT_INC(BINARY_OP, specialization_success);
+    caches->adaptive.counter = initial_counter_value();
+    assert(!PyErr_Occurred());
 }

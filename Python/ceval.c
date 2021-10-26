@@ -4780,11 +4780,58 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_OP) {
-            PyObject *right = POP();
-            PyObject *left = TOP();
+            PREDICTED(BINARY_OP);
+            STAT_INC(BINARY_OP, unquickened);
+            PyObject *left = SECOND();
+            PyObject *right = TOP();
             PyObject *res = _PyNumber_BinaryOp(left, right, oparg);
             Py_DECREF(left);
             Py_DECREF(right);
+            STACK_SHRINK(1);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
+        }
+
+        TARGET(BINARY_OP_ADAPTIVE) {
+            assert(cframe.use_tracing == 0);
+            SpecializedCacheEntry *caches = GET_CACHE();
+            if (caches->adaptive.counter == 0) {
+                PyObject *left = SECOND();
+                PyObject *right = TOP();
+                next_instr--;
+                _Py_Specialize_BinaryOp(left, right, next_instr, caches);
+                DISPATCH();
+            }
+            else {
+                STAT_INC(BINARY_OP, deferred);
+                caches->adaptive.counter--;
+                oparg = caches->adaptive.original_oparg;
+                STAT_DEC(BINARY_OP, unquickened);
+                JUMP_TO_INSTRUCTION(BINARY_OP);
+            }
+        }
+
+        TARGET(BINARY_OP_SAME_TYPE) {
+            PyObject *left = SECOND();
+            PyObject *right = TOP();
+            assert(cframe.use_tracing == 0);
+            PyTypeObject *type = Py_TYPE(left);
+            DEOPT_IF(!Py_IS_TYPE(right, type), BINARY_OP);
+            SpecializedCacheEntry *caches = GET_CACHE();
+            _PyAttrCache *version = &caches[-3].attr;
+            DEOPT_IF(type->tp_version_tag != version->tp_version, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            _PyBinOpCache *inplace = &caches[-2].binop;
+            _PyBinOpCache *binary = &caches[-1].binop;
+            PyObject *res = _PyNumber_BinaryOpCached(left, right,
+                                                     caches->adaptive.original_oparg,
+                                                     inplace->f, binary->f);
+            Py_DECREF(left);
+            Py_DECREF(right);
+            STACK_SHRINK(1);
             SET_TOP(res);
             if (res == NULL) {
                 goto error;
@@ -4897,6 +4944,7 @@ MISS_WITH_CACHE(STORE_ATTR)
 MISS_WITH_CACHE(LOAD_GLOBAL)
 MISS_WITH_CACHE(LOAD_METHOD)
 MISS_WITH_CACHE(CALL_FUNCTION)
+MISS_WITH_CACHE(BINARY_OP)
 MISS_WITH_OPARG_COUNTER(BINARY_SUBSCR)
 MISS_WITH_OPARG_COUNTER(BINARY_ADD)
 MISS_WITH_OPARG_COUNTER(BINARY_MULTIPLY)
