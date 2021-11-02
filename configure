@@ -7047,11 +7047,11 @@ then
                     OPT="-g -O0 -Wall"
                 fi
 	    else
-		OPT="-g $WRAP -O2 -Wall"
+		OPT="-g $WRAP -O2 -ftree-loop-vectorize -Wall"
 	    fi
 	    ;;
 	*)
-	    OPT="-O2 -Wall"
+	    OPT="-O2 -ftree-loop-vectorize -Wall"
 	    ;;
 	esac
 
