@@ -33,7 +33,6 @@
 
 #define NEED_OPCODE_JUMP_TABLES
 #include "opcode.h"               // EXTENDED_ARG
-#include "wordcode_helpers.h"     // instrsize()
 
 
 #define DEFAULT_BLOCK_SIZE 16
@@ -6806,6 +6805,40 @@ assemble_free(struct assembler *a)
     Py_XDECREF(a->a_except_table);
 }
 
+// Compute the minimum number of code units necessary to encode the given oparg
+// using EXTENDED_ARGs.
+static int
+instrsize(unsigned int oparg)
+{
+    return oparg <= 0xFF ? 1 :
+           oparg <= 0xFFFF ? 2 :
+           oparg <= 0xFFFFFF ? 3 : 4;
+}
+
+// Encode an opcode/oparg pair using size words. code should point to the
+// desired location of the first EXTENDED_ARG.
+static void
+write_op_arg(_Py_CODEUNIT *code, unsigned char opcode, unsigned int oparg,
+             int size)
+{
+    assert(HAVE_ARGUMENT <= opcode || oparg == 0);
+    switch (size) {
+        default:
+            Py_UNREACHABLE();
+        case 4:
+            *code++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 24) & 0xFF);
+            // Fall through...
+        case 3:
+            *code++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 16) & 0xFF);
+            // Fall through...
+        case 2:
+            *code++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 8) & 0xFF);
+            // Fall through...
+        case 1:
+            *code++ = _Py_MAKECODEUNIT(opcode, oparg & 0xFF);
+    }
+}
+
 static int
 blocksize(basicblock *b)
 {
@@ -7246,6 +7279,20 @@ normalize_jumps(struct assembler *a)
             last->i_target->b_visited == 0
         ) {
             last->i_opcode = JUMP_FORWARD;
+        }
+    }
+}
+
+static void
+fix_opargs(struct assembler *a)
+{
+    for (basicblock *b = a->a_entry; b != NULL; b = b->b_next) {
+        for (int i = 0; i < b->b_iused; i++) {
+            if (b->b_instr[i].i_opcode < HAVE_ARGUMENT) {
+                // Opcodes with unused arguments may have been introduced during
+                // the optimization process:
+                b->b_instr[i].i_oparg = 0;
+            }
         }
     }
 }
@@ -7929,6 +7976,8 @@ assemble(struct compiler *c, int addNone)
 
     /* Order of basic blocks must have been determined by now */
     normalize_jumps(&a);
+
+    fix_opargs(&a);
 
     /* Can't modify the bytecode after computing jump offsets. */
     assemble_jump_offsets(&a, c);
