@@ -50,6 +50,9 @@ PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
     int base,
     int alternate);
 
+PyObject *_PyLong_AddFloat(PyLongObject *l, PyFloatObject *f);
+PyObject *_PyFloat_AddLong(PyFloatObject *f, PyLongObject *l);
+
 #ifdef __cplusplus
 }
 #endif

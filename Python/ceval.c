@@ -4814,14 +4814,11 @@ check_eval_breaker:
             _PyBinaryFuncCache *binary = &caches[-1].binary;
             assert(binary->func);
             PyObject *res = binary->func(lhs, rhs);
+            assert(res != Py_NotImplemented);
             STACK_SHRINK(1);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
             SET_TOP(res);
-            if (res == Py_NotImplemented) {
-                PyErr_Format(PyExc_TypeError, "XXX");
-                goto error;
-            }
             if (res == NULL) {
                 goto error;
             }

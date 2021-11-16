@@ -1375,78 +1375,12 @@ _Py_Specialize_CallFunction(
     return 0;
 }
 
-
-// #define RESOLVE_BINARY_OP(OP, op)                                \
-//     case NB_INPLACE_ ## OP:                                      \
-//         if (lhs_as_number) {                                     \
-//             func = lhs_as_number->nb_inplace_ ## op;             \
-//         }                                                        \
-//         /* Fall through... */                                    \
-//     case NB_ ## OP:                                              \
-//         if (lhs_as_number) {                                     \
-//             binaryfunc backup = lhs_as_number->nb_ ## op;        \
-//             if (func == NULL) {                                  \
-//                 func = backup;                                   \
-//             }                                                    \
-//             else if (backup) {                                   \
-//                 SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER); \
-//                 goto failure;                                    \
-//             }                                                    \
-//         }                                                        \
-//         if (rhs_as_number) {                                     \
-//             binaryfunc backup = rhs_as_number->nb_ ## op;        \
-//             if (func == NULL) {                                  \
-//                 func = backup;                                   \
-//             }                                                    \
-//             else if (func != backup) {                           \
-//                 SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER); \
-//                 goto failure;                                    \
-//             }                                                    \
-//         }                                                        \
-//         break;
-
-#define RESOLVE_BINARY_OP(op)                                         \
-    if (lhs_as_number) {                                              \
-        func = lhs_as_number->nb_ ## op;                              \
-        if (NB_INPLACE_ADD <= adaptive->original_oparg) {             \
-            binaryfunc inplace = lhs_as_number->nb_inplace_ ## op;    \
-            if (func == NULL) {                                       \
-                func = inplace;                                       \
-            }                                                         \
-            else if (inplace) {                                       \
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);      \
-                goto failure;                                         \
-            }                                                         \
-        }                                                             \
-    }                                                                 \
-    if (rhs_type == &PyLong_Type &&                                   \
-        !PyType_HasFeature(lhs_type, Py_TPFLAGS_LONG_SUBCLASS))       \
-    {                                                                 \
-        break;                                                        \
-    }                                                                 \
-    if (rhs_as_number) {                                              \
-        binaryfunc reflected = rhs_as_number->nb_ ## op;              \
-        if (func == NULL ||                                           \
-            (lhs_type == &PyLong_Type &&                              \
-             !PyType_HasFeature(rhs_type, Py_TPFLAGS_LONG_SUBCLASS))) \
-        {                                                             \
-            func = reflected;                                         \
-        }                                                             \
-        else if (func != reflected) {                                 \
-            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);          \
-            goto failure;                                             \
-        }                                                             \
-    }
-
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
     PyTypeObject *lhs_type = Py_TYPE(lhs);
     PyTypeObject *rhs_type = Py_TYPE(rhs);
-    PyNumberMethods *lhs_as_number = lhs_type->tp_as_number;
-    PyNumberMethods *rhs_as_number = rhs_type->tp_as_number;
-    binaryfunc func = NULL;
     _PyAdaptiveEntry *adaptive = &cache[0].adaptive;
     switch (adaptive->original_oparg) {
         case NB_ADD:
@@ -1475,27 +1409,12 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                     goto success;
                 }
             }
-            if (lhs_type->tp_as_sequence) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_CLASS);
-                goto failure;
+            if (lhs_type == &PyLong_Type && rhs_type == &PyFloat_Type) {
+                cache[-1].binary.func = (binaryfunc)_PyLong_AddFloat;
             }
-            RESOLVE_BINARY_OP(add);
-            break;
-        case NB_AND:
-        case NB_INPLACE_AND:
-            RESOLVE_BINARY_OP(and);
-            break;
-        case NB_FLOOR_DIVIDE:
-        case NB_INPLACE_FLOOR_DIVIDE:
-            RESOLVE_BINARY_OP(floor_divide);
-            break;
-        case NB_LSHIFT:
-        case NB_INPLACE_LSHIFT:
-            RESOLVE_BINARY_OP(lshift);
-            break;
-        case NB_MATRIX_MULTIPLY:
-        case NB_INPLACE_MATRIX_MULTIPLY:
-            RESOLVE_BINARY_OP(matrix_multiply);
+            else if (lhs_type == &PyFloat_Type && rhs_type == &PyLong_Type) {
+                cache[-1].binary.func = (binaryfunc)_PyFloat_AddLong;
+            }
             break;
         case NB_MULTIPLY:
         case NB_INPLACE_MULTIPLY:
@@ -1511,50 +1430,12 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                     goto success;
                 }
             }
-            if (lhs_type->tp_as_sequence || rhs_type->tp_as_sequence) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_CLASS);
-                goto failure;
-            }
             break;
-        case NB_REMAINDER:
-        case NB_INPLACE_REMAINDER:
-            RESOLVE_BINARY_OP(remainder);
-            break;
-        case NB_OR:
-        case NB_INPLACE_OR:
-            RESOLVE_BINARY_OP(or);
-            break;
-        case NB_POWER:
-        case NB_INPLACE_POWER:
-            // We can't specialize these, since ** and **= are technically
-            // ternary operators! To avoid repeated specialization attempts,
-            // just convert them back to BINARY_OP:
-            *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
-            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
-            goto failure;
-        case NB_RSHIFT:
-        case NB_INPLACE_RSHIFT:
-            RESOLVE_BINARY_OP(rshift);
-            break;
-        case NB_SUBTRACT:
-        case NB_INPLACE_SUBTRACT:
-            RESOLVE_BINARY_OP(subtract);
-            break;
-        case NB_TRUE_DIVIDE:
-        case NB_INPLACE_TRUE_DIVIDE:
-            RESOLVE_BINARY_OP(true_divide);
-            break;
-        case NB_XOR:
-        case NB_INPLACE_XOR:
-            RESOLVE_BINARY_OP(xor);
-            break;
-        default:
-            Py_UNREACHABLE();
     }
-    if (func == NULL) {
-        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-        goto failure;
-    }
+    *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
+    SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+    goto failure;
+cached:
     if (UINT16_MAX < lhs_type->tp_version_tag ||
         UINT16_MAX < rhs_type->tp_version_tag)
     {
@@ -1564,7 +1445,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
     *instr = _Py_MAKECODEUNIT(BINARY_OP_CACHED, _Py_OPARG(*instr));
     adaptive->lhs_version = lhs_type->tp_version_tag;
     adaptive->rhs_version = rhs_type->tp_version_tag;
-    cache[-1].binary.func = func;
 success:
     STAT_INC(BINARY_OP, specialization_success);
     adaptive->counter = initial_counter_value();
@@ -1573,5 +1453,3 @@ failure:
     STAT_INC(BINARY_OP, specialization_failure);
     cache_backoff(adaptive);
 }
-
-#undef RESOLVE_BINARY_OP

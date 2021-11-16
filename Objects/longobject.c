@@ -5856,3 +5856,21 @@ _PyLong_Fini(PyInterpreterState *interp)
 {
     (void)interp;
 }
+
+PyObject *
+_PyLong_AddFloat(PyLongObject *l, PyFloatObject *f)
+{
+    if (IS_MEDIUM_VALUE(l)) {
+        return PyFloat_FromDouble((double)medium_value(l) + f->ob_fval);
+    }
+    return PyFloat_Type.tp_as_number->nb_add((PyObject *)l, (PyObject *)f);
+}
+
+PyObject *
+_PyFloat_AddLong(PyFloatObject *f, PyLongObject *l)
+{
+    if (IS_MEDIUM_VALUE(l)) {
+        return PyFloat_FromDouble((double)medium_value(l) + f->ob_fval);
+    }
+    return PyFloat_Type.tp_as_number->nb_add((PyObject *)l, (PyObject *)f);
+}
