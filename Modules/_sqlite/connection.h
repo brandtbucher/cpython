@@ -35,6 +35,7 @@
 typedef struct _callback_context
 {
     PyObject *callable;
+    PyObject *module;
     pysqlite_state *state;
 } callback_context;
 
@@ -47,9 +48,6 @@ typedef struct
     /* the type detection mode. Only 0, PARSE_DECLTYPES, PARSE_COLNAMES or a
      * bitwise combination thereof makes sense */
     int detect_types;
-
-    /* None for autocommit, otherwise a PyUnicode with the isolation level */
-    PyObject* isolation_level;
 
     /* NULL for autocommit, otherwise a string with the BEGIN statement */
     const char* begin_statement;
