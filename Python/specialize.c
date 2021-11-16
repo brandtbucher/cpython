@@ -246,7 +246,7 @@ static uint8_t cache_requirements[256] = {
     [BINARY_SUBSCR] = 0,
     [CALL_FUNCTION] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
-    [BINARY_OP] = 1,  // _PyAdaptiveEntry
+    [BINARY_OP] = 2,  // _PyAdaptiveEntry and _PyBinaryFunctCache
 };
 
 /* Return the oparg for the cache_offset and instruction index.
@@ -1375,67 +1375,136 @@ _Py_Specialize_CallFunction(
     return 0;
 }
 
+
+#define RESOLVE_BINARY_OP(OP, op)                                \
+    case NB_INPLACE_ ## OP:                                      \
+        if (lhs_as_number) {                                     \
+            func = lhs_as_number->nb_inplace_ ## op;             \
+        }                                                        \
+        /* Fall through... */                                    \
+    case NB_ ## OP:                                              \
+        if (lhs_as_number) {                                     \
+            binaryfunc backup = lhs_as_number->nb_ ## op;        \
+            if (func == NULL) {                                  \
+                func = backup;                                   \
+            }                                                    \
+            else if (backup) {                                   \
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER); \
+                goto failure;                                    \
+            }                                                    \
+        }                                                        \
+        if (rhs_as_number) {                                     \
+            binaryfunc backup = rhs_as_number->nb_ ## op;        \
+            if (func == NULL) {                                  \
+                func = backup;                                   \
+            }                                                    \
+            else if (func != backup) {                           \
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER); \
+                goto failure;                                    \
+            }                                                    \
+        }                                                        \
+        break;
+
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
-    _PyAdaptiveEntry *adaptive = &cache->adaptive;
+    int specialized;
+    _PyAdaptiveEntry *adaptive = &cache[0].adaptive;
     switch (adaptive->original_oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
-                goto failure;
-            }
-            if (PyUnicode_CheckExact(lhs)) {
-                if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
-                                              _Py_OPARG(*instr));
+            if (Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                if (PyUnicode_CheckExact(lhs)) {
+                    if (_Py_OPCODE(instr[1]) == STORE_FAST && 
+                        Py_REFCNT(lhs) == 2)
+                    {
+                        specialized = BINARY_OP_INPLACE_ADD_UNICODE;
+                        goto success;
+                    }
+                    specialized = BINARY_OP_ADD_UNICODE;
                     goto success;
                 }
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
-                                          _Py_OPARG(*instr));
-                goto success;
+                if (PyLong_CheckExact(lhs)) {
+                    specialized = BINARY_OP_ADD_INT;
+                    goto success;
+                }
+                if (PyFloat_CheckExact(lhs)) {
+                    specialized = BINARY_OP_ADD_FLOAT;
+                    goto success;
+                }
             }
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT, _Py_OPARG(*instr));
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
-                                          _Py_OPARG(*instr));
-                goto success;
+            if (Py_TYPE(lhs)->tp_as_sequence) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+                goto failure;
             }
             break;
         case NB_MULTIPLY:
         case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
+            if (Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                if (PyLong_CheckExact(lhs)) {
+                    specialized = BINARY_OP_MULTIPLY_INT;
+                    goto success;
+                }
+                if (PyFloat_CheckExact(lhs)) {
+                    specialized = BINARY_OP_MULTIPLY_FLOAT;
+                    goto success;
+                }
+            }
+            if (Py_TYPE(lhs)->tp_as_sequence || Py_TYPE(rhs)->tp_as_sequence) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
                 goto failure;
             }
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
-                                          _Py_OPARG(*instr));
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
-                                          _Py_OPARG(*instr));
-                goto success;
-            }
             break;
-        default:
-            // These operators don't have any available specializations. Rather
-            // than repeatedly attempting to specialize them, just convert them
-            // back to BINARY_OP (while still recording a failure, of course)!
+        case NB_POWER:
+        case NB_INPLACE_POWER:
+            // We can't specialize these, since ** and **= are technically
+            // ternary operators. To avoid repeated specialization attempts,
+            // just convert them back to BINARY_OP:
             *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
+            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
+            goto failure;
     }
-    SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+    if (UINT16_MAX < Py_TYPE(lhs)->tp_version_tag ||
+        UINT16_MAX < Py_TYPE(rhs)->tp_version_tag)
+    {
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OUT_OF_VERSIONS);
+        goto failure;
+    }
+    binaryfunc func = NULL;
+    PyNumberMethods *lhs_as_number = Py_TYPE(lhs)->tp_as_number;
+    PyNumberMethods *rhs_as_number = Py_TYPE(rhs)->tp_as_number;
+    switch (adaptive->original_oparg) {
+        RESOLVE_BINARY_OP(ADD, add)
+        RESOLVE_BINARY_OP(AND, and)
+        RESOLVE_BINARY_OP(FLOOR_DIVIDE, floor_divide)
+        RESOLVE_BINARY_OP(LSHIFT, lshift)
+        RESOLVE_BINARY_OP(MATRIX_MULTIPLY, matrix_multiply)
+        RESOLVE_BINARY_OP(MULTIPLY, multiply)
+        RESOLVE_BINARY_OP(REMAINDER, remainder)
+        RESOLVE_BINARY_OP(OR, or)
+        RESOLVE_BINARY_OP(RSHIFT, rshift)
+        RESOLVE_BINARY_OP(SUBTRACT, subtract)
+        RESOLVE_BINARY_OP(TRUE_DIVIDE, true_divide)
+        RESOLVE_BINARY_OP(XOR, xor)
+    }
+    if (func == NULL) {
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+        goto failure;
+    }
+    adaptive->lhs_version = Py_TYPE(lhs)->tp_version_tag;
+    adaptive->rhs_version = Py_TYPE(rhs)->tp_version_tag;
+    _PyBinaryFuncCache *binary = &cache[-1].binary;
+    binary->func = func;
+    specialized = BINARY_OP_CACHED;
+success:
+    *instr = _Py_MAKECODEUNIT(specialized, _Py_OPARG(*instr));
+    STAT_INC(BINARY_OP, specialization_success);
+    adaptive->counter = initial_counter_value();
+    return;
 failure:
     STAT_INC(BINARY_OP, specialization_failure);
     cache_backoff(adaptive);
-    return;
-success:
-    STAT_INC(BINARY_OP, specialization_success);
-    adaptive->counter = initial_counter_value();
 }
+
+#undef RESOLVE_BINARY_OP

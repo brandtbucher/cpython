@@ -4801,6 +4801,30 @@ check_eval_breaker:
             }
         }
 
+        TARGET(BINARY_OP_CACHED) {
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            SpecializedCacheEntry *caches = GET_CACHE();
+            _PyAdaptiveEntry *adaptive = &caches->adaptive;
+            DEOPT_IF(Py_TYPE(lhs)->tp_version_tag != adaptive->lhs_version,
+                     BINARY_OP);
+            DEOPT_IF(Py_TYPE(rhs)->tp_version_tag != adaptive->rhs_version,
+                     BINARY_OP);
+            _PyBinaryFuncCache *binary = &caches[-1].binary;
+            assert(binary->func);
+            PyObject *res = binary->func(lhs, rhs);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
+
+        }
+
         TARGET(EXTENDED_ARG) {
             int oldoparg = oparg;
             NEXTOPARG();

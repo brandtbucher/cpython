@@ -17,6 +17,8 @@ typedef struct {
     uint8_t original_oparg;
     uint8_t counter;
     uint16_t index;
+    uint16_t lhs_version;
+    uint16_t rhs_version;
 } _PyAdaptiveEntry;
 
 
@@ -41,6 +43,10 @@ typedef struct {
     uint16_t defaults_len;
 } _PyCallCache;
 
+typedef struct {
+    binaryfunc func;
+} _PyBinaryFuncCache;
+
 /* Add specialized versions of entries to this union.
  *
  * Do not break the invariant: sizeof(SpecializedCacheEntry) == 8
@@ -58,6 +64,7 @@ typedef union {
     _PyLoadGlobalCache load_global;
     _PyObjectCache obj;
     _PyCallCache call;
+    _PyBinaryFuncCache binary;
 } SpecializedCacheEntry;
 
 #define INSTRUCTIONS_PER_ENTRY (sizeof(SpecializedCacheEntry)/sizeof(_Py_CODEUNIT))
