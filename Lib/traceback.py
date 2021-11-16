@@ -581,6 +581,7 @@ def _extract_caret_anchors_from_line_segment(segment):
         return None
 
     statement = tree.body[0]
+    # XXX
     if isinstance(statement, ast.Expr):
         expr = statement.value
         if isinstance(expr, ast.BinOp):
