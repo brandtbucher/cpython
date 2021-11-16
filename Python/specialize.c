@@ -1438,7 +1438,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 }
             }
             if (Py_TYPE(lhs)->tp_as_sequence) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OUT_OF_RANGE);
                 goto failure;
             }
             break;
@@ -1457,7 +1457,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 }
             }
             if (Py_TYPE(lhs)->tp_as_sequence || Py_TYPE(rhs)->tp_as_sequence) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OUT_OF_RANGE);
                 goto failure;
             }
             break;
@@ -1494,7 +1494,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         RESOLVE_BINARY_OP(XOR, xor)
     }
     if (func == NULL) {
-        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
         goto failure;
     }
     *instr = _Py_MAKECODEUNIT(BINARY_OP_CACHED, _Py_OPARG(*instr));
