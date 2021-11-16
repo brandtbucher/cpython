@@ -1409,7 +1409,6 @@ void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
-    int specialized;
     _PyAdaptiveEntry *adaptive = &cache[0].adaptive;
     switch (adaptive->original_oparg) {
         case NB_ADD:
@@ -1419,18 +1418,22 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                     if (_Py_OPCODE(instr[1]) == STORE_FAST && 
                         Py_REFCNT(lhs) == 2)
                     {
-                        specialized = BINARY_OP_INPLACE_ADD_UNICODE;
+                        *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
+                                                  _Py_OPARG(*instr));
                         goto success;
                     }
-                    specialized = BINARY_OP_ADD_UNICODE;
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
+                                              _Py_OPARG(*instr));
                     goto success;
                 }
                 if (PyLong_CheckExact(lhs)) {
-                    specialized = BINARY_OP_ADD_INT;
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT,
+                                              _Py_OPARG(*instr));
                     goto success;
                 }
                 if (PyFloat_CheckExact(lhs)) {
-                    specialized = BINARY_OP_ADD_FLOAT;
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
+                                              _Py_OPARG(*instr));
                     goto success;
                 }
             }
@@ -1443,11 +1446,13 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         case NB_INPLACE_MULTIPLY:
             if (Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
                 if (PyLong_CheckExact(lhs)) {
-                    specialized = BINARY_OP_MULTIPLY_INT;
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
+                                              _Py_OPARG(*instr));
                     goto success;
                 }
                 if (PyFloat_CheckExact(lhs)) {
-                    specialized = BINARY_OP_MULTIPLY_FLOAT;
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
+                                              _Py_OPARG(*instr));
                     goto success;
                 }
             }
@@ -1459,7 +1464,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         case NB_POWER:
         case NB_INPLACE_POWER:
             // We can't specialize these, since ** and **= are technically
-            // ternary operators. To avoid repeated specialization attempts,
+            // ternary operators! To avoid repeated specialization attempts,
             // just convert them back to BINARY_OP:
             *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
             SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
@@ -1492,13 +1497,12 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
         goto failure;
     }
+    *instr = _Py_MAKECODEUNIT(BINARY_OP_CACHED, _Py_OPARG(*instr));
     adaptive->lhs_version = Py_TYPE(lhs)->tp_version_tag;
     adaptive->rhs_version = Py_TYPE(rhs)->tp_version_tag;
     _PyBinaryFuncCache *binary = &cache[-1].binary;
     binary->func = func;
-    specialized = BINARY_OP_CACHED;
 success:
-    *instr = _Py_MAKECODEUNIT(specialized, _Py_OPARG(*instr));
     STAT_INC(BINARY_OP, specialization_success);
     adaptive->counter = initial_counter_value();
     return;
