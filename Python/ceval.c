@@ -4818,11 +4818,14 @@ check_eval_breaker:
             Py_DECREF(lhs);
             Py_DECREF(rhs);
             SET_TOP(res);
+            if (res == Py_NotImplemented) {
+                PyErr_Format(PyExc_TypeError, "XXX");
+                goto error;
+            }
             if (res == NULL) {
                 goto error;
             }
             DISPATCH();
-
         }
 
         TARGET(EXTENDED_ARG) {
