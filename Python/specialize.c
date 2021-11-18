@@ -400,7 +400,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             default:
                 new_opcode = opcode;
                 new_oparg = oparg - target_extended;
-                // go_again = 0;
+                go_again = 0;
         }
         if (new_opcode == JUMP_ABSOLUTE && i < new_oparg) {
             new_opcode = JUMP_FORWARD;
