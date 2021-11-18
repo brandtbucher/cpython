@@ -326,7 +326,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             continue;  // XXX
         }  // XXX
         int oparg_raw = oparg;
-    again:
+    // again:
         switch (opcode) {
             case FOR_ITER:
             case JUMP_FORWARD:
@@ -356,7 +356,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         }
         int new_opcode;
         int new_oparg;
-        int go_again = 1;
+        // int go_again = 1;
         switch (JUMP_TO_JUMP(opcode, target_opcode)) {
             case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
             case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
@@ -400,7 +400,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             default:
                 new_opcode = opcode;
                 new_oparg = oparg - target_extended;
-                go_again = 0;
+                // go_again = 0;
         }
         if (new_opcode == JUMP_ABSOLUTE && i < new_oparg) {
             new_opcode = JUMP_FORWARD;
@@ -419,8 +419,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         {
             continue;
         }
-        opcode = new_opcode;
-        oparg = oparg_raw = new_oparg;
+        // opcode = new_opcode;
+        // oparg = oparg_raw = new_oparg;
         instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg);  // XXX
         // instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg & 0xFF);
         // for (int j = i - 1; i - extended <= j; j--) {
@@ -429,9 +429,9 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         //                                         new_oparg & 0xFF);
         // }
         // assert(new_oparg >> 8 == 0);
-        if (go_again) {
-            goto again;
-        }
+        // if (go_again) {
+        //     goto again;
+        // }
     }
 }
 
