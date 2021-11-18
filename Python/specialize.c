@@ -305,6 +305,128 @@ first_instruction(SpecializedCacheOrInstruction *quickened)
     return &quickened[get_cache_count(quickened)].code[0];
 }
 
+#define JUMP_TO_JUMP(first, second) ((first << 8) | second)
+
+// Because tracing guarantees don't apply to quickened code, we can optimize
+// jumps (and jumps-to-jumps) much more aggressively!
+static void
+optimize_jumps(_Py_CODEUNIT *instructions, int len)
+{
+    for (int i = 0; i < len; i++) {
+        int opcode = _Py_OPCODE(instructions[i]);
+        int oparg = _Py_OPARG(instructions[i]);
+        int extended = 0;
+        while (opcode == EXTENDED_ARG) {
+            opcode = _Py_OPCODE(instructions[++i]);
+            oparg = (oparg << 8) | _Py_OPARG(instructions[i]);
+            extended++;
+        }
+        int oparg_raw = oparg;
+    again:
+        switch (opcode) {
+            case FOR_ITER:
+            case JUMP_FORWARD:
+                oparg += i + 1;
+                // Fall through...
+            case JUMP_ABSOLUTE:
+            case JUMP_IF_FALSE_OR_POP:
+            case JUMP_IF_TRUE_OR_POP:
+            case JUMP_IF_NOT_EXC_MATCH:
+            case POP_JUMP_IF_FALSE:
+            case POP_JUMP_IF_TRUE:
+                break;
+            default:
+                continue;
+        }
+        int target_opcode = _Py_OPCODE(instructions[oparg]);
+        int target_oparg = _Py_OPARG(instructions[oparg]);
+        int target_extended = 0;
+        while (target_opcode == NOP) {
+            target_opcode = _Py_OPCODE(instructions[++oparg]);
+            target_oparg = _Py_OPARG(instructions[oparg]);
+        }
+        while (target_opcode == EXTENDED_ARG) {
+            target_opcode = _Py_OPCODE(instructions[++oparg]);
+            target_oparg = (target_oparg << 8) | _Py_OPARG(instructions[oparg]);
+            target_extended++;
+        }
+        int new_opcode;
+        int new_oparg;
+        switch (JUMP_TO_JUMP(opcode, target_opcode)) {
+            case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_FORWARD):
+            case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_FORWARD):
+            case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_FORWARD):
+                target_oparg += oparg + 1;
+                // Fall through...
+            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_FALSE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_TRUE_OR_POP):
+            case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_IF_FALSE_OR_POP):
+            case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_IF_TRUE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_ABSOLUTE):
+                new_opcode = opcode;
+                new_oparg = target_oparg;
+                break;
+            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_FALSE):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_TRUE):
+                new_opcode = target_opcode;
+                new_oparg = target_oparg;
+                break;
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_TRUE):
+                new_opcode = POP_JUMP_IF_FALSE;
+                new_oparg = oparg + 1;
+                break;
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_FALSE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_FALSE):
+                new_opcode = POP_JUMP_IF_TRUE;
+                new_oparg = oparg + 1;
+                break;
+            default:
+                new_opcode = opcode;
+                new_oparg = oparg - target_extended;
+        }
+        if (new_opcode == JUMP_ABSOLUTE && i < new_oparg) {
+            new_opcode = JUMP_FORWARD;
+        }
+        else if (new_opcode == JUMP_FORWARD && new_oparg < i) {
+            new_opcode = JUMP_ABSOLUTE;
+        }
+        if (new_opcode == FOR_ITER || new_opcode == JUMP_FORWARD) {
+            new_oparg -= i + 1;
+        }
+        if (new_oparg == oparg_raw || 
+            (extended == 0 && 0xFF < new_oparg) ||
+            (extended == 1 && 0xFFFF < new_oparg) ||
+            (extended == 2 && 0xFFFFFF < new_oparg))
+        {
+            continue;
+        }
+        opcode = new_opcode;
+        oparg = oparg_raw = new_oparg;
+        instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg & 0xFF);
+        for (int j = i - 1; i - extended <= j; j--) {
+            new_oparg >>= 8;
+            instructions[j] = _Py_MAKECODEUNIT(new_oparg ? EXTENDED_ARG : NOP,
+                                                new_oparg & 0xFF);
+        }
+        assert(new_oparg >> 8 == 0);
+        goto again;
+    }
+}
+
+#undef JUMP_TO_JUMP
+
 /** Insert adaptive instructions and superinstructions.
  *
  * Skip instruction preceded by EXTENDED_ARG for adaptive
@@ -315,6 +437,7 @@ static void
 optimize(SpecializedCacheOrInstruction *quickened, int len)
 {
     _Py_CODEUNIT *instructions = first_instruction(quickened);
+    optimize_jumps(instructions, len);
     int cache_offset = 0;
     int previous_opcode = -1;
     int previous_oparg = 0;
