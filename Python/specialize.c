@@ -315,14 +315,18 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
     for (int i = 0; i < len; i++) {
         int opcode = _Py_OPCODE(instructions[i]);
         int oparg = _Py_OPARG(instructions[i]);
-        int extended = 0;
-        while (opcode == EXTENDED_ARG) {
-            opcode = _Py_OPCODE(instructions[++i]);
-            oparg = (oparg << 8) | _Py_OPARG(instructions[i]);
-            extended++;
-        }
+        // int extended = 0;
+        // while (opcode == EXTENDED_ARG) {
+        //     opcode = _Py_OPCODE(instructions[++i]);
+        //     oparg = (oparg << 8) | _Py_OPARG(instructions[i]);
+        //     extended++;
+        // }
+        if (opcode == EXTENDED_ARG) {  // XXX
+            while (_Py_OPCODE(instructions[++i]) == EXTENDED_ARG);  // XXX
+            continue;  // XXX
+        }  // XXX
         int oparg_raw = oparg;
-    // again:
+    again:
         switch (opcode) {
             case FOR_ITER:
             case JUMP_FORWARD:
@@ -352,7 +356,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         }
         int new_opcode;
         int new_oparg;
-        // int go_again = 1;
+        int go_again = 1;
         switch (JUMP_TO_JUMP(opcode, target_opcode)) {
             case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
             case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
@@ -408,24 +412,26 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             new_oparg -= i + 1;
         }
         if (new_oparg == oparg_raw || 
-            (extended == 0 && 0xFF < new_oparg) ||
-            (extended == 1 && 0xFFFF < new_oparg) ||
-            (extended == 2 && 0xFFFFFF < new_oparg))
+            0xFF < new_oparg)  // XXX
+            // (extended == 0 && 0xFF < new_oparg) ||
+            // (extended == 1 && 0xFFFF < new_oparg) ||
+            // (extended == 2 && 0xFFFFFF < new_oparg))
         {
             continue;
         }
         opcode = new_opcode;
         oparg = oparg_raw = new_oparg;
-        instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg & 0xFF);
-        for (int j = i - 1; i - extended <= j; j--) {
-            new_oparg >>= 8;
-            instructions[j] = _Py_MAKECODEUNIT(new_oparg ? EXTENDED_ARG : NOP,
-                                                new_oparg & 0xFF);
-        }
-        assert(new_oparg >> 8 == 0);
-        // if (go_again) {
-        //     goto again;
+        instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg);  // XXX
+        // instructions[i] = _Py_MAKECODEUNIT(new_opcode, new_oparg & 0xFF);
+        // for (int j = i - 1; i - extended <= j; j--) {
+        //     new_oparg >>= 8;
+        //     instructions[j] = _Py_MAKECODEUNIT(new_oparg ? EXTENDED_ARG : NOP,
+        //                                         new_oparg & 0xFF);
         // }
+        // assert(new_oparg >> 8 == 0);
+        if (go_again) {
+            goto again;
+        }
     }
 }
 
