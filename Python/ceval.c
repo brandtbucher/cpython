@@ -4803,7 +4803,12 @@ check_eval_breaker:
 
         TARGET(EXTENDED_ARG) {
             int oldoparg = oparg;
-            NEXTOPARG();
+            if (cframe.use_tracing) {
+                TRACING_NEXTOPARG();
+            }
+            else {
+                NEXTOPARG();
+            }
             oparg |= oldoparg << 8;
             PRE_DISPATCH_GOTO();
             DISPATCH_GOTO();

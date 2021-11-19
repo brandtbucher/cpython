@@ -315,12 +315,13 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
 {
     for (int i = 0; i < len; i++) {
         int i_opcode = _Py_OPCODE(instructions[i]);
-        if (i_opcode == EXTENDED_ARG) {
-            // Skip over instructions that use EXTENDED_ARGs:
-            while (_Py_OPCODE(instructions[++i]) == EXTENDED_ARG);
-            continue;
-        }
         int i_oparg = _Py_OPARG(instructions[i]);
+        int i_args = 0;
+        while (i_opcode == EXTENDED_ARG) {
+            i_opcode = _Py_OPCODE(instructions[++i]);
+            i_oparg = (i_oparg << 8) | _Py_OPARG(instructions[i]);
+            i_args++;
+        }
         // i jumps to j:
         int j = i_oparg;
         switch (i_opcode) {
@@ -428,17 +429,27 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         if (i_oparg_new == i_oparg) {
             continue;
         }
-        if (i_oparg_new <= 0xFF) {
-            instructions[i] = _Py_MAKECODEUNIT(i_opcode_new, i_oparg_new);
+        if ((i_args == 0 && i_oparg_new <= 0xFF) ||
+            (i_args == 1 && i_oparg_new <= 0xFFFF) || 
+            (i_args == 2 && i_oparg_new <= 0xFFFFFF) ||
+            (i_args == 3))
+        {
+            int argpart = i_oparg_new;
+            instructions[i] = _Py_MAKECODEUNIT(i_opcode_new, argpart & 0xFF);
+            for (int k = i - 1; i - i_args <= k; k--) {
+                argpart >>= 8;
+                instructions[k] = _Py_MAKECODEUNIT(argpart ? EXTENDED_ARG : NOP, 
+                                                   argpart & 0xFF);
+            }
+            assert(argpart >> 8 == 0);
         }
-        // Note that we can keep optimizing this jump chain, even when the new 
-        // oparg is too large to optimize this particular leg. For example, we
-        // can always turn *every* instruction in the chain:
-        //     JUMP_FORWARD(0) -> JUMP_FORWARD(1_000_000) -> JUMP_ABSOLUTE(0)
-        // into JUMP_ABSOLUTE(0)!
         if (jump_to_jump) {
-            // Even if we didn't *actually* change the instruction, just
-            // *pretend* that we did:
+            // Note that we can keep optimizing this jump chain, even when the
+            // new oparg was too large to optimize this particular leg. For
+            // example, we can always turn *every* instruction in the chain:
+            //     JUMP_FORWARD(0) -> JUMP_FORWARD(100_000) -> JUMP_ABSOLUTE(0)
+            // into JUMP_ABSOLUTE(0)! So even if we haven't *actually* changed
+            // the instruction yet, just *pretend* that we have:
             i_opcode = i_opcode_new;
             i_oparg = i_oparg_new;
             goto again;
