@@ -336,8 +336,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             default:
                 continue;
         }
-    again:
-        ;  // The technology just isn't there yet.
+    // again:
+    //     ;  // The technology just isn't there yet.
         uint8_t j_opcode = _Py_OPCODE(instructions[j]);
         // Skip over NOPs:
         // while (j_opcode == NOP) {
@@ -398,7 +398,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         }
         if (instrsize(j) <= i_args) {
             write_op_arg(&instructions[i - i_args + 1], i_opcode, j, i_args);
-            goto again;
+            // goto again;
         }
     }
 }
