@@ -326,7 +326,7 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         switch (i_opcode) {
             case FOR_ITER:
             case JUMP_FORWARD:
-                // Normalize relative jumps into absolute ones:
+                // Turn relative jumps into absolute ones:
                 j += i + 1;
                 // Fall through...
             case JUMP_ABSOLUTE:
@@ -342,10 +342,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
     again:
         ;  // The technology just isn't there yet.
         int j_opcode = _Py_OPCODE(instructions[j]);
-        int j_nops = 0;
         while (j_opcode == NOP) {
             j_opcode = _Py_OPCODE(instructions[++j]);
-            j_nops++;
         }
         int j_oparg = _Py_OPARG(instructions[j]);
         int j_args = 0;
@@ -354,8 +352,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             j_oparg = (j_oparg << 8) | _Py_OPARG(instructions[j]);
             j_args++;
         }
-        int i_opcode_new = i_opcode;
-        bool jump_to_jump = true;
+        int i_opcode_new;
+        bool jump_to_jump;
         switch (JUMP_TO_JUMP(i_opcode, j_opcode)) {
             case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
             case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
@@ -367,6 +365,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_FORWARD):
                 // Take both jumps, using i_opcode. Note that the second jump is
                 // relative, so we need to adjust the target accordingly:
+                jump_to_jump = true;
+                i_opcode_new = i_opcode;
                 j += j_oparg + 1;
                 break;
             case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_ABSOLUTE):
@@ -380,35 +380,39 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_IF_TRUE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_ABSOLUTE):
                 // Take both jumps, using i_opcode:
+                jump_to_jump = true;
+                i_opcode_new = i_opcode;
                 j = j_oparg;
                 break;
             case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_ABSOLUTE):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_FALSE):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_TRUE):
                 // Take both jumps, using j_opcode:
+                jump_to_jump = true;
                 i_opcode_new = j_opcode;
                 j = j_oparg;
                 break;
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_TRUE):
                 // Take the first jump, but not the second:
+                jump_to_jump = true;
                 i_opcode_new = POP_JUMP_IF_FALSE;
                 j++;
                 break;
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_FALSE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_FALSE):
                 // Take the first jump, but not the second:
+                jump_to_jump = true;
                 i_opcode_new = POP_JUMP_IF_TRUE;
                 j++;
                 break;
             default:
                 // We might still be able to skip over NOPs:
-                if (!j_nops) {
-                    continue;
-                }
                 jump_to_jump = false;
+                i_opcode_new = i_opcode;
                 j -= j_args;
         }
+        // JUMP_ABSOLUTE/JUMP_FORWARD might need swapping:
         if (i_opcode_new == JUMP_ABSOLUTE && i < j) {
             i_opcode_new = JUMP_FORWARD;
         }
@@ -420,11 +424,21 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             // Turn absolute jumps back into relative ones:
             i_oparg_new -= i + 1;
         }
-        if (0xFF < i_oparg_new || i_oparg_new == i_oparg) {
+        // Don't fall into an infinite loop:
+        if (i_oparg_new == i_oparg) {
             continue;
         }
-        instructions[i] = _Py_MAKECODEUNIT(i_opcode_new, i_oparg_new);
+        if (i_oparg_new <= 0xFF) {
+            instructions[i] = _Py_MAKECODEUNIT(i_opcode_new, i_oparg_new);
+        }
+        // Note that we can keep optimizing this jump chain, even when the new 
+        // oparg is too large to optimize this particular leg. For example, we
+        // can always turn *every* instruction in the chain:
+        //     JUMP_FORWARD(0) -> JUMP_FORWARD(1_000_000) -> JUMP_ABSOLUTE(0)
+        // into JUMP_ABSOLUTE(0)!
         if (jump_to_jump) {
+            // Even if we didn't *actually* change the instruction, just
+            // *pretend* that we did:
             i_opcode = i_opcode_new;
             i_oparg = i_oparg_new;
             goto again;
