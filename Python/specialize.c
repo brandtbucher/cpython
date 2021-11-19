@@ -6,9 +6,9 @@
 #include "pycore_object.h"
 #include "opcode.h"
 #include "structmember.h"         // struct PyMemberDef, T_OFFSET_EX
+#include "wordcode_helpers.h"
 
 #include <stdlib.h> // rand()
-#include <stdbool.h>
 
 /* For guidance on adding or extending families of instructions see
  * ./adaptive.md
@@ -306,31 +306,28 @@ first_instruction(SpecializedCacheOrInstruction *quickened)
     return &quickened[get_cache_count(quickened)].code[0];
 }
 
-#define JUMP_TO_JUMP(first, second) ((first << 8) | second)
+#define JUMP_TO_JUMP(first, second) ((uint16_t)((first << 8) | second))
 
 // Because tracing guarantees don't apply to quickened code, we can optimize
-// jumps (and jumps-to-jumps) much more aggressively!
+// jumps-to-jumps much more aggressively!
 static void
 optimize_jumps(_Py_CODEUNIT *instructions, int len)
 {
     for (int i = 0; i < len; i++) {
-        int i_opcode = _Py_OPCODE(instructions[i]);
-        int i_oparg = _Py_OPARG(instructions[i]);
-        int i_args = 0;
+        uint8_t i_opcode = _Py_OPCODE(instructions[i]);
+        // i jumps to j:
+        uint32_t j = _Py_OPARG(instructions[i]);
+        // Skip over EXTENDED_ARGs:
+        int i_args = 1;
         while (i_opcode == EXTENDED_ARG) {
             i_opcode = _Py_OPCODE(instructions[++i]);
-            i_oparg = (i_oparg << 8) | _Py_OPARG(instructions[i]);
+            j = (j << 8) | _Py_OPARG(instructions[i]);
             i_args++;
         }
-        // i jumps to j:
-        int j = i_oparg;
+        // To keep things simple, we only consider absolute jumps (for now).
+        // JUMP_ABSOLUTE is also omitted, since it only likes to go backwards...
+        // which complicates things, to say the least:
         switch (i_opcode) {
-            case FOR_ITER:
-            case JUMP_FORWARD:
-                // Turn relative jumps into absolute ones:
-                j += i + 1;
-                // Fall through...
-            case JUMP_ABSOLUTE:
             case JUMP_IF_FALSE_OR_POP:
             case JUMP_IF_TRUE_OR_POP:
             case JUMP_IF_NOT_EXC_MATCH:
@@ -342,23 +339,19 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
         }
     again:
         ;  // The technology just isn't there yet.
-        int j_opcode = _Py_OPCODE(instructions[j]);
+        uint8_t j_opcode = _Py_OPCODE(instructions[j]);
+        // Skip over NOPs:
         while (j_opcode == NOP) {
             j_opcode = _Py_OPCODE(instructions[++j]);
         }
-        int j_oparg = _Py_OPARG(instructions[j]);
-        int j_args = 0;
+        // j jumps to k:
+        uint32_t k = _Py_OPARG(instructions[j]);
+        // Skip over EXTENDED_ARGs:
         while (j_opcode == EXTENDED_ARG) {
             j_opcode = _Py_OPCODE(instructions[++j]);
-            j_oparg = (j_oparg << 8) | _Py_OPARG(instructions[j]);
-            j_args++;
+            k = (k << 8) | _Py_OPARG(instructions[j]);
         }
-        int i_opcode_new;
-        bool jump_to_jump;
         switch (JUMP_TO_JUMP(i_opcode, j_opcode)) {
-            case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
-            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
-            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_FORWARD):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_FORWARD):
             case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_FORWARD):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_FORWARD):
@@ -366,11 +359,8 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_FORWARD):
                 // Take both jumps, using i_opcode. Note that the second jump is
                 // relative, so we need to adjust the target accordingly:
-                jump_to_jump = true;
-                i_opcode_new = i_opcode;
-                j += j_oparg + 1;
+                j += k + 1;
                 break;
-            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_ABSOLUTE):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_ABSOLUTE):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_FALSE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_ABSOLUTE):
@@ -381,79 +371,50 @@ optimize_jumps(_Py_CODEUNIT *instructions, int len)
             case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_IF_TRUE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_NOT_EXC_MATCH, JUMP_ABSOLUTE):
                 // Take both jumps, using i_opcode:
-                jump_to_jump = true;
-                i_opcode_new = i_opcode;
-                j = j_oparg;
+                if (j == k) {
+                    // This optimization isn't helpful, and might put us into an
+                    // infinite loop! Bail:
+                    continue;
+                }
+                j = k;
                 break;
-            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_ABSOLUTE):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_FALSE):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_TRUE):
                 // Take both jumps, using j_opcode:
-                jump_to_jump = true;
-                i_opcode_new = j_opcode;
-                j = j_oparg;
+                i_opcode = j_opcode;
+                if (j == k) {
+                    // This optimization isn't helpful, and might put us into an
+                    // infinite loop! Bail:
+                    continue;
+                }
+                j = k;
                 break;
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_TRUE):
                 // Take the first jump, but not the second:
-                jump_to_jump = true;
-                i_opcode_new = POP_JUMP_IF_FALSE;
+                i_opcode = POP_JUMP_IF_FALSE;
                 j++;
                 break;
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_FALSE_OR_POP):
             case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_FALSE):
                 // Take the first jump, but not the second:
-                jump_to_jump = true;
-                i_opcode_new = POP_JUMP_IF_TRUE;
+                i_opcode = POP_JUMP_IF_TRUE;
                 j++;
                 break;
             default:
-                // We might still be able to skip over NOPs:
-                jump_to_jump = false;
-                i_opcode_new = i_opcode;
-                j -= j_args;
+                continue;
         }
-        // JUMP_ABSOLUTE/JUMP_FORWARD might need swapping:
-        if (i_opcode_new == JUMP_ABSOLUTE && i < j) {
-            i_opcode_new = JUMP_FORWARD;
+        if (instrsize(j) <= i_args) {
+            write_op_arg(&instructions[i - i_args + 1], i_opcode, j, i_args);
         }
-        else if (i_opcode_new == JUMP_FORWARD && j < i) {
-            i_opcode_new = JUMP_ABSOLUTE;
-        }
-        int i_oparg_new = j;
-        if (i_opcode_new == FOR_ITER || i_opcode_new == JUMP_FORWARD) {
-            // Turn absolute jumps back into relative ones:
-            i_oparg_new -= i + 1;
-        }
-        // Don't fall into an infinite loop:
-        if (i_oparg_new == i_oparg) {
-            continue;
-        }
-        if ((i_args == 0 && i_oparg_new <= 0xFF) ||
-            (i_args == 1 && i_oparg_new <= 0xFFFF) || 
-            (i_args == 2 && i_oparg_new <= 0xFFFFFF) ||
-            (i_args == 3))
-        {
-            int argpart = i_oparg_new;
-            instructions[i] = _Py_MAKECODEUNIT(i_opcode_new, argpart & 0xFF);
-            for (int k = i - 1; i - i_args <= k; k--) {
-                argpart >>= 8;
-                instructions[k] = _Py_MAKECODEUNIT(argpart ? EXTENDED_ARG : NOP, 
-                                                   argpart & 0xFF);
-            }
-            assert(argpart >> 8 == 0);
-        }
-        if (jump_to_jump) {
-            // Note that we can keep optimizing this jump chain, even when the
-            // new oparg was too large to optimize this particular leg. For
-            // example, we can always turn *every* instruction in the chain:
-            //     JUMP_FORWARD(0) -> JUMP_FORWARD(100_000) -> JUMP_ABSOLUTE(0)
-            // into JUMP_ABSOLUTE(0)! So even if we haven't *actually* changed
-            // the instruction yet, just *pretend* that we have:
-            i_opcode = i_opcode_new;
-            i_oparg = i_oparg_new;
-            goto again;
-        }
+        // Note that we can keep optimizing this jump chain, even when the new
+        // oparg was too large to optimize this particular leg. For example, we
+        // can always turn *every* instruction in the chain:
+        //     JUMP_FORWARD(0) -> JUMP_FORWARD(100_000_000) -> JUMP_ABSOLUTE(0)
+        // into JUMP_ABSOLUTE(0)! Even if we haven't *actually* changed the
+        // instruction yet, we can just *pretend* that we have (since i_opcode
+        /// and j are already set accordingly):
+        goto again;
     }
 }
 
