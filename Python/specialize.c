@@ -1525,12 +1525,12 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
             goto failure;
     }
-    if (PyLong_CheckExact(lhs) && PyFloat_CheckExact(rhs)) {
-        specialized = BINARY_OP_INT_FLOAT;
+    if (PyLong_CheckExact(lhs) && PyLong_CheckExact(rhs)) {
+        specialized = BINARY_OP_INT;
         goto success;
     }
-    if (PyFloat_CheckExact(lhs) && PyLong_CheckExact(rhs)) {
-        specialized = BINARY_OP_FLOAT_INT;
+    if (PyFloat_CheckExact(lhs) && PyFloat_CheckExact(rhs)) {
+        specialized = BINARY_OP_FLOAT;
         goto success;
     }
 failure:

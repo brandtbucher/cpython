@@ -4905,18 +4905,18 @@ check_eval_breaker:
             }
         }
 
-        TARGET(BINARY_OP_INT_FLOAT) {
+        TARGET(BINARY_OP_INT) {
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
             DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
             SpecializedCacheEntry *cache = GET_CACHE();
             _PyAdaptiveEntry *adaptive = &cache->adaptive;
-            PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;
+            PyNumberMethods *long_as_number = PyLong_Type.tp_as_number;
             assert(adaptive->original_oparg < Py_ARRAY_LENGTH(nb_offsets));
             size_t offset = nb_offsets[adaptive->original_oparg];
-            binaryfunc f = *(binaryfunc*)&((char*)float_as_number)[offset];
+            binaryfunc f = *(binaryfunc*)&((char*)long_as_number)[offset];
             DEOPT_IF(f == NULL, BINARY_OP);
             STAT_INC(BINARY_OP, hit);
             PyObject *res = f(lhs, rhs);
@@ -4931,12 +4931,12 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_OP_FLOAT_INT) {
+        TARGET(BINARY_OP_FLOAT) {
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
             DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
             SpecializedCacheEntry *cache = GET_CACHE();
             _PyAdaptiveEntry *adaptive = &cache->adaptive;
             PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;

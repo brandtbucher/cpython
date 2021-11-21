@@ -115,9 +115,9 @@ extern "C" {
 #define BINARY_OP_ADD_INT                 8
 #define BINARY_OP_ADD_FLOAT              13
 #define BINARY_OP_ADD_UNICODE            14
-#define BINARY_OP_FLOAT_INT              16
+#define BINARY_OP_FLOAT                  16
 #define BINARY_OP_INPLACE_ADD_UNICODE    17
-#define BINARY_OP_INT_FLOAT              18
+#define BINARY_OP_INT                    18
 #define BINARY_OP_MULTIPLY_INT           19
 #define BINARY_OP_MULTIPLY_FLOAT         20
 #define BINARY_OP_SUBTRACT_INT           21
