@@ -1525,14 +1525,27 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
             goto failure;
     }
-    if (PyLong_CheckExact(lhs) && PyLong_CheckExact(rhs)) {
-        specialized = BINARY_OP_INT;
-        goto success;
+    if (PyLong_CheckExact(lhs)) {
+        if (PyLong_CheckExact(rhs)) {
+            specialized = BINARY_OP_INT_INT;
+            goto success;
+        }
+        if (PyFloat_CheckExact(rhs)) {
+            specialized = BINARY_OP_INT_FLOAT;
+            goto success;
+        }
     }
-    if (PyFloat_CheckExact(lhs) && PyFloat_CheckExact(rhs)) {
-        specialized = BINARY_OP_FLOAT;
-        goto success;
+    else if (PyFloat_CheckExact(lhs)) {
+        if (PyFloat_CheckExact(rhs)) {
+            specialized = BINARY_OP_FLOAT_FLOAT;
+            goto success;
+        }
+        if (PyFloat_CheckExact(rhs)) {
+            specialized = BINARY_OP_FLOAT_INT;
+            goto success;
+        }
     }
+    SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
 failure:
     STAT_INC(BINARY_OP, specialization_failure);
     cache_backoff(adaptive);
