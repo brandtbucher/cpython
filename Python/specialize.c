@@ -1462,6 +1462,28 @@ _Py_Specialize_CallFunction(
     return 0;
 }
 
+#define NB_OFFSET(OP, op)                                     \
+    [NB_ ## OP] = offsetof(PyNumberMethods, nb_ ## op),       \
+    [NB_INPLACE_ ## OP] = offsetof(PyNumberMethods, nb_ ## op)
+
+static const size_t nb_offsets[] = {
+    NB_OFFSET(ADD, add),
+    NB_OFFSET(AND, and),
+    NB_OFFSET(FLOOR_DIVIDE, floor_divide),
+    NB_OFFSET(LSHIFT, lshift),
+    NB_OFFSET(MATRIX_MULTIPLY, matrix_multiply),
+    NB_OFFSET(MULTIPLY, multiply),
+    NB_OFFSET(REMAINDER, remainder),
+    NB_OFFSET(OR, or),
+    NB_OFFSET(POWER, power),
+    NB_OFFSET(RSHIFT, rshift),
+    NB_OFFSET(SUBTRACT, subtract),
+    NB_OFFSET(TRUE_DIVIDE, true_divide),
+    NB_OFFSET(XOR, xor),
+};
+
+#undef NB_OFFSET
+
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
@@ -1521,26 +1543,54 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             break;
         case NB_POWER:
         case NB_INPLACE_POWER:
+            // We can't ever specialize this the same way as other operators,
+            // since ** and **= are technically ternary! To avoid repeated
+            // specialization attempts, just convert the opcode back into its
+            // un-adaptive form:
             *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
             SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
             goto failure;
     }
     if (PyLong_CheckExact(lhs)) {
         if (PyLong_CheckExact(rhs)) {
+            char *table = (char*)PyLong_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
             specialized = BINARY_OP_INT_INT;
             goto success;
         }
         if (PyFloat_CheckExact(rhs)) {
+            char *table = (char*)PyFloat_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
             specialized = BINARY_OP_INT_FLOAT;
             goto success;
         }
     }
     else if (PyFloat_CheckExact(lhs)) {
         if (PyFloat_CheckExact(rhs)) {
+            char *table = (char*)PyFloat_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
             specialized = BINARY_OP_FLOAT_FLOAT;
             goto success;
         }
-        if (PyFloat_CheckExact(rhs)) {
+        if (PyLong_CheckExact(rhs)) {
+            char *table = (char*)PyFloat_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
             specialized = BINARY_OP_FLOAT_INT;
             goto success;
         }

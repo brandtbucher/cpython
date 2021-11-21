@@ -864,28 +864,6 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
-#define NB_OFFSET(OP, op)                                     \
-    [NB_ ## OP] = offsetof(PyNumberMethods, nb_ ## op),       \
-    [NB_INPLACE_ ## OP] = offsetof(PyNumberMethods, nb_ ## op)
-
-static const size_t nb_offsets[] = {
-    NB_OFFSET(ADD, add),
-    NB_OFFSET(AND, and),
-    NB_OFFSET(FLOOR_DIVIDE, floor_divide),
-    NB_OFFSET(LSHIFT, lshift),
-    NB_OFFSET(MATRIX_MULTIPLY, matrix_multiply),
-    NB_OFFSET(MULTIPLY, multiply),
-    NB_OFFSET(REMAINDER, remainder),
-    NB_OFFSET(OR, or),
-    NB_OFFSET(POWER, power),
-    NB_OFFSET(RSHIFT, rshift),
-    NB_OFFSET(SUBTRACT, subtract),
-    NB_OFFSET(TRUE_DIVIDE, true_divide),
-    NB_OFFSET(XOR, xor),
-};
-
-#undef NB_OFFSET
-
 
 // PEP 634: Structural Pattern Matching
 
@@ -4909,17 +4887,14 @@ check_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
+            // <int> <op> <int> always uses int's implementation:
             DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
-            SpecializedCacheEntry *cache = GET_CACHE();
-            _PyAdaptiveEntry *adaptive = &cache->adaptive;
-            PyNumberMethods *long_as_number = PyLong_Type.tp_as_number;
-            assert(adaptive->original_oparg < Py_ARRAY_LENGTH(nb_offsets));
-            size_t offset = nb_offsets[adaptive->original_oparg];
-            binaryfunc f = *(binaryfunc*)&((char*)long_as_number)[offset];
-            DEOPT_IF(f == NULL, BINARY_OP);
+            char *table = (char*)PyLong_Type.tp_as_number;
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = f(lhs, rhs);
+            binaryfunc op = *(binaryfunc*)&table[GET_CACHE()->adaptive.index];
+            assert(op);
+            PyObject *res = op(lhs, rhs);
             assert(res != Py_NotImplemented);
             STACK_SHRINK(1);
             Py_DECREF(lhs);
@@ -4935,17 +4910,14 @@ check_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
+            // <float> <op> <float> always uses float's implementation:
             DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
-            SpecializedCacheEntry *cache = GET_CACHE();
-            _PyAdaptiveEntry *adaptive = &cache->adaptive;
-            PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;
-            assert(adaptive->original_oparg < Py_ARRAY_LENGTH(nb_offsets));
-            size_t offset = nb_offsets[adaptive->original_oparg];
-            binaryfunc f = *(binaryfunc*)&((char*)float_as_number)[offset];
-            DEOPT_IF(f == NULL, BINARY_OP);
+            char *table = (char*)PyFloat_Type.tp_as_number;
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = f(lhs, rhs);
+            binaryfunc op = *(binaryfunc*)&table[GET_CACHE()->adaptive.index];
+            assert(op);
+            PyObject *res = op(lhs, rhs);
             assert(res != Py_NotImplemented);
             STACK_SHRINK(1);
             Py_DECREF(lhs);
@@ -4961,17 +4933,14 @@ check_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
+            // <float> <op> <int> always uses float's implementation:
             DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
-            SpecializedCacheEntry *cache = GET_CACHE();
-            _PyAdaptiveEntry *adaptive = &cache->adaptive;
-            PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;
-            assert(adaptive->original_oparg < Py_ARRAY_LENGTH(nb_offsets));
-            size_t offset = nb_offsets[adaptive->original_oparg];
-            binaryfunc f = *(binaryfunc*)&((char*)float_as_number)[offset];
-            DEOPT_IF(f == NULL, BINARY_OP);
+            char *table = (char*)PyFloat_Type.tp_as_number;
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = f(lhs, rhs);
+            binaryfunc op = *(binaryfunc*)&table[GET_CACHE()->adaptive.index];
+            assert(op);
+            PyObject *res = op(lhs, rhs);
             assert(res != Py_NotImplemented);
             STACK_SHRINK(1);
             Py_DECREF(lhs);
@@ -4987,17 +4956,14 @@ check_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
+            // <int> <op> <float> always uses float's implementation:
             DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
-            SpecializedCacheEntry *cache = GET_CACHE();
-            _PyAdaptiveEntry *adaptive = &cache->adaptive;
-            PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;
-            assert(adaptive->original_oparg < Py_ARRAY_LENGTH(nb_offsets));
-            size_t offset = nb_offsets[adaptive->original_oparg];
-            binaryfunc f = *(binaryfunc*)&((char*)float_as_number)[offset];
-            DEOPT_IF(f == NULL, BINARY_OP);
+            char *table = (char*)PyFloat_Type.tp_as_number;
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = f(lhs, rhs);
+            binaryfunc op = *(binaryfunc*)&table[GET_CACHE()->adaptive.index];
+            assert(op);
+            PyObject *res = op(lhs, rhs);
             assert(res != Py_NotImplemented);
             STACK_SHRINK(1);
             Py_DECREF(lhs);
