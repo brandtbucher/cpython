@@ -250,7 +250,7 @@ static uint8_t cache_requirements[256] = {
     [STORE_SUBSCR] = 0,
     [CALL_FUNCTION] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
-    [BINARY_OP] = 2,  // _PyAdaptiveEntry and _PyBinaryFunctCache
+    [BINARY_OP] = 1,  // _PyAdaptiveEntry
 };
 
 /* Return the oparg for the cache_offset and instruction index.
@@ -1466,96 +1466,79 @@ void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
-    PyTypeObject *lhs_type = Py_TYPE(lhs);
-    PyTypeObject *rhs_type = Py_TYPE(rhs);
+    int specialized;
     _PyAdaptiveEntry *adaptive = &cache[0].adaptive;
     switch (adaptive->original_oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
-            if (lhs_type == rhs_type) {
-                if (lhs_type == &PyUnicode_Type) {
-                    if (_Py_OPCODE(instr[1]) == STORE_FAST && 
-                        Py_REFCNT(lhs) == 2)
-                    {
-                        *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
-                                                  _Py_OPARG(*instr));
-                        goto success;
-                    }
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
-                                              _Py_OPARG(*instr));
-                    goto success;
-                }
-                if (lhs_type == &PyLong_Type) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT,
-                                              _Py_OPARG(*instr));
-                    goto success;
-                }
-                if (lhs_type == &PyFloat_Type) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
-                                              _Py_OPARG(*instr));
-                    goto success;
-                }
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
             }
-            if (lhs_type == &PyLong_Type && rhs_type == &PyFloat_Type) {
-                cache[-1].binary.func = (binaryfunc)_PyLong_AddFloat;
-                goto cached;
+            if (PyUnicode_CheckExact(lhs)) {
+                if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
+                    specialized = BINARY_OP_INPLACE_ADD_UNICODE;
+                    goto success;
+                }
+                specialized = BINARY_OP_ADD_UNICODE;
+                goto success;
             }
-            else if (lhs_type == &PyFloat_Type && rhs_type == &PyLong_Type) {
-                cache[-1].binary.func = (binaryfunc)_PyFloat_AddLong;
-                goto cached;
+            if (PyLong_CheckExact(lhs)) {
+                specialized = BINARY_OP_ADD_INT;
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                specialized = BINARY_OP_ADD_FLOAT;
+                goto success;
             }
             break;
         case NB_MULTIPLY:
         case NB_INPLACE_MULTIPLY:
-            if (lhs_type == rhs_type) {
-                if (lhs_type == &PyLong_Type) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
-                                              _Py_OPARG(*instr));
-                    goto success;
-                }
-                if (lhs_type == &PyFloat_Type) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
-                                              _Py_OPARG(*instr));
-                    goto success;
-                }
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs)) {
+                specialized = BINARY_OP_MULTIPLY_INT;
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                specialized = BINARY_OP_MULTIPLY_FLOAT;
+                goto success;
             }
             break;
         case NB_SUBTRACT:
         case NB_INPLACE_SUBTRACT:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT,
-                                          _Py_OPARG(*instr));
+                specialized = BINARY_OP_SUBTRACT_INT;
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT,
-                                          _Py_OPARG(*instr));
+                specialized = BINARY_OP_SUBTRACT_FLOAT;
                 goto success;
             }
             break;
-        default:
-            // These operators don't have any available specializations. Rather
-            // than repeatedly attempting to specialize them, just convert them
-            // back to BINARY_OP (while still recording a failure, of course)!
+        case NB_POWER:
+        case NB_INPLACE_POWER:
             *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
+            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
+            goto failure;
     }
-    SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
-    goto failure;
-cached:
-    if (UINT16_MAX < lhs_type->tp_version_tag ||
-        UINT16_MAX < rhs_type->tp_version_tag)
-    {
-        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OUT_OF_VERSIONS);
-        goto failure;
+    if (PyLong_CheckExact(lhs) && PyFloat_CheckExact(rhs)) {
+        specialized = BINARY_OP_INT_FLOAT;
+        goto success;
     }
-    *instr = _Py_MAKECODEUNIT(BINARY_OP_CACHED, _Py_OPARG(*instr));
-    adaptive->version = (lhs_type->tp_version_tag << 16) | 
-                        rhs_type->tp_version_tag;
-success:
-    STAT_INC(BINARY_OP, specialization_success);
-    adaptive->counter = initial_counter_value();
-    return;
+    if (PyFloat_CheckExact(lhs) && PyLong_CheckExact(rhs)) {
+        specialized = BINARY_OP_FLOAT_INT;
+        goto success;
+    }
 failure:
     STAT_INC(BINARY_OP, specialization_failure);
     cache_backoff(adaptive);
+    return;
+success:
+    *instr = _Py_MAKECODEUNIT(specialized, _Py_OPARG(*instr));
+    STAT_INC(BINARY_OP, specialization_success);
+    adaptive->counter = initial_counter_value();
 }
