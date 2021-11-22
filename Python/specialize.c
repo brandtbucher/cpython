@@ -1504,43 +1504,43 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 specialized = BINARY_OP_ADD_UNICODE;
                 goto success;
             }
-            // if (PyLong_CheckExact(lhs)) {
-            //     specialized = BINARY_OP_ADD_INT;
-            //     goto success;
-            // }
-            // if (PyFloat_CheckExact(lhs)) {
-            //     specialized = BINARY_OP_ADD_FLOAT;
-            //     goto success;
-            // }
+            if (PyLong_CheckExact(lhs)) {
+                specialized = BINARY_OP_ADD_INT;
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                specialized = BINARY_OP_ADD_FLOAT;
+                goto success;
+            }
             break;
-        // case NB_MULTIPLY:
-        // case NB_INPLACE_MULTIPLY:
-        //     if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-        //         break;
-        //     }
-        //     if (PyLong_CheckExact(lhs)) {
-        //         specialized = BINARY_OP_MULTIPLY_INT;
-        //         goto success;
-        //     }
-        //     if (PyFloat_CheckExact(lhs)) {
-        //         specialized = BINARY_OP_MULTIPLY_FLOAT;
-        //         goto success;
-        //     }
-        //     break;
-        // case NB_SUBTRACT:
-        // case NB_INPLACE_SUBTRACT:
-        //     if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-        //         break;
-        //     }
-        //     if (PyLong_CheckExact(lhs)) {
-        //         specialized = BINARY_OP_SUBTRACT_INT;
-        //         goto success;
-        //     }
-        //     if (PyFloat_CheckExact(lhs)) {
-        //         specialized = BINARY_OP_SUBTRACT_FLOAT;
-        //         goto success;
-        //     }
-        //     break;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs)) {
+                specialized = BINARY_OP_MULTIPLY_INT;
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                specialized = BINARY_OP_MULTIPLY_FLOAT;
+                goto success;
+            }
+            break;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs)) {
+                specialized = BINARY_OP_SUBTRACT_INT;
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                specialized = BINARY_OP_SUBTRACT_FLOAT;
+                goto success;
+            }
+            break;
         case NB_POWER:
         case NB_INPLACE_POWER:
             // We can't ever specialize this the same way as other operators,
@@ -1555,7 +1555,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
     if (PyLong_CheckExact(lhs)) {
         if (PyLong_CheckExact(rhs)) {
             specialized = BINARY_OP_INT_INT;
-            use = &PyFloat_Type;
+            use = &PyLong_Type;
             goto numeric;
         }
         if (PyFloat_CheckExact(rhs)) {
