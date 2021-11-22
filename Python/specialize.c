@@ -1504,43 +1504,43 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 specialized = BINARY_OP_ADD_UNICODE;
                 goto success;
             }
-            if (PyLong_CheckExact(lhs)) {
-                specialized = BINARY_OP_ADD_INT;
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                specialized = BINARY_OP_ADD_FLOAT;
-                goto success;
-            }
+            // if (PyLong_CheckExact(lhs)) {
+            //     specialized = BINARY_OP_ADD_INT;
+            //     goto success;
+            // }
+            // if (PyFloat_CheckExact(lhs)) {
+            //     specialized = BINARY_OP_ADD_FLOAT;
+            //     goto success;
+            // }
             break;
-        case NB_MULTIPLY:
-        case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                specialized = BINARY_OP_MULTIPLY_INT;
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                specialized = BINARY_OP_MULTIPLY_FLOAT;
-                goto success;
-            }
-            break;
-        case NB_SUBTRACT:
-        case NB_INPLACE_SUBTRACT:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                specialized = BINARY_OP_SUBTRACT_INT;
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                specialized = BINARY_OP_SUBTRACT_FLOAT;
-                goto success;
-            }
-            break;
+        // case NB_MULTIPLY:
+        // case NB_INPLACE_MULTIPLY:
+        //     if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+        //         break;
+        //     }
+        //     if (PyLong_CheckExact(lhs)) {
+        //         specialized = BINARY_OP_MULTIPLY_INT;
+        //         goto success;
+        //     }
+        //     if (PyFloat_CheckExact(lhs)) {
+        //         specialized = BINARY_OP_MULTIPLY_FLOAT;
+        //         goto success;
+        //     }
+        //     break;
+        // case NB_SUBTRACT:
+        // case NB_INPLACE_SUBTRACT:
+        //     if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+        //         break;
+        //     }
+        //     if (PyLong_CheckExact(lhs)) {
+        //         specialized = BINARY_OP_SUBTRACT_INT;
+        //         goto success;
+        //     }
+        //     if (PyFloat_CheckExact(lhs)) {
+        //         specialized = BINARY_OP_SUBTRACT_FLOAT;
+        //         goto success;
+        //     }
+        //     break;
         case NB_POWER:
         case NB_INPLACE_POWER:
             // We can't ever specialize this the same way as other operators,
@@ -1551,48 +1551,29 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
             goto failure;
     }
+    PyTypeObject *use;
     if (PyLong_CheckExact(lhs)) {
         if (PyLong_CheckExact(rhs)) {
-            char *table = (char*)PyLong_Type.tp_as_number;
-            adaptive->index = nb_offsets[adaptive->original_oparg];
-            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-                goto failure;
-            }
             specialized = BINARY_OP_INT_INT;
-            goto success;
+            use = &PyFloat_Type;
+            goto numeric;
         }
         if (PyFloat_CheckExact(rhs)) {
-            char *table = (char*)PyFloat_Type.tp_as_number;
-            adaptive->index = nb_offsets[adaptive->original_oparg];
-            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-                goto failure;
-            }
             specialized = BINARY_OP_INT_FLOAT;
-            goto success;
+            use = &PyFloat_Type;
+            goto numeric;
         }
     }
     else if (PyFloat_CheckExact(lhs)) {
         if (PyFloat_CheckExact(rhs)) {
-            char *table = (char*)PyFloat_Type.tp_as_number;
-            adaptive->index = nb_offsets[adaptive->original_oparg];
-            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-                goto failure;
-            }
             specialized = BINARY_OP_FLOAT_FLOAT;
-            goto success;
+            use = &PyFloat_Type;
+            goto numeric;
         }
         if (PyLong_CheckExact(rhs)) {
-            char *table = (char*)PyFloat_Type.tp_as_number;
-            adaptive->index = nb_offsets[adaptive->original_oparg];
-            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-                goto failure;
-            }
             specialized = BINARY_OP_FLOAT_INT;
-            goto success;
+            use = &PyFloat_Type;
+            goto numeric;
         }
     }
     SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
@@ -1600,6 +1581,12 @@ failure:
     STAT_INC(BINARY_OP, specialization_failure);
     cache_backoff(adaptive);
     return;
+numeric:
+    adaptive->index = nb_offsets[adaptive->original_oparg];
+    if (*(binaryfunc*)&((char*)use->tp_as_number)[adaptive->index] == NULL) {
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+        goto failure;
+    }
 success:
     *instr = _Py_MAKECODEUNIT(specialized, _Py_OPARG(*instr));
     STAT_INC(BINARY_OP, specialization_success);
