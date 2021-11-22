@@ -1552,16 +1552,16 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             goto failure;
     }
     if (PyLong_CheckExact(lhs)) {
-        // if (PyLong_CheckExact(rhs)) {
-        //     char *table = (char*)PyLong_Type.tp_as_number;
-        //     adaptive->index = nb_offsets[adaptive->original_oparg];
-        //     if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-        //         SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-        //         goto failure;
-        //     }
-        //     specialized = BINARY_OP_INT_INT;
-        //     goto success;
-        // }
+        if (PyLong_CheckExact(rhs)) {
+            char *table = (char*)PyLong_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
+            specialized = BINARY_OP_INT_INT;
+            goto success;
+        }
         if (PyFloat_CheckExact(rhs)) {
             char *table = (char*)PyFloat_Type.tp_as_number;
             adaptive->index = nb_offsets[adaptive->original_oparg];
@@ -1574,16 +1574,16 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         }
     }
     else if (PyFloat_CheckExact(lhs)) {
-        // if (PyFloat_CheckExact(rhs)) {
-        //     char *table = (char*)PyFloat_Type.tp_as_number;
-        //     adaptive->index = nb_offsets[adaptive->original_oparg];
-        //     if (*(binaryfunc*)&table[adaptive->index] == NULL) {
-        //         SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
-        //         goto failure;
-        //     }
-        //     specialized = BINARY_OP_FLOAT_FLOAT;
-        //     goto success;
-        // }
+        if (PyFloat_CheckExact(rhs)) {
+            char *table = (char*)PyFloat_Type.tp_as_number;
+            adaptive->index = nb_offsets[adaptive->original_oparg];
+            if (*(binaryfunc*)&table[adaptive->index] == NULL) {
+                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_EXPECTED_ERROR);
+                goto failure;
+            }
+            specialized = BINARY_OP_FLOAT_FLOAT;
+            goto success;
+        }
         if (PyLong_CheckExact(rhs)) {
             char *table = (char*)PyFloat_Type.tp_as_number;
             adaptive->index = nb_offsets[adaptive->original_oparg];
