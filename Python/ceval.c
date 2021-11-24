@@ -866,40 +866,19 @@ static const binaryfunc binary_ops[] = {
 };
 
 
-// static inline PyObject *
-// binary_op_fast(PyTypeObject *type, size_t offset, PyObject *lhs, PyObject *rhs)
-// {
-//     assert(offset < sizeof(PyNumberMethods));
-//     assert(PyLong_CheckExact(lhs) || PyFloat_CheckExact(lhs));
-//     assert(PyLong_CheckExact(rhs) || PyFloat_CheckExact(rhs));
-//     assert(Py_Is(type, &PyLong_Type) || Py_Is(type, &PyFloat_Type));
-//     binaryfunc op = *(binaryfunc*)&((char*)type->tp_as_number)[offset];
-//     assert(op);
-//     PyObject *res = op(lhs, rhs);
-//     assert(res != Py_NotImplemented);
-//     return res;
-// }
-
-#define BINARY_OP_FAST(LHSTYPE, RHSTYPE, USETYPE)                        \
-    assert(cframe.use_tracing == 0);                                     \
-    PyObject *lhs = SECOND();                                            \
-    PyObject *rhs = TOP();                                               \
-    DEOPT_IF(!Py ## LHSTYPE ## _CheckExact(lhs), BINARY_OP);             \
-    DEOPT_IF(!Py ## RHSTYPE ## _CheckExact(rhs), BINARY_OP);             \
-    char *table = (char*)Py ## USETYPE ## _Type.tp_as_number;            \
-    binaryfunc op = *(binaryfunc*)&(table)[GET_CACHE()->adaptive.index]; \
-    STAT_INC(BINARY_OP, hit);                                            \
-    assert(op);                                                          \
-    PyObject *res = op(lhs, rhs);                                        \
-    assert(res != Py_NotImplemented);                                    \
-    STACK_SHRINK(1);                                                     \
-    Py_DECREF(lhs);                                                      \
-    Py_DECREF(rhs);                                                      \
-    SET_TOP(res);                                                        \
-    if (res == NULL) {                                                   \
-        goto error;                                                      \
-    }                                                                    \
-    DISPATCH()
+static inline PyObject *
+binary_op_fast(PyTypeObject *type, size_t offset, PyObject *lhs, PyObject *rhs)
+{
+    assert(offset < sizeof(PyNumberMethods));
+    assert(PyLong_CheckExact(lhs) || PyFloat_CheckExact(lhs));
+    assert(PyLong_CheckExact(rhs) || PyFloat_CheckExact(rhs));
+    assert(Py_Is(type, &PyLong_Type) || Py_Is(type, &PyFloat_Type));
+    binaryfunc op = *(binaryfunc*)&((char*)type->tp_as_number)[offset];
+    assert(op);
+    PyObject *res = op(lhs, rhs);
+    assert(res != Py_NotImplemented);
+    return res;
+}
 
 
 // PEP 634: Structural Pattern Matching
@@ -4901,87 +4880,83 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_OP_INT_INT) {
-            BINARY_OP_FAST(Long, Long, Long);
-            // assert(cframe.use_tracing == 0);
-            // PyObject *lhs = SECOND();
-            // PyObject *rhs = TOP();
-            // // <int> <op> <int> always uses int's implementation:
-            // DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
-            // DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
-            // STAT_INC(BINARY_OP, hit);
-            // size_t offset = GET_CACHE()->adaptive.index;
-            // PyObject *res = binary_op_fast(lhs, rhs, &PyLong_Type, offset);
-            // STACK_SHRINK(1);
-            // Py_DECREF(lhs);
-            // Py_DECREF(rhs);
-            // SET_TOP(res);
-            // if (res == NULL) {
-            //     goto error;
-            // }
-            // DISPATCH();
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            // <int> <op> <int> always uses int's implementation:
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t offset = GET_CACHE()->adaptive.index;
+            PyObject *res = binary_op_fast(&PyLong_Type, offset, lhs, rhs);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(BINARY_OP_FLOAT_FLOAT) {
-            BINARY_OP_FAST(Float, Float, Float);
-            // assert(cframe.use_tracing == 0);
-            // PyObject *lhs = SECOND();
-            // PyObject *rhs = TOP();
-            // // <float> <op> <float> always uses float's implementation:
-            // DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
-            // DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
-            // STAT_INC(BINARY_OP, hit);
-            // size_t offset = GET_CACHE()->adaptive.index;
-            // PyObject *res = binary_op_fast(lhs, rhs, &PyFloat_Type, offset);
-            // STACK_SHRINK(1);
-            // Py_DECREF(lhs);
-            // Py_DECREF(rhs);
-            // SET_TOP(res);
-            // if (res == NULL) {
-            //     goto error;
-            // }
-            // DISPATCH();
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            // <float> <op> <float> always uses float's implementation:
+            DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t offset = GET_CACHE()->adaptive.index;
+            PyObject *res = binary_op_fast(&PyFloat_Type, offset, lhs, rhs);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(BINARY_OP_FLOAT_INT) {
-            BINARY_OP_FAST(Float, Long, Float);
-            // assert(cframe.use_tracing == 0);
-            // PyObject *lhs = SECOND();
-            // PyObject *rhs = TOP();
-            // // <float> <op> <int> always uses float's implementation:
-            // DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
-            // DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
-            // STAT_INC(BINARY_OP, hit);
-            // size_t offset = GET_CACHE()->adaptive.index;
-            // PyObject *res = binary_op_fast(lhs, rhs, &PyFloat_Type, offset);
-            // STACK_SHRINK(1);
-            // Py_DECREF(lhs);
-            // Py_DECREF(rhs);
-            // SET_TOP(res);
-            // if (res == NULL) {
-            //     goto error;
-            // }
-            // DISPATCH();
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            // <float> <op> <int> always uses float's implementation:
+            DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t offset = GET_CACHE()->adaptive.index;
+            PyObject *res = binary_op_fast(&PyFloat_Type, offset, lhs, rhs);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(BINARY_OP_INT_FLOAT) {
-            BINARY_OP_FAST(Long, Float, Float);
-            // assert(cframe.use_tracing == 0);
-            // PyObject *lhs = SECOND();
-            // PyObject *rhs = TOP();
-            // // <int> <op> <float> always uses float's implementation:
-            // DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
-            // DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
-            // STAT_INC(BINARY_OP, hit);
-            // size_t offset = GET_CACHE()->adaptive.index;
-            // PyObject *res = binary_op_fast(lhs, rhs, &PyFloat_Type, offset);
-            // STACK_SHRINK(1);
-            // Py_DECREF(lhs);
-            // Py_DECREF(rhs);
-            // SET_TOP(res);
-            // if (res == NULL) {
-            //     goto error;
-            // }
-            // DISPATCH();
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            // <int> <op> <float> always uses float's implementation:
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t offset = GET_CACHE()->adaptive.index;
+            PyObject *res = binary_op_fast(&PyFloat_Type, offset, lhs, rhs);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {
