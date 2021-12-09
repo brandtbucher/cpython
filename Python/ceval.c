@@ -2183,6 +2183,38 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(BINARY_OP_PYTHON) {
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!Py_IS_TYPE(lhs, Py_TYPE(rhs)), BINARY_OP);
+            SpecializedCacheEntry *caches = GET_CACHE();
+            _PyAdaptiveEntry *adaptive = &caches[0].adaptive;
+            DEOPT_IF(Py_TYPE(lhs)->tp_version_tag != adaptive->version, BINARY_OP);
+            _PyObjectCache *object = &caches[-1].obj;
+            PyFunctionObject *function = (PyFunctionObject *)object->obj;
+            DEOPT_IF(function->func_version != adaptive->index, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            PyCodeObject *code = (PyCodeObject *)function->func_code;
+            size_t size = code->co_nlocalsplus + code->co_stacksize + FRAME_SPECIALS_SIZE;
+            assert(code->co_argcount == 2);
+            InterpreterFrame *new_frame = _PyThreadState_BumpFramePointer(tstate, size);
+            if (new_frame == NULL) {
+                goto error;
+            }
+            _PyFrame_InitializeSpecials(new_frame, function, NULL, code->co_nlocalsplus);
+            STACK_SHRINK(2);
+            new_frame->localsplus[0] = lhs;
+            new_frame->localsplus[1] = rhs;
+            for (int i = 2; i < code->co_nlocalsplus; i++) {
+                new_frame->localsplus[i] = NULL;
+            }
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            new_frame->previous = frame;
+            frame = cframe.current_frame = new_frame;
+            new_frame->depth = frame->depth + 1;
+            goto start_frame;
+        }
+
         TARGET(BINARY_SUBSCR) {
             PREDICTED(BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, unquickened);

@@ -253,7 +253,7 @@ static uint8_t cache_requirements[256] = {
     [STORE_SUBSCR] = 0,
     [CALL_FUNCTION] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
-    [BINARY_OP] = 1,  // _PyAdaptiveEntry
+    [BINARY_OP] = 2,  // _PyAdaptiveEntry and _PyObjectCache
     [COMPARE_OP] = 1, /* _PyAdaptiveEntry */
 };
 
@@ -1439,26 +1439,57 @@ _Py_Specialize_CallFunction(
     return 0;
 }
 
+_Py_IDENTIFIER(__add__);
+_Py_IDENTIFIER(__and__);
+_Py_IDENTIFIER(__floordiv__);
+_Py_IDENTIFIER(__lshift__);
+_Py_IDENTIFIER(__matmul__);
+_Py_IDENTIFIER(__mul__);
+_Py_IDENTIFIER(__mod__);
+_Py_IDENTIFIER(__or__);
+_Py_IDENTIFIER(__pow__);
+_Py_IDENTIFIER(__rshift__);
+_Py_IDENTIFIER(__sub__);
+_Py_IDENTIFIER(__truediv__);
+_Py_IDENTIFIER(__xor__);
+_Py_IDENTIFIER(__iadd__);
+_Py_IDENTIFIER(__iand__);
+_Py_IDENTIFIER(__ifloordiv__);
+_Py_IDENTIFIER(__ilshift__);
+_Py_IDENTIFIER(__imatmul__);
+_Py_IDENTIFIER(__imul__);
+_Py_IDENTIFIER(__imod__);
+_Py_IDENTIFIER(__ior__);
+_Py_IDENTIFIER(__ipow__);
+_Py_IDENTIFIER(__irshift__);
+_Py_IDENTIFIER(__isub__);
+_Py_IDENTIFIER(__itruediv__);
+_Py_IDENTIFIER(__ixor__);
+
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
     _PyAdaptiveEntry *adaptive = &cache->adaptive;
+    if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+        SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
+        goto failure;
+    }
+    PyObject *descriptor;
     switch (adaptive->original_oparg) {
-        case NB_ADD:
         case NB_INPLACE_ADD:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
-                goto failure;
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___iadd__);
+            if (descriptor) {
+                break;
             }
+            // Fall through...
+        case NB_ADD:
             if (PyUnicode_CheckExact(lhs)) {
                 if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
-                    *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
-                                              _Py_OPARG(*instr));
+                    *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE, _Py_OPARG(*instr));
                     goto success;
                 }
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE, _Py_OPARG(*instr));
                 goto success;
             }
             if (PyLong_CheckExact(lhs)) {
@@ -1466,50 +1497,160 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT, _Py_OPARG(*instr));
                 goto success;
             }
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___add__);
             break;
-        case NB_MULTIPLY:
+        case NB_INPLACE_AND:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___iand__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_AND:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___and__);
+            break;
+        case NB_INPLACE_FLOOR_DIVIDE:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___ifloordiv__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_FLOOR_DIVIDE:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___floordiv__);
+            break;
+        case NB_INPLACE_LSHIFT:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___ilshift__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_LSHIFT:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___lshift__);
+            break;
+        case NB_INPLACE_MATRIX_MULTIPLY:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___imatmul__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_MATRIX_MULTIPLY:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___matmul__);
+            break;
         case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
-                goto failure;
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___imul__);
+            if (descriptor) {
+                break;
             }
+            // Fall through...
+        case NB_MULTIPLY:
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT, _Py_OPARG(*instr));
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT, _Py_OPARG(*instr));
                 goto success;
             }
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___mul__);
             break;
-        case NB_SUBTRACT:
-        case NB_INPLACE_SUBTRACT:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
-                goto failure;
+        case NB_INPLACE_REMAINDER:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___imod__);
+            if (descriptor) {
+                break;
             }
+            // Fall through...
+        case NB_REMAINDER:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___mod__);
+            break;
+        case NB_INPLACE_OR:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___ior__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_OR:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___or__);
+            break;
+        case NB_INPLACE_POWER:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___ipow__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_POWER:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___pow__);
+            break;
+        case NB_INPLACE_RSHIFT:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___irshift__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_RSHIFT:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___rshift__);
+            break;
+        case NB_INPLACE_SUBTRACT:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___isub__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_SUBTRACT:
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT, _Py_OPARG(*instr));
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT, _Py_OPARG(*instr));
                 goto success;
             }
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___sub__);
+            break;
+        case NB_INPLACE_TRUE_DIVIDE:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___itruediv__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_TRUE_DIVIDE:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___truediv__);
+            break;
+        case NB_INPLACE_XOR:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___ixor__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_XOR:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___xor__);
             break;
         default:
-            // These operators don't have any available specializations. Rather
-            // than repeatedly attempting to specialize them, just convert them
-            // back to BINARY_OP (while still recording a failure, of course)!
-            *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
+            Py_UNREACHABLE();
+    }
+    if (descriptor && PyFunction_Check(descriptor)) {
+        PyFunctionObject *function = (PyFunctionObject *)descriptor;
+        PyCodeObject *code = (PyCodeObject *)function->func_code;
+        int kind = function_kind(code);
+        if (kind != SIMPLE_FUNCTION) {
+            SPECIALIZATION_FAIL(BINARY_OP, kind);
+            goto failure;
+        }
+        if (code->co_argcount != 2) {
+            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
+            goto failure;
+        }
+        adaptive->version = Py_TYPE(lhs)->tp_version_tag;
+        int version = _PyFunction_GetVersionForCurrentState(function);
+        if (version == 0) {
+            SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OUT_OF_VERSIONS);
+            goto failure;
+        }
+        adaptive->index = version;
+        cache[-1].obj.obj = descriptor;
+        *instr = _Py_MAKECODEUNIT(BINARY_OP_PYTHON, _Py_OPARG(*instr));
+        goto success;
     }
     SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
 failure:
