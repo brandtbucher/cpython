@@ -2186,10 +2186,9 @@ check_eval_breaker:
         TARGET(BINARY_OP_PYTHON) {
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
-            DEOPT_IF(!Py_IS_TYPE(lhs, Py_TYPE(rhs)), BINARY_OP);
             SpecializedCacheEntry *caches = GET_CACHE();
             _PyAdaptiveEntry *adaptive = &caches[0].adaptive;
-            DEOPT_IF(Py_TYPE(lhs)->tp_version_tag != adaptive->version, BINARY_OP);
+            DEOPT_IF(adaptive->version != ((Py_TYPE(lhs)->tp_version_tag << 16) | (Py_TYPE(rhs)->tp_version_tag & 0xFFFF)), BINARY_OP);
             _PyObjectCache *object = &caches[-1].obj;
             PyFunctionObject *function = (PyFunctionObject *)object->obj;
             DEOPT_IF(function->func_version != adaptive->index, BINARY_OP);
