@@ -1475,15 +1475,9 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
         goto failure;
     }
-    PyObject *descriptor;
     switch (adaptive->original_oparg) {
-        case NB_INPLACE_ADD:
-            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___iadd__);
-            if (descriptor) {
-                break;
-            }
-            // Fall through...
         case NB_ADD:
+        case NB_INPLACE_ADD:
             if (PyUnicode_CheckExact(lhs)) {
                 if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
                     *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE, _Py_OPARG(*instr));
@@ -1500,6 +1494,39 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT, _Py_OPARG(*instr));
                 goto success;
             }
+            break;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            if (PyLong_CheckExact(lhs)) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT, _Py_OPARG(*instr));
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT, _Py_OPARG(*instr));
+                goto success;
+            }
+            break;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            if (PyLong_CheckExact(lhs)) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT, _Py_OPARG(*instr));
+                goto success;
+            }
+            if (PyFloat_CheckExact(lhs)) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT, _Py_OPARG(*instr));
+                goto success;
+            }
+            break;
+    }
+    PyObject *descriptor;
+    switch (adaptive->original_oparg) {
+        case NB_INPLACE_ADD:
+            descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___iadd__);
+            if (descriptor) {
+                break;
+            }
+            // Fall through...
+        case NB_ADD:
             descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___add__);
             break;
         case NB_INPLACE_AND:
@@ -1545,14 +1572,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             // Fall through...
         case NB_MULTIPLY:
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT, _Py_OPARG(*instr));
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT, _Py_OPARG(*instr));
-                goto success;
-            }
             descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___mul__);
             break;
         case NB_INPLACE_REMAINDER:
@@ -1598,14 +1617,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             // Fall through...
         case NB_SUBTRACT:
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT, _Py_OPARG(*instr));
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT, _Py_OPARG(*instr));
-                goto success;
-            }
             descriptor = _PyType_LookupId(Py_TYPE(lhs), &PyId___sub__);
             break;
         case NB_INPLACE_TRUE_DIVIDE:
@@ -1644,7 +1655,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         adaptive->version = Py_TYPE(lhs)->tp_version_tag;
         int version = _PyFunction_GetVersionForCurrentState(function);
         if (version == 0) {
-            SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OUT_OF_VERSIONS);
+            SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OUT_OF_VERSIONS);
             goto failure;
         }
         adaptive->index = version;
