@@ -721,7 +721,7 @@ allocate_chunk(size_t size_in_bytes, _PyStackChunk* previous)
         return NULL;
     }
     res->previous = previous;
-    res->top = &res->data[0];
+    res->top = &res->data[previous == NULL];
     res->limit = (PyObject **)((void *)res + size_in_bytes);
     return res;
 }
@@ -2186,8 +2186,10 @@ _PyThreadState_BumpFramePointerSlow(PyThreadState *tstate, size_t size)
         return NULL;
     }
     tstate->datastack = new;
+    InterpreterFrame *frame = (InterpreterFrame *)new->top;
     new->top += size;
-    return (InterpreterFrame *)&new->data[0];
+    assert(new->top < new->limit);
+    return frame;
 }
 
 
