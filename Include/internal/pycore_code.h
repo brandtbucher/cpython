@@ -17,6 +17,7 @@ typedef struct {
     uint8_t original_oparg;
     uint8_t counter;
     uint16_t index;
+    uint32_t version;
 } _PyAdaptiveEntry;
 
 
@@ -40,6 +41,7 @@ typedef struct {
     uint16_t defaults_start;
     uint16_t defaults_len;
 } _PyCallCache;
+
 
 /* Add specialized versions of entries to this union.
  *
@@ -136,23 +138,24 @@ _GetSpecializedCacheEntryForInstruction(const _Py_CODEUNIT *first_instr, int nex
 #define QUICKENING_INITIAL_WARMUP_VALUE (-QUICKENING_WARMUP_DELAY)
 #define QUICKENING_WARMUP_COLDEST 1
 
-static inline void
-PyCodeObject_IncrementWarmup(PyCodeObject * co)
-{
-    co->co_warmup++;
-}
-
-/* Used by the interpreter to determine when a code object should be quickened */
-static inline int
-PyCodeObject_IsWarmedUp(PyCodeObject * co)
-{
-    return (co->co_warmup == 0);
-}
-
 int _Py_Quicken(PyCodeObject *code);
 
-extern Py_ssize_t _Py_QuickenedCount;
+/* Returns 1 if quickening occurs.
+ * -1 if an error occurs
+ * 0 otherwise */
+static inline int
+_Py_IncrementCountAndMaybeQuicken(PyCodeObject *code)
+{
+    if (code->co_warmup != 0) {
+        code->co_warmup++;
+        if (code->co_warmup == 0) {
+            return _Py_Quicken(code) ? -1 : 1;
+        }
+    }
+    return 0;
+}
 
+extern Py_ssize_t _Py_QuickenedCount;
 
 /* "Locals plus" for a code object is the set of locals + cell vars +
  * free vars.  This relates to variable names as well as offsets into
@@ -266,26 +269,17 @@ int _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name
 int _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache);
 int _Py_Specialize_LoadGlobal(PyObject *globals, PyObject *builtins, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache);
 int _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache);
-int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_CODEUNIT *instr);
-int _Py_Specialize_CallFunction(PyObject *callable, _Py_CODEUNIT *instr, int nargs, SpecializedCacheEntry *cache, PyObject *builtins);
+int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
+int _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr);
+int _Py_Specialize_CallNoKw(PyObject *callable, _Py_CODEUNIT *instr, int nargs, SpecializedCacheEntry *cache, PyObject *builtins);
 void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                              SpecializedCacheEntry *cache);
+void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
 
-#define PRINT_SPECIALIZATION_STATS 0
-#define PRINT_SPECIALIZATION_STATS_DETAILED 0
-#define PRINT_SPECIALIZATION_STATS_TO_FILE 0
 
-#ifdef Py_DEBUG
-#define COLLECT_SPECIALIZATION_STATS 1
-#define COLLECT_SPECIALIZATION_STATS_DETAILED 1
-#else
-#define COLLECT_SPECIALIZATION_STATS PRINT_SPECIALIZATION_STATS
-#define COLLECT_SPECIALIZATION_STATS_DETAILED PRINT_SPECIALIZATION_STATS_DETAILED
-#endif
+#ifdef Py_STATS
 
-#define SPECIALIZATION_FAILURE_KINDS 20
-
-#if COLLECT_SPECIALIZATION_STATS
+#define SPECIALIZATION_FAILURE_KINDS 30
 
 typedef struct _stats {
     uint64_t specialization_success;
@@ -295,15 +289,13 @@ typedef struct _stats {
     uint64_t miss;
     uint64_t deopt;
     uint64_t unquickened;
-#if COLLECT_SPECIALIZATION_STATS_DETAILED
     uint64_t specialization_failure_kinds[SPECIALIZATION_FAILURE_KINDS];
-#endif
 } SpecializationStats;
 
 extern SpecializationStats _specialization_stats[256];
 #define STAT_INC(opname, name) _specialization_stats[opname].name++
 #define STAT_DEC(opname, name) _specialization_stats[opname].name--
-void _Py_PrintSpecializationStats(void);
+void _Py_PrintSpecializationStats(int to_file);
 
 PyAPI_FUNC(PyObject*) _Py_GetSpecializationStats(void);
 
