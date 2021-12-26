@@ -6359,20 +6359,14 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
         Py_ssize_t nalts = asdl_seq_LEN(patterns);
         while (--nalts) {
             pattern_ty alt = asdl_seq_GET(patterns, nalts);
-            spm_node_pattern *new = spm_node_pattern_new(c, n->next, n->match_case, alt);
+            spm_node_pattern *new = spm_node_pattern_new(c, n->next,
+                                                         n->match_case, alt);
             if (new == NULL) {
                 return 0;
             }
-            // TODO: Comment for this.
-            basicblock *tmp = n->block;
-            n->block = new->block;
-            new->block = tmp;
-            tmp = n->head;
-            n->head = new->head;
-            new->head = tmp;
             n->next = new;
-            // TODO: This returns None, I think...
-            if (!_PyList_Extend((PyListObject *)new->stores, n->stores)) {
+            assert(PyList_GET_SIZE(new->stores) == 0);
+            if (PyList_SetSlice(new->stores, 0, 0, n->stores)) {
                 return 0;
             }
         }
