@@ -6369,11 +6369,16 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
             if (PyList_SetSlice(new->stores, 0, 0, n->stores)) {
                 return 0;
             }
+            new->stacksize = n->stacksize;
+            if (nalts == asdl_seq_LEN(patterns) - 1) {
+                new->subpatterns->preserve = n->subpatterns->preserve;
+            }
         }
         assert(nalts == 0);
         // NOTE: Might need to modify some other fields here in the future!
         n->pattern = asdl_seq_GET(patterns, 0);
         n->subpatterns->pattern = n->pattern;
+        n->subpatterns->preserve = true;
     SPM_LOOP_END;
     return 1;
 }
@@ -6504,6 +6509,10 @@ static int
 spm_compile_as(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
+        if (!n->subpatterns->preserve) {
+            ADDOP(c, DUP_TOP);
+            n->stacksize++;
+        }
         if (!spm_store(c, n, p->v.MatchAs.name)) {
             return 0;
         }
@@ -6538,8 +6547,7 @@ spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
     SPM_GROUP_BEGIN(spm_same_exprs(p->v.MatchMapping.keys, q->v.MatchMapping.keys));
-        if (!spm_compile_mapping_b(c, n, p->v.MatchMapping.keys))
-        {
+        if (!spm_compile_mapping_b(c, n, p->v.MatchMapping.keys)) {
             return 0;
         }
     SPM_GROUP_END;
@@ -6560,18 +6568,13 @@ spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, asdl_expr_seq *ke
         ADDOP_LOAD_CONST(c, Py_None);
         ADDOP_I(c, IS_OP, 1);
         SPM_POP_JUMP_IF_FALSE;
-        // XXX -->
-        ADDOP(c, ROT_THREE);
-        ADDOP(c, POP_TOP);
-        n->stacksize--;
-        if (!n->subpatterns->preserve) {
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
-        }
-        else {
-            ADDOP(c, ROT_TWO);
-        }
-        // <-- XXX
+        // // XXX -->
+        // // XXX: For now, toss out the keys. We'll need to fix this once we start
+        // //      handling **rest:
+        // ADDOP(c, ROT_TWO);
+        // ADDOP(c, POP_TOP);
+        // n->stacksize--;
+        // // <-- XXX
         ADDOP_I(c, UNPACK_SEQUENCE, len);
         n->stacksize += len - 1;
         Py_ssize_t i = len;
