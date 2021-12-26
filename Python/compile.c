@@ -6142,7 +6142,7 @@ compiler_slice(struct compiler *c, expr_ty s)
                 continue;                                      \
             }                                                  \
             pattern_ty p = n->subpatterns->pattern;            \
-            compiler_use_block(c, n->block_tail);              \
+            compiler_use_block(c, n->block);                   \
             SET_LOC(c, p);                                     \
             int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);
 
@@ -6155,10 +6155,10 @@ compiler_slice(struct compiler *c, expr_ty s)
             return 0;           \
         }
 
-#define SPM_NEXT_BLOCK                      \
-    n->block_tail = compiler_next_block(c); \
-    if (n->block_tail == NULL) {            \
-        return 0;                           \
+#define SPM_NEXT_BLOCK                 \
+    n->block = compiler_next_block(c); \
+    if (n->block == NULL) {            \
+        return 0;                      \
     }
 
 typedef struct spm_node_subpattern spm_node_subpattern;
@@ -6166,7 +6166,7 @@ typedef struct spm_node_subpattern spm_node_subpattern;
 struct spm_node_subpattern {
     spm_node_subpattern *next;
     pattern_ty pattern;
-    // TODO: Probably need a better approach to this...
+    // TODO: Ditch this and be smarter...
     bool preserve;
 };
 
@@ -6175,9 +6175,9 @@ typedef struct spm_node_pattern spm_node_pattern;
 struct spm_node_pattern {
     spm_node_subpattern *subpatterns;
     spm_node_pattern *next;
-    // TODO: Join these?
-    basicblock *block_tail;
-    basicblock *block_body;
+    basicblock *head;
+    basicblock *block;
+    match_case_ty match_case;
     pattern_ty pattern;
     PyObject *stores;
     Py_ssize_t stacksize;
@@ -6205,7 +6205,7 @@ spm_node_subpattern_new(struct compiler *c, spm_node_subpattern *next,
 
 static spm_node_pattern *
 spm_node_pattern_new(struct compiler *c, spm_node_pattern *next,
-                     pattern_ty pattern)
+                     match_case_ty match_case, pattern_ty pattern)
 {
     spm_node_pattern *n = _PyArena_Malloc(c->c_arena, sizeof(spm_node_pattern));
     if (n == NULL) {
@@ -6221,14 +6221,11 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next,
         n->subpatterns = NULL;
     }
     n->next = next;
-    n->block_tail = compiler_new_block(c);
-    if (n->block_tail == NULL) {
+    n->head = n->block = compiler_new_block(c);
+    if (n->head == NULL) {
         return NULL;
     }
-    n->block_body = compiler_new_block(c);
-    if (n->block_body == NULL) {
-        return NULL;
-    }
+    n->match_case = match_case;
     n->pattern = pattern;
     n->stores = PyList_New(0);
     if (n->stores == NULL || _PyArena_AddPyObject(c->c_arena, n->stores)) {
@@ -6288,23 +6285,23 @@ spm_same_exprs(asdl_expr_seq *ps, asdl_expr_seq *qs)
     return 1;
 }
 
-// Compare two sequences of identifiers for equality.
-static int
-spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
-{
-    if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
-        return 0;
-    }
-    for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
-        PyObject *p = asdl_seq_GET(ps, i);
-        PyObject *q = asdl_seq_GET(qs, i);
-        int eq = PyObject_RichCompareBool(p, q, Py_EQ);
-        if (eq <= 0) {
-            return eq;
-        }
-    }
-    return 1;
-}
+// // Compare two sequences of identifiers for equality.
+// static int
+// spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
+// {
+//     if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
+//         return 0;
+//     }
+//     for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
+//         PyObject *p = asdl_seq_GET(ps, i);
+//         PyObject *q = asdl_seq_GET(qs, i);
+//         int eq = PyObject_RichCompareBool(p, q, Py_EQ);
+//         if (eq <= 0) {
+//             return eq;
+//         }
+//     }
+//     return 1;
+// }
 
 // Return the index of a MatchStar, or -1 if none exists.
 static Py_ssize_t
@@ -6362,18 +6359,20 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
         Py_ssize_t nalts = asdl_seq_LEN(patterns);
         while (--nalts) {
             pattern_ty alt = asdl_seq_GET(patterns, nalts);
-            spm_node_pattern *new = spm_node_pattern_new(c, n->next, alt);
+            spm_node_pattern *new = spm_node_pattern_new(c, n->next, n->match_case, alt);
             if (new == NULL) {
                 return 0;
             }
             // TODO: Comment for this.
-            basicblock *tmp = n->block_tail;
-            n->block_tail = new->block_tail;
-            new->block_tail = tmp;
-            // TODO: Avoid creating body at all?
-            new->block_body = n->block_body;
+            basicblock *tmp = n->block;
+            n->block = new->block;
+            new->block = tmp;
+            tmp = n->head;
+            n->head = new->head;
+            new->head = tmp;
             n->next = new;
-            if (_PyList_Extend((PyListObject *)new->stores, n->stores)) {
+            // TODO: This returns None, I think...
+            if (!_PyList_Extend((PyListObject *)new->stores, n->stores)) {
                 return 0;
             }
         }
@@ -6387,15 +6386,16 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
 
 
 static int
-spm_cleanup(struct compiler *c, spm_node_pattern *n)
+spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
 {
+    // TODO: Skip unreachable ones (maybe even just skip compiling them)!
     n->reachable = true;
     // NOTE: Can't use SPM_LOOP_* here, since that skips over "finished"
     // patterns... at this point, *all* of the patterns are "finished"!
     while (n->next) {
         // TODO: Is this really all we use it for???
         SET_LOC(c, n->pattern);
-        compiler_use_block(c, n->block_tail);
+        compiler_use_block(c, n->block);
         // TODO: Why...? Is our stacksize wrong for a second repeated sequence pattern?
         while (1 < n->stacksize) {
             ADDOP(c, POP_TOP);
@@ -6403,18 +6403,30 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
         }
         assert(n->stacksize == 1);
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
-            ADDOP_I(c, ROT_N, nstores + 1);
+        ADDOP_I(c, ROT_N, nstores + 1);
         while (nstores--) {
             if (!compiler_nameop(c, PyList_GET_ITEM(n->stores, nstores), Store)) {
                 return 0;
             }
         }
-        compiler_use_next_block(c, n->block_body);
+        assert(n->match_case);
+        if (n->match_case->guard) {
+            VISIT(c, expr, n->match_case->guard);
+            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, n->next->head);
+            n->next->reachable |= n->reachable;
+            NEXT_BLOCK(c);
+        }
+        SET_LOC(c, n->match_case->pattern);
+        ADDOP(c, POP_TOP);
+        VISIT_SEQ(c, stmt, n->match_case->body);
+        ADDOP_JUMP(c, JUMP_FORWARD, end);
         if (n->next && !n->reachable && !compiler_warn(c, "pattern is unreachable")) {
             return 0;
         }
         n = n->next;
+        compiler_use_next_block(c, n->head);
     }
+    compiler_use_block(c, end);
     return 1;
 }
 
@@ -6433,7 +6445,7 @@ spm_check(struct compiler *c, spm_node_pattern *n)
     Py_ssize_t keep = f->stacksize;
     Py_ssize_t name_pops = PyList_GET_SIZE(n->stores) - PyList_GET_SIZE(f->stores);
     assert(0 <= name_pops);
-    compiler_use_block(c, n->block_tail);
+    compiler_use_block(c, n->block);
     if (stack_pops || name_pops) {
         basicblock *tail = compiler_new_block(c);
         if (tail == NULL) {
@@ -6450,11 +6462,11 @@ spm_check(struct compiler *c, spm_node_pattern *n)
         while (name_pops--) {
             ADDOP(c, POP_TOP);
         }
-        ADDOP_JUMP(c, JUMP_FORWARD, f->block_tail);
-        n->block_tail = compiler_use_next_block(c, tail);
+        ADDOP_JUMP(c, JUMP_FORWARD, f->block);
+        n->block = compiler_use_next_block(c, tail);
     }
     else {
-        ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block_tail);
+        ADDOP_JUMP(c, POP_JUMP_IF_FALSE, f->block);
         SPM_NEXT_BLOCK;
     }
     return 1;
@@ -6579,12 +6591,12 @@ spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, asdl_expr_seq *ke
     return 1;
 }
 
-static int
-spm_compile_or(struct compiler *c, spm_node_pattern *n)
-{
-    // TODO
-    return 1;
-}
+// static int
+// spm_compile_or(struct compiler *c, spm_node_pattern *n)
+// {
+//     // TODO
+//     return 1;
+// }
 
 // MatchSequence(pattern* patterns)
 static int
@@ -6735,9 +6747,9 @@ spm_compile_value_b(struct compiler *c, spm_node_pattern *n, expr_ty value)
 static int
 spm_compile(struct compiler *c, spm_node_pattern *n)
 {
-    // if (!spm_expand_or(c, n)) {
-    //     return 0;
-    // }
+    if (!spm_expand_or(c, n)) {
+        return 0;
+    }
     SPM_GROUP_BEGIN(p->kind == q->kind);
         spm_compiler *f;
         switch (p->kind) {
@@ -6749,9 +6761,6 @@ spm_compile(struct compiler *c, spm_node_pattern *n)
                 break;
             case MatchMapping_kind:
                 f = spm_compile_mapping_a;
-                break;
-            case MatchOr_kind:
-                f = spm_compile_or;
                 break;
             case MatchSequence_kind:
                 f = spm_compile_sequence;
@@ -6771,6 +6780,7 @@ spm_compile(struct compiler *c, spm_node_pattern *n)
         if (!f(c, n)) {
             return 0;
         }
+        // TODO: Re-merge anything with the same match_case, stores, and subpatterns
         bool again = false;
         SPM_LOOP_BEGIN;
             // Remove the most-recently-compiled subpattern.
@@ -6794,42 +6804,29 @@ compiler_match(struct compiler *c, stmt_ty s)
     VISIT(c, expr, s->v.Match.subject);
     basicblock *top = c->u->u_curblock; 
     // TODO: If there is a trailing "case _: ...", combine it with this block!
-    spm_node_pattern *n = spm_node_pattern_new(c, NULL, NULL);
+    spm_node_pattern *n = spm_node_pattern_new(c, NULL, NULL, NULL);
     if (n == NULL) {
         return 0;
     }
-    compiler_use_block(c, n->block_tail);
+    compiler_use_block(c, n->block);
     // No stacksize adjustment here, since the subject should be on the
     // stack going *into* this block.
     ADDOP(c, POP_TOP);
-    compiler_use_next_block(c, n->block_body);
-    basicblock *end = n->block_body;
+    basicblock *end = compiler_next_block(c);
+    if (end == NULL) {
+        return 0;
+    }
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
     while (i--) {
         match_case_ty match = asdl_seq_GET(s->v.Match.cases, i);
-        n = spm_node_pattern_new(c, n, match->pattern);
+        n = spm_node_pattern_new(c, n, match, match->pattern);
         if (n == NULL) {
             return 0;
         }
-        compiler_use_block(c, n->block_body);
-        if (match->guard) {
-            VISIT(c, expr, match->guard);
-            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, n->next->block_tail);
-            n->next->reachable = true;
-            NEXT_BLOCK(c);
-        }
-        ADDOP(c, POP_TOP);
-        VISIT_SEQ(c, stmt, match->body);
-        ADDOP_JUMP(c, JUMP_FORWARD, end);
-        compiler_use_next_block(c, n->next->block_tail);
     }
-    return (
-        compiler_use_block(c, top)
-        && compiler_use_next_block(c, n->block_tail)
-        && spm_compile(c, n)
-        && spm_cleanup(c, n)
-        && compiler_use_block(c, end)
-    );
+    compiler_use_block(c, top);
+    compiler_use_next_block(c, n->head);
+    return spm_compile(c, n) && spm_cleanup(c, n, end);
 }
 
 /* End of the compiler section, beginning of the assembler section */
