@@ -6101,11 +6101,11 @@ compiler_slice(struct compiler *c, expr_ty s)
     int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);                            \
     {                                                                          \
         spm_node_pattern *_n = n;                                              \
-        while (_n->pattern) {                                                  \
+        while (_n->next) {                                                     \
             spm_node_pattern *_next = _n->next;                                \
             if (n->subpatterns) {                                              \
                 pattern_ty p = _n->subpatterns->pattern;                       \
-                while (_next->pattern) {                                       \
+                while (_next->next) {                                          \
                     pattern_ty q = _next->subpatterns->pattern;                \
                     /* Sanity check: patterns should group with themselves! */ \
                     {                                                          \
@@ -6122,28 +6122,28 @@ compiler_slice(struct compiler *c, expr_ty s)
                     }                                                          \
                     _next = _next->next;                                       \
                 }                                                              \
-                pattern_ty _p = _next->pattern;                                \
-                _next->pattern = NULL;                                         \
+                spm_node_pattern *_s = _next->next;                            \
+                _next->next = NULL;                                            \
                 spm_node_pattern *n = _n;
 
 // TODO: Try to move this up to SPM_GROUP_BEGIN (so "continue" works)...
-#define SPM_GROUP_END                \
-                _next->pattern = _p; \
-            }                        \
-            _n = _next;              \
-        }                            \
+#define SPM_GROUP_END             \
+                _next->next = _s; \
+            }                     \
+            _n = _next;           \
+        }                         \
     }
 
-#define SPM_LOOP_BEGIN                                            \
-    {                                                             \
-        spm_node_pattern *_n = n;                                 \
-        for (spm_node_pattern *n = _n; n->pattern; n = n->next) { \
-            if (n->subpatterns == NULL) {                         \
-                continue;                                         \
-            }                                                     \
-            pattern_ty p = n->subpatterns->pattern;               \
-            compiler_use_block(c, n->block_tail);                 \
-            SET_LOC(c, p);                                        \
+#define SPM_LOOP_BEGIN                                         \
+    {                                                          \
+        spm_node_pattern *_n = n;                              \
+        for (spm_node_pattern *n = _n; n->next; n = n->next) { \
+            if (n->subpatterns == NULL) {                      \
+                continue;                                      \
+            }                                                  \
+            pattern_ty p = n->subpatterns->pattern;            \
+            compiler_use_block(c, n->block_tail);              \
+            SET_LOC(c, p);                                     \
             int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);
 
 #define SPM_LOOP_END \
@@ -6160,34 +6160,6 @@ compiler_slice(struct compiler *c, expr_ty s)
     if (n->block_tail == NULL) {            \
         return 0;                           \
     }
-    
-// typedef struct {
-//     basicblock *start;
-//     basicblock *block;
-//     PyObject *names;
-//     Py_ssize_t stacksize;
-//     bool allow_irrefutable;
-//     bool reachable;
-//     bool preserve;
-// } spm_context;
-
-// // Compile several patterns in parallel, attempting to merge any contiguous
-// // patterns with overlapping checks.
-// //
-// // The core idea is pretty simple, but the getting the control-flow right can be
-// // a bit tricky: for contiguous overlapping patterns i-j (where j is the first
-// // "different" pattern), we compile each pattern as normal, but jump to j in all
-// // failure cases (rather than just to the next pattern).
-// //
-// // This isn't just for totally identical patterns. For example, if we have a
-// // bunch of different sequence patterns, we can still jump to j when failing the
-// // first MATCH_SEQUENCE check, and jump *after* it in the next pattern if any
-// // sub-patterns fail.
-// //
-// // It's important, though, that every part of each pattern actually gets
-// // compiled, since failing guards need to start from scratch at the next
-// // pattern. It's much easier to just rely on the assembler to eliminate any dead
-// // code during reachability analysis.
 
 typedef struct spm_node_subpattern spm_node_subpattern;
 
@@ -6203,6 +6175,7 @@ typedef struct spm_node_pattern spm_node_pattern;
 struct spm_node_pattern {
     spm_node_subpattern *subpatterns;
     spm_node_pattern *next;
+    // TODO: Join these?
     basicblock *block_tail;
     basicblock *block_body;
     pattern_ty pattern;
@@ -6400,7 +6373,7 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
             // TODO: Avoid creating body at all?
             new->block_body = n->block_body;
             n->next = new;
-            if (_PyList_Extend(new->stores, n->stores)) {
+            if (_PyList_Extend((PyListObject *)new->stores, n->stores)) {
                 return 0;
             }
         }
@@ -6412,49 +6385,6 @@ spm_expand_or(struct compiler *c, spm_node_pattern *n)
     return 1;
 }
 
-// static int
-// spm_expand_or(struct compiler *c, spm_node_pattern *n)
-// {
-//     while (n->pattern) {
-//         // We must be top-level:
-//         assert(n->pattern == n->subpatterns->pattern);
-//         pattern_ty pattern = n->pattern;
-//         if (pattern->kind == MatchOr_kind) {
-//             asdl_pattern_seq *patterns = pattern->v.MatchOr.patterns;
-//             Py_ssize_t nalts = asdl_seq_LEN(patterns);
-//             while (--nalts) {
-//                 pattern_ty alt = asdl_seq_GET(patterns, nalts);
-//                 spm_node_pattern *new = spm_node_pattern_new(c, n->next, alt);
-//                 if (new == NULL) {
-//                     return 0;
-//                 }
-//                 // TODO: Comment for this.
-//                 basicblock *tmp = n->block_tail;
-//                 n->block_tail = new->block_tail;
-//                 new->block_tail = tmp;
-//                 tmp = n->block_body;
-//                 n->block_body = new->block_body;
-//                 new->block_body = tmp;
-//                 compiler_use_block(c, n->block_body);
-//                 ADDOP_JUMP(c, JUMP_FORWARD, new->block_body);
-//                 compiler_use_next_block(c, new->block_tail);
-//                 n->next = new;
-//             }
-//             assert(nalts == 0);
-//             // NOTE: Might need to modify some other fields here in the future!
-//             n->pattern = asdl_seq_GET(patterns, 0);
-//             n->subpatterns->pattern = n->pattern;
-//         }
-//         else {
-//             n = n->next;
-//             if (n == NULL) {
-//                 break;
-//             }
-//         }
-//     }
-//     assert(n->next == NULL);
-//     return 1;
-// }
 
 static int
 spm_cleanup(struct compiler *c, spm_node_pattern *n)
@@ -6462,7 +6392,8 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
     n->reachable = true;
     // NOTE: Can't use SPM_LOOP_* here, since that skips over "finished"
     // patterns... at this point, *all* of the patterns are "finished"!
-    while (n->pattern) {
+    while (n->next) {
+        // TODO: Is this really all we use it for???
         SET_LOC(c, n->pattern);
         compiler_use_block(c, n->block_tail);
         // TODO: Why...? Is our stacksize wrong for a second repeated sequence pattern?
@@ -6472,9 +6403,7 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n)
         }
         assert(n->stacksize == 1);
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
-        // if (n->preserve) {
-            ADDOP_I(c, ROT_N, PyList_GET_SIZE(n->stores) + 1);
-        // }
+            ADDOP_I(c, ROT_N, nstores + 1);
         while (nstores--) {
             if (!compiler_nameop(c, PyList_GET_ITEM(n->stores, nstores), Store)) {
                 return 0;
@@ -6494,7 +6423,7 @@ spm_check(struct compiler *c, spm_node_pattern *n)
 {
     spm_node_pattern *f = n;
     // TODO: This move is technically quadratic-time...
-    while (f->pattern) {
+    while (f->next) {
         f = f->next;
     }
     f->reachable = true;
@@ -6869,13 +6798,10 @@ compiler_match(struct compiler *c, stmt_ty s)
     if (n == NULL) {
         return 0;
     }
-    // n->preserve = false;
     compiler_use_block(c, n->block_tail);
-    // if (!n->preserve) {
-        // No stacksize adjustment here, since the subject should be on the
-        // stack going *into* this block.
-        ADDOP(c, POP_TOP);
-    // }
+    // No stacksize adjustment here, since the subject should be on the
+    // stack going *into* this block.
+    ADDOP(c, POP_TOP);
     compiler_use_next_block(c, n->block_body);
     basicblock *end = n->block_body;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
@@ -6892,9 +6818,7 @@ compiler_match(struct compiler *c, stmt_ty s)
             n->next->reachable = true;
             NEXT_BLOCK(c);
         }
-        // if (n->preserve) {
-            ADDOP(c, POP_TOP);
-        // }
+        ADDOP(c, POP_TOP);
         VISIT_SEQ(c, stmt, match->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
         compiler_use_next_block(c, n->next->block_tail);
