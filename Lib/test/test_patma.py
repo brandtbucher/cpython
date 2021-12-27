@@ -417,29 +417,29 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, [])
         self.assertEqual(y, 2)
 
-#     def test_patma_034(self):
-#         x = {0: 0}
-#         match x:
-#             case {0: [1, 2, {}]}:
-#                 y = 0
-#             case {0: ([1, 2, {}] | False)} | {1: [[]]} | {0: [1, 2, {}]} | [] | "X" | {}:
-#                 y = 1
-#             case []:
-#                 y = 2
-#         self.assertEqual(x, {0: 0})
-#         self.assertEqual(y, 1)
+    def test_patma_034(self):
+        x = {0: 0}
+        match x:
+            case {0: [1, 2, {}]}:
+                y = 0
+            case {0: ([1, 2, {}] | False)} | {1: [[]]} | {0: [1, 2, {}]} | [] | "X" | {}:
+                y = 1
+            case []:
+                y = 2
+        self.assertEqual(x, {0: 0})
+        self.assertEqual(y, 1)
 
-#     def test_patma_035(self):
-#         x = {0: 0}
-#         match x:
-#             case {0: [1, 2, {}]}:
-#                 y = 0
-#             case {0: [1, 2, {}] | True} | {1: [[]]} | {0: [1, 2, {}]} | [] | "X" | {}:
-#                 y = 1
-#             case []:
-#                 y = 2
-#         self.assertEqual(x, {0: 0})
-#         self.assertEqual(y, 1)
+    def test_patma_035(self):
+        x = {0: 0}
+        match x:
+            case {0: [1, 2, {}]}:
+                y = 0
+            case {0: [1, 2, {}] | True} | {1: [[]]} | {0: [1, 2, {}]} | [] | "X" | {}:
+                y = 1
+            case []:
+                y = 2
+        self.assertEqual(x, {0: 0})
+        self.assertEqual(y, 1)
 
     def test_patma_036(self):
         x = 0
@@ -1781,23 +1781,23 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(http_error("400"), "Something else")
         self.assertEqual(http_error(401 | 403 | 404), "Something else")  # 407
 
-#     def test_patma_175(self):
-#         def http_error(status):
-#             match status:
-#                 case 400:
-#                     return "Bad request"
-#                 case 401 | 403 | 404:
-#                     return "Not allowed"
-#                 case 418:
-#                     return "I'm a teapot"
-#         self.assertEqual(http_error(400), "Bad request")
-#         self.assertEqual(http_error(401), "Not allowed")
-#         self.assertEqual(http_error(403), "Not allowed")
-#         self.assertEqual(http_error(404), "Not allowed")
-#         self.assertEqual(http_error(418), "I'm a teapot")
-#         self.assertIs(http_error(123), None)
-#         self.assertIs(http_error("400"), None)
-#         self.assertIs(http_error(401 | 403 | 404), None)  # 407
+    def test_patma_175(self):
+        def http_error(status):
+            match status:
+                case 400:
+                    return "Bad request"
+                case 401 | 403 | 404:
+                    return "Not allowed"
+                case 418:
+                    return "I'm a teapot"
+        self.assertEqual(http_error(400), "Bad request")
+        self.assertEqual(http_error(401), "Not allowed")
+        self.assertEqual(http_error(403), "Not allowed")
+        self.assertEqual(http_error(404), "Not allowed")
+        self.assertEqual(http_error(418), "I'm a teapot")
+        self.assertIs(http_error(123), None)
+        self.assertIs(http_error("400"), None)
+        self.assertIs(http_error(401 | 403 | 404), None)  # 407
 
 #     def test_patma_176(self):
 #         def whereis(point):
@@ -3119,45 +3119,45 @@ class TestTracing(unittest.TestCase):
             sys.settrace(old_trace)
         return actual_linenos
 
-    # def test_default_wildcard(self):
-    #     def f(command):                                         # 0
-    #         match command.split():                              # 1
-    #             case ["go", direction] if direction in "nesw":  # 2
-    #                 return f"go {direction}"                    # 3
-    #             case ["go", _]:                                 # 4
-    #                 return "no go"                              # 5
-    #             case _:                                         # 6
-    #                 return "default"                            # 7
+    def test_default_wildcard(self):
+        def f(command):                                         # 0
+            match command.split():                              # 1
+                case ["go", direction] if direction in "nesw":  # 2
+                    return f"go {direction}"                    # 3
+                case ["go", _]:                                 # 4
+                    return "no go"                              # 5
+                case _:                                         # 6
+                    return "default"                            # 7
 
-    #     self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
-    #     self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
-    #     self.assertListEqual(self._trace(f, "spam"), [1, 2, 4, 6, 7])
+        self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
+        self.assertListEqual(self._trace(f, "spam"), [1, 2, 6, 7])
 
-    # def test_default_capture(self):
-    #     def f(command):                                         # 0
-    #         match command.split():                              # 1
-    #             case ["go", direction] if direction in "nesw":  # 2
-    #                 return f"go {direction}"                    # 3
-    #             case ["go", _]:                                 # 4
-    #                 return "no go"                              # 5
-    #             case x:                                         # 6
-    #                 return x                                    # 7
+    def test_default_capture(self):
+        def f(command):                                         # 0
+            match command.split():                              # 1
+                case ["go", direction] if direction in "nesw":  # 2
+                    return f"go {direction}"                    # 3
+                case ["go", _]:                                 # 4
+                    return "no go"                              # 5
+                case x:                                         # 6
+                    return x                                    # 7
 
-    #     self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
-    #     self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
-    #     self.assertListEqual(self._trace(f, "spam"), [1, 2, 4, 6, 7])
+        self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
+        self.assertListEqual(self._trace(f, "spam"), [1, 2, 6, 7])
 
-    # def test_no_default(self):
-    #     def f(command):                                         # 0
-    #         match command.split():                              # 1
-    #             case ["go", direction] if direction in "nesw":  # 2
-    #                 return f"go {direction}"                    # 3
-    #             case ["go", _]:                                 # 4
-    #                 return "no go"                              # 5
+    def test_no_default(self):
+        def f(command):                                         # 0
+            match command.split():                              # 1
+                case ["go", direction] if direction in "nesw":  # 2
+                    return f"go {direction}"                    # 3
+                case ["go", _]:                                 # 4
+                    return "no go"                              # 5
 
-    #     self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
-    #     self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
-    #     self.assertListEqual(self._trace(f, "spam"), [1, 2, 4])
+        self.assertListEqual(self._trace(f, "go n"), [1, 2, 3])
+        self.assertListEqual(self._trace(f, "go x"), [1, 2, 4, 5])
+        self.assertListEqual(self._trace(f, "spam"), [1, 2, 1])
 
     def test_only_default_wildcard(self):
         def f(command):               # 0

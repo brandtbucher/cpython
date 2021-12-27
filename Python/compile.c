@@ -6433,11 +6433,11 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
         }
         SET_LOC(c, n->match_case->pattern);
         ADDOP(c, POP_TOP);
-        VISIT_SEQ(c, stmt, n->match_case->body);
-        ADDOP_JUMP(c, JUMP_FORWARD, end);
         if (n->next && !n->reachable && !compiler_warn(c, "pattern is unreachable")) {
             return 0;
         }
+        VISIT_SEQ(c, stmt, n->match_case->body);
+        ADDOP_JUMP(c, JUMP_FORWARD, end);
         n = n->next;
         compiler_use_next_block(c, n->head);
     }
@@ -6555,7 +6555,7 @@ static int spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n);
 static int spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, 
                                  Py_ssize_t len);
 static int spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, 
-                                 Py_ssize_t len, asdl_expr_seq *keys);
+                                 Py_ssize_t len);
 
 static int
 spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
@@ -6567,11 +6567,7 @@ spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
     SPM_GROUP_BEGIN(asdl_seq_LEN(p->v.MatchMapping.keys) == 
                     asdl_seq_LEN(q->v.MatchMapping.keys));
         Py_ssize_t len = asdl_seq_LEN(p->v.MatchMapping.keys);
-        if (len == 0 && !n->subpatterns->preserve) {
-            ADDOP(c, POP_TOP);
-            n->stacksize--;
-        }
-        else if (len && !spm_compile_mapping_b(c, n, len)) {
+        if (!spm_compile_mapping_b(c, n, len)) {
             return 0;
         }
     SPM_COMPILE_SUBPATTERNS;
@@ -6582,6 +6578,15 @@ spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 {
+    if (len == 0) {
+        if (!n->subpatterns->preserve) {
+            SPM_LOOP_BEGIN;
+                ADDOP(c, POP_TOP);
+                n->stacksize--;
+            SPM_LOOP_END;
+        }
+        return 1;
+    }
     SPM_LOOP_BEGIN;
         ADDOP(c, GET_LEN);
         ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(len));
@@ -6589,7 +6594,7 @@ spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
     SPM_GROUP_BEGIN(spm_same_exprs(p->v.MatchMapping.keys, q->v.MatchMapping.keys));
-        if (!spm_compile_mapping_c(c, n, len, p->v.MatchMapping.keys)) {
+        if (!spm_compile_mapping_c(c, n, len)) {
             return 0;
         }
     SPM_COMPILE_SUBPATTERNS;
@@ -6598,11 +6603,10 @@ spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 }
 
 static int
-spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len,
-                      asdl_expr_seq *keys)
+spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 {
     SPM_LOOP_BEGIN;
-        VISIT_SEQ(c, expr, keys);
+        VISIT_SEQ(c, expr, p->v.MatchMapping.keys);
         ADDOP_I(c, BUILD_TUPLE, len);
         n->stacksize++;
         ADDOP(c, MATCH_KEYS);
@@ -6611,13 +6615,18 @@ spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len,
         ADDOP_LOAD_CONST(c, Py_None);
         ADDOP_I(c, IS_OP, 1);
         SPM_POP_JUMP_IF_FALSE;
-        // // XXX -->
-        // // XXX: For now, toss out the keys. We'll need to fix this once we start
-        // //      handling **rest:
-        // ADDOP(c, ROT_TWO);
-        // ADDOP(c, POP_TOP);
-        // n->stacksize--;
-        // // <-- XXX
+        // XXX -->
+        // XXX: For now, toss out the keys. We'll need to fix this once we start
+        //      handling **rest:
+        ADDOP(c, ROT_TWO);
+        ADDOP(c, POP_TOP);
+        n->stacksize--;
+        // <-- XXX
+        if (!n->subpatterns->preserve) {
+            ADDOP(c, ROT_TWO);
+            ADDOP(c, POP_TOP);
+            n->stacksize--;
+        }
         ADDOP_I(c, UNPACK_SEQUENCE, len);
         n->stacksize += len - 1;
         Py_ssize_t i = len;
@@ -6763,14 +6772,13 @@ spm_compile_star(struct compiler *c, spm_node_pattern *n)
 
 // MatchValue(expr value)
 static int spm_compile_value_a(struct compiler *c, spm_node_pattern *n);
-static int spm_compile_value_b(struct compiler *c, spm_node_pattern *n,
-                               expr_ty value);
+static int spm_compile_value_b(struct compiler *c, spm_node_pattern *n);
 
 static int
 spm_compile_value_a(struct compiler *c, spm_node_pattern *n)
 {
     SPM_GROUP_BEGIN(spm_same_expr(p->v.MatchValue.value, q->v.MatchValue.value));
-        if (!spm_compile_value_b(c, n, p->v.MatchValue.value)) {
+        if (!spm_compile_value_b(c, n)) {
             return 0;
         }
     SPM_COMPILE_SUBPATTERNS;
@@ -6779,7 +6787,7 @@ spm_compile_value_a(struct compiler *c, spm_node_pattern *n)
 }
 
 static int
-spm_compile_value_b(struct compiler *c, spm_node_pattern *n, expr_ty value)
+spm_compile_value_b(struct compiler *c, spm_node_pattern *n)
 {
     SPM_LOOP_BEGIN;
         if (n->subpatterns->preserve) {
@@ -6788,7 +6796,7 @@ spm_compile_value_b(struct compiler *c, spm_node_pattern *n, expr_ty value)
         else {
             n->stacksize--;
         }
-        VISIT(c, expr, value);
+        VISIT(c, expr, p->v.MatchValue.value);
         ADDOP_COMPARE(c, Eq);
         SPM_POP_JUMP_IF_FALSE;
     SPM_LOOP_END;
