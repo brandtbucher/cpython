@@ -393,29 +393,29 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {False: (True, 2.0, {}), 1: [[]], 2: 0})
         self.assertEqual(y, 0)
 
-#     def test_patma_032(self):
-#         x = {False: (True, 2.0, {}), 1: [[]], 2: 0}
-#         match x:
-#             case {0: [1, 2]}:
-#                 y = 0
-#             case {0: [1, 2, {}], 1: [[]]}:
-#                 y = 1
-#             case []:
-#                 y = 2
-#         self.assertEqual(x, {False: (True, 2.0, {}), 1: [[]], 2: 0})
-#         self.assertEqual(y, 1)
+    def test_patma_032(self):
+        x = {False: (True, 2.0, {}), 1: [[]], 2: 0}
+        match x:
+            case {0: [1, 2]}:
+                y = 0
+            case {0: [1, 2, {}], 1: [[]]}:
+                y = 1
+            case []:
+                y = 2
+        self.assertEqual(x, {False: (True, 2.0, {}), 1: [[]], 2: 0})
+        self.assertEqual(y, 1)
 
-#     def test_patma_033(self):
-#         x = []
-#         match x:
-#             case {0: [1, 2, {}]}:
-#                 y = 0
-#             case {0: [1, 2, {}], 1: [[]]}:
-#                 y = 1
-#             case []:
-#                 y = 2
-#         self.assertEqual(x, [])
-#         self.assertEqual(y, 2)
+    def test_patma_033(self):
+        x = []
+        match x:
+            case {0: [1, 2, {}]}:
+                y = 0
+            case {0: [1, 2, {}], 1: [[]]}:
+                y = 1
+            case []:
+                y = 2
+        self.assertEqual(x, [])
+        self.assertEqual(y, 2)
 
 #     def test_patma_034(self):
 #         x = {0: 0}
