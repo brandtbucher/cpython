@@ -939,71 +939,71 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(y, 0)
         self.assertEqual(z, 0)
 
-#     def test_patma_087(self):
-#         x = 0
-#         match x:
-#             case (0 | 1) | 2:
-#                 y = 0
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 0)
+    def test_patma_087(self):
+        x = 0
+        match x:
+            case (0 | 1) | 2:
+                y = 0
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 0)
 
-#     def test_patma_088(self):
-#         x = 1
-#         match x:
-#             case (0 | 1) | 2:
-#                 y = 0
-#         self.assertEqual(x, 1)
-#         self.assertEqual(y, 0)
+    def test_patma_088(self):
+        x = 1
+        match x:
+            case (0 | 1) | 2:
+                y = 0
+        self.assertEqual(x, 1)
+        self.assertEqual(y, 0)
 
-#     def test_patma_089(self):
-#         x = 2
-#         match x:
-#             case (0 | 1) | 2:
-#                 y = 0
-#         self.assertEqual(x, 2)
-#         self.assertEqual(y, 0)
+    def test_patma_089(self):
+        x = 2
+        match x:
+            case (0 | 1) | 2:
+                y = 0
+        self.assertEqual(x, 2)
+        self.assertEqual(y, 0)
 
-#     def test_patma_090(self):
-#         x = 3
-#         y = None
-#         match x:
-#             case (0 | 1) | 2:
-#                 y = 0
-#         self.assertEqual(x, 3)
-#         self.assertIs(y, None)
+    def test_patma_090(self):
+        x = 3
+        y = None
+        match x:
+            case (0 | 1) | 2:
+                y = 0
+        self.assertEqual(x, 3)
+        self.assertIs(y, None)
 
-#     def test_patma_091(self):
-#         x = 0
-#         match x:
-#             case 0 | (1 | 2):
-#                 y = 0
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 0)
+    def test_patma_091(self):
+        x = 0
+        match x:
+            case 0 | (1 | 2):
+                y = 0
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 0)
 
-#     def test_patma_092(self):
-#         x = 1
-#         match x:
-#             case 0 | (1 | 2):
-#                 y = 0
-#         self.assertEqual(x, 1)
-#         self.assertEqual(y, 0)
+    def test_patma_092(self):
+        x = 1
+        match x:
+            case 0 | (1 | 2):
+                y = 0
+        self.assertEqual(x, 1)
+        self.assertEqual(y, 0)
 
-#     def test_patma_093(self):
-#         x = 2
-#         match x:
-#             case 0 | (1 | 2):
-#                 y = 0
-#         self.assertEqual(x, 2)
-#         self.assertEqual(y, 0)
+    def test_patma_093(self):
+        x = 2
+        match x:
+            case 0 | (1 | 2):
+                y = 0
+        self.assertEqual(x, 2)
+        self.assertEqual(y, 0)
 
-#     def test_patma_094(self):
-#         x = 3
-#         y = None
-#         match x:
-#             case 0 | (1 | 2):
-#                 y = 0
-#         self.assertEqual(x, 3)
-#         self.assertIs(y, None)
+    def test_patma_094(self):
+        x = 3
+        y = None
+        match x:
+            case 0 | (1 | 2):
+                y = 0
+        self.assertEqual(x, 3)
+        self.assertIs(y, None)
 
     def test_patma_095(self):
         x = 0
@@ -2710,47 +2710,47 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_imaginary_number_required_in_complex_literal_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case 0+0:
-    #             pass
-    #     """)
+    def test_imaginary_number_required_in_complex_literal_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case 0+0:
+                pass
+        """)
 
-    # def test_imaginary_number_required_in_complex_literal_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0+0: _}:
-    #             pass
-    #     """)
+    def test_imaginary_number_required_in_complex_literal_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0+0: _}:
+                pass
+        """)
 
-    # def test_invalid_syntax_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {**rest, "key": value}:
-    #             pass
-    #     """)
+    def test_invalid_syntax_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {**rest, "key": value}:
+                pass
+        """)
 
-    # def test_invalid_syntax_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {"first": first, **rest, "last": last}:
-    #             pass
-    #     """)
+    def test_invalid_syntax_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {"first": first, **rest, "last": last}:
+                pass
+        """)
 
-    # def test_invalid_syntax_2(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {**_}:
-    #             pass
-    #     """)
+    def test_invalid_syntax_2(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {**_}:
+                pass
+        """)
 
-    # def test_invalid_syntax_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case 42 as _:
-    #             pass
-    #     """)
+    def test_invalid_syntax_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case 42 as _:
+                pass
+        """)
 
     # def test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups(self):
     #     self.assert_syntax_error("""
@@ -2870,33 +2870,33 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_real_number_required_in_complex_literal_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case 0j+0:
-    #             pass
-    #     """)
+    def test_real_number_required_in_complex_literal_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case 0j+0:
+                pass
+        """)
 
-    # def test_real_number_required_in_complex_literal_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case 0j+0j:
-    #             pass
-    #     """)
+    def test_real_number_required_in_complex_literal_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case 0j+0j:
+                pass
+        """)
 
-    # def test_real_number_required_in_complex_literal_2(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0j+0: _}:
-    #             pass
-    #     """)
+    def test_real_number_required_in_complex_literal_2(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0j+0: _}:
+                pass
+        """)
 
-    # def test_real_number_required_in_complex_literal_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0j+0j: _}:
-    #             pass
-    #     """)
+    def test_real_number_required_in_complex_literal_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0j+0j: _}:
+                pass
+        """)
 
     # def test_wildcard_makes_remaining_patterns_unreachable_0(self):
     #     self.assert_syntax_error("""

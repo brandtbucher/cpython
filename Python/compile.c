@@ -6103,7 +6103,7 @@ compiler_slice(struct compiler *c, expr_ty s)
         spm_node_pattern *_n = n;                                              \
         while (_n->next) {                                                     \
             spm_node_pattern *_next = _n->next;                                \
-            if (_n->subpatterns) {                                              \
+            if (_n->subpatterns) {                                             \
                 pattern_ty p = _n->subpatterns->pattern;                       \
                 while (_next->next) {                                          \
                     pattern_ty q = _next->subpatterns->pattern;                \
