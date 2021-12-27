@@ -6556,6 +6556,9 @@ static int spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n,
                                  Py_ssize_t len);
 static int spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, 
                                  Py_ssize_t len);
+static int spm_compile_mapping_d(struct compiler *c, spm_node_pattern *n,
+                                 Py_ssize_t len);
+static int spm_compile_mapping_e(struct compiler *c, spm_node_pattern *n);
 
 static int
 spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
@@ -6567,7 +6570,12 @@ spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
     SPM_GROUP_BEGIN(asdl_seq_LEN(p->v.MatchMapping.keys) == 
                     asdl_seq_LEN(q->v.MatchMapping.keys));
         Py_ssize_t len = asdl_seq_LEN(p->v.MatchMapping.keys);
-        if (!spm_compile_mapping_b(c, n, len)) {
+        if (len) {
+            if (!spm_compile_mapping_b(c, n, len)) {
+                return 0;
+            }
+        }
+        else if (!spm_compile_mapping_e(c, n)) {
             return 0;
         }
     SPM_COMPILE_SUBPATTERNS;
@@ -6578,15 +6586,7 @@ spm_compile_mapping_a(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 {
-    if (len == 0) {
-        if (!n->subpatterns->preserve) {
-            SPM_LOOP_BEGIN;
-                ADDOP(c, POP_TOP);
-                n->stacksize--;
-            SPM_LOOP_END;
-        }
-        return 1;
-    }
+    assert(len);
     SPM_LOOP_BEGIN;
         ADDOP(c, GET_LEN);
         ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(len));
@@ -6605,8 +6605,53 @@ spm_compile_mapping_b(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 static int
 spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
 {
+    assert(len);
     SPM_LOOP_BEGIN;
-        VISIT_SEQ(c, expr, p->v.MatchMapping.keys);
+        asdl_expr_seq *keys = p->v.MatchMapping.keys;
+        if (INT_MAX < len - 1) {
+            const char *e ="too many sub-patterns in mapping pattern";
+            return compiler_error(c, e);
+        }
+        // Collect all of the keys into a tuple for MATCH_KEYS and
+        // **rest. They can either be dotted names or literals:
+        // Maintaining a set of Constant_kind kind keys allows us to raise a
+        // SyntaxError in the case of duplicates.
+        PyObject *seen = PySet_New(NULL);
+        if (seen == NULL || _PyArena_AddPyObject(c->c_arena, seen)) {
+            return 0;
+        }
+        for (Py_ssize_t i = 0; i < len; i++) {
+            expr_ty key = asdl_seq_GET(keys, i);
+            if (key == NULL) {
+                SET_LOC(c, asdl_seq_GET(p->v.MatchMapping.patterns, i));
+                const char *e = "can't use NULL keys in MatchMapping (set "
+                                "'rest' parameter instead)";
+                return compiler_error(c, e);
+            }
+            if (key->kind == Constant_kind) {
+                int in_seen = PySet_Contains(seen, key->v.Constant.value);
+                if (in_seen < 0) {
+                    return 0;
+                }
+                if (in_seen) {
+                    SET_LOC(c, key);
+                    const char *e = "mapping pattern checks duplicate key (%R)";
+                    return compiler_error(c, e, key->v.Constant.value);
+                }
+                if (PySet_Add(seen, key->v.Constant.value)) {
+                    return 0;
+                }
+            }
+            else if (key->kind != Attribute_kind) {
+                SET_LOC(c, key);
+                const char *e = "mapping pattern keys may only match literals "
+                                "and attribute lookups";
+                return compiler_error(c, e);
+            }
+            if (!compiler_visit_expr(c, key)) {
+                return 0;
+            }
+        }
         ADDOP_I(c, BUILD_TUPLE, len);
         n->stacksize++;
         ADDOP(c, MATCH_KEYS);
@@ -6615,16 +6660,82 @@ spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
         ADDOP_LOAD_CONST(c, Py_None);
         ADDOP_I(c, IS_OP, 1);
         SPM_POP_JUMP_IF_FALSE;
-        // XXX -->
-        // XXX: For now, toss out the keys. We'll need to fix this once we start
-        //      handling **rest:
-        ADDOP(c, ROT_TWO);
-        ADDOP(c, POP_TOP);
-        n->stacksize--;
-        // <-- XXX
-        if (!n->subpatterns->preserve) {
+        // // XXX -->
+        // // XXX: For now, toss out the keys. We'll need to fix this once we start
+        // //      handling **rest:
+        // ADDOP(c, ROT_TWO);
+        // ADDOP(c, POP_TOP);
+        // n->stacksize--;
+        // // <-- XXX
+        // if (!n->subpatterns->preserve) {
+        //     ADDOP(c, ROT_TWO);
+        //     ADDOP(c, POP_TOP);
+        //     n->stacksize--;
+        // }
+    SPM_LOOP_END;
+    SPM_GROUP_BEGIN(!!p->v.MatchMapping.rest == !!q->v.MatchMapping.rest);
+        if (!spm_compile_mapping_d(c, n, len)) {
+            return 0;
+        }
+    SPM_COMPILE_SUBPATTERNS;
+    SPM_GROUP_END;
+    return 1;
+}
+
+static int
+spm_compile_mapping_d(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
+{
+    assert(len);
+    SPM_LOOP_BEGIN;
+        // If we get this far, it's a match! Whatever happens next should
+        // consume the tuple of keys:
+        if (p->v.MatchMapping.rest) {
+            // TODO: Any way to do this *after* subpatterns are matched??? As
+            // the last subpattern, maybe?
+            // If we have a starred name, bind a dict of remaining items to it
+            // (this may seem a bit inefficient, but keys is rarely big enough
+            // to actually impact runtime):
+            // rest = dict(TOS1)
+            // for key in TOS:
+            //     del rest[key]
+            // TODO: preserve subject if needed!
+            ADDOP(c, ROT_THREE);             // [values, subject, keys]
+            ADDOP_I(c, BUILD_MAP, 0);        // [values, subject, keys, empty]
+            n->stacksize++;
+            ADDOP(c, ROT_THREE);             // [values, empty, subject, keys]
+            ADDOP(c, ROT_TWO);               // [values, empty, keys, subject]
+            if (n->subpatterns->preserve) {
+                ADDOP(c, DUP_TOP);           // [values, empty, keys, subject, subject]
+                n->stacksize++;
+                ADDOP_I(c, ROT_N, 5);        // [subject, values, empty, keys, subject]
+            }
+            ADDOP_I(c, DICT_UPDATE, 2);      // [subject?, values, copy, keys]
+            n->stacksize--;
+            Py_ssize_t i = len;
+            ADDOP_I(c, UNPACK_SEQUENCE, i);  // [subject?, values, copy, keys...]
+            while (i) {
+                ADDOP_I(c, COPY, 1 + i--);   // [subject?, values, copy, keys..., copy]
+                ADDOP(c, ROT_TWO);           // [subject?, values, copy, keys..., copy, key]
+                ADDOP(c, DELETE_SUBSCR);     // [subject?, values, copy, keys...]
+            }
+            n->stacksize--;
+            bool preserve = n->subpatterns->preserve;
+            n->subpatterns->preserve = false;
+            if (!spm_store(c, n, p->v.MatchMapping.rest)) {
+                return 0;
+            }
+            n->subpatterns->preserve = preserve;
+        }
+        else if (n->subpatterns->preserve) {
             ADDOP(c, ROT_TWO);
-            ADDOP(c, POP_TOP);
+            ADDOP(c, POP_TOP);  // Tuple of keys.
+            n->stacksize--;
+        }
+        else {
+            ADDOP(c, ROT_THREE);
+            ADDOP(c, POP_TOP);  // Tuple of keys.
+            n->stacksize--;
+            ADDOP(c, POP_TOP);  // Subject.
             n->stacksize--;
         }
         ADDOP_I(c, UNPACK_SEQUENCE, len);
@@ -6640,12 +6751,35 @@ spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
     return 1;
 }
 
-// static int
-// spm_compile_or(struct compiler *c, spm_node_pattern *n)
-// {
-//     // TODO
-//     return 1;
-// }
+static int
+spm_compile_mapping_e(struct compiler *c, spm_node_pattern *n)
+{
+    SPM_LOOP_BEGIN;
+        assert(asdl_seq_LEN(p->v.MatchMapping.keys) == 0);
+        if (p->v.MatchMapping.rest) {
+            if (n->subpatterns->preserve) {
+                ADDOP(c, DUP_TOP);           // [subject, subject]
+                n->stacksize++;
+            }
+            ADDOP_I(c, BUILD_MAP, 0);        // [subject?, subject, empty]
+            n->stacksize++;
+            ADDOP(c, ROT_TWO);               // [subject?, empty, subject]
+            ADDOP_I(c, DICT_UPDATE, 1);      // [subject?, copy]
+            n->stacksize--;
+            bool preserve = n->subpatterns->preserve;
+            n->subpatterns->preserve = false;
+            if (!spm_store(c, n, p->v.MatchMapping.rest)) {
+                return 0;
+            }
+            n->subpatterns->preserve = preserve;
+        }
+        else if (!n->subpatterns->preserve) {
+            ADDOP(c, POP_TOP);  // Tuple of keys.
+            n->stacksize--;
+        }
+    SPM_LOOP_END;
+    return 1;
+}
 
 // MatchSequence(pattern* patterns)
 static int spm_compile_sequence_a(struct compiler *c, spm_node_pattern *n);

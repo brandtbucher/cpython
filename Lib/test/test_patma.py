@@ -1240,16 +1240,16 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {})
         self.assertEqual(y, 1)
 
-#     def test_patma_120(self):
-#         x = collections.defaultdict(int)
-#         match x:
-#             case {0: 0}:
-#                 y = 0
-#             case {**z}:
-#                 y = 1
-#         self.assertEqual(x, {})
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, {})
+    def test_patma_120(self):
+        x = collections.defaultdict(int)
+        match x:
+            case {0: 0}:
+                y = 0
+            case {**z}:
+                y = 1
+        self.assertEqual(x, {})
+        self.assertEqual(y, 1)
+        self.assertEqual(z, {})
 
     def test_patma_121(self):
         match ():
@@ -1346,18 +1346,18 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {0: 1})
         self.assertEqual(y, 2)
 
-#     def test_patma_134(self):
-#         x = collections.defaultdict(int, {0: 1})
-#         match x:
-#             case {1: 0}:
-#                 y = 0
-#             case {0: 0}:
-#                 y = 1
-#             case {**z}:
-#                 y = 2
-#         self.assertEqual(x, {0: 1})
-#         self.assertEqual(y, 2)
-#         self.assertEqual(z, {0: 1})
+    def test_patma_134(self):
+        x = collections.defaultdict(int, {0: 1})
+        match x:
+            case {1: 0}:
+                y = 0
+            case {0: 0}:
+                y = 1
+            case {**z}:
+                y = 2
+        self.assertEqual(x, {0: 1})
+        self.assertEqual(y, 2)
+        self.assertEqual(z, {0: 1})
 
 #     def test_patma_135(self):
 #         x = collections.defaultdict(int, {0: 1})
@@ -1384,18 +1384,18 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {0: 1})
         self.assertEqual(y, 1)
 
-#     def test_patma_137(self):
-#         x = {0: 1}
-#         match x:
-#             case {1: 0}:
-#                 y = 0
-#             case {0: 0}:
-#                 y = 0
-#             case {**z}:
-#                 y = 1
-#         self.assertEqual(x, {0: 1})
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, {0: 1})
+    def test_patma_137(self):
+        x = {0: 1}
+        match x:
+            case {1: 0}:
+                y = 0
+            case {0: 0}:
+                y = 0
+            case {**z}:
+                y = 1
+        self.assertEqual(x, {0: 1})
+        self.assertEqual(y, 1)
+        self.assertEqual(z, {0: 1})
 
 #     def test_patma_138(self):
 #         x = {0: 1}
@@ -2025,27 +2025,27 @@ class TestPatma(unittest.TestCase):
         self.assertIs(b, x["bandwidth"])
         self.assertEqual(y, 0)
 
-#     def test_patma_195(self):
-#         x = {"bandwidth": 0, "latency": 1, "key": "value"}
-#         match x:
-#             case {"bandwidth": b, "latency": l, **rest}:
-#                 y = 0
-#         self.assertEqual(x, {"bandwidth": 0, "latency": 1, "key": "value"})
-#         self.assertIs(b, x["bandwidth"])
-#         self.assertIs(l, x["latency"])
-#         self.assertEqual(rest, {"key": "value"})
-#         self.assertEqual(y, 0)
+    def test_patma_195(self):
+        x = {"bandwidth": 0, "latency": 1, "key": "value"}
+        match x:
+            case {"bandwidth": b, "latency": l, **rest}:
+                y = 0
+        self.assertEqual(x, {"bandwidth": 0, "latency": 1, "key": "value"})
+        self.assertIs(b, x["bandwidth"])
+        self.assertIs(l, x["latency"])
+        self.assertEqual(rest, {"key": "value"})
+        self.assertEqual(y, 0)
 
-#     def test_patma_196(self):
-#         x = {"bandwidth": 0, "latency": 1}
-#         match x:
-#             case {"latency": l, "bandwidth": b, **rest}:
-#                 y = 0
-#         self.assertEqual(x, {"bandwidth": 0, "latency": 1})
-#         self.assertIs(l, x["latency"])
-#         self.assertIs(b, x["bandwidth"])
-#         self.assertEqual(rest, {})
-#         self.assertEqual(y, 0)
+    def test_patma_196(self):
+        x = {"bandwidth": 0, "latency": 1}
+        match x:
+            case {"latency": l, "bandwidth": b, **rest}:
+                y = 0
+        self.assertEqual(x, {"bandwidth": 0, "latency": 1})
+        self.assertIs(l, x["latency"])
+        self.assertIs(b, x["bandwidth"])
+        self.assertEqual(rest, {})
+        self.assertEqual(y, 0)
 
 #     def test_patma_197(self):
 #         w = [Point(-1, 0), Point(1, 2)]
@@ -2538,14 +2538,14 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, {0: 1, 2: 3})
         self.assertEqual(y, 0)
 
-#     def test_patma_240(self):
-#         x = collections.UserDict({0: 1, 2: 3})
-#         match x:
-#             case {2: 3, **z}:
-#                 y = 0
-#         self.assertEqual(x, {0: 1, 2: 3})
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, {0: 1})
+    def test_patma_240(self):
+        x = collections.UserDict({0: 1, 2: 3})
+        match x:
+            case {2: 3, **z}:
+                y = 0
+        self.assertEqual(x, {0: 1, 2: 3})
+        self.assertEqual(y, 0)
+        self.assertEqual(z, {0: 1})
 
 #     def test_patma_241(self):
 #         x = [[{0: 0}]]
@@ -2752,12 +2752,12 @@ class TestSyntaxErrors(unittest.TestCase):
                 pass
         """)
 
-    # def test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {f"": _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {f"": _}:
+                pass
+        """)
 
     # def test_multiple_assignments_to_name_in_pattern_0(self):
     #     self.assert_syntax_error("""
@@ -2942,40 +2942,40 @@ class TestSyntaxErrors(unittest.TestCase):
     #             pass
     #     """)
 
-    # def test_mapping_pattern_duplicate_key(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {"a": _, "a": _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {"a": _, "a": _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, False: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, False: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, 0.0: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, 0.0: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_2(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, -0: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_2(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, -0: _}:
+                pass
+        """)
 
-    # def test_mapping_pattern_duplicate_key_edge_case_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {0: _, 0j: _}:
-    #             pass
-    #     """)
+    def test_mapping_pattern_duplicate_key_edge_case_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {0: _, 0j: _}:
+                pass
+        """)
 
 
 # class TestTypeErrors(unittest.TestCase):
