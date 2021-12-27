@@ -6660,18 +6660,6 @@ spm_compile_mapping_c(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
         ADDOP_LOAD_CONST(c, Py_None);
         ADDOP_I(c, IS_OP, 1);
         SPM_POP_JUMP_IF_FALSE;
-        // // XXX -->
-        // // XXX: For now, toss out the keys. We'll need to fix this once we start
-        // //      handling **rest:
-        // ADDOP(c, ROT_TWO);
-        // ADDOP(c, POP_TOP);
-        // n->stacksize--;
-        // // <-- XXX
-        // if (!n->subpatterns->preserve) {
-        //     ADDOP(c, ROT_TWO);
-        //     ADDOP(c, POP_TOP);
-        //     n->stacksize--;
-        // }
     SPM_LOOP_END;
     SPM_GROUP_BEGIN(!!p->v.MatchMapping.rest == !!q->v.MatchMapping.rest);
         if (!spm_compile_mapping_d(c, n, len)) {
@@ -6698,7 +6686,6 @@ spm_compile_mapping_d(struct compiler *c, spm_node_pattern *n, Py_ssize_t len)
             // rest = dict(TOS1)
             // for key in TOS:
             //     del rest[key]
-            // TODO: preserve subject if needed!
             ADDOP(c, ROT_THREE);             // [values, subject, keys]
             ADDOP_I(c, BUILD_MAP, 0);        // [values, subject, keys, empty]
             n->stacksize++;
