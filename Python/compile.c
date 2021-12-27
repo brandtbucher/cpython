@@ -6138,22 +6138,22 @@ compiler_slice(struct compiler *c, expr_ty s)
     {                                                          \
         spm_node_pattern *_n = n;                              \
         for (spm_node_pattern *n = _n; n->next; n = n->next) { \
+            int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);    \
             if (n->subpatterns == NULL) {                      \
                 continue;                                      \
             }                                                  \
             pattern_ty p = n->subpatterns->pattern;            \
             compiler_use_block(c, n->block);                   \
-            SET_LOC(c, p);                                     \
-            int Py_UNUSED(YOU_CANT_GROUP_INSIDE_OF_A_LOOP);
+            SET_LOC(c, p);
 
 #define SPM_LOOP_END \
         }            \
     }
 
-#define SPM_POP_JUMP_IF_FALSE   \
-        if (!spm_check(c, n)) { \
-            return 0;           \
-        }
+#define SPM_POP_JUMP_IF_FALSE \
+    if (!spm_check(c, n)) {   \
+        return 0;             \
+    }
 
 #define SPM_NEXT_BLOCK                 \
     n->block = compiler_next_block(c); \
