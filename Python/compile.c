@@ -6172,6 +6172,9 @@ compiler_slice(struct compiler *c, expr_ty s)
             /* More subpatterns to compile! */              \
             again = true;                                   \
         }                                                   \
+        if (again) {                                        \
+            SPM_NEXT_BLOCK;                                 \
+        }                                                   \
     SPM_LOOP_END;                                           \
     if (again && !spm_compile(c, n)) {                      \
         return 0;                                           \
@@ -8718,6 +8721,11 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                         inst->i_opcode = NOP;
                         continue;
                     case 2:
+                        // DUP_TOP + ROT_TWO -> DUP_TOP + NOP
+                        if (i && bb->b_instr[i - 1].i_opcode == DUP_TOP) {
+                            inst->i_opcode = NOP;
+                            continue;
+                        }
                         inst->i_opcode = ROT_TWO;
                         break;
                     case 3:

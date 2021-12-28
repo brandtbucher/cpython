@@ -474,42 +474,42 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(x, 3)
         self.assertIs(y, None)
 
-#     def test_patma_040(self):
-#         x = 0
-#         match x:
-#             case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
-#                 y = 0
-#         self.assertEqual(x, 0)
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 0)
+    def test_patma_040(self):
+        x = 0
+        match x:
+            case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
+                y = 0
+        self.assertEqual(x, 0)
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 0)
 
-#     def test_patma_041(self):
-#         x = 1
-#         match x:
-#             case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
-#                 y = 0
-#         self.assertEqual(x, 1)
-#         self.assertEqual(y, 0)
-#         self.assertEqual(z, 1)
+    def test_patma_041(self):
+        x = 1
+        match x:
+            case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
+                y = 0
+        self.assertEqual(x, 1)
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 1)
 
-#     def test_patma_042(self):
-#         x = 2
-#         y = None
-#         match x:
-#             case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
-#                 y = 0
-#         self.assertEqual(x, 2)
-#         self.assertIs(y, None)
-#         self.assertEqual(z, 2)
+    def test_patma_042(self):
+        x = 2
+        y = None
+        match x:
+            case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
+                y = 0
+        self.assertEqual(x, 2)
+        self.assertIs(y, None)
+        self.assertEqual(z, 2)
 
-#     def test_patma_043(self):
-#         x = 3
-#         y = None
-#         match x:
-#             case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
-#                 y = 0
-#         self.assertEqual(x, 3)
-#         self.assertIs(y, None)
+    def test_patma_043(self):
+        x = 3
+        y = None
+        match x:
+            case (0 as z) | (1 as z) | (2 as z) if z == x % 2:
+                y = 0
+        self.assertEqual(x, 3)
+        self.assertIs(y, None)
 
     def test_patma_044(self):
         x = ()
@@ -2584,14 +2584,14 @@ class TestPatma(unittest.TestCase):
         self.assertEqual(y, 2)
         self.assertEqual(z, 0)
 
-#     def test_patma_245(self):
-#         x = {"y": 1}
-#         match x:
-#             case {"y": (0 as y) | (1 as y)}:
-#                 z = 0
-#         self.assertEqual(x, {"y": 1})
-#         self.assertEqual(y, 1)
-#         self.assertEqual(z, 0)
+    def test_patma_245(self):
+        x = {"y": 1}
+        match x:
+            case {"y": (0 as y) | (1 as y)}:
+                z = 0
+        self.assertEqual(x, {"y": 1})
+        self.assertEqual(y, 1)
+        self.assertEqual(z, 0)
 
 #     def test_patma_246(self):
 #         def f(x):
