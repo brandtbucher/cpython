@@ -6415,9 +6415,11 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
             ADDOP(c, POP_TOP);
             n->stacksize--;
         }
-        assert(n->stacksize == 1);
+        assert(n->stacksize == 1 || n->stacksize == 0);
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
-        ADDOP_I(c, ROT_N, nstores + 1);
+        if (n->stacksize) {
+            ADDOP_I(c, ROT_N, nstores + 1);
+        }
         while (nstores--) {
             PyObject *name = PyList_GET_ITEM(n->stores, nstores);
             if (!compiler_nameop(c, name, Store)) {
@@ -6425,14 +6427,18 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
             }
         }
         assert(n->match_case);
+        bool last = n->next->next == NULL;
+        assert(n->stacksize == !last);
         if (n->match_case->guard) {
             VISIT(c, expr, n->match_case->guard);
             ADDOP_JUMP(c, POP_JUMP_IF_FALSE, n->next->head);
             n->next->reachable |= n->reachable;
-            NEXT_BLOCK(c);
+            SPM_NEXT_BLOCK;
+        }
+        if (!last) {
+            ADDOP(c, POP_TOP);
         }
         SET_LOC(c, n->match_case->pattern);
-        ADDOP(c, POP_TOP);
         if (n->next && !n->reachable && !compiler_warn(c, "pattern is unreachable")) {
             return 0;
         }
@@ -6974,27 +6980,25 @@ static int
 compiler_match(struct compiler *c, stmt_ty s)
 {
     VISIT(c, expr, s->v.Match.subject);
+    // printf("c->u->u_lineno: %d\n", c->u->u_lineno);
     basicblock *top = c->u->u_curblock; 
     // TODO: If there is a trailing "case _: ...", combine it with this block!
     spm_node_pattern *n = spm_node_pattern_new(c, NULL, NULL, NULL);
     if (n == NULL) {
         return 0;
     }
-    compiler_use_block(c, n->block);
-    // No stacksize adjustment here, since the subject should be on the
-    // stack going *into* this block.
-    ADDOP(c, POP_TOP);
-    basicblock *end = compiler_next_block(c);
-    if (end == NULL) {
-        return 0;
-    }
+    n->stacksize = 0;
+    basicblock *end = n->head;
     Py_ssize_t i = asdl_seq_LEN(s->v.Match.cases);
+    bool preserve = false;
     while (i--) {
         match_case_ty match = asdl_seq_GET(s->v.Match.cases, i);
         n = spm_node_pattern_new(c, n, match, match->pattern);
         if (n == NULL) {
             return 0;
         }
+        n->subpatterns->preserve = preserve;
+        preserve = true;
     }
     compiler_use_block(c, top);
     compiler_use_next_block(c, n->head);
