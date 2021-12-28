@@ -6366,7 +6366,6 @@ spm_sequence_all_wildcards(pattern_ty p)
 static int
 spm_expand_or(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO: Flatten nested MatchOrs in the AST optimizer! 
     SPM_LOOP_BEGIN;
         if (p->kind != MatchOr_kind) {
             continue;
@@ -6420,7 +6419,8 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
         Py_ssize_t nstores = PyList_GET_SIZE(n->stores);
         ADDOP_I(c, ROT_N, nstores + 1);
         while (nstores--) {
-            if (!compiler_nameop(c, PyList_GET_ITEM(n->stores, nstores), Store)) {
+            PyObject *name = PyList_GET_ITEM(n->stores, nstores);
+            if (!compiler_nameop(c, name, Store)) {
                 return 0;
             }
         }
@@ -6436,6 +6436,7 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
         if (n->next && !n->reachable && !compiler_warn(c, "pattern is unreachable")) {
             return 0;
         }
+        // TODO: Group these together...
         VISIT_SEQ(c, stmt, n->match_case->body);
         ADDOP_JUMP(c, JUMP_FORWARD, end);
         n = n->next;
@@ -6493,14 +6494,13 @@ spm_store(struct compiler *c, spm_node_pattern *n, PyObject *name)
     if (name) {
         if (n->subpatterns->preserve) {
             ADDOP(c, DUP_TOP);
+            n->stacksize++;
         }
         if (PyList_Append(n->stores, name)) {
             return 0;
         }
         ADDOP_I(c, ROT_N, n->stacksize);
-        if (!n->subpatterns->preserve) {
-            n->stacksize--;
-        }
+        n->stacksize--;
     }
     else if (!n->subpatterns->preserve) {
         ADDOP(c, POP_TOP);
@@ -6521,11 +6521,17 @@ spm_subpattern(struct compiler *c, spm_node_pattern *n, pattern_ty pattern,
 // Begin actual stuff!
 
 // MatchAs(pattern? pattern, identifier? name)
+static int spm_compile_as_a(struct compiler *c, spm_node_pattern *n);
+
 static int
-spm_compile_as(struct compiler *c, spm_node_pattern *n)
+spm_compile_as_a(struct compiler *c, spm_node_pattern *n)
 {
+    // <pattern> as <name> -> MatchAs(<pattern>, <name>)
+    //              <name> -> MatchAs(     NULL, <name>)
+    //                   _ -> MatchAs(     NULL,   NULL)
     SPM_LOOP_BEGIN;
-        if (p->v.MatchAs.pattern && !n->subpatterns->preserve) {
+        bool preserve = n->subpatterns->preserve;
+        if (p->v.MatchAs.pattern && !preserve) {
             ADDOP(c, DUP_TOP);
             n->stacksize++;
         }
@@ -6533,8 +6539,7 @@ spm_compile_as(struct compiler *c, spm_node_pattern *n)
             return 0;
         }
         if (p->v.MatchAs.pattern && 
-            !spm_subpattern(c, n, p->v.MatchAs.pattern, 
-                            n->subpatterns->preserve))
+            !spm_subpattern(c, n, p->v.MatchAs.pattern, preserve))
         {
             return 0;
         }
@@ -6934,7 +6939,7 @@ spm_compile(struct compiler *c, spm_node_pattern *n)
         spm_compiler *f;
         switch (p->kind) {
             case MatchAs_kind:
-                f = spm_compile_as;
+                f = spm_compile_as_a;
                 break;
             case MatchClass_kind:
                 f = spm_compile_class;
