@@ -6433,6 +6433,12 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
     // NOTE: Can't use SPM_LOOP_* here, since that skips over "finished"
     // patterns... at this point, *all* of the patterns are "finished"!
     while (n->next) {
+        if (n->match_case == NULL) {
+            compiler_use_block(c, n->block);
+            n = n->next;
+            compiler_use_next_block(c, n->head);
+            continue;
+        }
         // TODO: Is this really all we use it for???
         SET_LOC(c, n->pattern);
         compiler_use_block(c, n->block);
@@ -6539,6 +6545,42 @@ spm_store(struct compiler *c, spm_node_pattern *n, PyObject *name)
     else if (!n->subpatterns->preserve) {
         ADDOP(c, POP_TOP);
         n->stacksize--;
+    }
+    return 1;
+}
+
+static int
+spm_join(struct compiler *c, spm_node_pattern *n)
+{
+    while (n->next) {
+        if (n->match_case == n->next->match_case &&
+            n->subpatterns == n->next->subpatterns &&
+            n->next->stacksize <= n->stacksize)
+        {
+            int eq = PyObject_RichCompareBool(n->stores, n->next->stores, Py_EQ);
+            if (eq < 0) {
+                return 0;
+            }
+            if (eq) {
+                compiler_use_block(c, n->next->block);
+                n->next->block = compiler_next_block(c);
+                if (n->next->block == NULL) {
+                    return 0;
+                }
+                compiler_use_block(c, n->block);
+                while (n->next->stacksize < n->stacksize) {
+                    ADDOP(c, POP_TOP);
+                    n->stacksize--;
+                }
+                ADDOP_JUMP(c, JUMP_FORWARD, n->next->block);
+                SPM_NEXT_BLOCK;
+                n->next->reachable |= n->reachable;
+                n->next->pattern = n->pattern;
+                n->subpatterns = NULL;
+                n->match_case = NULL;
+            }
+        }
+        n = n->next;
     }
     return 1;
 }
@@ -6957,7 +6999,7 @@ spm_compile_value_b(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile(struct compiler *c, spm_node_pattern *n)
 {
-    if (!spm_expand_or(c, n)) {
+    if (!spm_join(c, n) || !spm_expand_or(c, n)) {
         return 0;
     }
     SPM_GROUP_BEGIN(p->kind == q->kind);
@@ -7021,7 +7063,7 @@ compiler_match(struct compiler *c, stmt_ty s)
     }
     compiler_use_block(c, top);
     compiler_use_next_block(c, n->head);
-    return spm_compile(c, n) && spm_cleanup(c, n, end);
+    return spm_compile(c, n) && spm_join(c, n) && spm_cleanup(c, n, end);
 }
 
 /* End of the compiler section, beginning of the assembler section */
