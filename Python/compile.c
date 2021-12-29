@@ -6143,7 +6143,7 @@ compiler_slice(struct compiler *c, expr_ty s)
                 continue;                                      \
             }                                                  \
             pattern_ty p = n->subpatterns->pattern;            \
-            compiler_use_block(c, n->block);                   \
+            compiler_use_block(c, n->tail);                    \
             SET_LOC(c, p);
 
 #define SPM_LOOP_END \
@@ -6156,8 +6156,8 @@ compiler_slice(struct compiler *c, expr_ty s)
     }
 
 #define SPM_NEXT_BLOCK                 \
-    n->block = compiler_next_block(c); \
-    if (n->block == NULL) {            \
+    n->tail = compiler_next_block(c); \
+    if (n->tail == NULL) {            \
         return 0;                      \
     }
 
@@ -6194,12 +6194,12 @@ typedef struct spm_node_pattern spm_node_pattern;
 struct spm_node_pattern {
     spm_node_subpattern *subpatterns;
     spm_node_pattern *next;
+    Py_ssize_t stacksize;
     basicblock *head;
-    basicblock *block;
+    basicblock *tail;
     match_case_ty match_case;
     pattern_ty pattern;
     PyObject *stores;
-    Py_ssize_t stacksize;
     bool reachable;
 };
 
@@ -6240,7 +6240,7 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next,
         n->subpatterns = NULL;
     }
     n->next = next;
-    n->head = n->block = compiler_new_block(c);
+    n->head = n->tail = compiler_new_block(c);
     if (n->head == NULL) {
         return NULL;
     }
@@ -6259,29 +6259,25 @@ spm_node_pattern_new(struct compiler *c, spm_node_pattern *next,
 static int
 spm_same_expr(expr_ty p, expr_ty q)
 {
-    if (p->kind != q->kind) {
-        return 0;
+    if (p->kind == Constant_kind && q->kind == Constant_kind) {
+        PyObject *p_value = p->v.Constant.value;
+        PyObject *q_value = q->v.Constant.value;
+        return PyObject_RichCompareBool(p_value, q_value, Py_EQ);
     }
-    if (p->kind == Constant_kind) {
-        return PyObject_RichCompareBool(p->v.Constant.value,
-                                        q->v.Constant.value, Py_EQ);
-    }
-    if (p->kind == Attribute_kind) {
-        do {
-            int eq = PyObject_RichCompareBool(p->v.Attribute.attr,
-                                              q->v.Attribute.attr, Py_EQ);
-            if (eq <= 0) {
-                return eq;
-            }
-            p = p->v.Attribute.value;
-            q = q->v.Attribute.value;
-        } while (p->kind == Attribute_kind && q->kind == Attribute_kind);
-        if (p->kind != Name_kind || q->kind != Name_kind) {
-            return 0;
+    while (p->kind == Attribute_kind && q->kind == Attribute_kind) {
+        PyObject *p_attr = p->v.Attribute.attr;
+        PyObject *q_attr = q->v.Attribute.attr;
+        int eq = _PyUnicode_Equal(p_attr, q_attr);
+        if (eq <= 0) {
+            return eq;
         }
+        p = p->v.Attribute.value;
+        q = q->v.Attribute.value;
     }
-    if (p->kind == Name_kind) {
-        return PyObject_RichCompareBool(p->v.Name.id, q->v.Name.id, Py_EQ);
+    if (p->kind == Name_kind && q->kind == Name_kind) {
+        PyObject *p_id = p->v.Name.id;
+        PyObject *q_id = q->v.Name.id;
+        return _PyUnicode_Equal(p_id, q_id);
     }
     return 0;
 }
@@ -6290,10 +6286,12 @@ spm_same_expr(expr_ty p, expr_ty q)
 static int
 spm_same_exprs(asdl_expr_seq *ps, asdl_expr_seq *qs)
 {
-    if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
+    Py_ssize_t nps = asdl_seq_LEN(ps);
+    Py_ssize_t nqs = asdl_seq_LEN(qs);
+    if (nps != nqs) {
         return 0;
     }
-    for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
+    for (Py_ssize_t i = 0; i < nps; i++) {
         expr_ty p = asdl_seq_GET(ps, i);
         expr_ty q = asdl_seq_GET(qs, i);
         int same = spm_same_expr(p, q);
@@ -6304,23 +6302,25 @@ spm_same_exprs(asdl_expr_seq *ps, asdl_expr_seq *qs)
     return 1;
 }
 
-// // Compare two sequences of identifiers for equality.
-// static int
-// spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
-// {
-//     if (asdl_seq_LEN(ps) != asdl_seq_LEN(qs)) {
-//         return 0;
-//     }
-//     for (Py_ssize_t i = 0; i < asdl_seq_LEN(ps); i++) {
-//         PyObject *p = asdl_seq_GET(ps, i);
-//         PyObject *q = asdl_seq_GET(qs, i);
-//         int eq = PyObject_RichCompareBool(p, q, Py_EQ);
-//         if (eq <= 0) {
-//             return eq;
-//         }
-//     }
-//     return 1;
-// }
+// Compare two sequences of identifiers for equality.
+static int
+spm_same_identifiers(asdl_identifier_seq *ps, asdl_identifier_seq *qs)
+{
+    Py_ssize_t nps = asdl_seq_LEN(ps);
+    Py_ssize_t nqs = asdl_seq_LEN(qs);
+    if (nps != nqs) {
+        return 0;
+    }
+    for (Py_ssize_t i = 0; i < nps; i++) {
+        PyObject *p = asdl_seq_GET(ps, i);
+        PyObject *q = asdl_seq_GET(qs, i);
+        int eq = _PyUnicode_Equal(p, q);
+        if (eq <= 0) {
+            return eq;
+        }
+    }
+    return 1;
+}
 
 // Return the index of a MatchStar, or -1 if none exists.
 static Py_ssize_t
@@ -6434,14 +6434,14 @@ spm_cleanup(struct compiler *c, spm_node_pattern *n, basicblock *end)
     // patterns... at this point, *all* of the patterns are "finished"!
     while (n->next) {
         if (n->match_case == NULL) {
-            compiler_use_block(c, n->block);
+            compiler_use_block(c, n->tail);
             n = n->next;
             compiler_use_next_block(c, n->head);
             continue;
         }
         // TODO: Is this really all we use it for???
         SET_LOC(c, n->pattern);
-        compiler_use_block(c, n->block);
+        compiler_use_block(c, n->tail);
         // TODO: Why...? Is our stacksize wrong for a second repeated sequence pattern?
         while (1 < n->stacksize) {
             ADDOP(c, POP_TOP);
@@ -6503,7 +6503,7 @@ spm_check(struct compiler *c, spm_node_pattern *n)
     if (tail == NULL) {
         return 0;
     }
-    compiler_use_block(c, n->block);
+    compiler_use_block(c, n->tail);
     ADDOP_JUMP(c, POP_JUMP_IF_TRUE, tail);
     SPM_NEXT_BLOCK;
     if (stack_pops || name_pops) {
@@ -6523,8 +6523,8 @@ spm_check(struct compiler *c, spm_node_pattern *n)
         ADDOP(c, NOP);
         g = g->next;
     }
-    ADDOP_JUMP(c, JUMP_FORWARD, f->block);
-    n->block = compiler_use_next_block(c, tail);
+    ADDOP_JUMP(c, JUMP_FORWARD, f->tail);
+    n->tail = compiler_use_next_block(c, tail);
     return 1;
 }
 
@@ -6562,17 +6562,17 @@ spm_join(struct compiler *c, spm_node_pattern *n)
                 return 0;
             }
             if (eq) {
-                compiler_use_block(c, n->next->block);
-                n->next->block = compiler_next_block(c);
-                if (n->next->block == NULL) {
+                compiler_use_block(c, n->next->tail);
+                n->next->tail = compiler_next_block(c);
+                if (n->next->tail == NULL) {
                     return 0;
                 }
-                compiler_use_block(c, n->block);
+                compiler_use_block(c, n->tail);
                 while (n->next->stacksize < n->stacksize) {
                     ADDOP(c, POP_TOP);
                     n->stacksize--;
                 }
-                ADDOP_JUMP(c, JUMP_FORWARD, n->next->block);
+                ADDOP_JUMP(c, JUMP_FORWARD, n->next->tail);
                 SPM_NEXT_BLOCK;
                 n->next->reachable |= n->reachable;
                 n->next->pattern = n->pattern;
