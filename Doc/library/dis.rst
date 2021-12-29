@@ -1175,9 +1175,9 @@ All of the following opcodes use their arguments.
    against, and TOS2 is the match subject.  *count* is the number of positional
    sub-patterns.
 
-   Pop TOS, TOS1, and TOS2.  If TOS2 is an instance of TOS1 and has the
-   positional and keyword attributes required by *count* and TOS, push a tuple
-   of extracted attributes.  Otherwise, push ``None``.
+   If TOS2 is an instance of TOS1 and has the positional and keyword attributes
+   required by *count* and TOS, set TOS a tuple of extracted attributes.
+   Otherwise, set TOS to ``None``.
 
    .. versionadded:: 3.10
 

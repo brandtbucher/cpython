@@ -1198,7 +1198,7 @@ stack_effect(int opcode, int oparg, int jump)
         case DICT_UPDATE:
             return -1;
         case MATCH_CLASS:
-            return 1;
+            return 0;
         case GET_LEN:
         case MATCH_MAPPING:
         case MATCH_SEQUENCE:
@@ -6618,7 +6618,70 @@ spm_compile_as_a(struct compiler *c, spm_node_pattern *n)
 static int
 spm_compile_class(struct compiler *c, spm_node_pattern *n)
 {
-    // TODO
+    // TODO: Group this more effectively.
+    SPM_GROUP_BEGIN(p == q);
+    SPM_LOOP_BEGIN;
+        asdl_pattern_seq *patterns = p->v.MatchClass.patterns;
+        asdl_identifier_seq *kwd_attrs = p->v.MatchClass.kwd_attrs;
+        asdl_pattern_seq *kwd_patterns = p->v.MatchClass.kwd_patterns;
+        Py_ssize_t nargs = asdl_seq_LEN(patterns);
+        Py_ssize_t nattrs = asdl_seq_LEN(kwd_attrs);
+        assert(nattrs == asdl_seq_LEN(kwd_patterns));
+        // TODO
+        // if (nattrs && !validate_kwd_attrs(c, kwd_attrs, kwd_patterns)) {
+        //     return 0;
+        // }
+        VISIT(c, expr, p->v.MatchClass.cls);
+        n->stacksize++;
+        ADDOP(c, IS_INSTANCE);
+        SPM_POP_JUMP_IF_FALSE;
+        PyObject *attr_names = PyTuple_New(nattrs);
+        if (attr_names == NULL) {
+            return 0;
+        }
+        Py_ssize_t i;
+        for (i = 0; i < nattrs; i++) {
+            PyObject *name = asdl_seq_GET(kwd_attrs, i);
+            Py_INCREF(name);
+            PyTuple_SET_ITEM(attr_names, i, name);
+        }
+        ADDOP_LOAD_CONST_NEW(c, attr_names);
+        n->stacksize++;
+        ADDOP_I(c, MATCH_CLASS, nargs);
+        // TOS is now a tuple of (nargs + nattrs) attributes (or None):
+        // XXX
+        ADDOP(c, ROT_TWO);
+        ADDOP(c, POP_TOP);
+        n->stacksize--;
+        if (!n->subpatterns->preserve) {
+        ADDOP(c, ROT_TWO);
+        ADDOP(c, POP_TOP);
+            n->stacksize--;
+        }
+        // XXX
+        ADDOP(c, DUP_TOP);
+        ADDOP_LOAD_CONST(c, Py_None);
+        ADDOP_I(c, IS_OP, 1);
+        SPM_POP_JUMP_IF_FALSE;
+        ADDOP_I(c, UNPACK_SEQUENCE, nargs + nattrs);
+        n->stacksize += nargs + nattrs - 1;
+        for (i = nargs + nattrs - 1; 0 <= i; i--) {
+            pattern_ty pattern;
+            if (i < nargs) {
+                // Positional:
+                pattern = asdl_seq_GET(patterns, i);
+            }
+            else {
+                // Keyword:
+                pattern = asdl_seq_GET(kwd_patterns, i - nargs);
+            }
+            if (!spm_subpattern(c, n, pattern, false)) {
+                return 0;
+            }
+        }
+    SPM_LOOP_END;
+    SPM_COMPILE_SUBPATTERNS;
+    SPM_GROUP_END;
     return 1;
 }
 
@@ -6846,6 +6909,7 @@ static int spm_compile_sequence_a(struct compiler *c, spm_node_pattern *n);
 static int
 spm_compile_sequence_a(struct compiler *c, spm_node_pattern *n)
 {
+    // TODO: Break this up!
     SPM_LOOP_BEGIN;
         ADDOP(c, MATCH_SEQUENCE);
         SPM_POP_JUMP_IF_FALSE;

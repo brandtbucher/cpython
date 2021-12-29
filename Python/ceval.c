@@ -4166,8 +4166,8 @@ check_eval_breaker:
         }
 
         TARGET(MATCH_CLASS) {
-            // On success, set push True and set TOS to a tuple of attributes.
-            // On failure, push False.
+            // On success, set TOS to a tuple of attributes.
+            // On failure, set TOS to None.
             PyObject *names = TOP();
             PyObject *type = SECOND();
             PyObject *subject = THIRD();
@@ -4176,14 +4176,18 @@ check_eval_breaker:
             if (attrs) {
                 // Success!
                 assert(PyTuple_CheckExact(attrs));
-                Py_DECREF(names);
                 SET_TOP(attrs);
+                Py_DECREF(names);
             }
             else if (_PyErr_Occurred(tstate)) {
                 // Error!
                 goto error;
             }
-            PUSH(PyBool_FromLong(!!attrs));
+            else {
+                Py_INCREF(Py_None);
+                SET_TOP(Py_None);
+                Py_DECREF(names);
+            }
             DISPATCH();
         }
 
