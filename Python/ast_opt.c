@@ -1028,46 +1028,6 @@ astfold_withitem(withitem_ty node_, PyArena *ctx_, _PyASTOptimizeState *state)
 }
 
 static int
-astfold_match_or(pattern_ty node_, PyArena *ctx_, _PyASTOptimizeState *state)
-{
-    assert(node_->kind == MatchOr_kind);
-    CALL_SEQ(astfold_pattern, pattern, node_->v.MatchOr.patterns);
-    Py_ssize_t nalts = 0;
-    for (int i = 0; i < asdl_seq_LEN(node_->v.MatchOr.patterns); i++) {
-        pattern_ty alt = asdl_seq_GET(node_->v.MatchOr.patterns, i);
-        if (alt->kind == MatchOr_kind) {
-            nalts += asdl_seq_LEN(alt->v.MatchOr.patterns);
-        }
-        else {
-            nalts++;
-        }
-    }
-    if (nalts == asdl_seq_LEN(node_->v.MatchOr.patterns)) {
-        return 1;
-    }
-    asdl_pattern_seq *patterns = _Py_asdl_pattern_seq_new(nalts, ctx_);
-    if (patterns == NULL) {
-        return 0;
-    }
-    Py_ssize_t k = 0;
-    for (int i = 0; i < asdl_seq_LEN(node_->v.MatchOr.patterns); i++) {
-        pattern_ty alt = asdl_seq_GET(node_->v.MatchOr.patterns, i);
-        if (alt->kind == MatchOr_kind) {
-            for (int j = 0; j < asdl_seq_LEN(alt->v.MatchOr.patterns); j++) {
-                pattern_ty subalt = asdl_seq_GET(alt->v.MatchOr.patterns, j);
-                asdl_seq_SET(patterns, k++, subalt);
-            }
-        }
-        else {
-            asdl_seq_SET(patterns, k++, alt);
-        }
-    }
-    assert(k == nalts);
-    node_->v.MatchOr.patterns = patterns;
-    return 1;
-}
-
-static int
 astfold_pattern(pattern_ty node_, PyArena *ctx_, _PyASTOptimizeState *state)
 {
     // Currently, this is really only used to form complex/negative numeric
@@ -1104,7 +1064,7 @@ astfold_pattern(pattern_ty node_, PyArena *ctx_, _PyASTOptimizeState *state)
             }
             break;
         case MatchOr_kind:
-            CALL(astfold_match_or, pattern_ty, node_);
+            CALL_SEQ(astfold_pattern, pattern, node_->v.MatchOr.patterns);
             break;
     // No default case, so the compiler will emit a warning if new pattern
     // kinds are added without being handled here
