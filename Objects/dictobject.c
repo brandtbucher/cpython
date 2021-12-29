@@ -3187,10 +3187,10 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
 {
     PyDictObject *mp = (PyDictObject *)op;
     PyDictKeysObject *keys = mp->ma_keys;
-    PyDictKeyEntry *entries = DK_ENTRIES(keys);
     Py_ssize_t i, n = keys->dk_nentries;
 
     if (keys->dk_kind == DICT_KEYS_GENERAL) {
+        PyDictKeyEntry *entries = DK_ENTRIES(keys);
         for (i = 0; i < n; i++) {
             if (entries[i].me_value != NULL) {
                 Py_VISIT(entries[i].me_value);
@@ -3205,6 +3205,7 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
             }
         }
         else {
+            PyDictKeyEntry *entries = DK_ENTRIES(keys);
             for (i = 0; i < n; i++) {
                 Py_VISIT(entries[i].me_value);
             }
