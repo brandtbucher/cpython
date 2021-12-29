@@ -961,25 +961,23 @@ _PyDict_MaybeUntrack(PyObject *op)
     PyDictObject *mp;
     PyObject *value;
     Py_ssize_t i, numentries;
-    PyDictKeyEntry *ep0;
 
     if (!PyDict_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
         return;
 
     mp = (PyDictObject *) op;
-    ep0 = DK_ENTRIES(mp->ma_keys);
     numentries = mp->ma_keys->dk_nentries;
     if (_PyDict_HasSplitTable(mp)) {
         for (i = 0; i < numentries; i++) {
             if ((value = mp->ma_values->values[i]) == NULL)
                 continue;
             if (_PyObject_GC_MAY_BE_TRACKED(value)) {
-                assert(!_PyObject_GC_MAY_BE_TRACKED(ep0[i].me_key));
                 return;
             }
         }
     }
     else {
+        PyDictKeyEntry *ep0 = DK_ENTRIES(mp->ma_keys);
         for (i = 0; i < numentries; i++) {
             if ((value = ep0[i].me_value) == NULL)
                 continue;
