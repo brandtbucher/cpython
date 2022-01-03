@@ -39,7 +39,9 @@ new_weakref(PyObject *ob, PyObject *callback)
     result = PyObject_GC_New(PyWeakReference, &_PyWeakref_RefType);
     if (result) {
         init_weakref(result, ob, callback);
-        PyObject_GC_Track(result);
+        if (callback) {
+            PyObject_GC_Track(result);
+        }
     }
     return result;
 }
@@ -325,6 +327,7 @@ weakref___new__(PyTypeObject *type, PyObject *args, PyObject *kwargs)
         if (self != NULL) {
             init_weakref(self, ob, callback);
             if (callback == NULL && type == &_PyWeakref_RefType) {
+                PyObject_GC_UnTrack(self);
                 insert_head(self, list);
             }
             else {
