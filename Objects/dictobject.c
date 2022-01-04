@@ -320,26 +320,24 @@ dictkeys_decref(PyDictKeysObject *dk)
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
-    Py_ssize_t s = DK_SIZE(keys);
     Py_ssize_t ix;
-
-    if (s <= 0xff) {
-        const int8_t *indices = (const int8_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
-    else if (s <= 0xffff) {
-        const int16_t *indices = (const int16_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
+    switch (DK_IXSIZE(keys)) {
+        case 1:
+            ix = ((int8_t*)keys->dk_indices)[i];
+            break;
+        case 2:
+            ix = ((int16_t*)keys->dk_indices)[i];
+            break;
+        case 4:
+            ix = ((int32_t*)keys->dk_indices)[i];
+            break;
 #if SIZEOF_VOID_P > 4
-    else if (s > 0xffffffff) {
-        const int64_t *indices = (const int64_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
+        case 8:
+            ix = ((int64_t*)keys->dk_indices)[i];
+            break;
 #endif
-    else {
-        const int32_t *indices = (const int32_t*)(keys->dk_indices);
-        ix = indices[i];
+        default:
+            Py_UNREACHABLE();
     }
     assert(ix >= DKIX_DUMMY);
     return ix;
@@ -349,32 +347,29 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 static inline void
 dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
 {
-    Py_ssize_t s = DK_SIZE(keys);
-
     assert(ix >= DKIX_DUMMY);
     assert(keys->dk_version == 0);
 
-    if (s <= 0xff) {
-        int8_t *indices = (int8_t*)(keys->dk_indices);
-        assert(ix <= 0x7f);
-        indices[i] = (char)ix;
-    }
-    else if (s <= 0xffff) {
-        int16_t *indices = (int16_t*)(keys->dk_indices);
-        assert(ix <= 0x7fff);
-        indices[i] = (int16_t)ix;
-    }
+    switch (DK_IXSIZE(keys)) {
+        case 1:
+            assert(ix <= 0x7f);
+            ((int8_t*)keys->dk_indices)[i] = (int8_t)ix;
+            return;
+        case 2:
+            assert(ix <= 0x7fff);
+            ((int16_t*)keys->dk_indices)[i] = (int16_t)ix;
+            return;
+        case 4:
+            assert(ix <= 0x7fffffff);
+            ((int32_t*)keys->dk_indices)[i] = (int32_t)ix;
+            return;
 #if SIZEOF_VOID_P > 4
-    else if (s > 0xffffffff) {
-        int64_t *indices = (int64_t*)(keys->dk_indices);
-        indices[i] = ix;
-    }
+        case 8:
+            ((int64_t*)keys->dk_indices)[i] = (int64_t)ix;
+            return;
 #endif
-    else {
-        int32_t *indices = (int32_t*)(keys->dk_indices);
-        assert(ix <= 0x7fffffff);
-        indices[i] = (int32_t)ix;
     }
+    Py_UNREACHABLE();
 }
 
 
@@ -444,6 +439,7 @@ estimate_log2_keysize(Py_ssize_t n)
 static PyDictKeysObject empty_keys_struct = {
         1, /* dk_refcnt */
         0, /* dk_log2_size */
+        1, /* dk_size */
         DICT_KEYS_SPLIT, /* dk_kind */
         1, /* dk_version */
         0, /* dk_usable (immutable) */
@@ -601,6 +597,7 @@ new_keys_object(uint8_t log2_size)
 #endif
     dk->dk_refcnt = 1;
     dk->dk_log2_size = log2_size;
+    dk->dk_ixsize = es;
     dk->dk_kind = DICT_KEYS_UNICODE;
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
@@ -1178,7 +1175,7 @@ Internal routine used by dictresize() to build a hashtable of entries.
 static void
 build_indices(PyDictKeysObject *keys, PyDictKeyEntry *ep, Py_ssize_t n)
 {
-    size_t mask = (size_t)DK_SIZE(keys) - 1;
+    size_t mask = (size_t)DK_MASK(keys);
     for (Py_ssize_t ix = 0; ix != n; ix++, ep++) {
         Py_hash_t hash = ep->me_hash;
         size_t i = hash & mask;
