@@ -655,11 +655,11 @@ untrack_tuples_and_dicts(PyGC_Head *head)
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
         next = GC_NEXT(gc);
-        if (PyTuple_CheckExact(op)) {
-            _PyTuple_MaybeUntrack(op);
-        }
-        else if (PyDict_CheckExact(op)) {
+        if (PyDict_CheckExact(op)) {
             _PyDict_MaybeUntrack(op);
+        }
+        else if (PyTuple_CheckExact(op)) {
+            _PyTuple_MaybeUntrack(op);
         }
         gc = next;
     }
