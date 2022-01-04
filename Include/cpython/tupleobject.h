@@ -11,7 +11,7 @@ typedef struct {
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);
-PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
+PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyTupleObject *t);
 
 /* Macros trading safety for speed */
 

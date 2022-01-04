@@ -636,32 +636,27 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
 static void
 untrack_tuples(PyGC_Head *head)
 {
-    PyGC_Head *next, *gc = GC_NEXT(head);
+    PyGC_Head *gc = GC_NEXT(head);
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
-        next = GC_NEXT(gc);
+        gc = GC_NEXT(gc);
         if (PyTuple_CheckExact(op)) {
-            _PyTuple_MaybeUntrack(op);
+            _PyTuple_MaybeUntrack((PyTupleObject*)op);
         }
-        gc = next;
     }
 }
 
-// Try to untrack all currently tracked tuples and dictionaries.
+// Try to untrack all currently tracked dictionaries.
 static void
-untrack_tuples_and_dicts(PyGC_Head *head)
+untrack_dicts(PyGC_Head *head)
 {
-    PyGC_Head *next, *gc = GC_NEXT(head);
+    PyGC_Head *gc = GC_NEXT(head);
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
-        next = GC_NEXT(gc);
+        gc = GC_NEXT(gc);
         if (PyDict_CheckExact(op)) {
-            _PyDict_MaybeUntrack(op);
+            _PyDict_MaybeUntrack((PyDictObject*)op);
         }
-        else if (PyTuple_CheckExact(op)) {
-            _PyTuple_MaybeUntrack(op);
-        }
-        gc = next;
     }
 }
 
@@ -1242,8 +1237,8 @@ gc_collect_main(PyThreadState *tstate, int generation,
     deduce_unreachable(young, &unreachable);
 
     /* Move reachable objects to next generation. */
+    untrack_tuples(young);
     if (young != old) {
-        untrack_tuples(young);
         if (generation == NUM_GENERATIONS - 2) {
             gcstate->long_lived_pending += gc_list_size(young);
         }
@@ -1252,7 +1247,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
     else {
         /* We only un-track dicts in full collections, to avoid quadratic
            dict build-up. See issue #14775. */
-        untrack_tuples_and_dicts(young);
+        untrack_dicts(young);
         gcstate->long_lived_pending = 0;
         gcstate->long_lived_total = gc_list_size(young);
     }

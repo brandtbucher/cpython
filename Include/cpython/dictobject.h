@@ -50,7 +50,7 @@ PyAPI_FUNC(int) _PyDict_Next(
 PyAPI_FUNC(int) _PyDict_Contains_KnownHash(PyObject *, PyObject *, Py_hash_t);
 PyAPI_FUNC(int) _PyDict_ContainsId(PyObject *, struct _Py_Identifier *);
 PyAPI_FUNC(PyObject *) _PyDict_NewPresized(Py_ssize_t minused);
-PyAPI_FUNC(void) _PyDict_MaybeUntrack(PyObject *mp);
+PyAPI_FUNC(void) _PyDict_MaybeUntrack(PyDictObject *mp);
 PyAPI_FUNC(int) _PyDict_HasOnlyStringKeys(PyObject *mp);
 Py_ssize_t _PyDict_KeysSize(PyDictKeysObject *keys);
 PyAPI_FUNC(Py_ssize_t) _PyDict_SizeOf(PyDictObject *);

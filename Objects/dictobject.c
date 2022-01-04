@@ -956,39 +956,35 @@ _PyDict_HasOnlyStringKeys(PyObject *dict)
     } while(0)
 
 void
-_PyDict_MaybeUntrack(PyObject *op)
+_PyDict_MaybeUntrack(PyDictObject *mp)
 {
-    PyDictObject *mp;
-    PyObject *value;
-    Py_ssize_t i, numentries;
-    PyDictKeyEntry *ep0;
-
-    if (!PyDict_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
-        return;
-
-    mp = (PyDictObject *) op;
-    ep0 = DK_ENTRIES(mp->ma_keys);
-    numentries = mp->ma_keys->dk_nentries;
+    assert(mp);
+    assert(PyDict_CheckExact(mp));
+    assert(_PyObject_GC_IS_TRACKED(mp));
+    Py_ssize_t i = mp->ma_keys->dk_nentries;
     if (_PyDict_HasSplitTable(mp)) {
-        for (i = 0; i < numentries; i++) {
-            if ((value = mp->ma_values->values[i]) == NULL)
-                continue;
-            if (_PyObject_GC_MAY_BE_TRACKED(value)) {
-                assert(!_PyObject_GC_MAY_BE_TRACKED(ep0[i].me_key));
+        PyObject **values = mp->ma_values->values;
+        while (i--) {
+            PyObject *value = values[i];
+            if (value && _PyObject_GC_MAY_BE_TRACKED(value)) {
                 return;
             }
         }
     }
     else {
-        for (i = 0; i < numentries; i++) {
-            if ((value = ep0[i].me_value) == NULL)
-                continue;
-            if (_PyObject_GC_MAY_BE_TRACKED(value) ||
-                _PyObject_GC_MAY_BE_TRACKED(ep0[i].me_key))
+        PyDictKeyEntry *ep = DK_ENTRIES(mp->ma_keys);
+        while (i--) {
+            PyObject *key = ep[i].me_key;
+            PyObject *value = ep[i].me_value;
+            if (value &&
+                (_PyObject_GC_MAY_BE_TRACKED(value) ||
+                 _PyObject_GC_MAY_BE_TRACKED(key)))
+            {
                 return;
+            }
         }
     }
-    _PyObject_GC_UNTRACK(op);
+    _PyObject_GC_UNTRACK(mp);
 }
 
 /* Internal function to find slot for an item from its hash

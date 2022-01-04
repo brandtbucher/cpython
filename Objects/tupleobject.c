@@ -209,25 +209,21 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
 }
 
 void
-_PyTuple_MaybeUntrack(PyObject *op)
+_PyTuple_MaybeUntrack(PyTupleObject *t)
 {
-    PyTupleObject *t;
-    Py_ssize_t i, n;
-
-    if (!PyTuple_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
-        return;
-    t = (PyTupleObject *) op;
-    n = Py_SIZE(t);
-    for (i = 0; i < n; i++) {
-        PyObject *elt = PyTuple_GET_ITEM(t, i);
-        /* Tuple with NULL elements aren't
-           fully constructed, don't untrack
-           them yet. */
-        if (!elt ||
-            _PyObject_GC_MAY_BE_TRACKED(elt))
+    assert(t);
+    assert(PyTuple_CheckExact(t));
+    assert(_PyObject_GC_IS_TRACKED(t));
+    Py_ssize_t i = Py_SIZE(t);
+    PyObject **items = _PyTuple_ITEMS(t);
+    while (i--) {
+        PyObject *item = items[i];
+        // Tuples with NULLs are still being built; don't untrack them yet!
+        if (item == NULL || _PyObject_GC_MAY_BE_TRACKED(item)) {
             return;
+        }
     }
-    _PyObject_GC_UNTRACK(op);
+    _PyObject_GC_UNTRACK(t);
 }
 
 PyObject *
