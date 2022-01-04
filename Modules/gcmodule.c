@@ -643,6 +643,9 @@ untrack_tuples(PyGC_Head *head)
         if (PyTuple_CheckExact(op)) {
             _PyTuple_MaybeUntrack((PyTupleObject*)op);
         }
+        else if (PyWeakref_CheckRefExact(op)) {
+            _PyWeakref_MaybeUntrack((PyWeakReference *)op);
+        }
     }
 }
 
