@@ -1040,3 +1040,15 @@ PyObject_ClearWeakRefs(PyObject *object)
         PyErr_Restore(err_type, err_value, err_tb);
     }
 }
+
+void
+_PyWeakref_MaybeUntrack(PyWeakReference *wr)
+{
+    assert(wr);
+    assert(PyWeakref_CheckRefExact(wr));
+    assert(_PyObject_GC_IS_TRACKED(wr));
+    PyObject *callback = wr->wr_callback;
+    if (callback == NULL || !_PyObject_GC_MAY_BE_TRACKED(callback)) {
+        _PyObject_GC_UNTRACK(wr);
+    }
+}

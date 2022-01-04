@@ -27,8 +27,8 @@ typedef struct {
 /* True if the object may be tracked by the GC in the future, or already is.
    This can be useful to implement some optimizations. */
 #define _PyObject_GC_MAY_BE_TRACKED(obj) \
-    (PyObject_IS_GC(obj) && \
-        (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
+    (PyTuple_CheckExact(obj) ? _PyObject_GC_IS_TRACKED(obj) \
+                             : _PyObject_IS_GC(obj))
 
 
 /* Bit flags for _gc_prev */

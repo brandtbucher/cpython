@@ -45,3 +45,5 @@ PyAPI_FUNC(void) _PyWeakref_ClearRef(PyWeakReference *self);
     (Py_REFCNT(((PyWeakReference *)(ref))->wr_object) > 0   \
      ? ((PyWeakReference *)(ref))->wr_object                \
      : Py_None)
+
+PyAPI_FUNC(void) _PyWeakref_MaybeUntrack(PyWeakReference *wr);
