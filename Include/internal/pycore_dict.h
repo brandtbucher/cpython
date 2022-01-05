@@ -68,6 +68,7 @@ struct _dictkeysobject {
     /* Size of the hash table (dk_indices). It must be a power of 2. */
     uint8_t dk_log2_size;
 
+    // Size of each element in dk_indices. It must be 1, 2, 4, or 8:
     uint8_t dk_ixsize;
 
     /* Kind of keys */

@@ -316,25 +316,11 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
-static const uint64_t _masks[9] = {
-    [1] = 0xFF00000000000000,
-    [2] = 0xFFFF000000000000,
-    [4] = 0xFFFFFFFF00000000,
-    [8] = 0xFFFFFFFFFFFFFFFF,
-};
-
-static const uint64_t _signs[9] = {
-    [1] = 0x0000000000000080,
-    [2] = 0x0000000000008000,
-    [4] = 0x0000000080000000,
-    [8] = 0x8000000000000000,
-};
-
-static const uint8_t _junks[9] = {
-    [1] = 56,
-    [2] = 48,
-    [4] = 32,
-    [8] = 0,
+static const uint8_t _shift[9] = {
+    [1] = 64 - (1 * 8),
+    [2] = 64 - (2 * 8),
+    [4] = 64 - (4 * 8),
+    [8] = 64 - (8 * 8),
 };
 
 
@@ -343,12 +329,13 @@ static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
     uint8_t size = DK_IXSIZE(keys);
-    uint8_t junk = _junks[size];
-    uint64_t mask = _masks[size];
-    uint64_t sign = _signs[size];
-    uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
-    // Mask out data we don't care about, and sign-extend the result:
-    Py_ssize_t ix = (((*data & mask) >> junk) ^ sign) - sign;
+    uint8_t shift = _shift[size];
+    i = (i + 1) * size - sizeof(Py_ssize_t);
+    Py_ssize_t ix = *(Py_ssize_t*)&keys->dk_indices[i];
+#if PY_BIG_ENDIAN
+    ix <<= shift;
+#endif
+    ix = Py_ARITHMETIC_RIGHT_SHIFT(Py_ssize_t, ix, shift);
     assert(ix >= DKIX_DUMMY);
     return ix;
 }
@@ -357,14 +344,32 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 static inline void
 dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
 {
+    Py_ssize_t s = DK_SIZE(keys);
+
     assert(ix >= DKIX_DUMMY);
     assert(keys->dk_version == 0);
-    uint8_t size = DK_IXSIZE(keys);
-    uint8_t junk = _junks[size];
-    uint64_t mask = _masks[size];
-    uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
-    // Mask out the old index, and shift in the new one:
-    *data = (*data & ~mask) | (ix << junk);
+
+    if (s <= 0xff) {
+        int8_t *indices = (int8_t*)(keys->dk_indices);
+        assert(ix <= 0x7f);
+        indices[i] = (char)ix;
+    }
+    else if (s <= 0xffff) {
+        int16_t *indices = (int16_t*)(keys->dk_indices);
+        assert(ix <= 0x7fff);
+        indices[i] = (int16_t)ix;
+    }
+#if SIZEOF_VOID_P > 4
+    else if (s > 0xffffffff) {
+        int64_t *indices = (int64_t*)(keys->dk_indices);
+        indices[i] = ix;
+    }
+#endif
+    else {
+        int32_t *indices = (int32_t*)(keys->dk_indices);
+        assert(ix <= 0x7fffffff);
+        indices[i] = (int32_t)ix;
+    }
 }
 
 
