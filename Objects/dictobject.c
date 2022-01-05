@@ -316,15 +316,36 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
+static const uint64_t _masks[9] = {
+    [1] = 0xFF00000000000000,
+    [2] = 0xFFFF000000000000,
+    [4] = 0xFFFFFFFF00000000,
+    [8] = 0xFFFFFFFFFFFFFFFF,
+};
+
+static const uint64_t _signs[9] = {
+    [1] = 0x0000000000000080,
+    [2] = 0x0000000000008000,
+    [4] = 0x0000000080000000,
+    [8] = 0x8000000000000000,
+};
+
+static const uint8_t _junks[9] = {
+    [1] = 56,
+    [2] = 48,
+    [4] = 32,
+    [8] = 0,
+};
+
+
 /* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
     uint8_t size = DK_IXSIZE(keys);
-    uint8_t bits = size << 3;
-    uint8_t junk = 64 - bits;
-    uint64_t mask = 0xFFFFFFFFFFFFFFFF << junk;
-    uint64_t sign = 0x8000000000000000 >> junk;
+    uint8_t junk = _junks[size];
+    uint64_t mask = _masks[size];
+    uint64_t sign = _signs[size];
     uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
     // Mask out data we don't care about, and sign-extend the result:
     Py_ssize_t ix = (((*data & mask) >> junk) ^ sign) - sign;
@@ -339,12 +360,11 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     assert(ix >= DKIX_DUMMY);
     assert(keys->dk_version == 0);
     uint8_t size = DK_IXSIZE(keys);
-    uint8_t bits = size << 3;
-    uint8_t junk = 64 - bits;
-    uint64_t mask = 0xFFFFFFFFFFFFFFFF >> bits;
+    uint8_t junk = _junks[size];
+    uint64_t mask = _masks[size];
     uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
     // Mask out the old index, and shift in the new one:
-    *data = (*data & mask) | (ix << junk);
+    *data = (*data & ~mask) | (ix << junk);
 }
 
 
