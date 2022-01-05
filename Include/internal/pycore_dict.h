@@ -109,12 +109,12 @@ struct _dictvalues {
     PyObject *values[1];
 };
 
-#define DK_LOG_SIZE(dk)  ((dk)->dk_log2_size)
-#define DK_IXSIZE(dk)    ((dk)->dk_ixsize)
+#define DK_LOG_SIZE(dk)    ((dk)->dk_log2_size)
+#define DK_IXSIZE(dk)  ((dk)->dk_ixsize)
 #if SIZEOF_VOID_P > 4
-#define DK_SIZE(dk)      (((int64_t)1)<<DK_LOG_SIZE(dk))
+#define DK_SIZE(dk)        (((int64_t)1)<<DK_LOG_SIZE(dk))
 #else
-#define DK_SIZE(dk)      (1<<DK_LOG_SIZE(dk))
+#define DK_SIZE(dk)        (1<<DK_LOG_SIZE(dk))
 #endif
 #define DK_ENTRIES(dk) \
     ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))

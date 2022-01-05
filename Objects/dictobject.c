@@ -320,25 +320,14 @@ dictkeys_decref(PyDictKeysObject *dk)
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
-    Py_ssize_t ix;
-    switch (DK_IXSIZE(keys)) {
-        case 1:
-            ix = ((int8_t*)keys->dk_indices)[i];
-            break;
-        case 2:
-            ix = ((int16_t*)keys->dk_indices)[i];
-            break;
-        case 4:
-            ix = ((int32_t*)keys->dk_indices)[i];
-            break;
-#if SIZEOF_VOID_P > 4
-        case 8:
-            ix = ((int64_t*)keys->dk_indices)[i];
-            break;
-#endif
-        default:
-            Py_UNREACHABLE();
-    }
+    uint8_t size = DK_IXSIZE(keys);
+    uint8_t bits = size << 3;
+    uint8_t junk = 64 - bits;
+    uint64_t mask = 0xFFFFFFFFFFFFFFFF << junk;
+    uint64_t sign = 0x8000000000000000 >> junk;
+    uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
+    // Mask out data we don't care about, and sign-extend the result:
+    Py_ssize_t ix = (((*data & mask) >> junk) ^ sign) - sign;
     assert(ix >= DKIX_DUMMY);
     return ix;
 }
@@ -349,27 +338,13 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
 {
     assert(ix >= DKIX_DUMMY);
     assert(keys->dk_version == 0);
-
-    switch (DK_IXSIZE(keys)) {
-        case 1:
-            assert(ix <= 0x7f);
-            ((int8_t*)keys->dk_indices)[i] = (int8_t)ix;
-            return;
-        case 2:
-            assert(ix <= 0x7fff);
-            ((int16_t*)keys->dk_indices)[i] = (int16_t)ix;
-            return;
-        case 4:
-            assert(ix <= 0x7fffffff);
-            ((int32_t*)keys->dk_indices)[i] = (int32_t)ix;
-            return;
-#if SIZEOF_VOID_P > 4
-        case 8:
-            ((int64_t*)keys->dk_indices)[i] = (int64_t)ix;
-            return;
-#endif
-    }
-    Py_UNREACHABLE();
+    uint8_t size = DK_IXSIZE(keys);
+    uint8_t bits = size << 3;
+    uint8_t junk = 64 - bits;
+    uint64_t mask = 0xFFFFFFFFFFFFFFFF >> bits;
+    uint64_t *data = (uint64_t*)&keys->dk_indices[(i + 1) * size - 8];
+    // Mask out the old index, and shift in the new one:
+    *data = (*data & mask) | (ix << junk);
 }
 
 
@@ -439,7 +414,7 @@ estimate_log2_keysize(Py_ssize_t n)
 static PyDictKeysObject empty_keys_struct = {
         1, /* dk_refcnt */
         0, /* dk_log2_size */
-        1, /* dk_size */
+        1, /* dk_ixsize */
         DICT_KEYS_SPLIT, /* dk_kind */
         1, /* dk_version */
         0, /* dk_usable (immutable) */
