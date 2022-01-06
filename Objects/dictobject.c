@@ -316,26 +316,45 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
-static const uint8_t _shift[9] = {
-    [1] = 64 - (1 * 8),
-    [2] = 64 - (2 * 8),
-    [4] = 64 - (4 * 8),
-    [8] = 64 - (8 * 8),
-};
+static Py_ssize_t
+dictkeys_get_index_1(const PyDictKeysObject *keys, Py_ssize_t i)
+{
+    return ((int8_t *)keys->dk_indices)[i];
+}
 
+static Py_ssize_t
+dictkeys_get_index_2(const PyDictKeysObject *keys, Py_ssize_t i)
+{
+    return ((int16_t *)keys->dk_indices)[i];
+}
+
+static Py_ssize_t
+dictkeys_get_index_4(const PyDictKeysObject *keys, Py_ssize_t i)
+{
+    return ((int32_t *)keys->dk_indices)[i];
+}
+
+static Py_ssize_t
+dictkeys_get_index_8(const PyDictKeysObject *keys, Py_ssize_t i)
+{
+    return ((int64_t *)keys->dk_indices)[i];
+}
+
+typedef Py_ssize_t (*dictkeys_index_getter)(const PyDictKeysObject *keys,
+                                            Py_ssize_t i);
+
+static const dictkeys_index_getter dictkeys_index_getters[9] = {
+    [1] = dictkeys_get_index_1,
+    [2] = dictkeys_get_index_2,
+    [4] = dictkeys_get_index_4,
+    [8] = dictkeys_get_index_8,
+};
 
 /* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
-    uint8_t size = DK_IXSIZE(keys);
-    uint8_t shift = _shift[size];
-    i = (i + 1) * size - sizeof(Py_ssize_t);
-    Py_ssize_t ix = *(Py_ssize_t*)&keys->dk_indices[i];
-#if PY_BIG_ENDIAN
-    ix <<= shift;
-#endif
-    ix = Py_ARITHMETIC_RIGHT_SHIFT(Py_ssize_t, ix, shift);
+    Py_ssize_t ix = dictkeys_index_getters[DK_IXSIZE(keys)](keys, i);
     assert(ix >= DKIX_DUMMY);
     return ix;
 }
