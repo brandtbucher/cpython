@@ -316,47 +316,25 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
-static Py_ssize_t
-dictkeys_get_index_1(const PyDictKeysObject *keys, Py_ssize_t i)
-{
-    return ((int8_t *)keys->dk_indices)[i];
-}
-
-static Py_ssize_t
-dictkeys_get_index_2(const PyDictKeysObject *keys, Py_ssize_t i)
-{
-    return ((int16_t *)keys->dk_indices)[i];
-}
-
-static Py_ssize_t
-dictkeys_get_index_4(const PyDictKeysObject *keys, Py_ssize_t i)
-{
-    return ((int32_t *)keys->dk_indices)[i];
-}
-
-static Py_ssize_t
-dictkeys_get_index_8(const PyDictKeysObject *keys, Py_ssize_t i)
-{
-    return ((int64_t *)keys->dk_indices)[i];
-}
-
-typedef Py_ssize_t (*dictkeys_index_getter)(const PyDictKeysObject *keys,
-                                            Py_ssize_t i);
-
-static const dictkeys_index_getter dictkeys_index_getters[9] = {
-    [1] = dictkeys_get_index_1,
-    [2] = dictkeys_get_index_2,
-    [4] = dictkeys_get_index_4,
-    [8] = dictkeys_get_index_8,
-};
-
 /* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
-    Py_ssize_t ix = dictkeys_index_getters[DK_IXSIZE(keys)](keys, i);
-    assert(ix >= DKIX_DUMMY);
-    return ix;
+    static const void *dkgi[9] = {
+        [1] = &&ixsize_1,
+        [2] = &&ixsize_2,
+        [4] = &&ixsize_4,
+        [8] = &&ixsize_8,
+    };
+    goto *dkgi[DK_IXSIZE(keys)];
+ixsize_1:
+    return (( int8_t *)keys->dk_indices)[i];
+ixsize_2:
+    return ((int16_t *)keys->dk_indices)[i];
+ixsize_4:
+    return ((int32_t *)keys->dk_indices)[i];
+ixsize_8:
+    return ((int64_t *)keys->dk_indices)[i];
 }
 
 /* write to indices. */
