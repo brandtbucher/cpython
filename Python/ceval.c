@@ -5173,7 +5173,6 @@ check_eval_breaker:
             assert(0 < l);
             assert(0 < r);
             PyObject *result;
-            // printf("BINARY_OP_INT %d\n", GET_CACHE()->adaptive.original_oparg);
             switch (GET_CACHE()->adaptive.original_oparg) {
                 case NB_ADD:
                 case NB_INPLACE_ADD:
@@ -5225,15 +5224,6 @@ check_eval_breaker:
             if (result == NULL) {
                 goto error;
             }
-            // PyObject *sanity = binary_ops[GET_CACHE()->adaptive.original_oparg](lhs, rhs);
-            // if (PyObject_RichCompareBool(sanity, result, Py_EQ) != 1) {
-            //     PyErr_Format(PyExc_AssertionError,
-            //                  "BINARY_OP_INT(%d): %S(%ld) %S(%ld) %S != %S",
-            //                  GET_CACHE()->adaptive.original_oparg,
-            //                  lhs, l, rhs, r, result, sanity);
-            //     goto error;
-            // }
-            // Py_DECREF(sanity);
             SET_SECOND(result);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
