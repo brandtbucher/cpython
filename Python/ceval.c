@@ -2053,23 +2053,6 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_INT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *prod = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
-            SET_SECOND(prod);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (prod == NULL) {
-                goto error;
-            }
-            DISPATCH();
-        }
-
         TARGET(BINARY_OP_MULTIPLY_FLOAT) {
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -2084,23 +2067,6 @@ check_eval_breaker:
             Py_DECREF(left);
             STACK_SHRINK(1);
             if (prod == NULL) {
-                goto error;
-            }
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_SUBTRACT_INT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *sub = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
-            SET_SECOND(sub);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (sub == NULL) {
                 goto error;
             }
             DISPATCH();
@@ -2178,23 +2144,6 @@ check_eval_breaker:
             double dsum = ((PyFloatObject *)left)->ob_fval +
                 ((PyFloatObject *)right)->ob_fval;
             PyObject *sum = PyFloat_FromDouble(dsum);
-            SET_SECOND(sum);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (sum == NULL) {
-                goto error;
-            }
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_ADD_INT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *sum = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
             SET_SECOND(sum);
             Py_DECREF(right);
             Py_DECREF(left);
@@ -5209,6 +5158,87 @@ check_eval_breaker:
                 oparg = cache->adaptive.original_oparg;
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
+        }
+
+        TARGET(BINARY_OP_INT) {
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            DEOPT_IF(Py_SIZE(lhs) != 1, BINARY_OP);
+            DEOPT_IF(Py_SIZE(rhs) != 1, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            stwodigits l = ((PyLongObject *)lhs)->ob_digit[0];
+            stwodigits r = ((PyLongObject *)rhs)->ob_digit[0];
+            assert(0 < l);
+            assert(0 < r);
+            PyObject *result;
+            // printf("BINARY_OP_INT %d\n", GET_CACHE()->adaptive.original_oparg);
+            switch (GET_CACHE()->adaptive.original_oparg) {
+                case NB_ADD:
+                case NB_INPLACE_ADD:
+                    result = PyLong_FromLong(l + r);
+                    break;
+                case NB_AND:
+                case NB_INPLACE_AND:
+                    result = PyLong_FromLong(l & r);
+                    break;
+                case NB_FLOOR_DIVIDE:
+                case NB_INPLACE_FLOOR_DIVIDE:
+                    result = PyLong_FromLong(l / r);
+                    break;
+                case NB_MULTIPLY:
+                case NB_INPLACE_MULTIPLY:
+                    result = PyLong_FromLong(l * r);
+                    break;
+                case NB_OR:
+                case NB_INPLACE_OR:
+                    result = PyLong_FromLong(l | r);
+                    break;
+                case NB_REMAINDER:
+                case NB_INPLACE_REMAINDER:
+                    result = PyLong_FromLong(l % r);
+                    break;
+                case NB_RSHIFT:
+                case NB_INPLACE_RSHIFT:
+                    result = PyLong_FromLong(l >> r);
+                    break;
+                case NB_SUBTRACT:
+                case NB_INPLACE_SUBTRACT:
+                    result = PyLong_FromLong(l - r);
+                    break;
+                case NB_TRUE_DIVIDE:
+                case NB_INPLACE_TRUE_DIVIDE:
+                    result = PyFloat_FromDouble((double)l / (double)r);
+                    break;
+                case NB_XOR:
+                case NB_INPLACE_XOR:
+                    result = PyLong_FromLong(l ^ r);
+                    break;
+                default:
+                    // NB_MATRIX_MULTIPLY and NB_INPLACE_MATRIX_MULTIPLY don't
+                    // work with ints. NB_LSHIFT, NB_INPLACE_LSHIFT, NB_POWER,
+                    // and NB_INPLACE_POWER might overflow. They should never be
+                    // specialized:
+                    Py_UNREACHABLE();
+            }
+            if (result == NULL) {
+                goto error;
+            }
+            // PyObject *sanity = binary_ops[GET_CACHE()->adaptive.original_oparg](lhs, rhs);
+            // if (PyObject_RichCompareBool(sanity, result, Py_EQ) != 1) {
+            //     PyErr_Format(PyExc_AssertionError,
+            //                  "BINARY_OP_INT(%d): %S(%ld) %S(%ld) %S != %S",
+            //                  GET_CACHE()->adaptive.original_oparg,
+            //                  lhs, l, rhs, r, result, sanity);
+            //     goto error;
+            // }
+            // Py_DECREF(sanity);
+            SET_SECOND(result);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            STACK_SHRINK(1);
+            DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {

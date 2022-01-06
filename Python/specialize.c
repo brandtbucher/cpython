@@ -1604,6 +1604,18 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         SpecializedCacheEntry *cache)
 {
     _PyAdaptiveEntry *adaptive = &cache->adaptive;
+    if (PyLong_CheckExact(lhs) &&
+        PyLong_CheckExact(rhs) &&
+        adaptive->original_oparg != NB_LSHIFT &&
+        adaptive->original_oparg != NB_INPLACE_LSHIFT &&
+        adaptive->original_oparg != NB_MATRIX_MULTIPLY &&
+        adaptive->original_oparg != NB_INPLACE_MATRIX_MULTIPLY &&
+        adaptive->original_oparg != NB_POWER &&
+        adaptive->original_oparg != NB_INPLACE_POWER)
+    {
+        *instr = _Py_MAKECODEUNIT(BINARY_OP_INT, _Py_OPARG(*instr));
+        goto success;
+    }
     switch (adaptive->original_oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
@@ -1611,7 +1623,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
                 goto failure;
             }
-            if (PyUnicode_CheckExact(lhs)) {
+            if (PyUnicode_CheckExact(lhs)) {                
                 if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
                     *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
                                               _Py_OPARG(*instr));
@@ -1619,10 +1631,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 }
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
                                           _Py_OPARG(*instr));
-                goto success;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT, _Py_OPARG(*instr));
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
@@ -1637,11 +1645,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
                 goto failure;
             }
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
-                                          _Py_OPARG(*instr));
-                goto success;
-            }
             if (PyFloat_CheckExact(lhs)) {
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
                                           _Py_OPARG(*instr));
@@ -1653,11 +1656,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
                 SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_DIFFERENT_TYPES);
                 goto failure;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT,
-                                          _Py_OPARG(*instr));
-                goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT,
