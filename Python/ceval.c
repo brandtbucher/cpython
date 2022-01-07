@@ -863,6 +863,23 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
+static inline PyObject *
+binary_op(PyObject *lhs, PyObject *rhs, int op)
+{
+    assert(0 <= op);
+    assert((unsigned)op < Py_ARRAY_LENGTH(binary_ops));
+    assert(binary_ops[op]);
+    return binary_ops[op](lhs, rhs);
+}
+
+static inline PyObject *
+binary_op_small_int(PyObject *lhs, digit r, int op)
+{
+    assert(r < _PY_NSMALLPOSINTS);
+    PyObject *rhs = (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + r];
+    return binary_op(lhs, rhs, op);
+}
+
 
 // PEP 634: Structural Pattern Matching
 
@@ -5180,10 +5197,7 @@ check_eval_breaker:
             PREDICTED(BINARY_OP);
             PyObject *rhs = POP();
             PyObject *lhs = TOP();
-            assert(0 <= oparg);
-            assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-            assert(binary_ops[oparg]);
-            PyObject *res = binary_ops[oparg](lhs, rhs);
+            PyObject *res = binary_op(lhs, rhs, oparg);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
             SET_TOP(res);
@@ -5210,6 +5224,224 @@ check_eval_breaker:
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
         }
+
+        TARGET(BINARY_OP_SMALL_INT) {
+            PyLongObject *zero = (PyLongObject *)_PyLong_GetZero();
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            Py_ssize_t l_offset = (PyLongObject *)lhs - zero;
+            Py_ssize_t r_offset = (PyLongObject *)rhs - zero;
+            DEOPT_IF(l_offset < 0, BINARY_OP);
+            DEOPT_IF(r_offset <= 0, BINARY_OP);
+            DEOPT_IF(_PY_NSMALLPOSINTS <= l_offset, BINARY_OP);
+            DEOPT_IF(_PY_NSMALLPOSINTS <= r_offset, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            STACK_SHRINK(1);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            digit l = l_offset;
+            digit r = r_offset;
+            int original_oparg = GET_CACHE()->adaptive.original_oparg;
+            switch (original_oparg) {
+                case NB_AND:
+                case NB_INPLACE_AND: {
+                    digit i = l & r;
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_FLOOR_DIVIDE:
+                case NB_INPLACE_FLOOR_DIVIDE: {
+                    digit i = l / r;
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_REMAINDER:
+                case NB_INPLACE_REMAINDER: {
+                    digit i = l % r;
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_RSHIFT:
+                case NB_INPLACE_RSHIFT: {
+                    digit i = l >> Py_MIN(PyLong_SHIFT, r);
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_ADD:
+                case NB_INPLACE_ADD: {
+                    digit i = l + r;
+                    if (_PY_NSMALLPOSINTS <= i) {
+                        SET_TOP(PyLong_FromUnsignedLong(i));
+                        break;
+                    }
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_MULTIPLY:
+                case NB_INPLACE_MULTIPLY: {
+                    twodigits i = l * r;
+                    if (_PY_NSMALLPOSINTS <= i) {
+                        SET_TOP(PyLong_FromUnsignedLong(i));
+                        break;
+                    }
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_OR:
+                case NB_INPLACE_OR: {
+                    digit i = l | r;
+                    if (_PY_NSMALLPOSINTS <= i) {
+                        SET_TOP(PyLong_FromUnsignedLong(i));
+                        break;
+                    }
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_XOR:
+                case NB_INPLACE_XOR: {
+                    digit i = l ^ r;
+                    if (_PY_NSMALLPOSINTS <= i) {
+                        SET_TOP(PyLong_FromUnsignedLong(i));
+                        break;
+                    }
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_SUBTRACT:
+                case NB_INPLACE_SUBTRACT: {
+                    sdigit i = l - r;
+                    if (i < _PY_NSMALLNEGINTS || _PY_NSMALLPOSINTS <= i) {
+                        SET_TOP(PyLong_FromLong(i));
+                        break;
+                    }
+                    SET_TOP((PyObject *)(zero + i));
+                    Py_INCREF(TOP());
+                    DISPATCH();
+                }
+                case NB_TRUE_DIVIDE:
+                case NB_INPLACE_TRUE_DIVIDE: {
+                    SET_TOP(PyFloat_FromDouble((double)l / (double)r));
+                    break;
+                }
+                default: {
+                    SET_TOP(binary_op(lhs, rhs, original_oparg));
+                    break;
+                }
+            }
+            if (TOP() == NULL) {
+                goto error;
+            }
+            DISPATCH();
+        }
+
+        // TARGET(LOAD_INT__BINARY_OP) {
+        //     digit r = oparg + 1;
+        //     assert(0 < r);
+        //     oparg = _Py_OPARG(*next_instr);
+        //     next_instr++;
+        //     STAT_INC(BINARY_OP, hit);
+        //     PyObject *res;
+        //     PyObject *lhs = TOP();
+        //     if (!PyLong_CheckExact(lhs) || 1 < Py_ABS(Py_SIZE(lhs))) {
+        //         res = binary_op_small_int(lhs, r, oparg);
+        //         if (res == NULL) {
+        //             goto error;
+        //         }
+        //         SET_TOP(res);
+        //         Py_DECREF(lhs);
+        //         NOTRACE_DISPATCH();
+        //     }
+        //     stwodigits l = Py_SIZE(lhs) * ((PyLongObject *)lhs)->ob_digit[0];
+        //     switch (oparg) {
+        //         case NB_ADD:
+        //         case NB_INPLACE_ADD:
+        //             res = PyLong_FromLong(l + r);
+        //             break;
+        //         case NB_AND:
+        //         case NB_INPLACE_AND:
+        //             res = PyLong_FromLong(l & r);
+        //             break;
+        //         case NB_FLOOR_DIVIDE:
+        //         case NB_INPLACE_FLOOR_DIVIDE:
+        //             if (0 <= l) {
+        //                 res = PyLong_FromLong(l / r);
+        //             }
+        //             else {
+        //                 res = PyLong_FromLong(-1 - (l - 1) / r);
+        //             }
+        //             break;
+        //         case NB_MULTIPLY:
+        //         case NB_INPLACE_MULTIPLY:
+        //             res = PyLong_FromLong(l * r);
+        //             break;
+        //         case NB_OR:
+        //         case NB_INPLACE_OR:
+        //             res = PyLong_FromLong(l | r);
+        //             break;
+        //         case NB_REMAINDER:
+        //         case NB_INPLACE_REMAINDER:
+        //             if (0 <= l) {
+        //                 res = PyLong_FromLong(l % r);
+        //             }
+        //             else {
+        //                 res = PyLong_FromLong(l - 1 - (l - 1) % r);
+        //             }
+        //             break;
+        //         case NB_RSHIFT:
+        //         case NB_INPLACE_RSHIFT:
+        //             ;  // The technology just isn't there yet...
+        //             stwodigits i = Py_ARITHMETIC_RIGHT_SHIFT(stwodigits, l, r);
+        //             res = PyLong_FromLong(i);
+        //             break;
+        //         case NB_SUBTRACT:
+        //         case NB_INPLACE_SUBTRACT:
+        //             res = PyLong_FromLong(l - r);
+        //             break;
+        //         case NB_TRUE_DIVIDE:
+        //         case NB_INPLACE_TRUE_DIVIDE:
+        //             res = PyFloat_FromDouble((double)l / (double)r);
+        //             break;
+        //         case NB_XOR:
+        //         case NB_INPLACE_XOR:
+        //             res = PyLong_FromLong(l ^ r);
+        //             break;
+        //         default:
+        //             // NB_MATRIX_MULTIPLY and NB_INPLACE_MATRIX_MULTIPLY don't
+        //             // work with ints, and NB_LSHIFT, NB_INPLACE_LSHIFT,
+        //             // NB_POWER, and NB_INPLACE_POWER might overflow:
+        //             res = binary_op_small_int(lhs, r, oparg);
+        //             break;
+        //     }
+        //     if (res == NULL) {
+        //         goto error;
+        //     }
+            // XXX
+            // PyObject *sanity = binary_op_small_int(lhs, r, oparg);
+            // if (PyObject_RichCompareBool(sanity, res, Py_EQ) != 1) {
+            //     PyErr_Format(PyExc_AssertionError,
+            //                 "BINARY_OP_INT(%d): %S(%ld) _(%ld) %S != %S",
+            //                 oparg, lhs, l, r, res, sanity);
+            //     goto error;
+            // }
+            // Py_DECREF(sanity);
+            // XXX
+            // printf("--> %d ", oparg);
+            // PyObject_Print(lhs, stdout, 0);
+            // printf("(%ld) _(%d) = ", l, r);
+            // PyObject_Print(res, stdout, 0);
+            // printf("\n");
+        //     SET_TOP(res);
+        //     Py_DECREF(lhs);
+        //     NOTRACE_DISPATCH();
+        // }
 
         TARGET(EXTENDED_ARG) {
             int oldoparg = oparg;
