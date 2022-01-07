@@ -373,6 +373,20 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
             switch (opcode) {
                 case JUMP_ABSOLUTE:
                     instructions[i] = _Py_MAKECODEUNIT(JUMP_ABSOLUTE_QUICK, oparg);
+                    switch(previous_opcode) {
+                        case LIST_APPEND:
+                            instructions[i - 1] = _Py_MAKECODEUNIT(
+                                LIST_APPEND__JUMP_ABSOLUTE, previous_oparg);
+                            break;
+                        case SET_ADD:
+                            instructions[i - 1] = _Py_MAKECODEUNIT(
+                                SET_ADD__JUMP_ABSOLUTE, previous_oparg);
+                            break;
+                        case MAP_ADD:
+                            instructions[i - 1] = _Py_MAKECODEUNIT(
+                                MAP_ADD__JUMP_ABSOLUTE, previous_oparg);
+                            break;
+                    }
                     break;
                 case LOAD_FAST:
                     switch(previous_opcode) {

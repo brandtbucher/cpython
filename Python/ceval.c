@@ -2343,6 +2343,22 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(LIST_APPEND__JUMP_ABSOLUTE) {
+            PyObject *v = POP();
+            PyObject *list = PEEK(oparg);
+            int err = PyList_Append(list, v);
+            Py_DECREF(v);
+            if (err) {
+                goto error;
+            }
+            NEXTOPARG();
+            next_instr++;
+            JUMPTO(oparg);
+            CHECK_EVAL_BREAKER();
+            PREDICT(FOR_ITER);
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(SET_ADD) {
             PyObject *v = POP();
             PyObject *set = PEEK(oparg);
@@ -2353,6 +2369,22 @@ check_eval_breaker:
                 goto error;
             PREDICT(JUMP_ABSOLUTE);
             DISPATCH();
+        }
+
+        TARGET(SET_ADD__JUMP_ABSOLUTE) {
+            PyObject *v = POP();
+            PyObject *set = PEEK(oparg);
+            int err = PySet_Add(set, v);
+            Py_DECREF(v);
+            if (err) {
+                goto error;
+            }
+            NEXTOPARG();
+            next_instr++;
+            JUMPTO(oparg);
+            CHECK_EVAL_BREAKER();
+            PREDICT(FOR_ITER);
+            NOTRACE_DISPATCH();
         }
 
         TARGET(STORE_SUBSCR) {
@@ -3506,6 +3538,23 @@ check_eval_breaker:
             }
             PREDICT(JUMP_ABSOLUTE);
             DISPATCH();
+        }
+
+        TARGET(MAP_ADD__JUMP_ABSOLUTE) {
+            PyObject *value = TOP();
+            PyObject *key = SECOND();
+            STACK_SHRINK(2);
+            PyObject *map = PEEK(oparg);
+            assert(PyDict_CheckExact(map));
+            if (_PyDict_SetItem_Take2((PyDictObject *)map, key, value)) {
+                goto error;
+            }
+            NEXTOPARG();
+            next_instr++;
+            JUMPTO(oparg);
+            CHECK_EVAL_BREAKER();
+            PREDICT(FOR_ITER);
+            NOTRACE_DISPATCH();
         }
 
         TARGET(LOAD_ATTR) {

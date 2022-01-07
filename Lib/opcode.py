@@ -284,6 +284,9 @@ _specialized_instructions = [
     "LOAD_FAST__LOAD_CONST",
     "LOAD_CONST__LOAD_FAST",
     "STORE_FAST__STORE_FAST",
+    "LIST_APPEND__JUMP_ABSOLUTE",
+    "SET_ADD__JUMP_ABSOLUTE",
+    "MAP_ADD__JUMP_ABSOLUTE",
 ]
 _specialization_stats = [
     "success",
