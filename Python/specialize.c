@@ -1605,11 +1605,9 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
 {
     _PyAdaptiveEntry *adaptive = &cache->adaptive;
     PyLongObject *zero = (PyLongObject *)_PyLong_GetZero();
-    Py_ssize_t l_offset = (PyLongObject *)lhs - zero;
-    Py_ssize_t r_offset = (PyLongObject *)rhs - zero;
-    if (0 <= l_offset && l_offset < _PY_NSMALLPOSINTS &&
-        0 < r_offset && r_offset < _PY_NSMALLPOSINTS)
-    {
+    Py_ssize_t l = (PyLongObject *)lhs - zero;
+    Py_ssize_t r = (PyLongObject *)rhs - zero;
+    if (0 <= l && l < _PY_NSMALLPOSINTS && 0 < r && r < _PY_NSMALLPOSINTS) {
         *instr = _Py_MAKECODEUNIT(BINARY_OP_SMALL_INT, _Py_OPARG(*instr));
         goto success;
     }
