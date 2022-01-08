@@ -1229,6 +1229,8 @@ stack_effect(int opcode, int oparg, int jump)
             return 1;
         case BINARY_OP:
             return -1;
+        case BINARY_OP_SMALL_INT:
+            return 0;
         default:
             return PY_INVALID_STACK_EFFECT;
     }
@@ -8551,6 +8553,23 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                                     POP_JUMP_IF_NOT_NONE : POP_JUMP_IF_NONE;
                         }
                         Py_DECREF(cnt);
+                        break;
+                    case BINARY_OP:
+                        ;  // The technology just isn't there yet...
+                        unsigned char nextarg = bb->b_instr[i + 1].i_oparg;
+                        cnt = get_const_value(inst->i_opcode, oparg, consts);
+                        if (PyLong_CheckExact(cnt) && 
+                            inst->i_lineno == bb->b_instr[i + 1].i_lineno &&
+                            ((size_t)Py_SIZE(cnt)) == 1)
+                        {
+                            digit val = ((PyLongObject*)cnt)->ob_digit[0];
+                            if (val <= 256) {
+                                inst->i_opcode = BINARY_OP_SMALL_INT;
+                                assert(nextarg < (1 << 6));
+                                inst->i_oparg = ((val - 1) << 6) | nextarg;
+                                bb->b_instr[i + 1].i_opcode = NOP;
+                            }
+                        }
                         break;
                 }
                 break;

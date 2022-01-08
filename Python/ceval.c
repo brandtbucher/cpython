@@ -5193,6 +5193,93 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(BINARY_OP_SMALL_INT) {
+            PyObject *lhs = TOP();
+            digit r = (oparg >> 6) + 1;
+            assert(r < _PY_NSMALLPOSINTS);
+            oparg = oparg & 0x3F;
+            if (PyLong_CheckExact(lhs) && ((size_t)Py_SIZE(lhs)) < 2) {
+                digit l = Py_SIZE(lhs) * ((PyLongObject *)lhs)->ob_digit[0];
+                switch (oparg) {
+                    case NB_ADD:
+                    case NB_INPLACE_ADD:
+                        SET_TOP(PyLong_FromUnsignedLong(l + r));
+                        break;
+                    case NB_AND:
+                    case NB_INPLACE_AND:
+                        SET_TOP(PyLong_FromUnsignedLong(l & r));
+                        break;
+                    case NB_FLOOR_DIVIDE:
+                    case NB_INPLACE_FLOOR_DIVIDE:
+                        SET_TOP(PyLong_FromUnsignedLong(l / r));
+                        break;
+                    case NB_MULTIPLY:
+                    case NB_INPLACE_MULTIPLY:
+                        SET_TOP(PyLong_FromUnsignedLong((twodigits)l * r));
+                        break;
+                    case NB_REMAINDER:
+                    case NB_INPLACE_REMAINDER:
+                        SET_TOP(PyLong_FromUnsignedLong(l % r));
+                        break;
+                    case NB_OR:
+                    case NB_INPLACE_OR:
+                        SET_TOP(PyLong_FromUnsignedLong(l | r));
+                        break;
+                    case NB_XOR:
+                    case NB_INPLACE_XOR:
+                        SET_TOP(PyLong_FromUnsignedLong(l ^ r));
+                        break;
+                    case NB_RSHIFT:
+                    case NB_INPLACE_RSHIFT:
+                        r = Py_MIN(8 * sizeof(l) - 1, r);
+                        SET_TOP(PyLong_FromUnsignedLong(l >> r));
+                        break;
+                    case NB_SUBTRACT:
+                    case NB_INPLACE_SUBTRACT:
+                        // TODO: Why does this cast fix our tests?
+                        SET_TOP(PyLong_FromLong((twodigits)l - r));
+                        break;
+                    case NB_TRUE_DIVIDE:
+                    case NB_INPLACE_TRUE_DIVIDE:
+                        SET_TOP(PyFloat_FromDouble((double)l / r));
+                        break;
+                    case NB_LSHIFT:
+                    case NB_INPLACE_LSHIFT:
+                        SET_TOP(_PyLong_Lshift(lhs, r));
+                        break;
+                    case NB_POWER:
+                    case NB_INPLACE_POWER:
+                        ;  // The technology just isn't there yet...
+                        ternaryfunc power = PyLong_Type.tp_as_number->nb_power;
+                        PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
+                        SET_TOP(power(lhs, (PyObject *)rhs, Py_None));
+                        break;
+                    case NB_MATRIX_MULTIPLY:
+                        PyNumber_MatrixMultiply(lhs, lhs);
+                        assert(PyErr_Occurred());
+                        goto error;
+                    case NB_INPLACE_MATRIX_MULTIPLY:
+                        PyNumber_InPlaceMatrixMultiply(lhs, lhs);
+                        assert(PyErr_Occurred());
+                        goto error;
+                    default:
+                        Py_UNREACHABLE();
+                }
+            }
+            else {
+                assert(0 <= oparg);
+                assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
+                assert(binary_ops[oparg]);
+                PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
+                SET_TOP(binary_ops[oparg](lhs, (PyObject *)rhs));
+            }
+            Py_DECREF(lhs);
+            if (TOP() == NULL) {
+                goto error;
+            }
+            DISPATCH();
+        }
+
         TARGET(BINARY_OP_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();

@@ -87,6 +87,7 @@ extern "C" {
 #define POP_JUMP_IF_NOT_NONE            128
 #define POP_JUMP_IF_NONE                129
 #define RAISE_VARARGS                   130
+#define BINARY_OP_SMALL_INT             131
 #define MAKE_FUNCTION                   132
 #define BUILD_SLICE                     133
 #define MAKE_CELL                       135
@@ -165,10 +166,10 @@ extern "C" {
 #define STORE_ATTR_SLOT                  80
 #define STORE_ATTR_WITH_HINT             81
 #define LOAD_FAST__LOAD_FAST             87
-#define STORE_FAST__LOAD_FAST           131
-#define LOAD_FAST__LOAD_CONST           134
-#define LOAD_CONST__LOAD_FAST           140
-#define STORE_FAST__STORE_FAST          141
+#define STORE_FAST__LOAD_FAST           134
+#define LOAD_FAST__LOAD_CONST           140
+#define LOAD_CONST__LOAD_FAST           141
+#define STORE_FAST__STORE_FAST          143
 #define DO_TRACING                      255
 #ifdef NEED_OPCODE_JUMP_TABLES
 static uint32_t _PyOpcode_RelativeJump[8] = {
