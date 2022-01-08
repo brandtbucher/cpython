@@ -1142,7 +1142,7 @@ stack_effect(int opcode, int oparg, int jump)
             return 1;
 
         case WITH_EXCEPT_START:
-            return 1;
+            return 2;
 
         case LOAD_FAST:
             return 1;
@@ -5516,6 +5516,7 @@ compiler_async_with(struct compiler *c, stmt_ty s, int pos)
     VISIT(c, expr, item->context_expr);
 
     ADDOP(c, BEFORE_ASYNC_WITH);
+    ADDOP_I(c, CALL_NO_KW, 0);
     ADDOP(c, GET_AWAITABLE);
     ADDOP_LOAD_CONST(c, Py_None);
     ADD_YIELD_FROM(c, 1);
@@ -5566,7 +5567,10 @@ compiler_async_with(struct compiler *c, stmt_ty s, int pos)
 
     ADDOP_JUMP(c, SETUP_CLEANUP, cleanup);
     ADDOP(c, PUSH_EXC_INFO);
+    ADDOP_I(c, COPY, 4);
+    ADDOP_I(c, COPY, 2);
     ADDOP(c, WITH_EXCEPT_START);
+    ADDOP_I(c, CALL_NO_KW, 3);
     ADDOP(c, GET_AWAITABLE);
     ADDOP_LOAD_CONST(c, Py_None);
     ADD_YIELD_FROM(c, 1);
@@ -5617,6 +5621,7 @@ compiler_with(struct compiler *c, stmt_ty s, int pos)
     VISIT(c, expr, item->context_expr);
     /* Will push bound __exit__ */
     ADDOP(c, BEFORE_WITH);
+    ADDOP_I(c, CALL_NO_KW, 0);
     ADDOP_JUMP(c, SETUP_WITH, final);
 
     /* SETUP_WITH pushes a finally block. */
@@ -5662,7 +5667,10 @@ compiler_with(struct compiler *c, stmt_ty s, int pos)
 
     ADDOP_JUMP(c, SETUP_CLEANUP, cleanup);
     ADDOP(c, PUSH_EXC_INFO);
+    ADDOP_I(c, COPY, 4);
+    ADDOP_I(c, COPY, 2);
     ADDOP(c, WITH_EXCEPT_START);
+    ADDOP_I(c, CALL_NO_KW, 3);
     compiler_with_except_finish(c, cleanup);
 
     compiler_use_next_block(c, exit);

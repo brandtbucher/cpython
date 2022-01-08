@@ -2601,7 +2601,6 @@ check_eval_breaker:
         }
 
         TARGET(GET_AWAITABLE) {
-            PREDICTED(GET_AWAITABLE);
             PyObject *iterable = TOP();
             PyObject *iter = _PyCoro_GetAwaitableIter(iterable);
 
@@ -4312,7 +4311,6 @@ check_eval_breaker:
             _Py_IDENTIFIER(__aenter__);
             _Py_IDENTIFIER(__aexit__);
             PyObject *mgr = TOP();
-            PyObject *res;
             PyObject *enter = _PyObject_LookupSpecial(mgr, &PyId___aenter__);
             if (enter == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
@@ -4337,12 +4335,8 @@ check_eval_breaker:
             }
             SET_TOP(exit);
             Py_DECREF(mgr);
-            res = _PyObject_CallNoArgs(enter);
-            Py_DECREF(enter);
-            if (res == NULL)
-                goto error;
-            PUSH(res);
-            PREDICT(GET_AWAITABLE);
+            PUSH(enter);
+            PREDICT(CALL_NO_KW);
             DISPATCH();
         }
 
@@ -4350,7 +4344,6 @@ check_eval_breaker:
             _Py_IDENTIFIER(__enter__);
             _Py_IDENTIFIER(__exit__);
             PyObject *mgr = TOP();
-            PyObject *res;
             PyObject *enter = _PyObject_LookupSpecial(mgr, &PyId___enter__);
             if (enter == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
@@ -4375,41 +4368,21 @@ check_eval_breaker:
             }
             SET_TOP(exit);
             Py_DECREF(mgr);
-            res = _PyObject_CallNoArgs(enter);
-            Py_DECREF(enter);
-            if (res == NULL) {
-                goto error;
-            }
-            PUSH(res);
+            PUSH(enter);
+            PREDICT(CALL_NO_KW);
             DISPATCH();
         }
 
         TARGET(WITH_EXCEPT_START) {
-            /* At the top of the stack are 4 values:
-               - TOP = exc_info()
-               - SECOND = previous exception
-               - THIRD: lasti of exception in exc_info()
-               - FOURTH: the context.__exit__ bound method
-               We call FOURTH(type(TOP), TOP, GetTraceback(TOP)).
-               Then we push the __exit__ return value.
-            */
-            PyObject *exit_func;
-            PyObject *exc, *val, *tb, *res;
-
-            val = TOP();
+            PyObject *val = TOP();
             assert(val && PyExceptionInstance_Check(val));
-            exc = PyExceptionInstance_Class(val);
-            tb = PyException_GetTraceback(val);
-            Py_XDECREF(tb);
-            assert(PyLong_Check(PEEK(3)));
-            exit_func = PEEK(4);
-            PyObject *stack[4] = {NULL, exc, val, tb};
-            res = PyObject_Vectorcall(exit_func, stack + 1,
-                    3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
-            if (res == NULL)
-                goto error;
-
-            PUSH(res);
+            PyObject *exc = PyExceptionInstance_Class(val);
+            Py_INCREF(exc);
+            SET_TOP(exc);
+            STACK_GROW(2);
+            SET_SECOND(val);
+            PyObject *tb = PyException_GetTraceback(val);
+            SET_TOP(tb);
             DISPATCH();
         }
 
@@ -7406,13 +7379,13 @@ static void
 format_awaitable_error(PyThreadState *tstate, PyTypeObject *type, int prevprevopcode, int prevopcode)
 {
     if (type->tp_as_async == NULL || type->tp_as_async->am_await == NULL) {
-        if (prevopcode == BEFORE_ASYNC_WITH) {
+        if (prevprevopcode == BEFORE_ASYNC_WITH) {
             _PyErr_Format(tstate, PyExc_TypeError,
                           "'async with' received an object from __aenter__ "
                           "that does not implement __await__: %.100s",
                           type->tp_name);
         }
-        else if (prevopcode == WITH_EXCEPT_START || (prevopcode == CALL_NO_KW && prevprevopcode == DUP_TOP)) {
+        else if (prevprevopcode == WITH_EXCEPT_START || (prevopcode == CALL_NO_KW && prevprevopcode == DUP_TOP)) {
             _PyErr_Format(tstate, PyExc_TypeError,
                           "'async with' received an object from __aexit__ "
                           "that does not implement __await__: %.100s",
