@@ -863,6 +863,130 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
+static inline PyObject *
+binary_op(PyObject *lhs, PyObject *rhs, int oparg)
+{
+    assert(0 <= oparg);
+    assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
+    assert(binary_ops[oparg]);
+    return binary_ops[oparg](lhs, rhs);
+}
+
+static inline PyObject *
+binary_op_small_int(PyObject *lhs, int r, int oparg)
+{
+    PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
+    return binary_op(lhs, (PyObject *)rhs, oparg);
+}
+
+static inline PyObject *
+binary_op_medium_int_small_int(PyLongObject *lhs, digit r, int oparg)
+{
+    assert(PyLong_CheckExact(lhs));
+    assert(Py_SIZE(lhs) == 1);
+    stwodigits l = lhs->ob_digit[0];
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            l += r;
+            break;
+        case NB_AND:
+        case NB_INPLACE_AND:
+            l &= r;
+            break;
+        case NB_FLOOR_DIVIDE:
+        case NB_INPLACE_FLOOR_DIVIDE:
+            l /= r;
+            break;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            l *= r;
+            break;
+        case NB_OR:
+        case NB_INPLACE_OR:
+            l |= r;
+            break;
+        case NB_REMAINDER:
+        case NB_INPLACE_REMAINDER:
+            l %= r;
+            break;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            l -= r;
+            break;
+        case NB_XOR:
+        case NB_INPLACE_XOR:
+            l ^= r;
+            break;
+        case NB_RSHIFT:
+        case NB_INPLACE_RSHIFT:
+            l >>= r & (8 * sizeof(l) - 1);
+            break;
+        case NB_TRUE_DIVIDE:
+        case NB_INPLACE_TRUE_DIVIDE:
+            Py_DECREF(lhs);
+            return PyFloat_FromDouble((double)l / r);
+        case NB_LSHIFT:
+        case NB_INPLACE_LSHIFT: {
+            PyObject *res = _PyLong_Lshift((PyObject*)lhs, r);
+            Py_DECREF(lhs);
+            return res;
+        }
+        default: {
+            PyObject *res = binary_op_small_int((PyObject*)lhs, r, oparg);
+            Py_DECREF(lhs);
+            return res;
+        }
+    }
+    if (Py_REFCNT(lhs) == 1 && _PY_NSMALLPOSINTS <= l && l < PyLong_BASE) {
+        assert(_PY_NSMALLPOSINTS <= lhs->ob_digit[0]);
+        lhs->ob_digit[0] = l;
+        return (PyObject*)lhs;
+    }
+    Py_DECREF(lhs);
+    // XXX: _PyLong_FromSTwoDigits(1);
+    return PyLong_FromLong(l);
+}
+
+static inline PyObject *
+binary_op_float_small_int(PyFloatObject *lhs, digit r, int oparg)
+{
+    assert(PyFloat_CheckExact(lhs));
+    double l = lhs->ob_fval;
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            l += r;
+            break;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            l *= r;
+            break;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            l -= r;
+            break;
+        case NB_TRUE_DIVIDE:
+        case NB_INPLACE_TRUE_DIVIDE:
+            l /= r;
+            break;
+        case NB_REMAINDER:
+        case NB_INPLACE_REMAINDER:
+            l = fmod(l, r);
+            break;
+        default: {
+            PyObject *res = binary_op_small_int((PyObject*)lhs, r, oparg);
+            Py_DECREF(lhs);
+            return res;
+        }
+    }
+    if (Py_REFCNT(lhs) == 1) {
+        lhs->ob_fval = l;
+        return (PyObject*)lhs;
+    }
+    Py_DECREF(lhs);
+    return PyFloat_FromDouble(l);
+}
 
 // PEP 634: Structural Pattern Matching
 
@@ -5195,86 +5319,22 @@ check_eval_breaker:
 
         TARGET(BINARY_OP_SMALL_INT) {
             PyObject *lhs = TOP();
-            digit r = (oparg >> 6) + 1;
+            digit r = (oparg >> 5) + 1;
+            oparg &= 0x1F;
             assert(r < _PY_NSMALLPOSINTS);
-            oparg = oparg & 0x3F;
-            if (PyLong_CheckExact(lhs) && ((size_t)Py_SIZE(lhs)) < 2) {
-                digit l = Py_SIZE(lhs) * ((PyLongObject *)lhs)->ob_digit[0];
-                switch (oparg) {
-                    case NB_ADD:
-                    case NB_INPLACE_ADD:
-                        SET_TOP(PyLong_FromUnsignedLong(l + r));
-                        break;
-                    case NB_AND:
-                    case NB_INPLACE_AND:
-                        SET_TOP(PyLong_FromUnsignedLong(l & r));
-                        break;
-                    case NB_FLOOR_DIVIDE:
-                    case NB_INPLACE_FLOOR_DIVIDE:
-                        SET_TOP(PyLong_FromUnsignedLong(l / r));
-                        break;
-                    case NB_MULTIPLY:
-                    case NB_INPLACE_MULTIPLY:
-                        SET_TOP(PyLong_FromUnsignedLong((twodigits)l * r));
-                        break;
-                    case NB_REMAINDER:
-                    case NB_INPLACE_REMAINDER:
-                        SET_TOP(PyLong_FromUnsignedLong(l % r));
-                        break;
-                    case NB_OR:
-                    case NB_INPLACE_OR:
-                        SET_TOP(PyLong_FromUnsignedLong(l | r));
-                        break;
-                    case NB_XOR:
-                    case NB_INPLACE_XOR:
-                        SET_TOP(PyLong_FromUnsignedLong(l ^ r));
-                        break;
-                    case NB_RSHIFT:
-                    case NB_INPLACE_RSHIFT:
-                        r = Py_MIN(8 * sizeof(l) - 1, r);
-                        SET_TOP(PyLong_FromUnsignedLong(l >> r));
-                        break;
-                    case NB_SUBTRACT:
-                    case NB_INPLACE_SUBTRACT:
-                        // TODO: Why does this cast fix our tests?
-                        SET_TOP(PyLong_FromLong((twodigits)l - r));
-                        break;
-                    case NB_TRUE_DIVIDE:
-                    case NB_INPLACE_TRUE_DIVIDE:
-                        SET_TOP(PyFloat_FromDouble((double)l / r));
-                        break;
-                    case NB_LSHIFT:
-                    case NB_INPLACE_LSHIFT:
-                        SET_TOP(_PyLong_Lshift(lhs, r));
-                        break;
-                    case NB_POWER:
-                    case NB_INPLACE_POWER:
-                        ;  // The technology just isn't there yet...
-                        ternaryfunc power = PyLong_Type.tp_as_number->nb_power;
-                        PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
-                        SET_TOP(power(lhs, (PyObject *)rhs, Py_None));
-                        break;
-                    case NB_MATRIX_MULTIPLY:
-                        PyNumber_MatrixMultiply(lhs, lhs);
-                        assert(PyErr_Occurred());
-                        goto error;
-                    case NB_INPLACE_MATRIX_MULTIPLY:
-                        PyNumber_InPlaceMatrixMultiply(lhs, lhs);
-                        assert(PyErr_Occurred());
-                        goto error;
-                    default:
-                        Py_UNREACHABLE();
-                }
+            PyObject *res;
+            if (PyLong_CheckExact(lhs) && Py_SIZE(lhs) == 1) {
+                res = binary_op_medium_int_small_int((PyLongObject *)lhs, r, oparg);
+            }
+            else if (PyFloat_CheckExact(lhs)) {
+                res = binary_op_float_small_int((PyFloatObject *)lhs, r, oparg);
             }
             else {
-                assert(0 <= oparg);
-                assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-                assert(binary_ops[oparg]);
-                PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
-                SET_TOP(binary_ops[oparg](lhs, (PyObject *)rhs));
+                res = binary_op_small_int(lhs, r, oparg);
+                Py_DECREF(lhs);
             }
-            Py_DECREF(lhs);
-            if (TOP() == NULL) {
+            SET_TOP(res);
+            if (res == NULL) {
                 goto error;
             }
             DISPATCH();

@@ -8555,18 +8555,17 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                         Py_DECREF(cnt);
                         break;
                     case BINARY_OP:
-                        ;  // The technology just isn't there yet...
-                        unsigned char nextarg = bb->b_instr[i + 1].i_oparg;
                         cnt = get_const_value(inst->i_opcode, oparg, consts);
                         if (PyLong_CheckExact(cnt) && 
                             inst->i_lineno == bb->b_instr[i + 1].i_lineno &&
                             ((size_t)Py_SIZE(cnt)) == 1)
                         {
                             digit val = ((PyLongObject*)cnt)->ob_digit[0];
-                            if (val <= 256) {
+                            if (val < _PY_NSMALLPOSINTS) {
+                                int nextarg = bb->b_instr[i + 1].i_oparg;
+                                assert(nextarg < (1 << 5));
                                 inst->i_opcode = BINARY_OP_SMALL_INT;
-                                assert(nextarg < (1 << 6));
-                                inst->i_oparg = ((val - 1) << 6) | nextarg;
+                                inst->i_oparg = ((val - 1) << 5) | nextarg;
                                 bb->b_instr[i + 1].i_opcode = NOP;
                             }
                         }
