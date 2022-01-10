@@ -382,6 +382,9 @@ CPython bytecode changes
 * Replaced all numeric ``BINARY_*`` and ``INPLACE_*`` instructions with a single
   :opcode:`BINARY_OP` implementation.
 
+* Add :opcode:`SMALL_INT_OP`, which implements binary and in-place operators
+  involving a small, positive, constant integer RHS operand.
+
 * Replaced the three call instructions: :opcode:`CALL_FUNCTION`,
   :opcode:`CALL_FUNCTION_KW` and :opcode:`CALL_METHOD` with
   :opcode:`CALL_NO_KW`, :opcode:`CALL_KW` and :opcode:`PRECALL_METHOD`.

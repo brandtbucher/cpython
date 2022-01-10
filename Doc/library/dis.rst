@@ -426,6 +426,19 @@ the original TOS1.
    .. versionadded:: 3.11
 
 
+.. opcode:: SMALL_INT_OP (op)
+
+   Implements binary and in-place operators involving a small, positive,
+   constant integer RHS operand. The low 5 bits of *op* are interpreted the same
+   as :opcode:`BINARY_OP`, while the high bits of *op* encode the RHS value,
+   minus ``1``.
+
+   (For example, ``SMALL_INT_OP(45)`` is equivalent to
+   ``LOAD_CONST(<2>); BINARY_OP(13)``, or ``+= 2``).
+
+   .. versionadded:: 3.11
+
+
 .. opcode:: BINARY_SUBSCR
 
    Implements ``TOS = TOS1[TOS]``.
