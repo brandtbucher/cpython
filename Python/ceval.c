@@ -873,14 +873,14 @@ binary_op(PyObject *lhs, PyObject *rhs, int oparg)
 }
 
 static inline PyObject *
-binary_op_small_int(PyObject *lhs, int r, int oparg)
+small_int_op(PyObject *lhs, int r, int oparg)
 {
     PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
     return binary_op(lhs, (PyObject *)rhs, oparg);
 }
 
 static inline PyObject *
-binary_op_medium_int_small_int(PyLongObject *lhs, digit r, int oparg)
+small_int_op_medium_int(PyLongObject *lhs, digit r, int oparg)
 {
     assert(PyLong_CheckExact(lhs));
     assert(Py_SIZE(lhs) == 1);
@@ -933,7 +933,7 @@ binary_op_medium_int_small_int(PyLongObject *lhs, digit r, int oparg)
             return res;
         }
         default: {
-            PyObject *res = binary_op_small_int((PyObject*)lhs, r, oparg);
+            PyObject *res = small_int_op((PyObject*)lhs, r, oparg);
             Py_DECREF(lhs);
             return res;
         }
@@ -949,7 +949,7 @@ binary_op_medium_int_small_int(PyLongObject *lhs, digit r, int oparg)
 }
 
 static inline PyObject *
-binary_op_float_small_int(PyFloatObject *lhs, digit r, int oparg)
+small_int_op_float(PyFloatObject *lhs, digit r, int oparg)
 {
     assert(PyFloat_CheckExact(lhs));
     double l = lhs->ob_fval;
@@ -975,7 +975,7 @@ binary_op_float_small_int(PyFloatObject *lhs, digit r, int oparg)
             l = fmod(l, r);
             break;
         default: {
-            PyObject *res = binary_op_small_int((PyObject*)lhs, r, oparg);
+            PyObject *res = small_int_op((PyObject*)lhs, r, oparg);
             Py_DECREF(lhs);
             return res;
         }
@@ -5304,35 +5304,9 @@ check_eval_breaker:
             PREDICTED(BINARY_OP);
             PyObject *rhs = POP();
             PyObject *lhs = TOP();
-            assert(0 <= oparg);
-            assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-            assert(binary_ops[oparg]);
-            PyObject *res = binary_ops[oparg](lhs, rhs);
+            PyObject *res = binary_op(lhs, rhs, oparg);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
-            SET_TOP(res);
-            if (res == NULL) {
-                goto error;
-            }
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_SMALL_INT) {
-            PyObject *lhs = TOP();
-            digit r = (oparg >> 5) + 1;
-            oparg &= 0x1F;
-            assert(r < _PY_NSMALLPOSINTS);
-            PyObject *res;
-            if (PyLong_CheckExact(lhs) && Py_SIZE(lhs) == 1) {
-                res = binary_op_medium_int_small_int((PyLongObject *)lhs, r, oparg);
-            }
-            else if (PyFloat_CheckExact(lhs)) {
-                res = binary_op_float_small_int((PyFloatObject *)lhs, r, oparg);
-            }
-            else {
-                res = binary_op_small_int(lhs, r, oparg);
-                Py_DECREF(lhs);
-            }
             SET_TOP(res);
             if (res == NULL) {
                 goto error;
@@ -5356,6 +5330,29 @@ check_eval_breaker:
                 oparg = cache->adaptive.original_oparg;
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
+        }
+
+        TARGET(SMALL_INT_OP) {
+            PyObject *lhs = TOP();
+            digit r = (oparg >> 5) + 1;
+            oparg &= 0x1F;
+            assert(r < _PY_NSMALLPOSINTS);
+            PyObject *res;
+            if (PyLong_CheckExact(lhs) && Py_SIZE(lhs) == 1) {
+                res = small_int_op_medium_int((PyLongObject *)lhs, r, oparg);
+            }
+            else if (PyFloat_CheckExact(lhs)) {
+                res = small_int_op_float((PyFloatObject *)lhs, r, oparg);
+            }
+            else {
+                res = small_int_op(lhs, r, oparg);
+                Py_DECREF(lhs);
+            }
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {

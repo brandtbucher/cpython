@@ -87,7 +87,7 @@ extern "C" {
 #define POP_JUMP_IF_NOT_NONE            128
 #define POP_JUMP_IF_NONE                129
 #define RAISE_VARARGS                   130
-#define BINARY_OP_SMALL_INT             131
+#define SMALL_INT_OP                    131
 #define MAKE_FUNCTION                   132
 #define BUILD_SLICE                     133
 #define MAKE_CELL                       135

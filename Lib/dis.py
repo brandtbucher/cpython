@@ -29,6 +29,7 @@ MAKE_FUNCTION_FLAGS = ('defaults', 'kwdefaults', 'annotations', 'closure')
 
 LOAD_CONST = opmap['LOAD_CONST']
 BINARY_OP = opmap['BINARY_OP']
+SMALL_INT_OP = opmap['SMALL_INT_OP']
 
 def _try_compile(source, name):
     """Attempts to compile the given source, first as an expression and
@@ -450,6 +451,8 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                                     if arg & (1<<i))
             elif op == BINARY_OP:
                 _, argrepr = _nb_ops[arg]
+            elif op == SMALL_INT_OP:
+                argrepr = f"{_nb_ops[arg & 0x1F][1]} {(arg >> 5) + 1}"
         yield Instruction(opname[op], op,
                           arg, argval, argrepr,
                           offset, starts_line, is_jump_target, positions)

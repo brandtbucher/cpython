@@ -1082,10 +1082,10 @@ class TestSourcePositions(unittest.TestCase):
 
         compiled_code, _ = self.check_positions_against_ast(snippet)
 
-        self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
+        self.assertOpcodeSourcePositionIs(compiled_code, 'SMALL_INT_OP',
             line=10_000 + 2, end_line=10_000 + 2,
             column=2, end_column=8, occurrence=1)
-        self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
+        self.assertOpcodeSourcePositionIs(compiled_code, 'SMALL_INT_OP',
             line=10_000 + 4, end_line=10_000 + 4,
             column=2, end_column=9, occurrence=2)
 
@@ -1117,12 +1117,12 @@ f(
             line=1, end_line=1, column=13, end_column=21)
         self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
             line=1, end_line=1, column=9, end_column=21, occurrence=1)
+        self.assertOpcodeSourcePositionIs(compiled_code, 'SMALL_INT_OP',
+            line=1, end_line=1, column=9, end_column=26)
         self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
-            line=1, end_line=1, column=9, end_column=26, occurrence=2)
+            line=1, end_line=1, column=4, end_column=27, occurrence=2)
         self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
-            line=1, end_line=1, column=4, end_column=27, occurrence=3)
-        self.assertOpcodeSourcePositionIs(compiled_code, 'BINARY_OP',
-            line=1, end_line=1, column=0, end_column=27, occurrence=4)
+            line=1, end_line=1, column=0, end_column=27, occurrence=3)
 
 
 class TestExpressionStackSize(unittest.TestCase):

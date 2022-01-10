@@ -380,6 +380,7 @@ _code_type = type(_write_atomic.__code__)
 #     Python 3.11a4 3472 (bpo-46009: replace GEN_START with POP_TOP)
 #     Python 3.11a4 3473 (Add POP_JUMP_IF_NOT_NONE/POP_JUMP_IF_NONE opcodes)
 #     Python 3.11a4 3474 (Add RESUME opcode)
+#     Python 3.11a5 3475 (Add SMALL_INT_OP)
 
 #     Python 3.12 will start with magic number 3500
 

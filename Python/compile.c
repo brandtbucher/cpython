@@ -1095,7 +1095,7 @@ stack_effect(int opcode, int oparg, int jump)
             return 1;
         case BINARY_OP:
             return -1;
-        case BINARY_OP_SMALL_INT:
+        case SMALL_INT_OP:
             return 0;
         default:
             return PY_INVALID_STACK_EFFECT;
@@ -8550,19 +8550,18 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                         break;
                     case BINARY_OP:
                         cnt = get_const_value(inst->i_opcode, oparg, consts);
-                        if (PyLong_CheckExact(cnt) && 
-                            inst->i_lineno == bb->b_instr[i + 1].i_lineno &&
-                            ((size_t)Py_SIZE(cnt)) == 1)
+                        if (PyLong_CheckExact(cnt) && Py_SIZE(cnt) == 1 &&
+                            inst->i_lineno == bb->b_instr[i + 1].i_lineno)
                         {
-                            digit val = ((PyLongObject*)cnt)->ob_digit[0];
-                            if (val < _PY_NSMALLPOSINTS) {
-                                int nextarg = bb->b_instr[i + 1].i_oparg;
-                                assert(nextarg < (1 << 5));
-                                inst->i_opcode = BINARY_OP_SMALL_INT;
-                                inst->i_oparg = ((val - 1) << 5) | nextarg;
-                                bb->b_instr[i + 1].i_opcode = NOP;
+                            digit r = ((PyLongObject*)cnt)->ob_digit[0];
+                            if (r < _PY_NSMALLPOSINTS) {
+                                inst->i_opcode = NOP;
+                                assert(bb->b_instr[i + 1].i_oparg < (1 << 5));
+                                bb->b_instr[i + 1].i_opcode = SMALL_INT_OP;
+                                bb->b_instr[i + 1].i_oparg |= ((r - 1) << 5);
                             }
                         }
+                        Py_DECREF(cnt);
                         break;
                 }
                 break;
