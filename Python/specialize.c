@@ -126,6 +126,7 @@ _Py_GetSpecializationStats(void) {
     err += add_stat_dict(stats, STORE_ATTR, "store_attr");
     err += add_stat_dict(stats, CALL_NO_KW, "call_no_kw");
     err += add_stat_dict(stats, BINARY_OP, "binary_op");
+    err += add_stat_dict(stats, SMALL_INT_OP, "small_int_op");
     err += add_stat_dict(stats, COMPARE_OP, "compare_op");
     if (err < 0) {
         Py_DECREF(stats);
@@ -254,6 +255,7 @@ static uint8_t adaptive_opcodes[256] = {
     [CALL_NO_KW] = CALL_NO_KW_ADAPTIVE,
     [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
     [BINARY_OP] = BINARY_OP_ADAPTIVE,
+    [SMALL_INT_OP] = SMALL_INT_OP_ADAPTIVE,
     [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
 };
 
@@ -267,6 +269,7 @@ static uint8_t cache_requirements[256] = {
     [CALL_NO_KW] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
     [BINARY_OP] = 1,  // _PyAdaptiveEntry
+    [SMALL_INT_OP] = 1,  // _PyAdaptiveEntry
     [COMPARE_OP] = 1, /* _PyAdaptiveEntry */
 };
 
@@ -1679,6 +1682,55 @@ failure:
 success:
     STAT_INC(BINARY_OP, success);
     adaptive->counter = initial_counter_value();
+}
+
+#define SMALL_INT_OP_MEDIUM_INT_OPS   \
+    ((1 << NB_ADD) |                  \
+     (1 << NB_INPLACE_ADD) |          \
+     (1 << NB_AND) |                  \
+     (1 << NB_INPLACE_AND) |          \
+     (1 << NB_FLOOR_DIVIDE) |         \
+     (1 << NB_INPLACE_FLOOR_DIVIDE) | \
+     (1 << NB_MULTIPLY) |             \
+     (1 << NB_INPLACE_MULTIPLY) |     \
+     (1 << NB_OR) |                   \
+     (1 << NB_INPLACE_OR) |           \
+     (1 << NB_REMAINDER) |            \
+     (1 << NB_INPLACE_REMAINDER) |    \
+     (1 << NB_SUBTRACT) |             \
+     (1 << NB_INPLACE_SUBTRACT) |     \
+     (1 << NB_XOR) |                  \
+     (1 << NB_INPLACE_XOR) |          \
+     (1 << NB_RSHIFT) |               \
+     (1 << NB_INPLACE_RSHIFT))
+
+void
+_Py_Specialize_SmallIntOp(PyObject *lhs, _Py_CODEUNIT *instr,
+                          SpecializedCacheEntry *cache)
+{
+    _PyAdaptiveEntry *adaptive = &cache->adaptive;
+    int opmask = 1 << (adaptive->original_oparg & 0x1F);
+    if (PyLong_CheckExact(lhs)) {
+        if (Py_SIZE(lhs) != 1) {
+            SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_BIG_INT);
+            goto failure;
+        }
+        if (!(opmask & SMALL_INT_OP_MEDIUM_INT_OPS)) {
+            SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_OTHER);
+            goto failure;
+        }
+        *instr = _Py_MAKECODEUNIT(SMALL_INT_OP_MEDIUM_INT, _Py_OPARG(*instr));
+    }
+    else {
+        SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_DIFFERENT_TYPES);
+        goto failure;
+    }
+    STAT_INC(SMALL_INT_OP, success);
+    adaptive->counter = initial_counter_value();
+    return;
+failure:
+    STAT_INC(SMALL_INT_OP, failure);
+    cache_backoff(adaptive);
 }
 
 static int compare_masks[] = {

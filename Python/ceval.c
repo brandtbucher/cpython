@@ -873,13 +873,6 @@ binary_op(PyObject *lhs, PyObject *rhs, int oparg)
 }
 
 // static inline PyObject *
-// small_int_op(PyObject *lhs, int r, int oparg)
-// {
-//     PyLongObject *rhs = (PyLongObject *)_PyLong_GetZero() + r;
-//     return binary_op(lhs, (PyObject *)rhs, oparg);
-// }
-
-// static inline PyObject *
 // small_int_op_medium_int(PyLongObject *lhs, digit r, int oparg)
 // {
 //     assert(PyLong_CheckExact(lhs));
@@ -5333,8 +5326,9 @@ check_eval_breaker:
         }
 
         TARGET(SMALL_INT_OP) {
+            PREDICTED(SMALL_INT_OP);
             PyObject *lhs = TOP();
-            int r = (oparg >> 5) + 1;
+            digit r = (oparg >> 5) + 1;
             assert(r < _PY_NSMALLPOSINTS);
             PyLongObject *rhs = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + r];
             PyObject *res = binary_op(lhs, (PyObject *)rhs, oparg & 0x1F);
@@ -5344,6 +5338,81 @@ check_eval_breaker:
                 goto error;
             }
             DISPATCH();
+        }
+
+        TARGET(SMALL_INT_OP_ADAPTIVE) {
+            assert(cframe.use_tracing == 0);
+            SpecializedCacheEntry *cache = GET_CACHE();
+            if (cache->adaptive.counter == 0) {
+                PyObject *lhs = TOP();
+                next_instr--;
+                _Py_Specialize_SmallIntOp(lhs, next_instr, cache);
+                DISPATCH();
+            }
+            else {
+                STAT_INC(SMALL_INT_OP, deferred);
+                cache->adaptive.counter--;
+                oparg = cache->adaptive.original_oparg;
+                JUMP_TO_INSTRUCTION(SMALL_INT_OP);
+            }
+        }
+
+        TARGET(SMALL_INT_OP_MEDIUM_INT) {
+            PyObject *lhs = TOP();
+            DEOPT_IF(!PyLong_CheckExact(lhs), SMALL_INT_OP);
+            DEOPT_IF(Py_SIZE(lhs) != 1, SMALL_INT_OP);
+            STAT_INC(SMALL_INT_OP, hit);
+            stwodigits l = ((PyLongObject *)lhs)->ob_digit[0];
+            Py_DECREF(lhs);
+            int original_oparg = GET_CACHE()->adaptive.original_oparg;
+            digit r = (original_oparg >> 5) + 1;
+            switch (original_oparg & 0x1F) {
+                case NB_ADD:
+                case NB_INPLACE_ADD:
+                    l += r;
+                    break;
+                case NB_AND:
+                case NB_INPLACE_AND:
+                    l &= r;
+                    break;
+                case NB_FLOOR_DIVIDE:
+                case NB_INPLACE_FLOOR_DIVIDE:
+                    l /= r;
+                    break;
+                case NB_MULTIPLY:
+                case NB_INPLACE_MULTIPLY:
+                    l *= r;
+                    break;
+                case NB_OR:
+                case NB_INPLACE_OR:
+                    l |= r;
+                    break;
+                case NB_REMAINDER:
+                case NB_INPLACE_REMAINDER:
+                    l %= r;
+                    break;
+                case NB_SUBTRACT:
+                case NB_INPLACE_SUBTRACT:
+                    l -= r;
+                    break;
+                case NB_XOR:
+                case NB_INPLACE_XOR:
+                    l ^= r;
+                    break;
+                case NB_RSHIFT:
+                case NB_INPLACE_RSHIFT:
+                    l >>= r & (8 * sizeof(l) - 1);
+                    break;
+                default:
+                    Py_UNREACHABLE();
+            }
+            PyObject *res = PyLong_FromLong(l);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
+
         }
 
         TARGET(EXTENDED_ARG) {
@@ -5457,6 +5526,7 @@ MISS_WITH_CACHE(LOAD_GLOBAL)
 MISS_WITH_CACHE(LOAD_METHOD)
 MISS_WITH_CACHE(CALL_NO_KW)
 MISS_WITH_CACHE(BINARY_OP)
+MISS_WITH_CACHE(SMALL_INT_OP)
 MISS_WITH_CACHE(COMPARE_OP)
 MISS_WITH_CACHE(BINARY_SUBSCR)
 MISS_WITH_OPARG_COUNTER(STORE_SUBSCR)

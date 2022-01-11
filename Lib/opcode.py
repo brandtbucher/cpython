@@ -278,6 +278,8 @@ _specialized_instructions = [
     "STORE_ATTR_INSTANCE_VALUE",
     "STORE_ATTR_SLOT",
     "STORE_ATTR_WITH_HINT",
+    "SMALL_INT_OP_ADAPTIVE",
+    "SMALL_INT_OP_MEDIUM_INT",
     # Super instructions
     "LOAD_FAST__LOAD_FAST",
     "STORE_FAST__LOAD_FAST",
