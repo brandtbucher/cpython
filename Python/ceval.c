@@ -941,44 +941,27 @@ binary_op(PyObject *lhs, PyObject *rhs, int oparg)
 //     return PyLong_FromLong(l);
 // }
 
-// static inline PyObject *
-// small_int_op_float(PyFloatObject *lhs, digit r, int oparg)
+// static inline double
+// small_int_op_float(PyObject *lhs, int oparg)
 // {
 //     assert(PyFloat_CheckExact(lhs));
-//     double l = lhs->ob_fval;
-//     switch (oparg) {
+//     double l = PyFloat_AS_DOUBLE(lhs);
+//     double r = (double)((oparg >> 5) + 1);
+//     switch (oparg & 0x1F) {
 //         case NB_ADD:
 //         case NB_INPLACE_ADD:
-//             l += r;
-//             break;
+//             return l + r;
 //         case NB_MULTIPLY:
 //         case NB_INPLACE_MULTIPLY:
-//             l *= r;
-//             break;
+//             return l * r;
 //         case NB_SUBTRACT:
 //         case NB_INPLACE_SUBTRACT:
-//             l -= r;
-//             break;
+//             return l - r;
 //         case NB_TRUE_DIVIDE:
 //         case NB_INPLACE_TRUE_DIVIDE:
-//             l /= r;
-//             break;
-//         case NB_REMAINDER:
-//         case NB_INPLACE_REMAINDER:
-//             l = fmod(l, r);
-//             break;
-//         default: {
-//             PyObject *res = small_int_op((PyObject*)lhs, r, oparg);
-//             Py_DECREF(lhs);
-//             return res;
-//         }
+//             return l / r;
 //     }
-//     if (Py_REFCNT(lhs) == 1) {
-//         lhs->ob_fval = l;
-//         return (PyObject*)lhs;
-//     }
-//     Py_DECREF(lhs);
-//     return PyFloat_FromDouble(l);
+//     Py_UNREACHABLE();
 // }
 
 // PEP 634: Structural Pattern Matching
@@ -5362,11 +5345,10 @@ check_eval_breaker:
             DEOPT_IF(!PyLong_CheckExact(lhs), SMALL_INT_OP);
             DEOPT_IF(Py_SIZE(lhs) != 1, SMALL_INT_OP);
             STAT_INC(SMALL_INT_OP, hit);
+            _PyAdaptiveEntry *adaptive = &GET_CACHE()->adaptive;
             stwodigits l = ((PyLongObject *)lhs)->ob_digit[0];
-            Py_DECREF(lhs);
-            int original_oparg = GET_CACHE()->adaptive.original_oparg;
-            digit r = (original_oparg >> 5) + 1;
-            switch (original_oparg & 0x1F) {
+            digit r = (adaptive->original_oparg >> 5) + 1;
+            switch (adaptive->original_oparg & 0x1F) {
                 case NB_ADD:
                 case NB_INPLACE_ADD:
                     l += r;
@@ -5406,6 +5388,13 @@ check_eval_breaker:
                 default:
                     Py_UNREACHABLE();
             }
+            if (_PY_NSMALLPOSINTS <= l && l < PyLong_BASE &&
+                Py_REFCNT(lhs) == adaptive->index)
+            {
+                ((PyLongObject *)lhs)->ob_digit[0] = l;
+                DISPATCH();
+            }
+            Py_DECREF(lhs);
             PyObject *res = PyLong_FromLong(l);
             SET_TOP(res);
             if (res == NULL) {
@@ -5418,7 +5407,7 @@ check_eval_breaker:
             PyObject *lhs = TOP();
             DEOPT_IF(!PyFloat_CheckExact(lhs), SMALL_INT_OP);
             STAT_INC(SMALL_INT_OP, hit);
-            double l = ((PyFloatObject *)lhs)->ob_fval;
+            double l = PyFloat_AS_DOUBLE(lhs);
             Py_DECREF(lhs);
             int original_oparg = GET_CACHE()->adaptive.original_oparg;
             digit r = (original_oparg >> 5) + 1;

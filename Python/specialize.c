@@ -1714,6 +1714,21 @@ success:
      (1 << NB_TRUE_DIVIDE) |        \
      (1 << NB_INPLACE_TRUE_DIVIDE))
 
+#define INPLACE_OPS                      \
+    ((1 << NB_INPLACE_ADD) |             \
+     (1 << NB_INPLACE_AND) |             \
+     (1 << NB_INPLACE_FLOOR_DIVIDE) |    \
+     (1 << NB_INPLACE_LSHIFT) |          \
+     (1 << NB_INPLACE_MATRIX_MULTIPLY) | \
+     (1 << NB_INPLACE_MULTIPLY) |        \
+     (1 << NB_INPLACE_OR) |              \
+     (1 << NB_INPLACE_POWER) |           \
+     (1 << NB_INPLACE_REMAINDER) |       \
+     (1 << NB_INPLACE_RSHIFT) |          \
+     (1 << NB_INPLACE_SUBTRACT) |        \
+     (1 << NB_INPLACE_TRUE_DIVIDE) |     \
+     (1 << NB_INPLACE_XOR))
+
 void
 _Py_Specialize_SmallIntOp(PyObject *lhs, _Py_CODEUNIT *instr,
                           SpecializedCacheEntry *cache)
@@ -1729,6 +1744,7 @@ _Py_Specialize_SmallIntOp(PyObject *lhs, _Py_CODEUNIT *instr,
             SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_OTHER);
             goto failure;
         }
+        adaptive->index = 1 + (opmask & INPLACE_OPS);
         *instr = _Py_MAKECODEUNIT(SMALL_INT_OP_MEDIUM_INT, _Py_OPARG(*instr));
     }
     else if (PyFloat_CheckExact(lhs)) {
