@@ -1704,6 +1704,16 @@ success:
      (1 << NB_RSHIFT) |               \
      (1 << NB_INPLACE_RSHIFT))
 
+#define SMALL_INT_OP_FLOAT_OPS      \
+    ((1 << NB_ADD) |                \
+     (1 << NB_INPLACE_ADD) |        \
+     (1 << NB_MULTIPLY) |           \
+     (1 << NB_INPLACE_MULTIPLY) |   \
+     (1 << NB_SUBTRACT) |           \
+     (1 << NB_INPLACE_SUBTRACT) |   \
+     (1 << NB_TRUE_DIVIDE) |        \
+     (1 << NB_INPLACE_TRUE_DIVIDE))
+
 void
 _Py_Specialize_SmallIntOp(PyObject *lhs, _Py_CODEUNIT *instr,
                           SpecializedCacheEntry *cache)
@@ -1720,6 +1730,13 @@ _Py_Specialize_SmallIntOp(PyObject *lhs, _Py_CODEUNIT *instr,
             goto failure;
         }
         *instr = _Py_MAKECODEUNIT(SMALL_INT_OP_MEDIUM_INT, _Py_OPARG(*instr));
+    }
+    else if (PyFloat_CheckExact(lhs)) {
+        if (!(opmask & SMALL_INT_OP_FLOAT_OPS)) {
+            SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_OTHER);
+            goto failure;
+        }
+        *instr = _Py_MAKECODEUNIT(SMALL_INT_OP_FLOAT, _Py_OPARG(*instr));
     }
     else {
         SPECIALIZATION_FAIL(SMALL_INT_OP, SPEC_FAIL_DIFFERENT_TYPES);

@@ -5412,7 +5412,42 @@ check_eval_breaker:
                 goto error;
             }
             DISPATCH();
+        }
 
+        TARGET(SMALL_INT_OP_FLOAT) {
+            PyObject *lhs = TOP();
+            DEOPT_IF(!PyFloat_CheckExact(lhs), SMALL_INT_OP);
+            STAT_INC(SMALL_INT_OP, hit);
+            double l = ((PyFloatObject *)lhs)->ob_fval;
+            Py_DECREF(lhs);
+            int original_oparg = GET_CACHE()->adaptive.original_oparg;
+            digit r = (original_oparg >> 5) + 1;
+            switch (original_oparg & 0x1F) {
+                case NB_ADD:
+                case NB_INPLACE_ADD:
+                    l += r;
+                    break;
+                case NB_MULTIPLY:
+                case NB_INPLACE_MULTIPLY:
+                    l *= r;
+                    break;
+                case NB_SUBTRACT:
+                case NB_INPLACE_SUBTRACT:
+                    l -= r;
+                    break;
+                case NB_TRUE_DIVIDE:
+                case NB_INPLACE_TRUE_DIVIDE:
+                    l /= r;
+                    break;
+                default:
+                    Py_UNREACHABLE();
+            }
+            PyObject *res = PyFloat_FromDouble(l);
+            SET_TOP(res);
+            if (res == NULL) {
+                goto error;
+            }
+            DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {
