@@ -3284,13 +3284,18 @@ check_eval_breaker:
         }
 
         TARGET(LIST_TO_TUPLE) {
-            PyObject *list = POP();
-            PyObject *tuple = PyList_AsTuple(list);
-            Py_DECREF(list);
+            PyObject *list = TOP();
+            assert(Py_REFCNT(list) == 1);
+            assert(PyList_CheckExact(list));
+            PyObject **items = _PyList_ITEMS(list);
+            Py_ssize_t size = PyList_GET_SIZE(list);
+            PyObject *tuple = _PyTuple_FromArraySteal(items, size);
+            Py_SET_SIZE(list, 0);
             if (tuple == NULL) {
                 goto error;
             }
-            PUSH(tuple);
+            SET_TOP(tuple);
+            Py_DECREF(list);
             DISPATCH();
         }
 
