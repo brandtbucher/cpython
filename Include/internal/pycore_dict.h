@@ -10,10 +10,11 @@ extern "C" {
 #endif
 
 #if defined(__SSE2__) && (defined(__clang__) || defined(__GNUC__))
-#define USE_HINTS 1
 #include <emmintrin.h>
+#define DK_HINTS(DK) ((char*)&DK_ENTRIES(DK)[SHARED_KEYS_MAX_SIZE])
+#define DK_SET_HINT(DK, IX, HINT) (DK_HINTS(DK)[IX] = (HINT))
 #else
-#define USE_HINTS 0
+#define DK_SET_HINT(DK, IX, HINT) (HINT)
 #endif
 
 
@@ -70,11 +71,6 @@ typedef enum {
 
 /* See dictobject.c for actual layout of DictKeysObject */
 struct _dictkeysobject {
-
-#if USE_HINTS
-    char dk_hints[16];
-#endif
-
     Py_ssize_t dk_refcnt;
 
     /* Size of the hash table (dk_indices). It must be a power of 2. */
