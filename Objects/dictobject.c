@@ -846,18 +846,13 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
         __m128i hints = *(__m128i*)DK_HINTS(dk);
         __m128i hashes = _mm_set1_epi8(hash);
         int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
-        hits &= ~(~0U << dk->dk_nentries);
+        // hits &= ~(~0U << dk->dk_nentries);
         if (hits == 0) {
             return DKIX_EMPTY;
         }
         int ix = __builtin_ctz(hits);
-        PyDictKeyEntry *ep = &DK_ENTRIES(dk)[ix];
-        if (ep->me_key == key || 
-            (ep->me_hash == hash && unicode_eq(ep->me_key, key))) {
+        if (DK_ENTRIES(dk)[ix].me_key == key) {
             return ix;
-        }
-        if (__builtin_popcount(hits) == 1) {
-            return DKIX_EMPTY;
         }
         // printf("%2d collisions: %02X %02X %02X %02X %02X %02X %02X %02X %02X "
         //        "%02X %02X %02X %02X %02X %02X %02X\n", __builtin_popcount(hits),
