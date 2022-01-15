@@ -868,43 +868,45 @@ static const binaryfunc binary_ops[] = {
       _Py_OPCODE(*next_instr) == STORE_FAST__LOAD_FAST) && \
      GETLOCAL(_Py_OPARG(*next_instr)) == (O))              \
 
-#define BINARY_OP_FAST_INT(OP)                                                 \
-    do {                                                                       \
-        PyObject *lhs = SECOND();                                              \
-        PyObject *rhs = TOP();                                                 \
-        DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);                          \
-        DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);                          \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(lhs)), BINARY_OP);                         \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(rhs)), BINARY_OP);                         \
-        STAT_INC(BINARY_OP, hit);                                              \
-        stwodigits l = Py_SIZE(lhs) * ((PyLongObject *)lhs)->ob_digit[0];      \
-        stwodigits r = Py_SIZE(rhs) * ((PyLongObject *)rhs)->ob_digit[0];      \
-        stwodigits i = l OP r;                                                 \
-        Py_DECREF(rhs);                                                        \
-        STACK_SHRINK(1);                                                       \
-        if (-_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS) {                \
-            Py_DECREF(lhs);                                                    \
-            PyLongObject *res = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + i];    \
-            Py_INCREF(res);                                                    \
-            SET_TOP((PyObject *)res);                                          \
-            DISPATCH();                                                        \
-        }                                                                      \
-        bool inplace = NEXT_OP_STORES(lhs);                                    \
-        if (Py_ABS(i) < PyLong_BASE && Py_REFCNT(lhs) == inplace + 1) {        \
-            assert(lhs < (PyObject *)&_PyLong_SMALL_INTS[0] ||                 \
-                   lhs >= (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS +  \
-                                                          _PY_NSMALLPOSINTS]); \
-            ((PyLongObject *)lhs)->ob_digit[0] = Py_ABS(i);                    \
-            Py_SET_SIZE(lhs, i < 0 ? -1 : 1);                                  \
-            DISPATCH();                                                        \
-        }                                                                      \
-        Py_DECREF(lhs);                                                        \
-        PyObject *res = PyLong_FromLong(i);                                    \
-        SET_TOP(res);                                                          \
-        if (res == NULL) {                                                     \
-            goto error;                                                        \
-        }                                                                      \
-        DISPATCH();                                                            \
+#define BINARY_OP_FAST_INT(OP)                                              \
+    do {                                                                    \
+        PyObject *lhs = SECOND();                                           \
+        PyObject *rhs = TOP();                                              \
+        DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);                       \
+        DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);                       \
+        DEOPT_IF(1 < Py_ABS(Py_SIZE(lhs)), BINARY_OP);                      \
+        DEOPT_IF(1 < Py_ABS(Py_SIZE(rhs)), BINARY_OP);                      \
+        STAT_INC(BINARY_OP, hit);                                           \
+        stwodigits l = Py_SIZE(lhs) * ((PyLongObject *)lhs)->ob_digit[0];   \
+        stwodigits r = Py_SIZE(rhs) * ((PyLongObject *)rhs)->ob_digit[0];   \
+        stwodigits i = l OP r;                                              \
+        Py_DECREF(rhs);                                                     \
+        STACK_SHRINK(1);                                                    \
+        if (-_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS) {             \
+            Py_DECREF(lhs);                                                 \
+            PyLongObject *res = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + i]; \
+            Py_INCREF(res);                                                 \
+            SET_TOP((PyObject *)res);                                       \
+            NOTRACE_DISPATCH();                                             \
+        }                                                                   \
+        bool inplace = NEXT_OP_STORES(lhs);                                 \
+        if (Py_ABS(i) < PyLong_BASE && Py_REFCNT(lhs) == inplace + 1) {     \
+            ((PyLongObject *)lhs)->ob_digit[0] = (digit)Py_ABS(i);          \
+            Py_SET_SIZE(lhs, i < 0 ? -1 : 1);                               \
+            if (inplace) {                                                  \
+                STACK_SHRINK(1);                                            \
+                Py_DECREF(lhs);                                             \
+                next_instr++;                                               \
+            }                                                               \
+            NOTRACE_DISPATCH();                                             \
+        }                                                                   \
+        Py_DECREF(lhs);                                                     \
+        PyObject *res = PyLong_FromLongLong(i);                             \
+        SET_TOP(res);                                                       \
+        if (res == NULL) {                                                  \
+            goto error;                                                     \
+        }                                                                   \
+        NOTRACE_DISPATCH();                                                 \
     } while (0)
 
 #define BINARY_OP_FAST_FLOAT(OP)                       \
@@ -922,7 +924,12 @@ static const binaryfunc binary_ops[] = {
         bool inplace = NEXT_OP_STORES(lhs);            \
         if (Py_REFCNT(lhs) == inplace + 1) {           \
             PyFloat_AS_DOUBLE(lhs) = d;                \
-            DISPATCH();                                \
+            if (inplace) {                             \
+                STACK_SHRINK(1);                       \
+                Py_DECREF(lhs);                        \
+                next_instr++;                          \
+            }                                          \
+            NOTRACE_DISPATCH();                        \
         }                                              \
         Py_DECREF(lhs);                                \
         PyObject *res = PyFloat_FromDouble(d);         \
@@ -930,7 +937,7 @@ static const binaryfunc binary_ops[] = {
         if (res == NULL) {                             \
             goto error;                                \
         }                                              \
-        DISPATCH();                                    \
+        NOTRACE_DISPATCH();                            \
     } while (0)
 
 // PEP 634: Structural Pattern Matching

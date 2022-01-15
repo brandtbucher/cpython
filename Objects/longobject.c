@@ -3139,9 +3139,10 @@ x_sub(PyLongObject *a, PyLongObject *b)
     return maybe_small_long(long_normalize(z));
 }
 
-PyObject *
-_PyLong_Add(PyLongObject *a, PyLongObject *b)
+static PyObject *
+long_add(PyLongObject *a, PyLongObject *b)
 {
+    CHECK_BINOP(a, b);
     if (IS_MEDIUM_VALUE(a) && IS_MEDIUM_VALUE(b)) {
         return _PyLong_FromSTwoDigits(medium_value(a) + medium_value(b));
     }
@@ -3172,15 +3173,9 @@ _PyLong_Add(PyLongObject *a, PyLongObject *b)
 }
 
 static PyObject *
-long_add(PyLongObject *a, PyLongObject *b)
+long_sub(PyLongObject *a, PyLongObject *b)
 {
     CHECK_BINOP(a, b);
-    return _PyLong_Add(a, b);
-}
-
-PyObject *
-_PyLong_Subtract(PyLongObject *a, PyLongObject *b)
-{
     PyLongObject *z;
 
     if (IS_MEDIUM_VALUE(a) && IS_MEDIUM_VALUE(b)) {
@@ -3205,13 +3200,6 @@ _PyLong_Subtract(PyLongObject *a, PyLongObject *b)
             z = x_sub(a, b);
     }
     return (PyObject *)z;
-}
-
-static PyObject *
-long_sub(PyLongObject *a, PyLongObject *b)
-{
-    CHECK_BINOP(a, b);
-    return _PyLong_Subtract(a, b);
 }
 
 /* Grade school multiplication, ignoring the signs.
@@ -3631,9 +3619,10 @@ k_lopsided_mul(PyLongObject *a, PyLongObject *b)
     return NULL;
 }
 
-PyObject *
-_PyLong_Multiply(PyLongObject *a, PyLongObject *b)
+static PyObject *
+long_mul(PyLongObject *a, PyLongObject *b)
 {
+    CHECK_BINOP(a, b);
     PyLongObject *z;
 
     /* fast path for single-digit multiplication */
@@ -3650,13 +3639,6 @@ _PyLong_Multiply(PyLongObject *a, PyLongObject *b)
             return NULL;
     }
     return (PyObject *)z;
-}
-
-static PyObject *
-long_mul(PyLongObject *a, PyLongObject *b)
-{
-    CHECK_BINOP(a, b);
-    return _PyLong_Multiply(a, b);
 }
 
 /* Fast modulo division for single-digit longs. */
