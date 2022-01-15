@@ -833,6 +833,14 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
     if (!PyUnicode_CheckExact(key) || kind == DICT_KEYS_GENERAL) {
         return DKIX_ERROR;
     }
+    if (kind == DICT_KEYS_SPLIT) {
+        PyDictKeyEntry *ep0 = DK_ENTRIES(dk);
+        for (Py_ssize_t ix = 0; ix < dk->dk_nentries; ix++) {
+            if (ep0[ix].me_key == key) {
+                return ix;
+            }
+        }
+    }
     Py_hash_t hash = ((PyASCIIObject *)key)->hash;
     if (hash == -1) {
         hash = PyUnicode_Type.tp_hash(key);
