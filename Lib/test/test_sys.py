@@ -23,7 +23,7 @@ import warnings
 # strings to intern in test_intern()
 INTERN_NUMRUNS = 0
 
-DICT_KEY_STRUCT_FORMAT = 'n2BI2n'
+DICT_KEY_STRUCT_FORMAT = '16cn2BI2n'
 
 class DisplayHookTest(unittest.TestCase):
 

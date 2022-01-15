@@ -9,6 +9,13 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#if defined(__SSE2__) && (defined(__clang__) || defined(__GNUC__))
+#define USE_HINTS 1
+#include <emmintrin.h>
+#else
+#define USE_HINTS 0
+#endif
+
 
 /* runtime lifecycle */
 
@@ -63,6 +70,11 @@ typedef enum {
 
 /* See dictobject.c for actual layout of DictKeysObject */
 struct _dictkeysobject {
+
+#if USE_HINTS
+    char dk_hints[16];
+#endif
+
     Py_ssize_t dk_refcnt;
 
     /* Size of the hash table (dk_indices). It must be a power of 2. */

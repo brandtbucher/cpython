@@ -442,6 +442,9 @@ estimate_log2_keysize(Py_ssize_t n)
  * (which cannot fail and thus can do no allocation).
  */
 static PyDictKeysObject empty_keys_struct = {
+#if USE_HINTS
+        {}, // dk_hints
+#endif
         1, /* dk_refcnt */
         0, /* dk_log2_size */
         DICT_KEYS_SPLIT, /* dk_kind */
@@ -841,6 +844,20 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
             return DKIX_ERROR;
         }
     }
+#if USE_HINTS
+    if (kind == DICT_KEYS_SPLIT) {
+        int mask = _mm_movemask_epi8(
+                      _mm_cmpeq_epi8(*(__m128i*)dk->dk_hints,
+                       _mm_set1_epi8(hash)));
+        if (mask == 0) {
+            return DKIX_EMPTY;
+        }
+        int ix = __builtin_ctz(mask);
+        if (DK_ENTRIES(dk)[ix].me_key == key) {
+            return ix;
+        }
+    }
+#endif
     return dictkeys_stringlookup(dk, key, hash);
 }
 
@@ -1046,6 +1063,9 @@ insert_into_dictkeys(PyDictKeysObject *keys, PyObject *name)
         ep->me_hash = hash;
         keys->dk_usable--;
         keys->dk_nentries++;
+#if USE_HINTS
+        keys->dk_hints[ix] = hash;
+#endif
     }
     assert (ix < SHARED_KEYS_MAX_SIZE);
     return (int)ix;
@@ -1098,6 +1118,9 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
             mp->ma_values->mv_order = ((mp->ma_values->mv_order)<<4) | index;
             assert (mp->ma_values->values[index] == NULL);
             mp->ma_values->values[index] = value;
+#if USE_HINTS
+            mp->ma_keys->dk_hints[index] = hash;
+#endif
         }
         else {
             ep->me_value = value;
@@ -3036,6 +3059,9 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
             assert(mp->ma_values->values[index] == NULL);
             mp->ma_values->values[index] = value;
             mp->ma_values->mv_order = (mp->ma_values->mv_order << 4) | index;
+#if USE_HINTS
+            mp->ma_keys->dk_hints[index] = hash;
+#endif
         }
         else {
             ep->me_value = value;
