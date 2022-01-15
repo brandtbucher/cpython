@@ -843,21 +843,32 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
     }
 #ifdef DK_HINTS
     if (kind == DICT_KEYS_SPLIT) {
-        PyDictKeyEntry *ep0 = DK_ENTRIES(dk);
         __m128i hints = *(__m128i*)DK_HINTS(dk);
         __m128i hashes = _mm_set1_epi8(hash);
         int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
         hits &= ~(~0U << dk->dk_nentries);
-        while (hits) {
-            int ix = __builtin_ctz(hits);
-            PyDictKeyEntry *ep = &ep0[ix];
-            if (ep->me_key == key || 
-                (ep->me_hash == hash && unicode_eq(ep->me_key, key))) {
-                return ix;
-            }
-            hits ^= 1 << ix;
+        if (hits == 0) {
+            return DKIX_EMPTY;
         }
-        return DKIX_EMPTY;
+        int ix = __builtin_ctz(hits);
+        PyDictKeyEntry *ep = &DK_ENTRIES(dk)[ix];
+        if (ep->me_key == key || 
+            (ep->me_hash == hash && unicode_eq(ep->me_key, key))) {
+            return ix;
+        }
+        if (__builtin_popcount(hits) == 1) {
+            return DKIX_EMPTY;
+        }
+        // printf("%2d collisions: %02X %02X %02X %02X %02X %02X %02X %02X %02X "
+        //        "%02X %02X %02X %02X %02X %02X %02X\n", __builtin_popcount(hits),
+        //        (uint8_t)DK_HINTS(dk)[ 0], (uint8_t)DK_HINTS(dk)[ 1],
+        //        (uint8_t)DK_HINTS(dk)[ 2], (uint8_t)DK_HINTS(dk)[ 3],
+        //        (uint8_t)DK_HINTS(dk)[ 4], (uint8_t)DK_HINTS(dk)[ 5],
+        //        (uint8_t)DK_HINTS(dk)[ 6], (uint8_t)DK_HINTS(dk)[ 7],
+        //        (uint8_t)DK_HINTS(dk)[ 8], (uint8_t)DK_HINTS(dk)[ 9],
+        //        (uint8_t)DK_HINTS(dk)[10], (uint8_t)DK_HINTS(dk)[11],
+        //        (uint8_t)DK_HINTS(dk)[12], (uint8_t)DK_HINTS(dk)[13],
+        //        (uint8_t)DK_HINTS(dk)[14], (uint8_t)DK_HINTS(dk)[15]);
     }
 #endif
     return dictkeys_stringlookup(dk, key, hash);
