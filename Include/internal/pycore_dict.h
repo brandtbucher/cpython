@@ -11,10 +11,7 @@ extern "C" {
 
 #if defined(__SSE2__) && (defined(__clang__) || defined(__GNUC__))
 #include <emmintrin.h>
-#define DK_HINTS(DK) ((char*)&DK_ENTRIES(DK)[SHARED_KEYS_MAX_SIZE])
-#define DK_SET_HINT(DK, IX, HINT) (DK_HINTS(DK)[IX] = (HINT))
-#else
-#define DK_SET_HINT(DK, IX, HINT) (HINT)
+#define DK_HINTS
 #endif
 
 

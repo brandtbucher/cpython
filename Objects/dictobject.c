@@ -320,6 +320,9 @@ dictkeys_decref(PyDictKeysObject *dk)
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
+#ifdef DK_HINTS
+    assert(keys->dk_kind != DICT_KEYS_SPLIT);
+#endif
     Py_ssize_t s = DK_SIZE(keys);
     Py_ssize_t ix;
 
@@ -347,8 +350,15 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 
 /* write to indices. */
 static inline void
-dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
+dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix,
+                   Py_hash_t hash)
 {
+#ifdef DK_HINTS
+    if (keys->dk_kind == DICT_KEYS_SPLIT) {
+        keys->dk_indices[ix] = hash;
+        return;
+    }
+#endif
     Py_ssize_t s = DK_SIZE(keys);
 
     assert(ix >= DKIX_DUMMY);
@@ -759,6 +769,11 @@ PyDict_New(void)
 static Py_ssize_t
 lookdict_index(PyDictKeysObject *k, Py_hash_t hash, Py_ssize_t index)
 {
+#ifdef DK_HINTS
+    if (k->dk_kind == DICT_KEYS_SPLIT) {
+        return index;
+    }
+#endif
     size_t mask = DK_MASK(k);
     size_t perturb = (size_t)hash;
     size_t i = (size_t)hash & mask;
@@ -781,6 +796,26 @@ static Py_ssize_t
 dictkeys_stringlookup(PyDictKeysObject* dk, PyObject *key, Py_hash_t hash)
 {
     PyDictKeyEntry *ep0 = DK_ENTRIES(dk);
+#ifdef DK_HINTS
+    if (dk->dk_kind == DICT_KEYS_SPLIT) {
+        __m128i hints = *(__m128i*)dk->dk_indices;
+        __m128i hashes = _mm_set1_epi8(hash);
+        int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
+        hits &= ~(~0U << dk->dk_nentries);
+        while (hits) {
+            int ix = __builtin_ctz(hits);
+            PyDictKeyEntry *ep = &ep0[ix];
+            assert(ep->me_key != NULL);
+            assert(PyUnicode_CheckExact(ep->me_key));
+            if (ep->me_key == key ||
+                    (ep->me_hash == hash && unicode_eq(ep->me_key, key))) {
+                return ix;
+            }
+            hits ^= 1 << ix;
+        }
+        return DKIX_EMPTY;
+    }
+#endif
     size_t mask = DK_MASK(dk);
     size_t perturb = hash;
     size_t i = (size_t)hash & mask;
@@ -841,31 +876,6 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
             return DKIX_ERROR;
         }
     }
-#ifdef DK_HINTS
-    if (kind == DICT_KEYS_SPLIT) {
-        __m128i hints = *(__m128i*)DK_HINTS(dk);
-        __m128i hashes = _mm_set1_epi8(hash);
-        int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
-        // hits &= ~(~0U << dk->dk_nentries);
-        if (hits == 0) {
-            return DKIX_EMPTY;
-        }
-        int ix = __builtin_ctz(hits);
-        if (DK_ENTRIES(dk)[ix].me_key == key) {
-            return ix;
-        }
-        // printf("%2d collisions: %02X %02X %02X %02X %02X %02X %02X %02X %02X "
-        //        "%02X %02X %02X %02X %02X %02X %02X\n", __builtin_popcount(hits),
-        //        (uint8_t)DK_HINTS(dk)[ 0], (uint8_t)DK_HINTS(dk)[ 1],
-        //        (uint8_t)DK_HINTS(dk)[ 2], (uint8_t)DK_HINTS(dk)[ 3],
-        //        (uint8_t)DK_HINTS(dk)[ 4], (uint8_t)DK_HINTS(dk)[ 5],
-        //        (uint8_t)DK_HINTS(dk)[ 6], (uint8_t)DK_HINTS(dk)[ 7],
-        //        (uint8_t)DK_HINTS(dk)[ 8], (uint8_t)DK_HINTS(dk)[ 9],
-        //        (uint8_t)DK_HINTS(dk)[10], (uint8_t)DK_HINTS(dk)[11],
-        //        (uint8_t)DK_HINTS(dk)[12], (uint8_t)DK_HINTS(dk)[13],
-        //        (uint8_t)DK_HINTS(dk)[14], (uint8_t)DK_HINTS(dk)[15]);
-    }
-#endif
     return dictkeys_stringlookup(dk, key, hash);
 }
 
@@ -905,10 +915,48 @@ start:
         return ix;
     }
     PyDictKeyEntry *ep0 = DK_ENTRIES(dk);
+    Py_ssize_t ix;
+#ifdef DK_HINTS
+    if (dk->dk_kind == DICT_KEYS_SPLIT) {
+        __m128i hints = *(__m128i*)dk->dk_indices;
+        __m128i hashes = _mm_set1_epi8(hash);
+        int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
+        hits &= ~(~0U << dk->dk_nentries);
+        while (hits) {
+            ix = __builtin_ctz(hits);
+            PyDictKeyEntry *ep = &ep0[ix];
+            assert(ep->me_key != NULL);
+            if (ep->me_key == key) {
+                goto found;
+            }
+            if (ep->me_hash == hash) {
+                PyObject *startkey = ep->me_key;
+                Py_INCREF(startkey);
+                int cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                Py_DECREF(startkey);
+                if (cmp < 0) {
+                    *value_addr = NULL;
+                    return DKIX_ERROR;
+                }
+                if (dk == mp->ma_keys && ep->me_key == startkey) {
+                    if (cmp > 0) {
+                        goto found;
+                    }
+                }
+                else {
+                    /* The dict was mutated, restart */
+                    goto start;
+                }
+            }
+            hits ^= 1 << ix;
+        }
+        *value_addr = NULL;
+        return DKIX_EMPTY;
+    }
+#endif
     size_t mask = DK_MASK(dk);
     size_t perturb = hash;
     size_t i = (size_t)hash & mask;
-    Py_ssize_t ix;
     for (;;) {
         ix = dictkeys_get_index(dk, i);
         if (ix == DKIX_EMPTY) {
@@ -1062,16 +1110,21 @@ insert_into_dictkeys(PyDictKeysObject *keys, PyObject *name)
         Py_INCREF(name);
         /* Insert into new slot. */
         keys->dk_version = 0;
-        Py_ssize_t hashpos = find_empty_slot(keys, hash);
+        Py_ssize_t hashpos;
+        if (keys->dk_kind == DICT_KEYS_SPLIT) {
+            hashpos = keys->dk_nentries;
+        }
+        else {
+            hashpos = find_empty_slot(keys, hash);
+        }
         ix = keys->dk_nentries;
         PyDictKeyEntry *ep = &DK_ENTRIES(keys)[ix];
-        dictkeys_set_index(keys, hashpos, ix);
+        dictkeys_set_index(keys, hashpos, ix, hash);
         assert(ep->me_key == NULL);
         ep->me_key = name;
         ep->me_hash = hash;
         keys->dk_usable--;
         keys->dk_nentries++;
-        DK_SET_HINT(keys, ix, hash);
     }
     assert (ix < SHARED_KEYS_MAX_SIZE);
     return (int)ix;
@@ -1112,9 +1165,15 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         if (!PyUnicode_CheckExact(key) && mp->ma_keys->dk_kind != DICT_KEYS_GENERAL) {
             mp->ma_keys->dk_kind = DICT_KEYS_GENERAL;
         }
-        Py_ssize_t hashpos = find_empty_slot(mp->ma_keys, hash);
+        Py_ssize_t hashpos;
+        if (mp->ma_keys->dk_kind == DICT_KEYS_SPLIT) {
+            hashpos = mp->ma_keys->dk_nentries;
+        }
+        else {
+            hashpos = find_empty_slot(mp->ma_keys, hash);
+        }
         ep = &DK_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
-        dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries);
+        dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries, hash);
         ep->me_key = key;
         ep->me_hash = hash;
         if (mp->ma_values) {
@@ -1124,7 +1183,6 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
             mp->ma_values->mv_order = ((mp->ma_values->mv_order)<<4) | index;
             assert (mp->ma_values->values[index] == NULL);
             mp->ma_values->values[index] = value;
-            DK_SET_HINT(mp->ma_keys, index, hash);
         }
         else {
             ep->me_value = value;
@@ -1188,7 +1246,7 @@ insert_to_emptydict(PyDictObject *mp, PyObject *key, Py_hash_t hash,
 
     size_t hashpos = (size_t)hash & (PyDict_MINSIZE-1);
     PyDictKeyEntry *ep = DK_ENTRIES(mp->ma_keys);
-    dictkeys_set_index(mp->ma_keys, hashpos, 0);
+    dictkeys_set_index(mp->ma_keys, hashpos, 0, hash);
     ep->me_key = key;
     ep->me_hash = hash;
     ep->me_value = value;
@@ -1213,7 +1271,7 @@ build_indices(PyDictKeysObject *keys, PyDictKeyEntry *ep, Py_ssize_t n)
             perturb >>= PERTURB_SHIFT;
             i = mask & (i*5 + perturb + 1);
         }
-        dictkeys_set_index(keys, i, ix);
+        dictkeys_set_index(keys, i, ix, hash);
     }
 }
 
@@ -1664,7 +1722,7 @@ delitem_common(PyDictObject *mp, Py_hash_t hash, Py_ssize_t ix,
     }
     else {
         mp->ma_keys->dk_version = 0;
-        dictkeys_set_index(mp->ma_keys, hashpos, DKIX_DUMMY);
+        dictkeys_set_index(mp->ma_keys, hashpos, DKIX_DUMMY, 0);
         old_key = ep->me_key;
         ep->me_key = NULL;
         ep->me_value = NULL;
@@ -3048,10 +3106,16 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
         if (!PyUnicode_CheckExact(key) && mp->ma_keys->dk_kind != DICT_KEYS_GENERAL) {
             mp->ma_keys->dk_kind = DICT_KEYS_GENERAL;
         }
-        Py_ssize_t hashpos = find_empty_slot(mp->ma_keys, hash);
+        Py_ssize_t hashpos;
+        if (mp->ma_keys->dk_kind == DICT_KEYS_SPLIT) {
+            hashpos = mp->ma_keys->dk_nentries;
+        }
+        else {
+            hashpos = find_empty_slot(mp->ma_keys, hash);
+        }
         ep0 = DK_ENTRIES(mp->ma_keys);
         ep = &ep0[mp->ma_keys->dk_nentries];
-        dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries);
+        dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries, hash);
         Py_INCREF(key);
         Py_INCREF(value);
         MAINTAIN_TRACKING(mp, key, value);
@@ -3063,7 +3127,6 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
             assert(mp->ma_values->values[index] == NULL);
             mp->ma_values->values[index] = value;
             mp->ma_values->mv_order = (mp->ma_values->mv_order << 4) | index;
-            DK_SET_HINT(mp->ma_keys, index, hash);
         }
         else {
             ep->me_value = value;
@@ -3196,7 +3259,7 @@ dict_popitem_impl(PyDictObject *self)
     j = lookdict_index(self->ma_keys, ep->me_hash, i);
     assert(j >= 0);
     assert(dictkeys_get_index(self->ma_keys, j) == i);
-    dictkeys_set_index(self->ma_keys, j, DKIX_DUMMY);
+    dictkeys_set_index(self->ma_keys, j, DKIX_DUMMY, 0);
 
     PyTuple_SET_ITEM(res, 0, ep->me_key);
     PyTuple_SET_ITEM(res, 1, ep->me_value);
