@@ -451,6 +451,7 @@ static PyDictKeysObject empty_keys_struct = {
         1, /* dk_refcnt */
         0, /* dk_log2_size */
         DICT_KEYS_SPLIT, /* dk_kind */
+        0,
         1, /* dk_version */
         0, /* dk_usable (immutable) */
         0, /* dk_nentries */
@@ -792,7 +793,9 @@ lookdict_index(PyDictKeysObject *k, Py_hash_t hash, Py_ssize_t index)
 static inline int
 find_split_hits(PyDictKeysObject* dk, Py_hash_t hash)
 {
-    __m128i hints = *(__m128i*)dk->dk_indices;
+    // if ((uintptr_t)&dk->dk_indices[dk->dk_align] & 0x7F)
+    //     printf("%d\n", (uintptr_t)&dk->dk_indices[dk->dk_align] & 0x7F);
+    __m128i hints = *(__m128i*)&dk->dk_indices[dk->dk_align];
     __m128i hashes = _mm_set1_epi8(hash);
     int hits = _mm_movemask_epi8(_mm_cmpeq_epi8(hints, hashes));
     return hits & ~(~0U << dk->dk_nentries);
@@ -1114,13 +1117,10 @@ insert_into_dictkeys(PyDictKeysObject *keys, PyObject *name)
         ix = keys->dk_nentries;
         PyDictKeyEntry *ep = &DK_ENTRIES(keys)[ix];
 #ifdef DK_HINTS
-        keys->dk_indices[ix] = hash;
-        keys->dk_nentries++;
-        int hits = find_split_hits(keys, hash);
-        keys->dk_nentries--;
-        if (2 <= __builtin_popcount(hits)) {
+        if (find_split_hits(keys, hash)) {
             return DKIX_EMPTY;
         }
+        keys->dk_indices[keys->dk_align + ix] = hash;
 #else
         Py_ssize_t hashpos = find_empty_slot(keys, hash);
         dictkeys_set_index(keys, hashpos, ix);
@@ -1172,7 +1172,7 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         }
 #ifdef DK_HINTS
         if (mp->ma_keys->dk_kind == DICT_KEYS_SPLIT) {
-            mp->ma_keys->dk_indices[mp->ma_keys->dk_nentries] = hash;
+            mp->ma_keys->dk_indices[mp->ma_keys->dk_align + mp->ma_keys->dk_nentries] = hash;
             mp->ma_keys->dk_nentries++;
             int hits = find_split_hits(mp->ma_keys, hash);
             mp->ma_keys->dk_nentries--;
@@ -3121,7 +3121,7 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
         }
 #ifdef DK_HINTS
         if (mp->ma_keys->dk_kind == DICT_KEYS_SPLIT) {
-            mp->ma_keys->dk_indices[mp->ma_keys->dk_nentries] = hash;
+            mp->ma_keys->dk_indices[mp->ma_keys->dk_align + mp->ma_keys->dk_nentries] = hash;
             mp->ma_keys->dk_nentries++;
             int hits = find_split_hits(mp->ma_keys, hash);
             mp->ma_keys->dk_nentries--;
@@ -5063,6 +5063,7 @@ _PyDict_NewKeysForClass(void)
         /* Set to max size+1 as it will shrink by one before each new object */
         keys->dk_usable = SHARED_KEYS_MAX_SIZE;
         keys->dk_kind = DICT_KEYS_SPLIT;
+        keys->dk_align = (128 - ((uintptr_t)keys->dk_indices & 0x7F)) & 0x7F;
     }
     return keys;
 }

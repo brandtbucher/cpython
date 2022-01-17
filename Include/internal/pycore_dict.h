@@ -76,6 +76,8 @@ struct _dictkeysobject {
     /* Kind of keys */
     uint8_t dk_kind;
 
+    uint8_t dk_align;
+
     /* Version number -- Reset to 0 by any modification to keys */
     uint32_t dk_version;
 
@@ -128,7 +130,7 @@ struct _dictvalues {
             2 : sizeof(int32_t))
 #endif
 #define DK_ENTRIES(dk) \
-    ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))
+    ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk) + dk->dk_align * (dk->dk_kind == DICT_KEYS_SPLIT)]))
 
 extern uint64_t _pydict_global_version;
 
