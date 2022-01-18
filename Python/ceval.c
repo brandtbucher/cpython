@@ -857,6 +857,37 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
+#define NEXT_OP_STORES(O)                                  \
+    ((_Py_OPCODE(*next_instr) == STORE_FAST ||             \
+      _Py_OPCODE(*next_instr) == STORE_FAST__LOAD_FAST) && \
+     GETLOCAL(_Py_OPARG(*next_instr)) == (O))
+
+#define BINARY_OP_FAST_FLOAT(OP)                       \
+    do {                                               \
+        PyObject *lhs = SECOND();                      \
+        PyObject *rhs = TOP();                         \
+        DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP); \
+        DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP); \
+        STAT_INC(BINARY_OP, hit);                      \
+        double l = PyFloat_AS_DOUBLE(lhs);             \
+        double r = PyFloat_AS_DOUBLE(rhs);             \
+        double d = l OP r;                             \
+        Py_DECREF(rhs);                                \
+        STACK_SHRINK(1);                               \
+        bool inplace = NEXT_OP_STORES(lhs);            \
+        if (Py_REFCNT(lhs) == inplace + 1) {           \
+            PyFloat_AS_DOUBLE(lhs) = d;                \
+            DISPATCH();                                \
+        }                                              \
+        Py_DECREF(lhs);                                \
+        PyObject *res = PyFloat_FromDouble(d);         \
+        SET_TOP(res);                                  \
+        if (res == NULL) {                             \
+            goto error;                                \
+        }                                              \
+        DISPATCH();                                    \
+    } while (0)
+
 
 // PEP 634: Structural Pattern Matching
 
@@ -2065,22 +2096,7 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_OP_MULTIPLY_FLOAT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dprod = ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-            PyObject *prod = PyFloat_FromDouble(dprod);
-            SET_SECOND(prod);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (prod == NULL) {
-                goto error;
-            }
-            DISPATCH();
+            BINARY_OP_FAST_FLOAT(*);
         }
 
         TARGET(BINARY_OP_SUBTRACT_INT) {
@@ -2101,21 +2117,7 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_OP_SUBTRACT_FLOAT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dsub = ((PyFloatObject *)left)->ob_fval - ((PyFloatObject *)right)->ob_fval;
-            PyObject *sub = PyFloat_FromDouble(dsub);
-            SET_SECOND(sub);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (sub == NULL) {
-                goto error;
-            }
-            DISPATCH();
+            BINARY_OP_FAST_FLOAT(-);
         }
 
         TARGET(BINARY_OP_ADD_UNICODE) {
@@ -2164,22 +2166,7 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_OP_ADD_FLOAT) {
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dsum = ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-            PyObject *sum = PyFloat_FromDouble(dsum);
-            SET_SECOND(sum);
-            Py_DECREF(right);
-            Py_DECREF(left);
-            STACK_SHRINK(1);
-            if (sum == NULL) {
-                goto error;
-            }
-            DISPATCH();
+            BINARY_OP_FAST_FLOAT(+);
         }
 
         TARGET(BINARY_OP_ADD_INT) {
