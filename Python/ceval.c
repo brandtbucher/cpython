@@ -857,35 +857,34 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
-#define NEXT_OP_STORES(O)                                  \
-    ((_Py_OPCODE(*next_instr) == STORE_FAST ||             \
-      _Py_OPCODE(*next_instr) == STORE_FAST__LOAD_FAST) && \
-     GETLOCAL(_Py_OPARG(*next_instr)) == (O))
 
-#define BINARY_OP_FAST_FLOAT(OP)                       \
-    do {                                               \
-        PyObject *lhs = SECOND();                      \
-        PyObject *rhs = TOP();                         \
-        DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP); \
-        DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP); \
-        STAT_INC(BINARY_OP, hit);                      \
-        double l = PyFloat_AS_DOUBLE(lhs);             \
-        double r = PyFloat_AS_DOUBLE(rhs);             \
-        double d = l OP r;                             \
-        Py_DECREF(rhs);                                \
-        STACK_SHRINK(1);                               \
-        bool inplace = NEXT_OP_STORES(lhs);            \
-        if (Py_REFCNT(lhs) == inplace + 1) {           \
-            PyFloat_AS_DOUBLE(lhs) = d;                \
-            DISPATCH();                                \
-        }                                              \
-        Py_DECREF(lhs);                                \
-        PyObject *res = PyFloat_FromDouble(d);         \
-        SET_TOP(res);                                  \
-        if (res == NULL) {                             \
-            goto error;                                \
-        }                                              \
-        DISPATCH();                                    \
+#define BINARY_OP_FAST_FLOAT(OP)                                        \
+    do {                                                                \
+        PyObject *lhs = SECOND();                                       \
+        PyObject *rhs = TOP();                                          \
+        DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP);                  \
+        DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP);                  \
+        STAT_INC(BINARY_OP, hit);                                       \
+        double l = PyFloat_AS_DOUBLE(lhs);                              \
+        double r = PyFloat_AS_DOUBLE(rhs);                              \
+        double d = l OP r;                                              \
+        Py_DECREF(rhs);                                                 \
+        STACK_SHRINK(1);                                                \
+        uint16_t inplace_refcount = GET_CACHE()->adaptive.index;        \
+        assert(inplace_refcount == 2                                    \
+               ? GETLOCAL(_Py_OPARG(*next_instr)) == lhs                \
+               : inplace_refcount == 1);                                \
+        if (Py_REFCNT(lhs) == inplace_refcount) {                       \
+            PyFloat_AS_DOUBLE(lhs) = d;                                 \
+            DISPATCH();                                                 \
+        }                                                               \
+        Py_DECREF(lhs);                                                 \
+        PyObject *res = PyFloat_FromDouble(d);                          \
+        SET_TOP(res);                                                   \
+        if (res == NULL) {                                              \
+            goto error;                                                 \
+        }                                                               \
+        DISPATCH();                                                     \
     } while (0)
 
 
