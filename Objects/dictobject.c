@@ -23,14 +23,16 @@ layout:
 | dk_usable     |
 | dk_nentries   |
 +---------------+
-| dk_indices    |
+| dk_table      |
 |               |
 +---------------+
 | dk_entries    |
 |               |
 +---------------+
 
-dk_indices is actual hashtable.  It holds index in entries, or DKIX_EMPTY(-1)
+// XXX: Update this info!
+
+dk_table is actual hashtable.  It holds index in entries, or DKIX_EMPTY(-1)
 or DKIX_DUMMY(-2).
 Size of indices is dk_size.  Type of each index in indices is vary on dk_size:
 
@@ -43,7 +45,7 @@ dk_entries is array of PyDictKeyEntry.  Its size is USABLE_FRACTION(dk_size).
 DK_ENTRIES(dk) can be used to get pointer to entries.
 
 NOTE: Since negative value is used for DKIX_EMPTY and DKIX_DUMMY, type of
-dk_indices entry is signed integer and int16 is used for table which
+dk_table entry is signed integer and int16 is used for table which
 dk_size == 256.
 */
 
@@ -92,7 +94,7 @@ get insertion order by just iterating dk_entries.
 
 One exception is .popitem().  It removes last item in dk_entries and decrement
 dk_nentries to achieve amortized O(1).  Since there are DKIX_DUMMY remains in
-dk_indices, we can't increment dk_usable even though dk_nentries is
+dk_table, we can't increment dk_usable even though dk_nentries is
 decremented.
 
 To preserve the order in a split table, a bit vector is used  to record the
@@ -324,21 +326,21 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
     Py_ssize_t ix;
 
     if (s <= 0xff) {
-        const int8_t *indices = (const int8_t*)(keys->dk_indices);
+        const int8_t *indices = (const int8_t*)DK_INDICES(keys);
         ix = indices[i];
     }
     else if (s <= 0xffff) {
-        const int16_t *indices = (const int16_t*)(keys->dk_indices);
+        const int16_t *indices = (const int16_t*)DK_INDICES(keys);
         ix = indices[i];
     }
 #if SIZEOF_VOID_P > 4
     else if (s > 0xffffffff) {
-        const int64_t *indices = (const int64_t*)(keys->dk_indices);
+        const int64_t *indices = (const int64_t*)DK_INDICES(keys);
         ix = indices[i];
     }
 #endif
     else {
-        const int32_t *indices = (const int32_t*)(keys->dk_indices);
+        const int32_t *indices = (const int32_t*)DK_INDICES(keys);
         ix = indices[i];
     }
     assert(ix >= DKIX_DUMMY);
@@ -355,23 +357,23 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     assert(keys->dk_version == 0);
 
     if (s <= 0xff) {
-        int8_t *indices = (int8_t*)(keys->dk_indices);
+        int8_t *indices = (int8_t*)DK_INDICES(keys);
         assert(ix <= 0x7f);
         indices[i] = (char)ix;
     }
     else if (s <= 0xffff) {
-        int16_t *indices = (int16_t*)(keys->dk_indices);
+        int16_t *indices = (int16_t*)DK_INDICES(keys);
         assert(ix <= 0x7fff);
         indices[i] = (int16_t)ix;
     }
 #if SIZEOF_VOID_P > 4
     else if (s > 0xffffffff) {
-        int64_t *indices = (int64_t*)(keys->dk_indices);
+        int64_t *indices = (int64_t*)DK_INDICES(keys);
         indices[i] = ix;
     }
 #endif
     else {
-        int32_t *indices = (int32_t*)(keys->dk_indices);
+        int32_t *indices = (int32_t*)DK_INDICES(keys);
         assert(ix <= 0x7fffffff);
         indices[i] = (int32_t)ix;
     }
@@ -442,14 +444,18 @@ estimate_log2_keysize(Py_ssize_t n)
  * (which cannot fail and thus can do no allocation).
  */
 static PyDictKeysObject empty_keys_struct = {
-        1, /* dk_refcnt */
-        0, /* dk_log2_size */
-        DICT_KEYS_SPLIT, /* dk_kind */
-        1, /* dk_version */
-        0, /* dk_usable (immutable) */
-        0, /* dk_nentries */
-        {DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY,
-         DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY}, /* dk_indices */
+        .dk_refcnt = 1,
+        .dk_log2_size = 0,
+        .dk_kind = DICT_KEYS_SPLIT,
+        .dk_version = 1,
+        .dk_usable = 0,  // Immutable!
+        .dk_nentries = 0,
+        .dk_table = {
+#if SWISS
+            0,
+#endif
+            DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY,
+            DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY},
 };
 
 
@@ -605,7 +611,7 @@ new_keys_object(uint8_t log2_size)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    memset(&dk->dk_indices[0], 0xff, es<<log2_size);
+    memset(DK_INDICES(dk), 0xff, es << log2_size);
     memset(DK_ENTRIES(dk), 0, sizeof(PyDictKeyEntry) * usable);
     return dk;
 }

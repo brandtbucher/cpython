@@ -9,6 +9,13 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#define SWISS 0  // XXX
+#else
+#define SWISS 0
+#endif
+
 
 /* runtime lifecycle */
 
@@ -65,7 +72,7 @@ typedef enum {
 struct _dictkeysobject {
     Py_ssize_t dk_refcnt;
 
-    /* Size of the hash table (dk_indices). It must be a power of 2. */
+    /* Size of the hash table (dk_table). It must be a power of 2. */
     uint8_t dk_log2_size;
 
     /* Kind of keys */
@@ -93,7 +100,7 @@ struct _dictkeysobject {
        - 8 bytes otherwise (int64_t*)
 
        Dynamically sized, SIZEOF_VOID_P is minimum. */
-    char dk_indices[];  /* char is required to avoid strict aliasing. */
+    char dk_table[];  /* char is required to avoid strict aliasing. */
 
     /* "PyDictKeyEntry dk_entries[dk_usable];" array follows:
        see the DK_ENTRIES() macro */
@@ -122,8 +129,10 @@ struct _dictvalues {
         1 : DK_LOG_SIZE(dk) <= 15 ?       \
             2 : sizeof(int32_t))
 #endif
+#define DK_INDICES(dk) \
+    (&(dk)->dk_table[SWISS * 2 * DK_SIZE(dk)])
 #define DK_ENTRIES(dk) \
-    ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))
+    ((PyDictKeyEntry*)&DK_INDICES(dk)[DK_SIZE(dk) * DK_IXSIZE(dk)])
 
 extern uint64_t _pydict_global_version;
 
