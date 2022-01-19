@@ -26,6 +26,13 @@ extern PyStatus _PyLong_InitTypes(PyInterpreterState *);
 #  error "_PY_NSMALLPOSINTS must be greater than 1"
 #endif
 
+static inline PyObject*
+_PyLong_GetSmall(short i)
+{ 
+    assert(-_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS);
+    return _Py_NewRef((PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + i]);
+}
+
 // Return a borrowed reference to the zero singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetZero(void)
