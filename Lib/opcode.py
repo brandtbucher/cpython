@@ -284,6 +284,8 @@ _specialized_instructions = [
     "LOAD_FAST__LOAD_CONST",
     "LOAD_CONST__LOAD_FAST",
     "STORE_FAST__STORE_FAST",
+    "BUILD_SLICE__BINARY_SUBSCR",
+    "BUILD_SLICE__STORE_SUBSCR",
 ]
 _specialization_stats = [
     "success",

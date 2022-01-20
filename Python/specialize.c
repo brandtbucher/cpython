@@ -397,6 +397,22 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
                         instructions[i-1] = _Py_MAKECODEUNIT(LOAD_FAST__LOAD_CONST, previous_oparg);
                     }
                     break;
+                case BUILD_SLICE:
+                    if (oparg == 3) {
+                        break;
+                    }
+                    assert(oparg == 2);
+                    assert(i + 1 < len);
+                    int next_opcode = _Py_OPCODE(instructions[i + 1]);
+                    if (next_opcode == BINARY_SUBSCR) {
+                        instructions[i] = _Py_MAKECODEUNIT(
+                            BUILD_SLICE__BINARY_SUBSCR, oparg);
+                    }
+                    else if (next_opcode == STORE_SUBSCR) {
+                        instructions[i] = _Py_MAKECODEUNIT(
+                            BUILD_SLICE__STORE_SUBSCR, oparg);
+                    }
+                    break;
             }
             previous_opcode = opcode;
             previous_oparg = oparg;
