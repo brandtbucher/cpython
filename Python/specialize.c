@@ -1258,7 +1258,7 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
         else if (PySlice_Check(sub)) {
             *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
                                       initial_counter_value());
-            goto fail;
+            goto success;
         }
         else {
             SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_OTHER);
