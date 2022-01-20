@@ -863,24 +863,28 @@ static const binaryfunc binary_ops[] = {
         PyObject *rhs = TOP();                                              \
         DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);                       \
         DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);                       \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(lhs)), BINARY_OP);                      \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(rhs)), BINARY_OP);                      \
+        DEOPT_IF(Py_SIZE(lhs) != 1, BINARY_OP);                             \
+        DEOPT_IF(Py_SIZE(rhs) != 1, BINARY_OP);                             \
+        twodigits l = ((PyLongObject *)lhs)->ob_digit[0];                   \
+        twodigits r = ((PyLongObject *)rhs)->ob_digit[0];                   \
+        DEOPT_IF(#OP[0] == '-' && l <= r, BINARY_OP);                       \
         STAT_INC(BINARY_OP, hit);                                           \
-        PyLongObject *lhs_long = (PyLongObject *)lhs;                       \
-        PyLongObject *rhs_long = (PyLongObject *)rhs;                       \
-        stwodigits l = Py_SIZE(lhs) * (sdigit)lhs_long->ob_digit[0];        \
-        stwodigits r = Py_SIZE(rhs) * (sdigit)rhs_long->ob_digit[0];        \
-        stwodigits i = l OP r;                                              \
-        Py_DECREF(lhs);                                                     \
+        twodigits i = l OP r;                                               \
         Py_DECREF(rhs);                                                     \
         STACK_SHRINK(1);                                                    \
-        if (-_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS) {             \
+        if (i < _PY_NSMALLPOSINTS) {                                        \
+            Py_DECREF(lhs);                                                 \
             PyLongObject *res = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + i]; \
             Py_INCREF(res);                                                 \
             SET_TOP((PyObject *)res);                                       \
             DISPATCH();                                                     \
         }                                                                   \
-        PyObject *res = PyLong_FromLongLong(i);                             \
+        if (i < PyLong_BASE && Py_REFCNT(lhs) == 1) {                       \
+            ((PyLongObject *)lhs)->ob_digit[0] = (digit)i;                  \
+            DISPATCH();                                                     \
+        }                                                                   \
+        Py_DECREF(lhs);                                                     \
+        PyObject *res = PyLong_FromUnsignedLongLong(i);                     \
         SET_TOP(res);                                                       \
         if (res == NULL) {                                                  \
             goto error;                                                     \
