@@ -5265,13 +5265,16 @@ check_eval_breaker:
 #else
         default:
 #endif
+#ifdef Py_DEBUG
             fprintf(stderr,
                 "XXX lineno: %d, opcode: %d\n",
                 PyCode_Addr2Line(frame->f_code, frame->f_lasti*sizeof(_Py_CODEUNIT)),
                 opcode);
             _PyErr_SetString(tstate, PyExc_SystemError, "unknown opcode");
             goto error;
-
+#else
+            Py_UNREACHABLE();
+#endif
         } /* End instructions */
 
         /* This should never be reached. Every opcode should end with DISPATCH()
