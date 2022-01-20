@@ -2256,17 +2256,23 @@ check_eval_breaker:
         }
 
         TARGET(BINARY_SUBSCR_LIST_SLICE) {
-            PyObject *slice = TOP();
+            PySliceObject *slice = (PySliceObject *)TOP();
             PyObject *list = SECOND();
             DEOPT_IF(!PyList_CheckExact(list), BINARY_SUBSCR);
             DEOPT_IF(!PySlice_Check(slice), BINARY_SUBSCR);
-            Py_ssize_t start, stop, step;
-            if (PySlice_Unpack(slice, &start, &stop, &step) < 0) {
-                goto error;
+            DEOPT_IF(!Py_IsNone(slice->step), BINARY_SUBSCR);
+            Py_ssize_t start = 0;
+            if (!Py_IsNone(slice->start)) {
+                DEOPT_IF(!PyLong_CheckExact(slice->start), BINARY_SUBSCR);
+                DEOPT_IF(Py_SIZE(slice->start) != 1, BINARY_SUBSCR);
+                start = ((PyLongObject*)slice->start)->ob_digit[0];
             }
-            DEOPT_IF(start < 0, BINARY_SUBSCR);
-            DEOPT_IF(stop < 0, BINARY_SUBSCR);
-            DEOPT_IF(step != 1, BINARY_SUBSCR);
+            Py_ssize_t stop = PyList_GET_SIZE(list);
+            if (!Py_IsNone(slice->stop)) {
+                DEOPT_IF(!PyLong_CheckExact(slice->stop), BINARY_SUBSCR);
+                DEOPT_IF(Py_SIZE(slice->stop) != 1, BINARY_SUBSCR);
+                stop = ((PyLongObject*)slice->stop)->ob_digit[0];
+            }
             STAT_INC(BINARY_SUBSCR, hit);
             STACK_SHRINK(1);
             Py_DECREF(slice);
@@ -2433,18 +2439,24 @@ check_eval_breaker:
         }
 
         TARGET(STORE_SUBSCR_LIST_SLICE) {
-            PyObject *slice = TOP();
+            PySliceObject *slice = (PySliceObject *)TOP();
             PyObject *list = SECOND();
             PyObject *value = THIRD();
             DEOPT_IF(!PyList_CheckExact(list), STORE_SUBSCR);
             DEOPT_IF(!PySlice_Check(slice), STORE_SUBSCR);
-            Py_ssize_t start, stop, step;
-            if (PySlice_Unpack(slice, &start, &stop, &step) < 0) {
-                goto error;
+            DEOPT_IF(!Py_IsNone(slice->step), STORE_SUBSCR);
+            Py_ssize_t start = 0;
+            if (!Py_IsNone(slice->start)) {
+                DEOPT_IF(!PyLong_CheckExact(slice->start), STORE_SUBSCR);
+                DEOPT_IF(Py_SIZE(slice->start) != 1, STORE_SUBSCR);
+                start = ((PyLongObject*)slice->start)->ob_digit[0];
             }
-            DEOPT_IF(start < 0, STORE_SUBSCR);
-            DEOPT_IF(stop < 0, STORE_SUBSCR);
-            DEOPT_IF(step != 1, STORE_SUBSCR);
+            Py_ssize_t stop = PyList_GET_SIZE(list);
+            if (!Py_IsNone(slice->stop)) {
+                DEOPT_IF(!PyLong_CheckExact(slice->stop), STORE_SUBSCR);
+                DEOPT_IF(Py_SIZE(slice->stop) != 1, STORE_SUBSCR);
+                stop = ((PyLongObject*)slice->stop)->ob_digit[0];
+            }
             STAT_INC(STORE_SUBSCR, hit);
             int res = PyList_SetSlice(list, start, stop, value);
             STACK_SHRINK(3);
