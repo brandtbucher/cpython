@@ -857,29 +857,35 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
-#define BINARY_OP_FAST_INT(OP)                                       \
-    do {                                                             \
-        PyObject *lhs = SECOND();                                    \
-        PyObject *rhs = TOP();                                       \
-        DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);                \
-        DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);                \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(lhs)), BINARY_OP);               \
-        DEOPT_IF(1 < Py_ABS(Py_SIZE(rhs)), BINARY_OP);               \
-        STAT_INC(BINARY_OP, hit);                                    \
-        PyLongObject *lhs_long = (PyLongObject *)lhs;                \
-        PyLongObject *rhs_long = (PyLongObject *)rhs;                \
-        stwodigits l = Py_SIZE(lhs) * (sdigit)lhs_long->ob_digit[0]; \
-        stwodigits r = Py_SIZE(rhs) * (sdigit)rhs_long->ob_digit[0]; \
-        stwodigits i = l OP r;                                       \
-        Py_DECREF(lhs);                                              \
-        Py_DECREF(rhs);                                              \
-        STACK_SHRINK(1);                                             \
-        PyObject *res = PyLong_FromLongLong(i);                      \
-        SET_TOP(res);                                                \
-        if (res == NULL) {                                           \
-            goto error;                                              \
-        }                                                            \
-        DISPATCH();                                                  \
+#define BINARY_OP_FAST_INT(OP)                                              \
+    do {                                                                    \
+        PyObject *lhs = SECOND();                                           \
+        PyObject *rhs = TOP();                                              \
+        DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);                       \
+        DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);                       \
+        DEOPT_IF(1 < Py_ABS(Py_SIZE(lhs)), BINARY_OP);                      \
+        DEOPT_IF(1 < Py_ABS(Py_SIZE(rhs)), BINARY_OP);                      \
+        STAT_INC(BINARY_OP, hit);                                           \
+        PyLongObject *lhs_long = (PyLongObject *)lhs;                       \
+        PyLongObject *rhs_long = (PyLongObject *)rhs;                       \
+        stwodigits l = Py_SIZE(lhs) * (sdigit)lhs_long->ob_digit[0];        \
+        stwodigits r = Py_SIZE(rhs) * (sdigit)rhs_long->ob_digit[0];        \
+        stwodigits i = l OP r;                                              \
+        Py_DECREF(lhs);                                                     \
+        Py_DECREF(rhs);                                                     \
+        STACK_SHRINK(1);                                                    \
+        if (-_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS) {             \
+            PyLongObject *res = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + i]; \
+            Py_INCREF(res);                                                 \
+            SET_TOP((PyObject *)res);                                       \
+            DISPATCH();                                                     \
+        }                                                                   \
+        PyObject *res = PyLong_FromLongLong(i);                             \
+        SET_TOP(res);                                                       \
+        if (res == NULL) {                                                  \
+            goto error;                                                     \
+        }                                                                   \
+        DISPATCH();                                                         \
     } while (0)
 
 #define BINARY_OP_FAST_FLOAT(OP)                       \
