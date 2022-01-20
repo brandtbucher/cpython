@@ -1176,10 +1176,20 @@ _Py_Specialize_BinarySubscr(
             *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_INT, _Py_OPARG(*instr));
             goto success;
         }
-        if (PySlice_Check(sub)) {
-            *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_SLICE,
-                                      _Py_OPARG(*instr));
-            goto success;
+        if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2)) {
+            assert(PySlice_Check(sub));
+            PyObject *start = ((PySliceObject *)sub)->start;
+            PyObject *stop = ((PySliceObject *)sub)->stop;
+            assert(Py_IsNone(((PySliceObject *)sub)->step));
+            if ((Py_IsNone(start) || 
+                 (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) &&
+                (Py_IsNone(stop) || 
+                 (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
+            {
+                *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_SLICE,
+                                          _Py_OPARG(*instr));
+                goto success;
+            }
         }
         SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OTHER);
         goto fail;
@@ -1255,10 +1265,20 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
                 goto fail;
             }
         }
-        else if (PySlice_Check(sub)) {
-            *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
-                                      initial_counter_value());
-            goto success;
+        if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2)) {
+            assert(PySlice_Check(sub));
+            PyObject *start = ((PySliceObject *)sub)->start;
+            PyObject *stop = ((PySliceObject *)sub)->stop;
+            assert(Py_IsNone(((PySliceObject *)sub)->step));
+            if ((Py_IsNone(start) || 
+                 (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) &&
+                (Py_IsNone(stop) || 
+                 (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
+            {
+                *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
+                                          initial_counter_value());
+                goto success;
+            }
         }
         else {
             SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_OTHER);
