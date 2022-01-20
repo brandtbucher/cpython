@@ -1176,8 +1176,12 @@ _Py_Specialize_BinarySubscr(
             *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_INT, _Py_OPARG(*instr));
             goto success;
         }
-        SPECIALIZATION_FAIL(BINARY_SUBSCR,
-            PySlice_Check(sub) ? SPEC_FAIL_LIST_SLICE : SPEC_FAIL_OTHER);
+        if (PySlice_Check(sub)) {
+            *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_SLICE,
+                                      _Py_OPARG(*instr));
+            goto success;
+        }
+        SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OTHER);
         goto fail;
     }
     if (container_type == &PyTuple_Type) {
@@ -1252,7 +1256,8 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
             }
         }
         else if (PySlice_Check(sub)) {
-            SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_LIST_SLICE);
+            *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
+                                      initial_counter_value());
             goto fail;
         }
         else {

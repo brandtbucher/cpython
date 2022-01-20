@@ -2255,6 +2255,30 @@ check_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(BINARY_SUBSCR_LIST_SLICE) {
+            PyObject *slice = TOP();
+            PyObject *list = SECOND();
+            DEOPT_IF(!PyList_CheckExact(list), BINARY_SUBSCR);
+            DEOPT_IF(!PySlice_Check(slice), BINARY_SUBSCR);
+            Py_ssize_t start, stop, step;
+            if (PySlice_Unpack(slice, &start, &stop, &step) < 0) {
+                goto error;
+            }
+            DEOPT_IF(start < 0, BINARY_SUBSCR);
+            DEOPT_IF(stop < 0, BINARY_SUBSCR);
+            DEOPT_IF(step != 1, BINARY_SUBSCR);
+            STAT_INC(BINARY_SUBSCR, hit);
+            STACK_SHRINK(1);
+            Py_DECREF(slice);
+            PyObject *res = PyList_GetSlice(list, start, stop);
+            if (res == NULL) {
+                goto error;
+            }
+            SET_TOP(res);
+            Py_DECREF(list);
+            DISPATCH();
+        }
+
         TARGET(BINARY_SUBSCR_TUPLE_INT) {
             PyObject *sub = TOP();
             PyObject *tuple = SECOND();
@@ -2405,6 +2429,31 @@ check_eval_breaker:
             Py_DECREF(old_value);
             Py_DECREF(sub);
             Py_DECREF(list);
+            DISPATCH();
+        }
+
+        TARGET(STORE_SUBSCR_LIST_SLICE) {
+            PyObject *slice = TOP();
+            PyObject *list = SECOND();
+            PyObject *value = THIRD();
+            DEOPT_IF(!PyList_CheckExact(list), STORE_SUBSCR);
+            DEOPT_IF(!PySlice_Check(slice), STORE_SUBSCR);
+            Py_ssize_t start, stop, step;
+            if (PySlice_Unpack(slice, &start, &stop, &step) < 0) {
+                goto error;
+            }
+            DEOPT_IF(start < 0, STORE_SUBSCR);
+            DEOPT_IF(stop < 0, STORE_SUBSCR);
+            DEOPT_IF(step != 1, STORE_SUBSCR);
+            STAT_INC(STORE_SUBSCR, hit);
+            int res = PyList_SetSlice(list, start, stop, value);
+            STACK_SHRINK(3);
+            Py_DECREF(slice);
+            Py_DECREF(list);
+            Py_DECREF(value);
+            if (res) {
+                goto error;
+            }
             DISPATCH();
         }
 
