@@ -1176,20 +1176,18 @@ _Py_Specialize_BinarySubscr(
             *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_INT, _Py_OPARG(*instr));
             goto success;
         }
-        if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2)) {
-            assert(PySlice_Check(sub));
-            PyObject *start = ((PySliceObject *)sub)->start;
-            PyObject *stop = ((PySliceObject *)sub)->stop;
-            assert(Py_IsNone(((PySliceObject *)sub)->step));
-            if ((Py_IsNone(start) || 
-                 (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) &&
-                (Py_IsNone(stop) || 
-                 (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
+        if (PySlice_Check(sub)) {
+            PySliceObject *slice = (PySliceObject *)sub;
+            if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2) && 
+                _Py_OPCODE(instr[-2]) == LOAD_CONST && Py_IsNone(slice->stop) &&
+                _Py_OPCODE(instr[-3]) == LOAD_CONST && Py_IsNone(slice->start))
             {
-                *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_SLICE,
+                *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_EMPTY_SLICE,
                                           _Py_OPARG(*instr));
                 goto success;
-            }
+            }   
+            SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_LIST_SLICE);
+            goto fail;
         }
         SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OTHER);
         goto fail;
@@ -1265,25 +1263,21 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
                 goto fail;
             }
         }
-        if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2)) {
-            assert(PySlice_Check(sub));
-            PyObject *start = ((PySliceObject *)sub)->start;
-            PyObject *stop = ((PySliceObject *)sub)->stop;
-            assert(Py_IsNone(((PySliceObject *)sub)->step));
-            if ((Py_IsNone(start) || 
-                 (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) &&
-                (Py_IsNone(stop) || 
-                 (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
+        if (PySlice_Check(sub)) {
+            PySliceObject *slice = (PySliceObject *)sub;
+            if (instr[-1] == _Py_MAKECODEUNIT(BUILD_SLICE, 2) && 
+                _Py_OPCODE(instr[-2]) == LOAD_CONST && Py_IsNone(slice->stop) &&
+                _Py_OPCODE(instr[-3]) == LOAD_CONST && Py_IsNone(slice->start))
             {
-                *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
+                *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_EMPTY_SLICE,
                                           initial_counter_value());
                 goto success;
-            }
-        }
-        else {
-            SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_OTHER);
+            }   
+            SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_LIST_SLICE);
             goto fail;
         }
+        SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_OTHER);
+        goto fail;
     }
     if (container_type == &PyDict_Type) {
         *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_DICT,

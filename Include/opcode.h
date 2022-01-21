@@ -130,12 +130,12 @@ extern "C" {
 #define BINARY_SUBSCR_ADAPTIVE           26
 #define BINARY_SUBSCR_GETITEM            27
 #define BINARY_SUBSCR_LIST_INT           28
-#define BINARY_SUBSCR_LIST_SLICE         29
+#define BINARY_SUBSCR_LIST_EMPTY_SLICE   29
 #define BINARY_SUBSCR_TUPLE_INT          34
 #define BINARY_SUBSCR_DICT               36
 #define STORE_SUBSCR_ADAPTIVE            37
 #define STORE_SUBSCR_LIST_INT            38
-#define STORE_SUBSCR_LIST_SLICE          39
+#define STORE_SUBSCR_LIST_EMPTY_SLICE    39
 #define STORE_SUBSCR_DICT                40
 #define CALL_NO_KW_ADAPTIVE              41
 #define CALL_NO_KW_BUILTIN_O             42

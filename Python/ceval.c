@@ -2255,40 +2255,23 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_LIST_SLICE) {
+        TARGET(BINARY_SUBSCR_LIST_EMPTY_SLICE) {
             PySliceObject *slice = (PySliceObject *)TOP();
             PyObject *list = SECOND();
             DEOPT_IF(!PyList_CheckExact(list), BINARY_SUBSCR);
-            assert(PySlice_Check(slice));
-            Py_ssize_t start;
-            PyObject *zero = _PyLong_GetZero();
-            if (!Py_IsNone(slice->start) && !Py_Is(slice->start, zero)) {
-                DEOPT_IF(!PyLong_CheckExact(slice->start), BINARY_SUBSCR);
-                DEOPT_IF(Py_SIZE(slice->start) != 1, BINARY_SUBSCR);
-                start = ((PyLongObject*)slice->start)->ob_digit[0];
-            }
-            else {
-                start = 0;
-            }
-            Py_ssize_t stop;
-            if (!Py_IsNone(slice->stop)) {
-                DEOPT_IF(!PyLong_CheckExact(slice->stop), BINARY_SUBSCR);
-                DEOPT_IF(Py_SIZE(slice->stop) != 1, BINARY_SUBSCR);
-                stop = ((PyLongObject*)slice->stop)->ob_digit[0];
-            }
-            else {
-                stop = PyList_GET_SIZE(list);
-            }
-            assert(Py_IsNone(slice->step));
             STAT_INC(BINARY_SUBSCR, hit);
+            assert(PySlice_Check(slice));
+            assert(Py_IsNone(slice->start));
+            assert(Py_IsNone(slice->stop));
+            assert(Py_IsNone(slice->step));
+            PyObject *res = PyList_GetSlice(list, 0, PyList_GET_SIZE(list));
+            SET_SECOND(res);
             STACK_SHRINK(1);
             Py_DECREF(slice);
-            PyObject *res = PyList_GetSlice(list, start, stop);
+            Py_DECREF(list);
             if (res == NULL) {
                 goto error;
             }
-            SET_TOP(res);
-            Py_DECREF(list);
             DISPATCH();
         }
 
@@ -2445,34 +2428,17 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_LIST_SLICE) {
+        TARGET(STORE_SUBSCR_LIST_EMPTY_SLICE) {
             PySliceObject *slice = (PySliceObject *)TOP();
             PyObject *list = SECOND();
             PyObject *value = THIRD();
             DEOPT_IF(!PyList_CheckExact(list), STORE_SUBSCR);
-            assert(PySlice_Check(slice));
-            Py_ssize_t start;
-            PyObject *zero = _PyLong_GetZero();
-            if (!Py_IsNone(slice->start) && !Py_Is(slice->start, zero)) {
-                DEOPT_IF(!PyLong_CheckExact(slice->start), STORE_SUBSCR);
-                DEOPT_IF(Py_SIZE(slice->start) != 1, STORE_SUBSCR);
-                start = ((PyLongObject*)slice->start)->ob_digit[0];
-            }
-            else {
-                start = 0;
-            }
-            Py_ssize_t stop;
-            if (!Py_IsNone(slice->stop)) {
-                DEOPT_IF(!PyLong_CheckExact(slice->stop), STORE_SUBSCR);
-                DEOPT_IF(Py_SIZE(slice->stop) != 1, STORE_SUBSCR);
-                stop = ((PyLongObject*)slice->stop)->ob_digit[0];
-            }
-            else {
-                stop = PyList_GET_SIZE(list);
-            }
-            assert(Py_IsNone(slice->step));
             STAT_INC(STORE_SUBSCR, hit);
-            int res = PyList_SetSlice(list, start, stop, value);
+            assert(PySlice_Check(slice));
+            assert(Py_IsNone(slice->start));
+            assert(Py_IsNone(slice->stop));
+            assert(Py_IsNone(slice->step));
+            int res = PyList_SetSlice(list, 0, PyList_GET_SIZE(list), value);
             STACK_SHRINK(3);
             Py_DECREF(slice);
             Py_DECREF(list);
