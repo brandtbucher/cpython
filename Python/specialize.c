@@ -127,6 +127,7 @@ _Py_GetSpecializationStats(void) {
     err += add_stat_dict(stats, CALL_NO_KW, "call_no_kw");
     err += add_stat_dict(stats, BINARY_OP, "binary_op");
     err += add_stat_dict(stats, COMPARE_OP, "compare_op");
+    err += add_stat_dict(stats, BUILD_SLICE, "build_slice");
     if (err < 0) {
         Py_DECREF(stats);
         return NULL;
@@ -255,6 +256,7 @@ static uint8_t adaptive_opcodes[256] = {
     [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
     [BINARY_OP] = BINARY_OP_ADAPTIVE,
     [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
+    [BUILD_SLICE] = BUILD_SLICE_ADAPTIVE,
 };
 
 /* The number of cache entries required for a "family" of instructions. */
@@ -268,6 +270,7 @@ static uint8_t cache_requirements[256] = {
     [STORE_ATTR] = 2, /* _PyAdaptiveEntry and _PyAttrCache */
     [BINARY_OP] = 1,  // _PyAdaptiveEntry
     [COMPARE_OP] = 1, /* _PyAdaptiveEntry */
+    [BUILD_SLICE] = 1,  // _PyAdaptiveEntry
 };
 
 /* Return the oparg for the cache_offset and instruction index.
@@ -397,22 +400,6 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
                         instructions[i-1] = _Py_MAKECODEUNIT(LOAD_FAST__LOAD_CONST, previous_oparg);
                     }
                     break;
-                case BUILD_SLICE:
-                    if (oparg == 3) {
-                        break;
-                    }
-                    assert(oparg == 2);
-                    assert(i + 1 < len);
-                    int next_opcode = _Py_OPCODE(instructions[i + 1]);
-                    if (next_opcode == BINARY_SUBSCR) {
-                        instructions[i] = _Py_MAKECODEUNIT(
-                            BUILD_SLICE__BINARY_SUBSCR, oparg);
-                    }
-                    else if (next_opcode == STORE_SUBSCR) {
-                        instructions[i] = _Py_MAKECODEUNIT(
-                            BUILD_SLICE__STORE_SUBSCR, oparg);
-                    }
-                    break;
             }
             previous_opcode = opcode;
             previous_oparg = oparg;
@@ -536,6 +523,8 @@ initial_counter_value(void) {
 #define SPEC_FAIL_STRING_COMPARE 13
 #define SPEC_FAIL_NOT_FOLLOWED_BY_COND_JUMP 14
 #define SPEC_FAIL_BIG_INT 15
+
+#define SPEC_FAIL_WRONG_NEXT_INSTR 1
 
 static int
 specialize_module_load_attr(
@@ -1765,5 +1754,49 @@ failure:
     return;
 success:
     STAT_INC(COMPARE_OP, success);
+    adaptive->counter = initial_counter_value();
+}
+
+
+
+void
+_Py_Specialize_BuildSlice(PyObject *list, PyObject *start, PyObject *stop, 
+                          _Py_CODEUNIT *instr, SpecializedCacheEntry *cache)
+{
+    // This is an adaptive *superinstruction*!
+    _PyAdaptiveEntry *adaptive = &cache->adaptive;
+    if (adaptive->original_oparg != 2) {
+        SPECIALIZATION_FAIL(BUILD_SLICE, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
+        goto failure;
+    }
+    if (!PyList_CheckExact(list) ||
+        !(Py_IsNone(start) || 
+          (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) ||
+        !(Py_IsNone(stop) ||
+          (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
+    {
+        SPECIALIZATION_FAIL(BUILD_SLICE, SPEC_FAIL_OTHER);
+        goto failure;
+    }
+    int next_opcode = _Py_OPCODE(instr[1]);
+    if (next_opcode == BINARY_SUBSCR_ADAPTIVE) {
+        *instr = _Py_MAKECODEUNIT(BUILD_SLICE__BINARY_SUBSCR_LIST,
+                                  _Py_OPARG(*instr));
+        goto success;
+    }
+    if (next_opcode == STORE_SUBSCR_ADAPTIVE) {
+        *instr = _Py_MAKECODEUNIT(BUILD_SLICE__STORE_SUBSCR_LIST,
+                                  _Py_OPARG(*instr));
+        goto success;
+    }
+    // Nothing we can do about it:
+    SPECIALIZATION_FAIL(BUILD_SLICE, SPEC_FAIL_WRONG_NEXT_INSTR);
+    *instr = _Py_MAKECODEUNIT(BUILD_SLICE, adaptive->original_oparg);
+failure:
+    STAT_INC(BUILD_SLICE, failure);
+    cache_backoff(adaptive);
+    return;
+success:
+    STAT_INC(BUILD_SLICE, success);
     adaptive->counter = initial_counter_value();
 }

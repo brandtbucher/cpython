@@ -237,6 +237,9 @@ _specialized_instructions = [
     "BINARY_OP_MULTIPLY_FLOAT",
     "BINARY_OP_SUBTRACT_INT",
     "BINARY_OP_SUBTRACT_FLOAT",
+    "BUILD_SLICE_ADAPTIVE",
+    "BUILD_SLICE__BINARY_SUBSCR_LIST",
+    "BUILD_SLICE__STORE_SUBSCR_LIST",
     "COMPARE_OP_ADAPTIVE",
     "COMPARE_OP_FLOAT_JUMP",
     "COMPARE_OP_INT_JUMP",
@@ -284,8 +287,6 @@ _specialized_instructions = [
     "LOAD_FAST__LOAD_CONST",
     "LOAD_CONST__LOAD_FAST",
     "STORE_FAST__STORE_FAST",
-    "BUILD_SLICE__BINARY_SUBSCR",
-    "BUILD_SLICE__STORE_SUBSCR",
 ]
 _specialization_stats = [
     "success",

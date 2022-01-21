@@ -5095,35 +5095,51 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BUILD_SLICE__BINARY_SUBSCR) {
-            assert(oparg == 2);
-            PyObject *list = THIRD();
-            if (!PyList_CheckExact(list)) {
+        TARGET(BUILD_SLICE_ADAPTIVE) {
+            assert(cframe.use_tracing == 0);
+            SpecializedCacheEntry *cache = GET_CACHE();
+            if (cache->adaptive.counter == 0) {
+                PyObject *list = THIRD();
+                PyObject *start = SECOND();
+                PyObject *stop = TOP();
+                next_instr--;
+                _Py_Specialize_BuildSlice(list, start, stop, next_instr, cache);
+                DISPATCH();
+            }
+            else {
+                STAT_INC(BUILD_SLICE, deferred);
+                cache->adaptive.counter--;
+                oparg = cache->adaptive.original_oparg;
                 JUMP_TO_INSTRUCTION(BUILD_SLICE);
             }
-            Py_ssize_t lo;
+        }
+
+        TARGET(BUILD_SLICE__BINARY_SUBSCR_LIST) {
+            PyObject *stop = TOP();
             PyObject *start = SECOND();
-            if (Py_IsNone(start) || Py_Is(start, _PyLong_GetZero())) {
-                lo = 0;
-            }
-            else if (PyLong_CheckExact(start) && Py_SIZE(start) == 1) {
+            PyObject *list = THIRD();
+            DEOPT_IF(!PyList_CheckExact(list), BUILD_SLICE);
+            Py_ssize_t lo;
+            if (!Py_IsNone(start) && !Py_Is(start, _PyLong_GetZero())) {
+                DEOPT_IF(!PyLong_CheckExact(start), BUILD_SLICE);
+                DEOPT_IF(Py_SIZE(start) != 1, BUILD_SLICE);
                 lo = ((PyLongObject *)start)->ob_digit[0];
             }
             else {
-                JUMP_TO_INSTRUCTION(BUILD_SLICE);
+                lo = 0;
             }
             Py_ssize_t hi;
-            PyObject *stop = TOP();
-            if (Py_IsNone(stop)) {
-                hi = PyList_GET_SIZE(list);
-            }
-            else if (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1) {
+            if (!Py_IsNone(stop)) {
+                DEOPT_IF(!PyLong_CheckExact(stop), BUILD_SLICE);
+                DEOPT_IF(Py_SIZE(stop) != 1, BUILD_SLICE);
                 hi = ((PyLongObject *)stop)->ob_digit[0];
             }
             else {
-                JUMP_TO_INSTRUCTION(BUILD_SLICE);
+                hi = PyList_GET_SIZE(list);
             }
-            next_instr++;
+            STAT_INC(BUILD_SLICE, hit);
+            INSTRUCTION_START(_Py_OPCODE(*next_instr));
+            STAT_INC(BINARY_SUBSCR, hit);
             PyObject *slice = PyList_GetSlice(list, lo, hi);
             STACK_SHRINK(2);
             Py_DECREF(stop);
@@ -5133,38 +5149,35 @@ check_eval_breaker:
             if (slice == NULL) {
                 goto error;
             }
-            NOTRACE_DISPATCH();
+            DISPATCH();
         }
 
-        TARGET(BUILD_SLICE__STORE_SUBSCR) {
-            assert(oparg == 2);
-            PyObject *list = THIRD();
-            if (!PyList_CheckExact(list)) {
-                JUMP_TO_INSTRUCTION(BUILD_SLICE);
-            }
-            Py_ssize_t lo;
+        TARGET(BUILD_SLICE__STORE_SUBSCR_LIST) {
+            PyObject *stop = TOP();
             PyObject *start = SECOND();
-            if (Py_IsNone(start) || Py_Is(start, _PyLong_GetZero())) {
-                lo = 0;
-            }
-            else if (PyLong_CheckExact(start) && Py_SIZE(start) == 1) {
+            PyObject *list = THIRD();
+            DEOPT_IF(!PyList_CheckExact(list), BUILD_SLICE);
+            Py_ssize_t lo;
+            if (!Py_IsNone(start) && !Py_Is(start, _PyLong_GetZero())) {
+                DEOPT_IF(!PyLong_CheckExact(start), BUILD_SLICE);
+                DEOPT_IF(Py_SIZE(start) != 1, BUILD_SLICE);
                 lo = ((PyLongObject *)start)->ob_digit[0];
             }
             else {
-                JUMP_TO_INSTRUCTION(BUILD_SLICE);
+                lo = 0;
             }
             Py_ssize_t hi;
-            PyObject *stop = TOP();
-            if (Py_IsNone(stop)) {
-                hi = PyList_GET_SIZE(list);
-            }
-            else if (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1) {
+            if (!Py_IsNone(stop)) {
+                DEOPT_IF(!PyLong_CheckExact(stop), BUILD_SLICE);
+                DEOPT_IF(Py_SIZE(stop) != 1, BUILD_SLICE);
                 hi = ((PyLongObject *)stop)->ob_digit[0];
             }
             else {
-                JUMP_TO_INSTRUCTION(BUILD_SLICE);
+                hi = PyList_GET_SIZE(list);
             }
-            next_instr++;
+            STAT_INC(BUILD_SLICE, hit);
+            INSTRUCTION_START(_Py_OPCODE(*next_instr));
+            STAT_INC(STORE_SUBSCR, hit);
             PyObject *value = FOURTH();
             int res = PyList_SetSlice(list, lo, hi, value);
             STACK_SHRINK(4);
@@ -5175,7 +5188,7 @@ check_eval_breaker:
             if (res) {
                 goto error;
             }
-            NOTRACE_DISPATCH();
+            DISPATCH();
         }
 
         TARGET(FORMAT_VALUE) {
@@ -5402,6 +5415,7 @@ MISS_WITH_CACHE(CALL_NO_KW)
 MISS_WITH_CACHE(BINARY_OP)
 MISS_WITH_CACHE(COMPARE_OP)
 MISS_WITH_CACHE(BINARY_SUBSCR)
+MISS_WITH_CACHE(BUILD_SLICE)
 MISS_WITH_OPARG_COUNTER(STORE_SUBSCR)
 
 binary_subscr_dict_error:
