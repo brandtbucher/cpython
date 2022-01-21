@@ -38,6 +38,7 @@ extern "C" {
 #define LOAD_BUILD_CLASS                 71
 #define GET_AWAITABLE                    73
 #define LOAD_ASSERTION_ERROR             74
+#define RETURN_GENERATOR                 75
 #define LIST_TO_TUPLE                    82
 #define RETURN_VALUE                     83
 #define IMPORT_STAR                      84
@@ -89,6 +90,7 @@ extern "C" {
 #define RAISE_VARARGS                   130
 #define MAKE_FUNCTION                   132
 #define BUILD_SLICE                     133
+#define JUMP_NO_INTERRUPT               134
 #define MAKE_CELL                       135
 #define LOAD_CLOSURE                    136
 #define LOAD_DEREF                      137
@@ -157,22 +159,22 @@ extern "C" {
 #define LOAD_ATTR_SLOT                   66
 #define LOAD_ATTR_MODULE                 67
 #define LOAD_GLOBAL_ADAPTIVE             72
-#define LOAD_GLOBAL_MODULE               75
-#define LOAD_GLOBAL_BUILTIN              76
-#define LOAD_METHOD_ADAPTIVE             77
-#define LOAD_METHOD_CACHED               78
-#define LOAD_METHOD_CLASS                79
-#define LOAD_METHOD_MODULE               80
-#define LOAD_METHOD_NO_DICT              81
-#define STORE_ATTR_ADAPTIVE              87
-#define STORE_ATTR_INSTANCE_VALUE       131
-#define STORE_ATTR_SLOT                 134
-#define STORE_ATTR_WITH_HINT            140
-#define LOAD_FAST__LOAD_FAST            141
-#define STORE_FAST__LOAD_FAST           143
-#define LOAD_FAST__LOAD_CONST           150
-#define LOAD_CONST__LOAD_FAST           153
-#define STORE_FAST__STORE_FAST          154
+#define LOAD_GLOBAL_MODULE               76
+#define LOAD_GLOBAL_BUILTIN              77
+#define LOAD_METHOD_ADAPTIVE             78
+#define LOAD_METHOD_CACHED               79
+#define LOAD_METHOD_CLASS                80
+#define LOAD_METHOD_MODULE               81
+#define LOAD_METHOD_NO_DICT              87
+#define STORE_ATTR_ADAPTIVE             131
+#define STORE_ATTR_INSTANCE_VALUE       140
+#define STORE_ATTR_SLOT                 141
+#define STORE_ATTR_WITH_HINT            143
+#define LOAD_FAST__LOAD_FAST            150
+#define STORE_FAST__LOAD_FAST           153
+#define LOAD_FAST__LOAD_CONST           154
+#define LOAD_CONST__LOAD_FAST           158
+#define STORE_FAST__STORE_FAST          159
 #define DO_TRACING                      255
 #ifdef NEED_OPCODE_JUMP_TABLES
 static uint32_t _PyOpcode_RelativeJump[8] = {
@@ -190,7 +192,7 @@ static uint32_t _PyOpcode_Jump[8] = {
     0U,
     536870912U,
     2316288000U,
-    3U,
+    67U,
     0U,
     0U,
     0U,
