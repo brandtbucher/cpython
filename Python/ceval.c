@@ -5119,25 +5119,21 @@ check_eval_breaker:
             PyObject *start = SECOND();
             PyObject *list = THIRD();
             DEOPT_IF(!PyList_CheckExact(list), BUILD_SLICE);
-            Py_ssize_t lo;
-            if (!Py_IsNone(start) && !Py_Is(start, _PyLong_GetZero())) {
-                DEOPT_IF(!PyLong_CheckExact(start), BUILD_SLICE);
-                DEOPT_IF(Py_SIZE(start) != 1, BUILD_SLICE);
-                lo = ((PyLongObject *)start)->ob_digit[0];
-            }
-            else {
-                lo = 0;
-            }
-            Py_ssize_t hi;
-            if (!Py_IsNone(stop)) {
-                DEOPT_IF(!PyLong_CheckExact(stop), BUILD_SLICE);
-                DEOPT_IF(Py_SIZE(stop) != 1, BUILD_SLICE);
-                hi = ((PyLongObject *)stop)->ob_digit[0];
-            }
-            else {
-                hi = PyList_GET_SIZE(list);
-            }
             STAT_INC(BUILD_SLICE, hit);
+            Py_ssize_t len = PyList_GET_SIZE(list);
+            Py_ssize_t lo = 0;
+            Py_ssize_t hi = len;
+            if (!_PyEval_SliceIndex(start, &lo) ||
+                !_PyEval_SliceIndex(stop, &hi))
+            {
+                goto error;
+            }
+            if (lo < 0) {
+                lo += len;
+            }
+            if (hi < 0) {
+                hi += len;
+            }
             INSTRUCTION_START(_Py_OPCODE(*next_instr));
             STAT_INC(BINARY_SUBSCR, hit);
             PyObject *slice = PyList_GetSlice(list, lo, hi);
@@ -5157,25 +5153,21 @@ check_eval_breaker:
             PyObject *start = SECOND();
             PyObject *list = THIRD();
             DEOPT_IF(!PyList_CheckExact(list), BUILD_SLICE);
-            Py_ssize_t lo;
-            if (!Py_IsNone(start) && !Py_Is(start, _PyLong_GetZero())) {
-                DEOPT_IF(!PyLong_CheckExact(start), BUILD_SLICE);
-                DEOPT_IF(Py_SIZE(start) != 1, BUILD_SLICE);
-                lo = ((PyLongObject *)start)->ob_digit[0];
-            }
-            else {
-                lo = 0;
-            }
-            Py_ssize_t hi;
-            if (!Py_IsNone(stop)) {
-                DEOPT_IF(!PyLong_CheckExact(stop), BUILD_SLICE);
-                DEOPT_IF(Py_SIZE(stop) != 1, BUILD_SLICE);
-                hi = ((PyLongObject *)stop)->ob_digit[0];
-            }
-            else {
-                hi = PyList_GET_SIZE(list);
-            }
             STAT_INC(BUILD_SLICE, hit);
+            Py_ssize_t len = PyList_GET_SIZE(list);
+            Py_ssize_t lo = 0;
+            Py_ssize_t hi = len;
+            if (!_PyEval_SliceIndex(start, &lo) ||
+                !_PyEval_SliceIndex(stop, &hi))
+            {
+                goto error;
+            }
+            if (lo < 0) {
+                lo += len;
+            }
+            if (hi < 0) {
+                hi += len;
+            }
             INSTRUCTION_START(_Py_OPCODE(*next_instr));
             STAT_INC(STORE_SUBSCR, hit);
             PyObject *value = FOURTH();

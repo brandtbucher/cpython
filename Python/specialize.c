@@ -1769,12 +1769,7 @@ _Py_Specialize_BuildSlice(PyObject *list, PyObject *start, PyObject *stop,
         SPECIALIZATION_FAIL(BUILD_SLICE, SPEC_FAIL_WRONG_NUMBER_ARGUMENTS);
         goto failure;
     }
-    if (!PyList_CheckExact(list) ||
-        !(Py_IsNone(start) || 
-          (PyLong_CheckExact(start) && (size_t)Py_SIZE(start) < 2)) ||
-        !(Py_IsNone(stop) ||
-          (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1)))
-    {
+    if (!PyList_CheckExact(list)) {
         SPECIALIZATION_FAIL(BUILD_SLICE, SPEC_FAIL_OTHER);
         goto failure;
     }
