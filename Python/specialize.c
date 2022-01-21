@@ -1288,39 +1288,6 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
             }
         }
         else if (PySlice_Check(sub)) {
-            PySliceObject *slice = (PySliceObject *)sub;
-            if (Py_IsNone(slice->step)) {
-                PyObject *start = slice->start;
-                PyObject *stop = slice->stop;
-                if (Py_IsNone(start)) {
-                    if (Py_IsNone(stop)) {
-                        *instr = _Py_MAKECODEUNIT(
-                            STORE_SUBSCR_LIST_SLICE_NONE_NONE, 
-                            initial_counter_value());
-                        goto success;
-                    }
-                    if (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1) {
-                        *instr = _Py_MAKECODEUNIT(
-                            STORE_SUBSCR_LIST_SLICE_NONE_INT, 
-                            initial_counter_value());
-                        goto success;
-                    }
-                }
-                else if (PyLong_CheckExact(start) && Py_SIZE(start) == 1) {
-                    if (Py_IsNone(stop)) {
-                        *instr = _Py_MAKECODEUNIT(
-                            STORE_SUBSCR_LIST_SLICE_INT_NONE,
-                            initial_counter_value());
-                        goto success;
-                    }
-                    if (PyLong_CheckExact(stop) && Py_SIZE(stop) == 1) {
-                        *instr = _Py_MAKECODEUNIT(
-                            STORE_SUBSCR_LIST_SLICE_INT_INT,
-                            initial_counter_value());
-                        goto success;
-                    }
-                }
-            }
             SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_LIST_SLICE);
             goto fail;
         }
