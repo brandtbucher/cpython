@@ -2255,24 +2255,11 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_LIST_EMPTY_SLICE) {
-            PySliceObject *slice = (PySliceObject *)TOP();
-            PyObject *list = SECOND();
-            DEOPT_IF(!PyList_CheckExact(list), BINARY_SUBSCR);
+        TARGET(BINARY_SUBSCR_LIST_SLICE) {
+            DEOPT_IF(!PySlice_Check(TOP()), BINARY_SUBSCR);
+            DEOPT_IF(!PyList_CheckExact(SECOND()), BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, hit);
-            assert(PySlice_Check(slice));
-            assert(Py_IsNone(slice->start));
-            assert(Py_IsNone(slice->stop));
-            assert(Py_IsNone(slice->step));
-            PyObject *res = PyList_GetSlice(list, 0, PyList_GET_SIZE(list));
-            SET_SECOND(res);
-            STACK_SHRINK(1);
-            Py_DECREF(slice);
-            Py_DECREF(list);
-            if (res == NULL) {
-                goto error;
-            }
-            DISPATCH();
+            JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
         }
 
         TARGET(BINARY_SUBSCR_TUPLE_INT) {
@@ -2428,25 +2415,11 @@ check_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_LIST_EMPTY_SLICE) {
-            PySliceObject *slice = (PySliceObject *)TOP();
-            PyObject *list = SECOND();
-            PyObject *value = THIRD();
-            DEOPT_IF(!PyList_CheckExact(list), STORE_SUBSCR);
+        TARGET(STORE_SUBSCR_LIST_SLICE) {
+            DEOPT_IF(!PySlice_Check(TOP()), BINARY_SUBSCR);
+            DEOPT_IF(!PyList_CheckExact(SECOND()), STORE_SUBSCR);
             STAT_INC(STORE_SUBSCR, hit);
-            assert(PySlice_Check(slice));
-            assert(Py_IsNone(slice->start));
-            assert(Py_IsNone(slice->stop));
-            assert(Py_IsNone(slice->step));
-            int res = PyList_SetSlice(list, 0, PyList_GET_SIZE(list), value);
-            STACK_SHRINK(3);
-            Py_DECREF(slice);
-            Py_DECREF(list);
-            Py_DECREF(value);
-            if (res) {
-                goto error;
-            }
-            DISPATCH();
+            JUMP_TO_INSTRUCTION(STORE_SUBSCR);
         }
 
         TARGET(STORE_SUBSCR_DICT) {
