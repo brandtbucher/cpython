@@ -38,6 +38,7 @@ extern "C" {
 #define LOAD_BUILD_CLASS                 71
 #define GET_AWAITABLE                    73
 #define LOAD_ASSERTION_ERROR             74
+#define RETURN_GENERATOR                 75
 #define LIST_TO_TUPLE                    82
 #define RETURN_VALUE                     83
 #define IMPORT_STAR                      84
@@ -89,6 +90,7 @@ extern "C" {
 #define RAISE_VARARGS                   130
 #define MAKE_FUNCTION                   132
 #define BUILD_SLICE                     133
+#define JUMP_NO_INTERRUPT               134
 #define MAKE_CELL                       135
 #define LOAD_CLOSURE                    136
 #define LOAD_DEREF                      137
@@ -130,12 +132,12 @@ extern "C" {
 #define BINARY_SUBSCR_ADAPTIVE           26
 #define BINARY_SUBSCR_GETITEM            27
 #define BINARY_SUBSCR_LIST_INT           28
-#define BINARY_SUBSCR_LIST_EMPTY_SLICE   29
+#define BINARY_SUBSCR_LIST_SLICE         29
 #define BINARY_SUBSCR_TUPLE_INT          34
 #define BINARY_SUBSCR_DICT               36
 #define STORE_SUBSCR_ADAPTIVE            37
 #define STORE_SUBSCR_LIST_INT            38
-#define STORE_SUBSCR_LIST_EMPTY_SLICE    39
+#define STORE_SUBSCR_LIST_SLICE          39
 #define STORE_SUBSCR_DICT                40
 #define CALL_NO_KW_ADAPTIVE              41
 #define CALL_NO_KW_BUILTIN_O             42
@@ -157,20 +159,20 @@ extern "C" {
 #define LOAD_GLOBAL_ADAPTIVE             66
 #define LOAD_GLOBAL_MODULE               67
 #define LOAD_GLOBAL_BUILTIN              72
-#define LOAD_METHOD_ADAPTIVE             75
-#define LOAD_METHOD_CACHED               76
-#define LOAD_METHOD_CLASS                77
-#define LOAD_METHOD_MODULE               78
-#define LOAD_METHOD_NO_DICT              79
-#define STORE_ATTR_ADAPTIVE              80
-#define STORE_ATTR_INSTANCE_VALUE        81
-#define STORE_ATTR_SLOT                  87
-#define STORE_ATTR_WITH_HINT            131
-#define LOAD_FAST__LOAD_FAST            134
-#define STORE_FAST__LOAD_FAST           140
-#define LOAD_FAST__LOAD_CONST           141
-#define LOAD_CONST__LOAD_FAST           143
-#define STORE_FAST__STORE_FAST          150
+#define LOAD_METHOD_ADAPTIVE             76
+#define LOAD_METHOD_CACHED               77
+#define LOAD_METHOD_CLASS                78
+#define LOAD_METHOD_MODULE               79
+#define LOAD_METHOD_NO_DICT              80
+#define STORE_ATTR_ADAPTIVE              81
+#define STORE_ATTR_INSTANCE_VALUE        87
+#define STORE_ATTR_SLOT                 131
+#define STORE_ATTR_WITH_HINT            140
+#define LOAD_FAST__LOAD_FAST            141
+#define STORE_FAST__LOAD_FAST           143
+#define LOAD_FAST__LOAD_CONST           150
+#define LOAD_CONST__LOAD_FAST           153
+#define STORE_FAST__STORE_FAST          154
 #define DO_TRACING                      255
 #ifdef NEED_OPCODE_JUMP_TABLES
 static uint32_t _PyOpcode_RelativeJump[8] = {
@@ -188,7 +190,7 @@ static uint32_t _PyOpcode_Jump[8] = {
     0U,
     536870912U,
     2316288000U,
-    3U,
+    67U,
     0U,
     0U,
     0U,
