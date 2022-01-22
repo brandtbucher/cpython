@@ -2224,13 +2224,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_LIST_SLICE) {
-            DEOPT_IF(!PySlice_Check(TOP()), BINARY_SUBSCR);
-            DEOPT_IF(!PyList_CheckExact(SECOND()), BINARY_SUBSCR);
-            STAT_INC(BINARY_SUBSCR, hit);
-            JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
-        }
-
         TARGET(BINARY_SUBSCR_TUPLE_INT) {
             PyObject *sub = TOP();
             PyObject *tuple = SECOND();
@@ -2382,13 +2375,6 @@ handle_eval_breaker:
             Py_DECREF(sub);
             Py_DECREF(list);
             DISPATCH();
-        }
-
-        TARGET(STORE_SUBSCR_LIST_SLICE) {
-            DEOPT_IF(!PySlice_Check(TOP()), STORE_SUBSCR);
-            DEOPT_IF(!PyList_CheckExact(SECOND()), STORE_SUBSCR);
-            STAT_INC(STORE_SUBSCR, hit);
-            JUMP_TO_INSTRUCTION(STORE_SUBSCR);
         }
 
         TARGET(STORE_SUBSCR_DICT) {

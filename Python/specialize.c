@@ -1172,10 +1172,10 @@ _Py_Specialize_BinarySubscr(
             *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_INT, _Py_OPARG(*instr));
             goto success;
         }
-        if (PySlice_Check(sub)) {
-            *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR_LIST_SLICE,
-                                      _Py_OPARG(*instr));
-            goto success;
+        if (_Py_OPCODE(instr[-1]) == BUILD_SLICE) {
+            *instr = _Py_MAKECODEUNIT(BINARY_SUBSCR, cache0->original_oparg);
+            SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_LIST_SLICE);
+            goto fail;
         }
         SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OTHER);
         goto fail;
@@ -1251,10 +1251,10 @@ _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *ins
                 goto fail;
             }
         }
-        if (PySlice_Check(sub)) {
-            *instr = _Py_MAKECODEUNIT(STORE_SUBSCR_LIST_SLICE,
-                                      initial_counter_value());
-            goto success;
+        if (_Py_OPCODE(instr[-1]) == BUILD_SLICE) {
+            *instr = _Py_MAKECODEUNIT(STORE_SUBSCR, 0);
+            SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_LIST_SLICE);
+            goto fail;
         }
         SPECIALIZATION_FAIL(STORE_SUBSCR, SPEC_FAIL_OTHER);
         goto fail;
