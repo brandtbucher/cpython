@@ -752,10 +752,6 @@ compiler_use_next_block(struct compiler *c, basicblock *block)
 static basicblock *
 compiler_copy_block(struct compiler *c, basicblock *block)
 {
-    /* Cannot copy a block if it has a fallthrough, since
-     * a block can only have one fallthrough predecessor.
-     */
-    assert(block->b_nofallthrough);
     basicblock *result = compiler_new_block(c);
     if (result == NULL) {
         return NULL;
@@ -768,7 +764,7 @@ compiler_copy_block(struct compiler *c, basicblock *block)
         result->b_instr[n] = block->b_instr[i];
     }
     result->b_exit = block->b_exit;
-    result->b_nofallthrough = 1;
+    result->b_nofallthrough = block->b_nofallthrough;
     return result;
 }
 
@@ -3013,6 +3009,18 @@ compiler_for(struct compiler *c, stmt_ty s)
     compiler_use_next_block(c, body);
     VISIT(c, expr, s->v.For.target);
     VISIT_SEQ(c, stmt, s->v.For.body);
+    if (c->u->u_curblock == body) {
+        basicblock *copied = compiler_copy_block(c, start);
+        if (copied == NULL) {
+            return 0;
+        }
+        compiler_use_next_block(c, copied);
+        copied = compiler_copy_block(c, body);
+        if (copied == NULL) {
+            return 0;
+        }
+        compiler_use_next_block(c, copied);
+    }
     /* Mark jump as artificial */
     UNSET_LOC(c);
     ADDOP_JUMP(c, JUMP_ABSOLUTE, start);

@@ -140,16 +140,25 @@ dis_bug708901 = """\
 
 %3d           8 CALL_NO_KW               2
              10 GET_ITER
-        >>   12 FOR_ITER                 2 (to 18)
+        >>   12 FOR_ITER                 5 (to 24)
              14 STORE_FAST               0 (res)
 
-%3d          16 JUMP_ABSOLUTE            6 (to 12)
+%3d          16 NOP
 
-%3d     >>   18 LOAD_CONST               0 (None)
-             20 RETURN_VALUE
+%3d          18 FOR_ITER                 4 (to 28)
+             20 STORE_FAST               0 (res)
+
+%3d          22 JUMP_ABSOLUTE            6 (to 12)
+
+%3d     >>   24 LOAD_CONST               0 (None)
+             26 RETURN_VALUE
+        >>   28 LOAD_CONST               0 (None)
+             30 RETURN_VALUE
 """ % (bug708901.__code__.co_firstlineno,
        bug708901.__code__.co_firstlineno + 1,
        bug708901.__code__.co_firstlineno + 2,
+       bug708901.__code__.co_firstlineno + 1,
+       bug708901.__code__.co_firstlineno + 3,
        bug708901.__code__.co_firstlineno + 1,
        bug708901.__code__.co_firstlineno + 3,
        bug708901.__code__.co_firstlineno + 1)
