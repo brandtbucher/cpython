@@ -3009,7 +3009,7 @@ compiler_for(struct compiler *c, stmt_ty s)
     compiler_use_next_block(c, body);
     VISIT(c, expr, s->v.For.target);
     VISIT_SEQ(c, stmt, s->v.For.body);
-    if (c->u->u_curblock == body) {
+    if (asdl_seq_LEN(s->v.For.body) == 1 && c->u->u_curblock == body) {
         basicblock *copied = compiler_copy_block(c, start);
         if (copied == NULL) {
             return 0;
