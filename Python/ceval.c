@@ -857,19 +857,31 @@ static const binaryfunc binary_ops[] = {
     [NB_INPLACE_XOR] = PyNumber_InPlaceXor,
 };
 
-#define BINARY_OP_FAST_FLOAT(OP)                       \
+#define BINARY_OP_FAST_FLOAT(OP, INPLACE)              \
     do {                                               \
         assert(cframe.use_tracing == 0);               \
         PyObject *lhs = SECOND();                      \
         PyObject *rhs = TOP();                         \
         DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP); \
         DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP); \
-        STAT_INC(BINARY_OP, hit);                      \
         double l = PyFloat_AS_DOUBLE(lhs);             \
         double r = PyFloat_AS_DOUBLE(rhs);             \
         double d = l OP r;                             \
-        Py_DECREF(rhs);                                \
+        if (INPLACE) {                                 \
+            int out = _Py_OPARG(*next_instr);          \
+            DEOPT_IF(GETLOCAL(out) != lhs, BINARY_OP); \
+            DEOPT_IF(Py_REFCNT(lhs) != 2, BINARY_OP);  \
+            STAT_INC(BINARY_OP, hit);                  \
+            PyFloat_AS_DOUBLE(lhs) = d;                \
+            STACK_SHRINK(2);                           \
+            Py_DECREF(lhs);                            \
+            Py_DECREF(rhs);                            \
+            next_instr++;                              \
+            NOTRACE_DISPATCH();                        \
+        }                                              \
+        STAT_INC(BINARY_OP, hit);                      \
         STACK_SHRINK(1);                               \
+        Py_DECREF(rhs);                                \
         if (Py_REFCNT(lhs) == 1) {                     \
             PyFloat_AS_DOUBLE(lhs) = d;                \
             NOTRACE_DISPATCH();                        \
@@ -2011,7 +2023,7 @@ handle_eval_breaker:
         }
 
         TARGET(BINARY_OP_MULTIPLY_FLOAT) {
-            BINARY_OP_FAST_FLOAT(*);
+            BINARY_OP_FAST_FLOAT(*, false);
         }
 
         TARGET(BINARY_OP_SUBTRACT_INT) {
@@ -2033,7 +2045,11 @@ handle_eval_breaker:
         }
 
         TARGET(BINARY_OP_SUBTRACT_FLOAT) {
-            BINARY_OP_FAST_FLOAT(-);
+            BINARY_OP_FAST_FLOAT(-, false);
+        }
+
+        TARGET(BINARY_OP_INPLACE_SUBTRACT_FLOAT) {
+            BINARY_OP_FAST_FLOAT(-, true);
         }
 
         TARGET(BINARY_OP_ADD_UNICODE) {
@@ -2084,7 +2100,11 @@ handle_eval_breaker:
         }
 
         TARGET(BINARY_OP_ADD_FLOAT) {
-            BINARY_OP_FAST_FLOAT(+);
+            BINARY_OP_FAST_FLOAT(+, false);
+        }
+
+        TARGET(BINARY_OP_INPLACE_ADD_FLOAT) {
+            BINARY_OP_FAST_FLOAT(+, true);
         }
 
         TARGET(BINARY_OP_ADD_INT) {
