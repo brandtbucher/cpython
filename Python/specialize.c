@@ -1621,8 +1621,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                if (Py_REFCNT(lhs) == 2 &&
-                    adaptive->original_oparg == NB_INPLACE_ADD && 
+                if (adaptive->original_oparg == NB_INPLACE_ADD && 
                     (_Py_OPCODE(instr[1]) == STORE_FAST ||
                      _Py_OPCODE(instr[1]) == STORE_FAST__LOAD_FAST))
                 {
@@ -1664,8 +1663,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                if (Py_REFCNT(lhs) == 2 &&
-                    adaptive->original_oparg == NB_INPLACE_SUBTRACT && 
+                if (adaptive->original_oparg == NB_INPLACE_SUBTRACT && 
                     (_Py_OPCODE(instr[1]) == STORE_FAST ||
                      _Py_OPCODE(instr[1]) == STORE_FAST__LOAD_FAST))
                 {

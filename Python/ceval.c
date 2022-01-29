@@ -864,25 +864,17 @@ static const binaryfunc binary_ops[] = {
         PyObject *rhs = TOP();                         \
         DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP); \
         DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP); \
-        double l = PyFloat_AS_DOUBLE(lhs);             \
-        double r = PyFloat_AS_DOUBLE(rhs);             \
-        double d = l OP r;                             \
         if (INPLACE) {                                 \
             int out = _Py_OPARG(*next_instr);          \
             DEOPT_IF(GETLOCAL(out) != lhs, BINARY_OP); \
-            DEOPT_IF(Py_REFCNT(lhs) != 2, BINARY_OP);  \
-            STAT_INC(BINARY_OP, hit);                  \
-            PyFloat_AS_DOUBLE(lhs) = d;                \
-            STACK_SHRINK(2);                           \
-            Py_DECREF(lhs);                            \
-            Py_DECREF(rhs);                            \
-            next_instr++;                              \
-            NOTRACE_DISPATCH();                        \
         }                                              \
         STAT_INC(BINARY_OP, hit);                      \
-        STACK_SHRINK(1);                               \
+        double l = PyFloat_AS_DOUBLE(lhs);             \
+        double r = PyFloat_AS_DOUBLE(rhs);             \
+        double d = l OP r;                             \
         Py_DECREF(rhs);                                \
-        if (Py_REFCNT(lhs) == 1) {                     \
+        STACK_SHRINK(1);                               \
+        if (Py_REFCNT(lhs) == 1 + !!(INPLACE)) {       \
             PyFloat_AS_DOUBLE(lhs) = d;                \
             NOTRACE_DISPATCH();                        \
         }                                              \
