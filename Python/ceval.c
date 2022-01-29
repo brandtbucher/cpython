@@ -873,6 +873,11 @@ static const binaryfunc binary_ops[] = {
         bool inplace = (INPLACE) && GETLOCAL(_Py_OPARG(*next_instr)) == lhs; \
         if (Py_REFCNT(lhs) == 1 + inplace) {           \
             PyFloat_AS_DOUBLE(lhs) = d;                \
+            if (inplace) {                             \
+                STACK_SHRINK(1);                       \
+                Py_DECREF(lhs);                        \
+                next_instr++;                          \
+            }                                          \
             NOTRACE_DISPATCH();                        \
         }                                              \
         Py_DECREF(lhs);                                \
