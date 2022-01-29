@@ -864,20 +864,23 @@ static const binaryfunc binary_ops[] = {
         PyObject *rhs = TOP();                         \
         DEOPT_IF(!PyFloat_CheckExact(lhs), BINARY_OP); \
         DEOPT_IF(!PyFloat_CheckExact(rhs), BINARY_OP); \
+        if (INPLACE) {                                 \
+            int out = _Py_OPARG(*next_instr);          \
+            DEOPT_IF(GETLOCAL(out) != lhs, BINARY_OP); \
+        }                                              \
         STAT_INC(BINARY_OP, hit);                      \
         double l = PyFloat_AS_DOUBLE(lhs);             \
         double r = PyFloat_AS_DOUBLE(rhs);             \
         double d = l OP r;                             \
-        Py_DECREF(rhs);                                \
         STACK_SHRINK(1);                               \
-        bool inplace = (INPLACE) && GETLOCAL(_Py_OPARG(*next_instr)) == lhs; \
-        if (Py_REFCNT(lhs) == 1 + inplace) {           \
-            PyFloat_AS_DOUBLE(lhs) = d;                \
-            if (inplace) {                             \
-                STACK_SHRINK(1);                       \
+        Py_DECREF(rhs);                                \
+        if (Py_REFCNT(lhs) == 1 + !!(INPLACE)) {       \
+            if (INPLACE) {                             \
                 Py_DECREF(lhs);                        \
+                STACK_SHRINK(1);                       \
                 next_instr++;                          \
             }                                          \
+            PyFloat_AS_DOUBLE(lhs) = d;                \
             NOTRACE_DISPATCH();                        \
         }                                              \
         Py_DECREF(lhs);                                \
@@ -888,6 +891,7 @@ static const binaryfunc binary_ops[] = {
         }                                              \
         NOTRACE_DISPATCH();                            \
     } while (0)
+
 
 // PEP 634: Structural Pattern Matching
 
