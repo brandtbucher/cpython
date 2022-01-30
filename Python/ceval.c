@@ -2044,9 +2044,9 @@ handle_eval_breaker:
             BINARY_OP_FAST_FLOAT(-, false);
         }
 
-        // TARGET(BINARY_OP_INPLACE_SUBTRACT_FLOAT) {
-        //     BINARY_OP_FAST_FLOAT(-, true);
-        // }
+        TARGET(BINARY_OP_INPLACE_SUBTRACT_FLOAT) {
+            BINARY_OP_FAST_FLOAT(-, true);
+        }
 
         TARGET(BINARY_OP_ADD_UNICODE) {
             assert(cframe.use_tracing == 0);
@@ -2099,9 +2099,9 @@ handle_eval_breaker:
             BINARY_OP_FAST_FLOAT(+, false);
         }
 
-        TARGET(BINARY_OP_INPLACE_ADD_FLOAT) {
-            BINARY_OP_FAST_FLOAT(+, true);
-        }
+        // TARGET(BINARY_OP_INPLACE_ADD_FLOAT) {
+        //     BINARY_OP_FAST_FLOAT(+, true);
+        // }
 
         TARGET(BINARY_OP_ADD_INT) {
             assert(cframe.use_tracing == 0);
