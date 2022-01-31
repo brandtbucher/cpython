@@ -307,6 +307,11 @@ class CAPITest(unittest.TestCase):
 
             class C(): pass
 
+            # Quicken this code object, so we don't attempt a memory allocation
+            # in the middle of the actual test:
+            for _ in range(8):
+                pass
+            
             # The first loop tests both functions and that remove_mem_hooks()
             # can be called twice in a row. The second loop checks a call to
             # set_nomemory() after a call to remove_mem_hooks(). The third
