@@ -3923,6 +3923,7 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_FORWARD) {
+            PREDICTED(JUMP_FORWARD);
             JUMPBY(oparg);
             DISPATCH();
         }
@@ -4172,7 +4173,7 @@ handle_eval_breaker:
             SET_TOP(iter);
             if (iter == NULL)
                 goto error;
-            PREDICT(FOR_ITER);
+            PREDICT(JUMP_FORWARD);
             PREDICT(CALL_NO_KW);
             DISPATCH();
         }
@@ -4207,7 +4208,21 @@ handle_eval_breaker:
         }
 
         TARGET(FOR_ITER) {
-            PREDICTED(FOR_ITER);
+            int err = _Py_IncrementCountAndMaybeQuicken(frame->f_code);
+            if (err) {
+                if (err < 0) {
+                    goto error;
+                }
+                /* Update first_instr and next_instr to point to newly quickened code */
+                int nexti = INSTR_OFFSET();
+                first_instr = frame->f_code->co_firstinstr;
+                next_instr = first_instr + nexti;
+            }
+            JUMP_TO_INSTRUCTION(FOR_ITER_QUICK);
+        }
+
+        TARGET(FOR_ITER_QUICK) {
+            PREDICTED(FOR_ITER_QUICK);
             /* before: [iter]; after: [iter, iter()] *or* [] */
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -4215,6 +4230,8 @@ handle_eval_breaker:
                 PUSH(next);
                 PREDICT(STORE_FAST);
                 PREDICT(UNPACK_SEQUENCE);
+                JUMPTO(oparg);
+                CHECK_EVAL_BREAKER();
                 DISPATCH();
             }
             if (_PyErr_Occurred(tstate)) {
@@ -4229,7 +4246,6 @@ handle_eval_breaker:
             /* iterator ended normally */
             STACK_SHRINK(1);
             Py_DECREF(iter);
-            JUMPBY(oparg);
             DISPATCH();
         }
 

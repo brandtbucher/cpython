@@ -922,7 +922,7 @@ stack_effect(int opcode, int oparg, int jump)
             return (oparg&0xFF) + (oparg>>8);
         case FOR_ITER:
             /* -1 at end of iterator, 1 if continue iterating. */
-            return jump > 0 ? -1 : 1;
+            return jump ? 1 : -1;
         case SEND:
             return jump > 0 ? -1 : 0;
         case STORE_ATTR:
@@ -2991,13 +2991,12 @@ compiler_if(struct compiler *c, stmt_ty s)
 static int
 compiler_for(struct compiler *c, stmt_ty s)
 {
-    basicblock *start, *body, *cleanup, *end;
+    basicblock *start, *body, *end;
 
     start = compiler_new_block(c);
     body = compiler_new_block(c);
-    cleanup = compiler_new_block(c);
     end = compiler_new_block(c);
-    if (start == NULL || body == NULL || end == NULL || cleanup == NULL) {
+    if (start == NULL || body == NULL || end == NULL) {
         return 0;
     }
     if (!compiler_push_fblock(c, FOR_LOOP, start, end, NULL)) {
@@ -3005,15 +3004,14 @@ compiler_for(struct compiler *c, stmt_ty s)
     }
     VISIT(c, expr, s->v.For.iter);
     ADDOP(c, GET_ITER);
-    compiler_use_next_block(c, start);
-    ADDOP_JUMP(c, FOR_ITER, cleanup);
+    ADDOP_JUMP(c, JUMP_FORWARD, start);
     compiler_use_next_block(c, body);
     VISIT(c, expr, s->v.For.target);
     VISIT_SEQ(c, stmt, s->v.For.body);
-    /* Mark jump as artificial */
-    UNSET_LOC(c);
-    ADDOP_JUMP(c, JUMP_ABSOLUTE, start);
-    compiler_use_next_block(c, cleanup);
+    compiler_use_next_block(c, start);
+    SET_LOC(c, s->v.For.iter);
+    ADDOP_JUMP(c, FOR_ITER, body);
+    NEXT_BLOCK(c);
 
     compiler_pop_fblock(c, FOR_LOOP, start);
 
@@ -5077,15 +5075,14 @@ compiler_sync_comprehension_generator(struct compiler *c,
        and then write to the element */
 
     comprehension_ty gen;
-    basicblock *start, *anchor, *skip, *if_cleanup;
+    basicblock *start, *anchor, *if_cleanup;
     Py_ssize_t i, n;
 
     start = compiler_new_block(c);
-    skip = compiler_new_block(c);
     if_cleanup = compiler_new_block(c);
     anchor = compiler_new_block(c);
 
-    if (start == NULL || skip == NULL || if_cleanup == NULL ||
+    if (start == NULL || if_cleanup == NULL ||
         anchor == NULL)
         return 0;
 
@@ -5095,6 +5092,8 @@ compiler_sync_comprehension_generator(struct compiler *c,
         /* Receive outermost iter as an implicit argument */
         c->u->u_argcount = 1;
         ADDOP_I(c, LOAD_FAST, 0);
+        ADDOP_JUMP_NOLINE(c, JUMP_FORWARD, anchor);
+        NEXT_BLOCK(c);
     }
     else {
         /* Sub-iter - calculate on the fly */
@@ -5122,13 +5121,13 @@ compiler_sync_comprehension_generator(struct compiler *c,
         if (start) {
             VISIT(c, expr, gen->iter);
             ADDOP(c, GET_ITER);
+            ADDOP_JUMP_NOLINE(c, JUMP_FORWARD, anchor);
+            NEXT_BLOCK(c);
         }
     }
     if (start) {
         depth++;
         compiler_use_next_block(c, start);
-        ADDOP_JUMP(c, FOR_ITER, anchor);
-        NEXT_BLOCK(c);
     }
     VISIT(c, expr, gen->target);
 
@@ -5174,13 +5173,12 @@ compiler_sync_comprehension_generator(struct compiler *c,
         default:
             return 0;
         }
-
-        compiler_use_next_block(c, skip);
     }
     compiler_use_next_block(c, if_cleanup);
     if (start) {
-        ADDOP_JUMP(c, JUMP_ABSOLUTE, start);
         compiler_use_next_block(c, anchor);
+        ADDOP_JUMP(c, FOR_ITER, start);
+        NEXT_BLOCK(c);
     }
 
     return 1;
@@ -8765,17 +8763,13 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                         i -= jump_thread(inst, target, POP_JUMP_IF_TRUE);
                 }
                 break;
+            case FOR_ITER:
             case JUMP_ABSOLUTE:
             case JUMP_FORWARD:
                 switch (target->i_opcode) {
                     case JUMP_ABSOLUTE:
                     case JUMP_FORWARD:
                         i -= jump_thread(inst, target, JUMP_ABSOLUTE);
-                }
-                break;
-            case FOR_ITER:
-                if (target->i_opcode == JUMP_FORWARD) {
-                    i -= jump_thread(inst, target, FOR_ITER);
                 }
                 break;
             case SWAP:

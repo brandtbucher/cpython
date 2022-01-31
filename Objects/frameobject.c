@@ -275,10 +275,13 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     break;
                 case FOR_ITER:
                 {
-                    int64_t target_stack = pop_value(next_stack);
-                    stacks[i+1] = push_value(next_stack, Object);
-                    j = get_arg(code, i) + i + 1;
+                    int64_t target_stack = push_value(next_stack, Object);
+                    stacks[i + 1] = pop_value(next_stack);
+                    j = get_arg(code, i);
                     assert(j < len);
+                    if (stacks[j] == UNINITIALIZED && j < i) {
+                        todo = 1;
+                    }
                     assert(stacks[j] == UNINITIALIZED || stacks[j] == target_stack);
                     stacks[j] = target_stack;
                     break;

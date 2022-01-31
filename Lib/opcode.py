@@ -105,7 +105,7 @@ HAVE_ARGUMENT = 90              # Opcodes from here have an argument:
 name_op('STORE_NAME', 90)       # Index in name list
 name_op('DELETE_NAME', 91)      # ""
 def_op('UNPACK_SEQUENCE', 92)   # Number of tuple items
-jrel_op('FOR_ITER', 93)
+jabs_op('FOR_ITER', 93)
 def_op('UNPACK_EX', 94)
 name_op('STORE_ATTR', 95)       # Index in name list
 name_op('DELETE_ATTR', 96)      # ""
@@ -256,6 +256,7 @@ _specialized_instructions = [
     "CALL_NO_KW_TYPE_1",
     "CALL_NO_KW_BUILTIN_CLASS_1",
     "CALL_NO_KW_METHOD_DESCRIPTOR_FAST",
+    "FOR_ITER_QUICK",
     "JUMP_ABSOLUTE_QUICK",
     "LOAD_ATTR_ADAPTIVE",
     "LOAD_ATTR_INSTANCE_VALUE",

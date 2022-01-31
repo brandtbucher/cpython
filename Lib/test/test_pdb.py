@@ -160,20 +160,15 @@ def test_pdb_basic_commands():
     > <doctest test.test_pdb.test_pdb_basic_commands[0]>(3)test_function_2()
     -> for i in range(5):
     (Pdb) step
+    > <doctest test.test_pdb.test_pdb_basic_commands[0]>(3)test_function_2()
+    -> for i in range(5):
+    (Pdb) until
     > <doctest test.test_pdb.test_pdb_basic_commands[0]>(4)test_function_2()
     -> print(i)
-    (Pdb) until
-    0
-    1
-    2
-    3
-    4
-    > <doctest test.test_pdb.test_pdb_basic_commands[0]>(5)test_function_2()
-    -> print(bar)
     (Pdb) next
-    default
-    > <doctest test.test_pdb.test_pdb_basic_commands[0]>(6)test_function_2()
-    -> for i in range(10):
+    0
+    > <doctest test.test_pdb.test_pdb_basic_commands[0]>(3)test_function_2()
+    -> for i in range(5):
     (Pdb) jump 8
     > <doctest test.test_pdb.test_pdb_basic_commands[0]>(8)test_function_2()
     -> print('after for')
@@ -1165,8 +1160,8 @@ def test_pdb_until_command_for_generator():
     > <doctest test.test_pdb.test_pdb_until_command_for_generator[0]>(4)test_gen()->2
     -> yield 2
     (Pdb) step
-    > <doctest test.test_pdb.test_pdb_until_command_for_generator[1]>(4)test_function()
-    -> print(i)
+    > <doctest test.test_pdb.test_pdb_until_command_for_generator[1]>(3)test_function()
+    -> for i in test_gen():
     (Pdb) continue
     2
     finished
