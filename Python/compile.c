@@ -8535,24 +8535,81 @@ swaptimize(basicblock *block, int ix)
     return len - 1;
 }
 
-// Attempt to eliminate jumps to jumps by updating inst to jump to
-// target->i_target using the provided opcode. Return whether or not the
-// optimization was successful.
-static bool
-jump_thread(struct instr *inst, struct instr *target, int opcode)
+#define JUMP_TO_JUMP(A, B) (((A) << 8) | (B))
+
+static void
+thread_jumps(struct instr *a)
 {
-    assert(is_jump(inst));
-    assert(is_jump(target));
-    // bpo-45773: If inst->i_target == target->i_target, then nothing actually
-    // changes (and we fall into an infinite loop):
-    if (inst->i_lineno == target->i_lineno &&
-        inst->i_target != target->i_target)
-    {
-        inst->i_target = target->i_target;
-        inst->i_opcode = opcode;
-        return true;
+    while (true) {
+        assert(is_jump(a));
+        // Skip over empty basic blocks:
+        while (a->i_target->b_iused == 0) {
+            a->i_target = a->i_target->b_next;
+        }
+        struct instr *b = &a->i_target->b_instr[0];
+        int opcode;
+        basicblock *target;
+        switch (JUMP_TO_JUMP(a->i_opcode, b->i_opcode)) {
+            case JUMP_TO_JUMP(FOR_ITER, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_ABSOLUTE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_FALSE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_FORWARD):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_TRUE_OR_POP):
+            case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_FALSE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(POP_JUMP_IF_NONE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_NONE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(POP_JUMP_IF_NOT_NONE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_NOT_NONE, JUMP_FORWARD):
+            case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(POP_JUMP_IF_TRUE, JUMP_FORWARD):
+                // Take both jumps using a's opcode:
+                opcode = a->i_opcode;
+                target = b->i_target;
+                break;
+            case JUMP_TO_JUMP(JUMP_FORWARD, JUMP_ABSOLUTE):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_FALSE):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_TRUE):
+                // Take both jumps using b's opcode:
+                opcode = b->i_opcode;
+                target = b->i_target;
+                break;
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_FALSE_OR_POP, POP_JUMP_IF_TRUE):
+                // Take only the first jump using POP_JUMP_IF_FALSE:
+                opcode = POP_JUMP_IF_FALSE;
+                target = a->i_target->b_next;
+                break;
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, JUMP_IF_FALSE_OR_POP):
+            case JUMP_TO_JUMP(JUMP_IF_TRUE_OR_POP, POP_JUMP_IF_FALSE):
+                // Take only the first jump using POP_JUMP_IF_TRUE:
+                opcode = POP_JUMP_IF_TRUE;
+                target = a->i_target->b_next;
+                break;
+            default:
+                // Nothing to do here:
+                return;
+        }
+        if (a->i_target == target) {
+            // bpo-45773: If a->i_target == target, then nothing actually
+            // changes (and we fall into an infinite loop):
+            return;
+        }
+        if (a->i_lineno == -1) {
+            a->i_lineno = b->i_lineno;
+        }
+        else if (a->i_lineno != b->i_lineno && b->i_lineno != -1) {
+            // This thread would break tracing:
+            return;
+        }
+        a->i_opcode = opcode;
+        a->i_target = target;
     }
-    return false;
 }
 
 /* Maximum size of basic block that should be copied in optimizer */
@@ -8563,23 +8620,14 @@ static int
 optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
 {
     assert(PyList_CheckExact(consts));
-    struct instr nop;
-    nop.i_opcode = NOP;
-    struct instr *target;
     for (int i = 0; i < bb->b_iused; i++) {
         struct instr *inst = &bb->b_instr[i];
+        if (is_jump(inst)) {
+            thread_jumps(inst);
+            continue;
+        }
         int oparg = inst->i_oparg;
         int nextop = i+1 < bb->b_iused ? bb->b_instr[i+1].i_opcode : 0;
-        if (is_jump(inst)) {
-            /* Skip over empty basic blocks. */
-            while (inst->i_target->b_iused == 0) {
-                inst->i_target = inst->i_target->b_next;
-            }
-            target = &inst->i_target->b_instr[0];
-        }
-        else {
-            target = &nop;
-        }
         switch (inst->i_opcode) {
             /* Remove LOAD_CONST const; conditional jump */
             case LOAD_CONST:
@@ -8678,104 +8726,6 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                     if (fold_tuple_on_constants(c, inst-oparg, oparg, consts)) {
                         goto error;
                     }
-                }
-                break;
-
-                /* Simplify conditional jump to conditional jump where the
-                   result of the first test implies the success of a similar
-                   test or the failure of the opposite test.
-                   Arises in code like:
-                   "a and b or c"
-                   "(a and b) and c"
-                   "(a or b) or c"
-                   "(a or b) and c"
-                   x:JUMP_IF_FALSE_OR_POP y   y:JUMP_IF_FALSE_OR_POP z
-                      -->  x:JUMP_IF_FALSE_OR_POP z
-                   x:JUMP_IF_FALSE_OR_POP y   y:JUMP_IF_TRUE_OR_POP z
-                      -->  x:POP_JUMP_IF_FALSE y+1
-                   where y+1 is the instruction following the second test.
-                */
-            case JUMP_IF_FALSE_OR_POP:
-                switch (target->i_opcode) {
-                    case POP_JUMP_IF_FALSE:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_FALSE);
-                        break;
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                    case JUMP_IF_FALSE_OR_POP:
-                        i -= jump_thread(inst, target, JUMP_IF_FALSE_OR_POP);
-                        break;
-                    case JUMP_IF_TRUE_OR_POP:
-                    case POP_JUMP_IF_TRUE:
-                        if (inst->i_lineno == target->i_lineno) {
-                            // We don't need to bother checking for loops here,
-                            // since a block's b_next cannot point to itself:
-                            assert(inst->i_target != inst->i_target->b_next);
-                            inst->i_opcode = POP_JUMP_IF_FALSE;
-                            inst->i_target = inst->i_target->b_next;
-                            --i;
-                        }
-                        break;
-                }
-                break;
-            case JUMP_IF_TRUE_OR_POP:
-                switch (target->i_opcode) {
-                    case POP_JUMP_IF_TRUE:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_TRUE);
-                        break;
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                    case JUMP_IF_TRUE_OR_POP:
-                        i -= jump_thread(inst, target, JUMP_IF_TRUE_OR_POP);
-                        break;
-                    case JUMP_IF_FALSE_OR_POP:
-                    case POP_JUMP_IF_FALSE:
-                        if (inst->i_lineno == target->i_lineno) {
-                            // We don't need to bother checking for loops here,
-                            // since a block's b_next cannot point to itself:
-                            assert(inst->i_target != inst->i_target->b_next);
-                            inst->i_opcode = POP_JUMP_IF_TRUE;
-                            inst->i_target = inst->i_target->b_next;
-                            --i;
-                        }
-                        break;
-                }
-                break;
-            case POP_JUMP_IF_NOT_NONE:
-            case POP_JUMP_IF_NONE:
-                switch (target->i_opcode) {
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                        i -= jump_thread(inst, target, inst->i_opcode);
-                }
-                break;
-            case POP_JUMP_IF_FALSE:
-                switch (target->i_opcode) {
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                    case JUMP_IF_FALSE_OR_POP:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_FALSE);
-                }
-                break;
-            case POP_JUMP_IF_TRUE:
-                switch (target->i_opcode) {
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                    case JUMP_IF_TRUE_OR_POP:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_TRUE);
-                }
-                break;
-            case JUMP_ABSOLUTE:
-            case JUMP_FORWARD:
-                switch (target->i_opcode) {
-                    case JUMP_ABSOLUTE:
-                    case JUMP_FORWARD:
-                        i -= jump_thread(inst, target, JUMP_ABSOLUTE);
-                }
-                break;
-            case FOR_ITER:
-                if (target->i_opcode == JUMP_FORWARD) {
-                    i -= jump_thread(inst, target, FOR_ITER);
                 }
                 break;
             case SWAP:
