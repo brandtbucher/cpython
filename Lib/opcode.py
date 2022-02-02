@@ -284,6 +284,7 @@ _specialized_instructions = [
     "STORE_ATTR_WITH_HINT",
     # Super instructions
     "LOAD_FAST__LOAD_FAST",
+    "LOAD_FAST__LOAD_FAST_SAME",
     "STORE_FAST__LOAD_FAST",
     "LOAD_FAST__LOAD_CONST",
     "LOAD_CONST__LOAD_FAST",

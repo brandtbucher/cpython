@@ -1859,6 +1859,19 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(LOAD_FAST__LOAD_FAST_SAME) {
+            PyObject *value = GETLOCAL(oparg);
+            if (value == NULL) {
+                goto unbound_local_error;
+            }
+            Py_INCREF(value);
+            Py_INCREF(value);
+            PUSH(value);
+            PUSH(value);
+            next_instr++;
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(LOAD_FAST__LOAD_CONST) {
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
