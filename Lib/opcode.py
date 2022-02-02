@@ -285,6 +285,7 @@ _specialized_instructions = [
     # Super instructions
     "LOAD_FAST__LOAD_FAST",
     "STORE_FAST__LOAD_FAST",
+    "STORE_FAST__LOAD_FAST_SAME",
     "LOAD_FAST__LOAD_CONST",
     "LOAD_CONST__LOAD_FAST",
     "STORE_FAST__STORE_FAST",

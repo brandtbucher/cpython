@@ -401,6 +401,11 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
                             instructions[i-1] = _Py_MAKECODEUNIT(LOAD_FAST__LOAD_FAST, previous_oparg);
                             break;
                         case STORE_FAST:
+                            if (oparg == previous_oparg) {
+                                instructions[i-1] = _Py_MAKECODEUNIT(
+                                    STORE_FAST__LOAD_FAST_SAME, previous_oparg);
+                                break;
+                            }
                             instructions[i-1] = _Py_MAKECODEUNIT(STORE_FAST__LOAD_FAST, previous_oparg);
                             break;
                         case LOAD_CONST:
