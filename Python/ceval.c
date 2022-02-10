@@ -1901,6 +1901,12 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(STORE_FAST__LOAD_FAST_SAME) {
+            SETLOCAL(oparg, Py_NewRef(TOP()));
+            next_instr++;
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(STORE_FAST__STORE_FAST) {
             PyObject *value = POP();
             SETLOCAL(oparg, value);
