@@ -5052,6 +5052,8 @@ compiler_sync_comprehension_generator(struct compiler *c,
         /* Receive outermost iter as an implicit argument */
         c->u->u_argcount = 1;
         ADDOP_I(c, LOAD_FAST, 0);
+        // Then immediately delete it, so it doesn't appear in locals():
+        ADDOP_I(c, DELETE_FAST, 0);
     }
     else {
         /* Sub-iter - calculate on the fly */
@@ -5166,6 +5168,8 @@ compiler_async_comprehension_generator(struct compiler *c,
         /* Receive outermost iter as an implicit argument */
         c->u->u_argcount = 1;
         ADDOP_I(c, LOAD_FAST, 0);
+        // Then immediately delete it, so it doesn't appear in locals():
+        ADDOP_I(c, DELETE_FAST, 0);
     }
     else {
         /* Sub-iter - calculate on the fly */

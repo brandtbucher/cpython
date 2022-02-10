@@ -550,14 +550,15 @@ Disassembly of <code object <listcomp> at 0x..., file "%s", line %d>:
 %3d           2 RESUME                   0
               4 BUILD_LIST               0
               6 LOAD_FAST                0 (.0)
-        >>    8 FOR_ITER                 6 (to 22)
-             10 STORE_FAST               1 (z)
-             12 LOAD_DEREF               2 (x)
-             14 LOAD_FAST                1 (z)
-             16 BINARY_OP                0 (+)
-             18 LIST_APPEND              2
-             20 JUMP_ABSOLUTE            4 (to 8)
-        >>   22 RETURN_VALUE
+              8 DELETE_FAST              0 (.0)
+        >>   10 FOR_ITER                 6 (to 24)
+             12 STORE_FAST               1 (z)
+             14 LOAD_DEREF               2 (x)
+             16 LOAD_FAST                1 (z)
+             18 BINARY_OP                0 (+)
+             20 LIST_APPEND              2
+             22 JUMP_ABSOLUTE            5 (to 10)
+        >>   24 RETURN_VALUE
 """ % (dis_nested_1,
        __file__,
        _h.__code__.co_firstlineno + 3,
