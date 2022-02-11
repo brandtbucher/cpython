@@ -20,12 +20,6 @@ typedef struct {
     uint32_t version;
 } _PyAdaptiveEntry;
 
-
-typedef struct {
-    uint32_t tp_version;
-    uint32_t dk_version_or_hint;
-} _PyAttrCache;
-
 typedef struct {
     uint32_t module_keys_version;
     uint32_t builtin_keys_version;
@@ -56,7 +50,6 @@ typedef struct {
 typedef union {
     _PyEntryZero zero;
     _PyAdaptiveEntry adaptive;
-    _PyAttrCache attr;
     _PyLoadGlobalCache load_global;
     _PyObjectCache obj;
     _PyCallCache call;
