@@ -2759,47 +2759,47 @@ class TestSyntaxErrors(unittest.TestCase):
                 pass
         """)
 
-    # def test_multiple_assignments_to_name_in_pattern_0(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case a, a:
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_0(self):
+        self.assert_syntax_error("""
+        match ...:
+            case a, a:
+                pass
+        """)
 
-    # def test_multiple_assignments_to_name_in_pattern_1(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case {"k": a, "l": a}:
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case {"k": a, "l": a}:
+                pass
+        """)
 
-    # def test_multiple_assignments_to_name_in_pattern_2(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case MyClass(x, x):
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_2(self):
+        self.assert_syntax_error("""
+        match ...:
+            case MyClass(x, x):
+                pass
+        """)
 
-    # def test_multiple_assignments_to_name_in_pattern_3(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case MyClass(x=x, y=x):
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_3(self):
+        self.assert_syntax_error("""
+        match ...:
+            case MyClass(x=x, y=x):
+                pass
+        """)
 
-    # def test_multiple_assignments_to_name_in_pattern_4(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case MyClass(x, y=x):
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_4(self):
+        self.assert_syntax_error("""
+        match ...:
+            case MyClass(x, y=x):
+                pass
+        """)
 
-    # def test_multiple_assignments_to_name_in_pattern_5(self):
-    #     self.assert_syntax_error("""
-    #     match ...:
-    #         case a as a:
-    #             pass
-    #     """)
+    def test_multiple_assignments_to_name_in_pattern_5(self):
+        self.assert_syntax_error("""
+        match ...:
+            case a as a:
+                pass
+        """)
 
     # def test_multiple_starred_names_in_sequence_pattern_0(self):
     #     self.assert_syntax_error("""
