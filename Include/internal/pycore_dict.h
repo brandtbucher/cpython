@@ -131,10 +131,6 @@ struct _dictvalues {
 #define DK_ENTRIES(dk) \
     ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))
 
-extern uint64_t _pydict_global_version;
-
-#define DICT_NEXT_VERSION() (++_pydict_global_version)
-
 PyObject *_PyObject_MakeDictFromInstanceAttributes(PyObject *obj, PyDictValues *values);
 
 static inline void

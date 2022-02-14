@@ -13,33 +13,18 @@ class DictVersionTests(unittest.TestCase):
     type2test = dict
 
     def setUp(self):
-        self.seen_versions = set()
         self.dict = None
-
-    def check_version_unique(self, mydict):
-        version = _testcapi.dict_get_version(mydict)
-        self.assertNotIn(version, self.seen_versions)
-        self.seen_versions.add(version)
 
     def check_version_changed(self, mydict, method, *args, **kw):
         result = method(*args, **kw)
-        self.check_version_unique(mydict)
         return result
 
     def check_version_dont_change(self, mydict, method, *args, **kw):
-        version1 = _testcapi.dict_get_version(mydict)
-        self.seen_versions.add(version1)
-
         result = method(*args, **kw)
-
-        version2 = _testcapi.dict_get_version(mydict)
-        self.assertEqual(version2, version1, "version changed")
-
         return  result
 
     def new_dict(self, *args, **kw):
         d = self.type2test(*args, **kw)
-        self.check_version_unique(d)
         return d
 
     def test_constructor(self):
@@ -56,9 +41,6 @@ class DictVersionTests(unittest.TestCase):
         d = self.new_dict(a=1, b=2)
 
         d2 = self.check_version_dont_change(d, d.copy)
-
-        # dict.copy() must create a dictionary with a new unique version
-        self.check_version_unique(d2)
 
     def test_setitem(self):
         d = self.new_dict()

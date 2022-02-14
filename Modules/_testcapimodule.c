@@ -5133,21 +5133,6 @@ tracemalloc_get_traceback(PyObject *self, PyObject *args)
     return _PyTraceMalloc_GetTraceback(domain, (uintptr_t)ptr);
 }
 
-static PyObject *
-dict_get_version(PyObject *self, PyObject *args)
-{
-    PyDictObject *dict;
-    uint64_t version;
-
-    if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &dict))
-        return NULL;
-
-    version = dict->ma_version_tag;
-
-    Py_BUILD_ASSERT(sizeof(unsigned long long) >= sizeof(version));
-    return PyLong_FromUnsignedLongLong((unsigned long long)version);
-}
-
 
 static PyObject *
 raise_SIGINT_then_send_None(PyObject *self, PyObject *args)
@@ -6020,7 +6005,6 @@ static PyMethodDef TestMethods[] = {
     {"tracemalloc_track", tracemalloc_track, METH_VARARGS},
     {"tracemalloc_untrack", tracemalloc_untrack, METH_VARARGS},
     {"tracemalloc_get_traceback", tracemalloc_get_traceback, METH_VARARGS},
-    {"dict_get_version", dict_get_version, METH_VARARGS},
     {"raise_SIGINT_then_send_None", raise_SIGINT_then_send_None, METH_VARARGS},
     {"pyobject_fastcall", test_pyobject_fastcall, METH_VARARGS},
     {"pyobject_fastcalldict", test_pyobject_fastcalldict, METH_VARARGS},

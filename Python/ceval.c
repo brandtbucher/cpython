@@ -3568,7 +3568,6 @@ handle_eval_breaker:
                 _PyObject_GC_TRACK(dict);
             }
             /* PEP 509 */
-            dict->ma_version_tag = DICT_NEXT_VERSION();
             Py_DECREF(owner);
             NOTRACE_DISPATCH();
         }
