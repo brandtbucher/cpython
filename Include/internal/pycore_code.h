@@ -14,8 +14,8 @@ typedef struct {
 } _PyEntryZero;
 
 typedef struct {
-    uint8_t original_oparg;
     uint8_t counter;
+    uint8_t xxx;
     uint16_t index;
     uint32_t version;
 } _PyAdaptiveEntry;
@@ -274,8 +274,9 @@ int _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT 
 int _Py_Specialize_CallNoKw(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
     PyObject *kwnames, SpecializedCacheEntry *cache, PyObject *builtins);
 void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                             SpecializedCacheEntry *cache);
-void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
+                             SpecializedCacheEntry *cache, int oparg);
+void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,\
+                              SpecializedCacheEntry *cache, int oparg);
 
 /* Deallocator function for static codeobjects used in deepfreeze.py */
 void _PyStaticCode_Dealloc(PyCodeObject *co);

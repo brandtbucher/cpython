@@ -1444,6 +1444,9 @@ eval_frame_handle_pending(PyThreadState *tstate)
 #define BUILTINS() frame->f_builtins
 #define LOCALS() frame->f_locals
 
+#define ORIGINAL_OPARG() \
+    _Py_OPARG(((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[INSTR_OFFSET() - 1])
+
 /* Shared opcode macros */
 
 // shared by LOAD_ATTR_MODULE and LOAD_METHOD_MODULE
@@ -2107,7 +2110,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(BINARY_SUBSCR, deferred);
                 cache->adaptive.counter--;
-                assert(cache->adaptive.original_oparg == 0);
+                assert(ORIGINAL_OPARG() == 0);
                 /* No need to set oparg here; it isn't used by BINARY_SUBSCR */
                 JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
             }
@@ -2956,7 +2959,7 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
             if (cache->adaptive.counter == 0) {
-                PyObject *name = GETITEM(names, cache->adaptive.original_oparg);
+                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
                 next_instr--;
                 if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name, cache) < 0) {
                     goto error;
@@ -2966,7 +2969,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_GLOBAL, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = ORIGINAL_OPARG();
                 JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
             }
         }
@@ -3393,7 +3396,7 @@ handle_eval_breaker:
             SpecializedCacheEntry *cache = GET_CACHE();
             if (cache->adaptive.counter == 0) {
                 PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, cache->adaptive.original_oparg);
+                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
                 next_instr--;
                 if (_Py_Specialize_LoadAttr(owner, next_instr, name, cache) < 0) {
                     goto error;
@@ -3403,7 +3406,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_ATTR, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = ORIGINAL_OPARG();
                 JUMP_TO_INSTRUCTION(LOAD_ATTR);
             }
         }
@@ -3448,7 +3451,6 @@ handle_eval_breaker:
             PyObject *res;
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
             _PyAttrCache *cache1 = &caches[-1].attr;
             assert(cache1->tp_version != 0);
             DEOPT_IF(tp->tp_version_tag != cache1->tp_version, LOAD_ATTR);
@@ -3456,7 +3458,7 @@ handle_eval_breaker:
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, cache0->original_oparg);
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
             uint32_t hint = cache1->dk_version_or_hint;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
@@ -3495,7 +3497,7 @@ handle_eval_breaker:
             SpecializedCacheEntry *cache = GET_CACHE();
             if (cache->adaptive.counter == 0) {
                 PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, cache->adaptive.original_oparg);
+                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
                 next_instr--;
                 if (_Py_Specialize_StoreAttr(owner, next_instr, name, cache) < 0) {
                     goto error;
@@ -3505,7 +3507,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(STORE_ATTR, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = ORIGINAL_OPARG();
                 JUMP_TO_INSTRUCTION(STORE_ATTR);
             }
         }
@@ -3543,7 +3545,6 @@ handle_eval_breaker:
             PyObject *owner = TOP();
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
             _PyAttrCache *cache1 = &caches[-1].attr;
             assert(cache1->tp_version != 0);
             DEOPT_IF(tp->tp_version_tag != cache1->tp_version, STORE_ATTR);
@@ -3551,7 +3552,7 @@ handle_eval_breaker:
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, STORE_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, cache0->original_oparg);
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
             uint32_t hint = cache1->dk_version_or_hint;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, STORE_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
@@ -3612,17 +3613,19 @@ handle_eval_breaker:
         TARGET(COMPARE_OP_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
+            int original_oparg = ORIGINAL_OPARG();
             if (cache->adaptive.counter == 0) {
                 PyObject *right = TOP();
                 PyObject *left = SECOND();
                 next_instr--;
-                _Py_Specialize_CompareOp(left, right, next_instr, cache);
+                _Py_Specialize_CompareOp(left, right, next_instr, cache,
+                                         original_oparg);
                 DISPATCH();
             }
             else {
                 STAT_INC(COMPARE_OP, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = original_oparg;
                 JUMP_TO_INSTRUCTION(COMPARE_OP);
             }
         }
@@ -3706,8 +3709,7 @@ handle_eval_breaker:
             if (res < 0) {
                 goto error;
             }
-            assert(caches[0].adaptive.original_oparg == Py_EQ ||
-                   caches[0].adaptive.original_oparg == Py_NE);
+            assert(ORIGINAL_OPARG() == Py_EQ || ORIGINAL_OPARG() == Py_NE);
             NEXTOPARG();
             assert(opcode == POP_JUMP_IF_TRUE || opcode == POP_JUMP_IF_FALSE);
             STACK_SHRINK(2);
@@ -4351,7 +4353,7 @@ handle_eval_breaker:
             SpecializedCacheEntry *cache = GET_CACHE();
             if (cache->adaptive.counter == 0) {
                 PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, cache->adaptive.original_oparg);
+                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
                 next_instr--;
                 if (_Py_Specialize_LoadMethod(owner, next_instr, name, cache) < 0) {
                     goto error;
@@ -4361,7 +4363,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_METHOD, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = ORIGINAL_OPARG();
                 JUMP_TO_INSTRUCTION(LOAD_METHOD);
             }
         }
@@ -4590,7 +4592,7 @@ handle_eval_breaker:
 
         TARGET(CALL_ADAPTIVE) {
             SpecializedCacheEntry *cache = GET_CACHE();
-            int named_args = cache->adaptive.original_oparg;
+            int named_args = ORIGINAL_OPARG();
             assert((named_args == 0 && call_shape.kwnames == NULL)
                 || (named_args != 0 && named_args == PyTuple_GET_SIZE(call_shape.kwnames)));
             if (cache->adaptive.counter == 0) {
@@ -4737,7 +4739,7 @@ handle_eval_breaker:
             PyTypeObject *tp = (PyTypeObject *)call_shape.callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
-            int kwnames_len = GET_CACHE()->adaptive.original_oparg;
+            int kwnames_len = ORIGINAL_OPARG();
 
             int nargs = call_shape.total_args - kwnames_len;
             STACK_SHRINK(call_shape.total_args);
@@ -4833,7 +4835,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            int kwnames_len = GET_CACHE()->adaptive.original_oparg;
+            int kwnames_len = ORIGINAL_OPARG();
             assert(
                 (call_shape.kwnames == NULL && kwnames_len == 0) ||
                 (call_shape.kwnames != NULL &&
@@ -4873,7 +4875,7 @@ handle_eval_breaker:
             /* len(o) */
             SpecializedCacheEntry *caches = GET_CACHE();
             DEOPT_IF(call_shape.total_args != 1, CALL);
-            assert(caches[0].adaptive.original_oparg == 0);
+            assert(ORIGINAL_OPARG() == 0);
             _PyObjectCache *cache1 = &caches[-1].obj;
 
             PyObject *callable = call_shape.callable;
@@ -4903,7 +4905,7 @@ handle_eval_breaker:
             assert(call_shape.kwnames == NULL);
             /* isinstance(o, o2) */
             SpecializedCacheEntry *caches = GET_CACHE();
-            assert(caches[0].adaptive.original_oparg == 0);
+            assert(ORIGINAL_OPARG() == 0);
             DEOPT_IF(call_shape.total_args != 2, CALL);
             _PyObjectCache *cache1 = &caches[-1].obj;
 
@@ -5256,17 +5258,19 @@ handle_eval_breaker:
         TARGET(BINARY_OP_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
+            int original_oparg = ORIGINAL_OPARG();
             if (cache->adaptive.counter == 0) {
                 PyObject *lhs = SECOND();
                 PyObject *rhs = TOP();
                 next_instr--;
-                _Py_Specialize_BinaryOp(lhs, rhs, next_instr, cache);
+                _Py_Specialize_BinaryOp(lhs, rhs, next_instr, cache, 
+                                        original_oparg);
                 DISPATCH();
             }
             else {
                 STAT_INC(BINARY_OP, deferred);
                 cache->adaptive.counter--;
-                oparg = cache->adaptive.original_oparg;
+                oparg = original_oparg;
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
         }
@@ -5369,7 +5373,7 @@ opname ## _miss: \
             STAT_INC(opname, deopt); \
             cache_backoff(cache); \
         } \
-        oparg = cache->original_oparg; \
+        oparg = ORIGINAL_OPARG(); \
         JUMP_TO_INSTRUCTION(opname); \
     }
 

@@ -398,7 +398,6 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
                 int cache0_offset = cache_offset-entries_needed;
                 SpecializedCacheEntry *cache =
                     _GetSpecializedCacheEntry(instructions, cache0_offset);
-                cache->adaptive.original_oparg = oparg;
                 cache->adaptive.counter = 0;
             } else {
                 // oparg is the adaptive cache counter
@@ -1761,10 +1760,10 @@ _Py_Specialize_CallNoKw(
 
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                        SpecializedCacheEntry *cache)
+                        SpecializedCacheEntry *cache, int oparg)
 {
     _PyAdaptiveEntry *adaptive = &cache->adaptive;
-    switch (adaptive->original_oparg) {
+    switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
@@ -1829,7 +1828,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             // These operators don't have any available specializations. Rather
             // than repeatedly attempting to specialize them, just convert them
             // back to BINARY_OP (while still recording a failure, of course)!
-            *instr = _Py_MAKECODEUNIT(BINARY_OP, adaptive->original_oparg);
+            *instr = _Py_MAKECODEUNIT(BINARY_OP, oparg);
     }
     SPECIALIZATION_FAIL(BINARY_OP, SPEC_FAIL_OTHER);
 failure:
@@ -1892,15 +1891,16 @@ static int compare_masks[] = {
 
 void
 _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs,
-                         _Py_CODEUNIT *instr, SpecializedCacheEntry *cache)
+                         _Py_CODEUNIT *instr, SpecializedCacheEntry *cache,
+                         int original_oparg)
 {
     _PyAdaptiveEntry *adaptive = &cache->adaptive;
-    int op = adaptive->original_oparg;
+    int op = original_oparg;
     int next_opcode = _Py_OPCODE(instr[1]);
     if (next_opcode != POP_JUMP_IF_FALSE && next_opcode != POP_JUMP_IF_TRUE) {
         // Can't ever combine, so don't don't bother being adaptive.
         SPECIALIZATION_FAIL(COMPARE_OP, SPEC_FAIL_COMPARE_OP_NOT_FOLLOWED_BY_COND_JUMP);
-        *instr = _Py_MAKECODEUNIT(COMPARE_OP, adaptive->original_oparg);
+        *instr = _Py_MAKECODEUNIT(COMPARE_OP, original_oparg);
         goto failure;
     }
     assert(op <= Py_GE);
