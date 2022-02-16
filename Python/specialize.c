@@ -765,7 +765,7 @@ specialize_dict_access(
         PyObject *value = NULL;
         Py_ssize_t hint =
             _PyDict_GetItemHint(dict, name, -1, &value);
-        if (hint != ((uint32_t)hint) >> 8) {
+        if (hint != ((uint32_t)hint & 0xFFFFFF)) {
             SPECIALIZATION_FAIL(base_op, SPEC_FAIL_OUT_OF_RANGE);
             return 0;
         }
