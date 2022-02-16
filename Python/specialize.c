@@ -60,9 +60,9 @@ static uint8_t cache_requirements[256] = {
     [LOAD_METHOD] = 2, // _PyAdaptiveEntry and _PyObjectCache */
     [BINARY_SUBSCR] = 2, /* _PyAdaptiveEntry, _PyObjectCache */
     [STORE_SUBSCR] = 0,
-    [CALL] = 2, /* _PyAdaptiveEntry and _PyObjectCache/_PyCallCache */
+    [CALL] = 1, // _PyAdaptiveEntry/_PyObjectCache/_PyCallCache
     [STORE_ATTR] = 1, // _PyAdaptiveEntry
-    [BINARY_OP] = 1,  // _PyAdaptiveEntry
+    [BINARY_OP] = 0,
     [COMPARE_OP] = 1, /* _PyAdaptiveEntry */
 };
 
@@ -1485,7 +1485,7 @@ specialize_method_descriptor(
     assert(_list_append != NULL);
     if (nargs == 2 && descr == _list_append) {
         assert(_Py_OPCODE(instr[-1]) == PRECALL_METHOD);
-        cache[-1].obj.obj = (PyObject *)_list_append;
+        cache[0].obj.obj = (PyObject *)_list_append;
         *instr = _Py_MAKECODEUNIT(CALL_NO_KW_LIST_APPEND, _Py_OPARG(*instr));
         return 0;
     }
@@ -1526,7 +1526,7 @@ specialize_py_call(
     PyFunctionObject *func, _Py_CODEUNIT *instr,
     int nargs, PyObject *kwnames, SpecializedCacheEntry *cache)
 {
-    _PyCallCache *cache1 = &cache[-1].call;
+    _PyCallCache *cache0 = &cache[0].call;
     PyCodeObject *code = (PyCodeObject *)func->func_code;
     int kind = function_kind(code);
     if (kwnames) {
@@ -1561,10 +1561,9 @@ specialize_py_call(
         SPECIALIZATION_FAIL(CALL, SPEC_FAIL_OUT_OF_VERSIONS);
         return -1;
     }
-    cache[0].adaptive.index = nargs;
-    cache1->func_version = version;
-    cache1->min_args = min_args;
-    cache1->defaults_len = defcount;
+    cache0->func_version = version;
+    cache0->min_args = min_args;
+    cache0->defaults_len = defcount;
     if (argcount == nargs) {
         *instr = _Py_MAKECODEUNIT(CALL_PY_EXACT_ARGS, _Py_OPARG(*instr));
     }
@@ -1578,7 +1577,7 @@ static int
 specialize_c_call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
     PyObject *kwnames, SpecializedCacheEntry *cache, PyObject *builtins)
 {
-    _PyObjectCache *cache1 = &cache[-1].obj;
+    _PyObjectCache *cache0 = &cache[0].obj;
     if (PyCFunction_GET_FUNCTION(callable) == NULL) {
         return 1;
     }
@@ -1597,7 +1596,7 @@ specialize_c_call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
             /* len(o) */
             PyObject *builtin_len = PyDict_GetItemString(builtins, "len");
             if (callable == builtin_len) {
-                cache1->obj = builtin_len;  // borrowed
+                cache0->obj = builtin_len;  // borrowed
                 *instr = _Py_MAKECODEUNIT(CALL_NO_KW_LEN,
                     _Py_OPARG(*instr));
                 return 0;
@@ -1616,7 +1615,7 @@ specialize_c_call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
                 PyObject *builtin_isinstance = PyDict_GetItemString(
                     builtins, "isinstance");
                 if (callable == builtin_isinstance) {
-                    cache1->obj = builtin_isinstance;  // borrowed
+                    cache0->obj = builtin_isinstance;  // borrowed
                     *instr = _Py_MAKECODEUNIT(CALL_NO_KW_ISINSTANCE,
                         _Py_OPARG(*instr));
                     return 0;
@@ -1718,9 +1717,9 @@ _Py_Specialize_CallNoKw(
 }
 
 void
-_Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                        SpecializedCacheEntry *cache, int oparg)
+_Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr)
 {
+    int oparg = _Py_OPARG(*instr);
     switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
@@ -1731,20 +1730,18 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             if (PyUnicode_CheckExact(lhs)) {
                 if (_Py_OPCODE(instr[1]) == STORE_FAST && Py_REFCNT(lhs) == 2) {
                     *instr = _Py_MAKECODEUNIT(BINARY_OP_INPLACE_ADD_UNICODE,
-                                              _Py_OPARG(*instr));
+                                              oparg);
                     goto success;
                 }
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_UNICODE, oparg);
                 goto success;
             }
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT, _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_INT, oparg);
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT, oparg);
                 goto success;
             }
             break;
@@ -1755,13 +1752,11 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto failure;
             }
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_INT, oparg);
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT, oparg);
                 goto success;
             }
             break;
@@ -1772,13 +1767,11 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto failure;
             }
             if (PyLong_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_INT, oparg);
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT,
-                                          _Py_OPARG(*instr));
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_SUBTRACT_FLOAT, oparg);
                 goto success;
             }
             break;
