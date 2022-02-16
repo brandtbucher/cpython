@@ -1453,11 +1453,10 @@ eval_frame_handle_pending(PyThreadState *tstate)
 #define LOAD_MODULE_ATTR_OR_METHOD(attr_or_method) \
     SpecializedCacheEntry *caches = GET_CACHE(); \
     _PyAdaptiveEntry *cache0 = &caches[0].adaptive; \
-    _PyAttrCache *cache1 = &caches[-1].attr; \
     DEOPT_IF(!PyModule_CheckExact(owner), LOAD_##attr_or_method); \
     PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict; \
     assert(dict != NULL); \
-    DEOPT_IF(dict->ma_keys->dk_version != cache1->dk_version_or_hint, \
+    DEOPT_IF(dict->ma_keys->dk_version != cache0->version, \
         LOAD_##attr_or_method); \
     assert(dict->ma_keys->dk_kind == DICT_KEYS_UNICODE); \
     assert(cache0->index < dict->ma_keys->dk_nentries); \
@@ -2098,22 +2097,12 @@ handle_eval_breaker:
 
         TARGET(BINARY_SUBSCR_ADAPTIVE) {
             SpecializedCacheEntry *cache = GET_CACHE();
-            if (cache->adaptive.counter == 0) {
-                PyObject *sub = TOP();
-                PyObject *container = SECOND();
-                next_instr--;
-                if (_Py_Specialize_BinarySubscr(container, sub, next_instr, cache) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *sub = TOP();
+            PyObject *container = SECOND();
+            if (_Py_Specialize_BinarySubscr(container, sub, next_instr - 1, cache) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(BINARY_SUBSCR, deferred);
-                cache->adaptive.counter--;
-                assert(ORIGINAL_OPARG() == 0);
-                /* No need to set oparg here; it isn't used by BINARY_SUBSCR */
-                JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
-            }
+            JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
         }
 
         TARGET(BINARY_SUBSCR_LIST_INT) {
@@ -2257,21 +2246,12 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_SUBSCR_ADAPTIVE) {
-            if (oparg == 0) {
-                PyObject *sub = TOP();
-                PyObject *container = SECOND();
-                next_instr--;
-                if (_Py_Specialize_StoreSubscr(container, sub, next_instr) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *sub = TOP();
+            PyObject *container = SECOND();
+            if (_Py_Specialize_StoreSubscr(container, sub, next_instr - 1) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(STORE_SUBSCR, deferred);
-                // oparg is the adaptive cache counter
-                UPDATE_PREV_INSTR_OPARG(next_instr, oparg - 1);
-                JUMP_TO_INSTRUCTION(STORE_SUBSCR);
-            }
+            JUMP_TO_INSTRUCTION(STORE_SUBSCR);
         }
 
         TARGET(STORE_SUBSCR_LIST_INT) {
@@ -2958,20 +2938,12 @@ handle_eval_breaker:
         TARGET(LOAD_GLOBAL_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
-            if (cache->adaptive.counter == 0) {
-                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-                next_instr--;
-                if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name, cache) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr - 1, name, cache) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(LOAD_GLOBAL, deferred);
-                cache->adaptive.counter--;
-                oparg = ORIGINAL_OPARG();
-                JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
-            }
+            oparg = ORIGINAL_OPARG();
+            JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
         }
 
         TARGET(LOAD_GLOBAL_MODULE) {
@@ -3394,21 +3366,13 @@ handle_eval_breaker:
         TARGET(LOAD_ATTR_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
-            if (cache->adaptive.counter == 0) {
-                PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-                next_instr--;
-                if (_Py_Specialize_LoadAttr(owner, next_instr, name, cache) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *owner = TOP();
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            if (_Py_Specialize_LoadAttr(owner, next_instr - 1, name, cache) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(LOAD_ATTR, deferred);
-                cache->adaptive.counter--;
-                oparg = ORIGINAL_OPARG();
-                JUMP_TO_INSTRUCTION(LOAD_ATTR);
-            }
+            oparg = ORIGINAL_OPARG();
+            JUMP_TO_INSTRUCTION(LOAD_ATTR);
         }
 
         TARGET(LOAD_ATTR_INSTANCE_VALUE) {
@@ -3418,9 +3382,8 @@ handle_eval_breaker:
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
             _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, LOAD_ATTR);
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, LOAD_ATTR);
             assert(tp->tp_dictoffset < 0);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictValues *values = *_PyObject_ValuesPointer(owner);
@@ -3451,15 +3414,15 @@ handle_eval_breaker:
             PyObject *res;
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, LOAD_ATTR);
+            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, LOAD_ATTR);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
             PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            uint32_t hint = cache1->dk_version_or_hint;
+            uint32_t hint = cache0->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
             DEOPT_IF(ep->me_key != name, LOAD_ATTR);
@@ -3479,9 +3442,8 @@ handle_eval_breaker:
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
             _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, LOAD_ATTR);
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, LOAD_ATTR);
             char *addr = (char *)owner + cache0->index;
             res = *(PyObject **)addr;
             DEOPT_IF(res == NULL, LOAD_ATTR);
@@ -3495,21 +3457,13 @@ handle_eval_breaker:
         TARGET(STORE_ATTR_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
-            if (cache->adaptive.counter == 0) {
-                PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-                next_instr--;
-                if (_Py_Specialize_StoreAttr(owner, next_instr, name, cache) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *owner = TOP();
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            if (_Py_Specialize_StoreAttr(owner, next_instr - 1, name, cache) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(STORE_ATTR, deferred);
-                cache->adaptive.counter--;
-                oparg = ORIGINAL_OPARG();
-                JUMP_TO_INSTRUCTION(STORE_ATTR);
-            }
+            oparg = ORIGINAL_OPARG();
+            JUMP_TO_INSTRUCTION(STORE_ATTR);
         }
 
         TARGET(STORE_ATTR_INSTANCE_VALUE) {
@@ -3518,9 +3472,8 @@ handle_eval_breaker:
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
             _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, STORE_ATTR);
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, STORE_ATTR);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictValues *values = *_PyObject_ValuesPointer(owner);
             DEOPT_IF(values == NULL, STORE_ATTR);
@@ -3545,15 +3498,15 @@ handle_eval_breaker:
             PyObject *owner = TOP();
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, STORE_ATTR);
+            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, STORE_ATTR);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, STORE_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
             PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            uint32_t hint = cache1->dk_version_or_hint;
+            uint32_t hint = cache0->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, STORE_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
             DEOPT_IF(ep->me_key != name, STORE_ATTR);
@@ -3580,9 +3533,8 @@ handle_eval_breaker:
             PyTypeObject *tp = Py_TYPE(owner);
             SpecializedCacheEntry *caches = GET_CACHE();
             _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            assert(cache1->tp_version != 0);
-            DEOPT_IF(tp->tp_version_tag != cache1->tp_version, STORE_ATTR);
+            assert(cache0->version != 0);
+            DEOPT_IF(tp->tp_version_tag != cache0->version, STORE_ATTR);
             char *addr = (char *)owner + cache0->index;
             STAT_INC(STORE_ATTR, hit);
             STACK_SHRINK(1);
@@ -3614,20 +3566,12 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
             int original_oparg = ORIGINAL_OPARG();
-            if (cache->adaptive.counter == 0) {
-                PyObject *right = TOP();
-                PyObject *left = SECOND();
-                next_instr--;
-                _Py_Specialize_CompareOp(left, right, next_instr, cache,
-                                         original_oparg);
-                DISPATCH();
-            }
-            else {
-                STAT_INC(COMPARE_OP, deferred);
-                cache->adaptive.counter--;
-                oparg = original_oparg;
-                JUMP_TO_INSTRUCTION(COMPARE_OP);
-            }
+            PyObject *right = TOP();
+            PyObject *left = SECOND();
+            _Py_Specialize_CompareOp(left, right, next_instr - 1, cache,
+                                        original_oparg);
+            oparg = original_oparg;
+            JUMP_TO_INSTRUCTION(COMPARE_OP);
         }
 
         TARGET(COMPARE_OP_FLOAT_JUMP) {
@@ -4351,21 +4295,13 @@ handle_eval_breaker:
         TARGET(LOAD_METHOD_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
-            if (cache->adaptive.counter == 0) {
-                PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-                next_instr--;
-                if (_Py_Specialize_LoadMethod(owner, next_instr, name, cache) < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            PyObject *owner = TOP();
+            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            if (_Py_Specialize_LoadMethod(owner, next_instr - 1, name, cache) < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(LOAD_METHOD, deferred);
-                cache->adaptive.counter--;
-                oparg = ORIGINAL_OPARG();
-                JUMP_TO_INSTRUCTION(LOAD_METHOD);
-            }
+            oparg = ORIGINAL_OPARG();
+            JUMP_TO_INSTRUCTION(LOAD_METHOD);
         }
 
         TARGET(LOAD_METHOD_CACHED) {
@@ -4374,16 +4310,16 @@ handle_eval_breaker:
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            _PyObjectCache *cache2 = &caches[-2].obj;
+            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
+            _PyObjectCache *cache1 = &caches[-1].obj;
 
-            DEOPT_IF(self_cls->tp_version_tag != cache1->tp_version, LOAD_METHOD);
+            DEOPT_IF(self_cls->tp_version_tag != cache0->version, LOAD_METHOD);
             assert(self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictObject *dict = *(PyDictObject**)_PyObject_ManagedDictPointer(self);
             DEOPT_IF(dict != NULL, LOAD_METHOD);
-            DEOPT_IF(((PyHeapTypeObject *)self_cls)->ht_cached_keys->dk_version != cache1->dk_version_or_hint, LOAD_METHOD);
+            DEOPT_IF(((PyHeapTypeObject *)self_cls)->ht_cached_keys->dk_version != cache0->index, LOAD_METHOD);
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = cache2->obj;
+            PyObject *res = cache1->obj;
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4397,12 +4333,12 @@ handle_eval_breaker:
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            _PyObjectCache *cache2 = &caches[-2].obj;
-            DEOPT_IF(self_cls->tp_version_tag != cache1->tp_version, LOAD_METHOD);
+            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
+            _PyObjectCache *cache1 = &caches[-1].obj;
+            DEOPT_IF(self_cls->tp_version_tag != cache0->version, LOAD_METHOD);
             assert(self_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = cache2->obj;
+            PyObject *res = cache1->obj;
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4427,17 +4363,17 @@ handle_eval_breaker:
             /* LOAD_METHOD, for class methods */
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *caches = GET_CACHE();
-            _PyAttrCache *cache1 = &caches[-1].attr;
-            _PyObjectCache *cache2 = &caches[-2].obj;
+            _PyAdaptiveEntry *cache0 = &caches[0].adaptive;
+            _PyObjectCache *cache1 = &caches[-1].obj;
 
             PyObject *cls = TOP();
             DEOPT_IF(!PyType_Check(cls), LOAD_METHOD);
-            DEOPT_IF(((PyTypeObject *)cls)->tp_version_tag != cache1->tp_version,
+            DEOPT_IF(((PyTypeObject *)cls)->tp_version_tag != cache0->version,
                 LOAD_METHOD);
-            assert(cache1->tp_version != 0);
+            assert(cache0->version != 0);
 
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = cache2->obj;
+            PyObject *res = cache1->obj;
             assert(res != NULL);
             Py_INCREF(res);
             SET_TOP(NULL);
@@ -4595,23 +4531,15 @@ handle_eval_breaker:
             int named_args = ORIGINAL_OPARG();
             assert((named_args == 0 && call_shape.kwnames == NULL)
                 || (named_args != 0 && named_args == PyTuple_GET_SIZE(call_shape.kwnames)));
-            if (cache->adaptive.counter == 0) {
-                next_instr--;
-                int nargs = call_shape.total_args;
-                int err = _Py_Specialize_CallNoKw(
-                    call_shape.callable, next_instr, nargs,
-                    call_shape.kwnames, cache, BUILTINS());
-                if (err < 0) {
-                    goto error;
-                }
-                DISPATCH();
+            int nargs = call_shape.total_args;
+            int err = _Py_Specialize_CallNoKw(
+                call_shape.callable, next_instr - 1, nargs,
+                call_shape.kwnames, cache, BUILTINS());
+            if (err < 0) {
+                goto error;
             }
-            else {
-                STAT_INC(CALL, deferred);
-                cache->adaptive.counter--;
-                oparg = named_args;
-                goto call_function;
-            }
+            oparg = named_args;
+            goto call_function;
         }
 
         TARGET(CALL_PY_EXACT_ARGS) {
@@ -5259,20 +5187,12 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             SpecializedCacheEntry *cache = GET_CACHE();
             int original_oparg = ORIGINAL_OPARG();
-            if (cache->adaptive.counter == 0) {
-                PyObject *lhs = SECOND();
-                PyObject *rhs = TOP();
-                next_instr--;
-                _Py_Specialize_BinaryOp(lhs, rhs, next_instr, cache, 
-                                        original_oparg);
-                DISPATCH();
-            }
-            else {
-                STAT_INC(BINARY_OP, deferred);
-                cache->adaptive.counter--;
-                oparg = original_oparg;
-                JUMP_TO_INSTRUCTION(BINARY_OP);
-            }
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            _Py_Specialize_BinaryOp(lhs, rhs, next_instr - 1, cache, 
+                                    original_oparg);
+            oparg = original_oparg;
+            JUMP_TO_INSTRUCTION(BINARY_OP);
         }
 
         TARGET(SWAP) {
@@ -5365,14 +5285,8 @@ handle_eval_breaker:
 opname ## _miss: \
     { \
         STAT_INC(opcode, miss); \
-        STAT_INC(opname, miss); \
-        _PyAdaptiveEntry *cache = &GET_CACHE()->adaptive; \
-        cache->counter--; \
-        if (cache->counter == 0) { \
-            next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, _Py_OPARG(next_instr[-1])); \
-            STAT_INC(opname, deopt); \
-            cache_backoff(cache); \
-        } \
+        next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, _Py_OPARG(next_instr[-1])); \
+        STAT_INC(opname, deopt); \
         oparg = ORIGINAL_OPARG(); \
         JUMP_TO_INSTRUCTION(opname); \
     }
@@ -5381,14 +5295,8 @@ opname ## _miss: \
 opname ## _miss: \
     { \
         STAT_INC(opname, miss); \
-        uint8_t oparg = _Py_OPARG(next_instr[-1])-1; \
-        UPDATE_PREV_INSTR_OPARG(next_instr, oparg); \
-        assert(_Py_OPARG(next_instr[-1]) == oparg); \
-        if (oparg == 0) /* too many cache misses */ { \
-            oparg = ADAPTIVE_CACHE_BACKOFF; \
-            next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, oparg); \
-            STAT_INC(opname, deopt); \
-        } \
+        next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, 0); \
+        STAT_INC(opname, deopt); \
         JUMP_TO_INSTRUCTION(opname); \
     }
 

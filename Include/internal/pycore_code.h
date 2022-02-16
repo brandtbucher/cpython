@@ -14,9 +14,7 @@ typedef struct {
 } _PyEntryZero;
 
 typedef struct {
-    uint8_t counter;
-    uint8_t xxx;
-    uint16_t index;
+    uint32_t index;
     uint32_t version;
 } _PyAdaptiveEntry;
 
@@ -255,13 +253,6 @@ PyAPI_FUNC(PyCodeObject *) _PyCode_New(struct _PyCodeConstructor *);
 PyAPI_FUNC(PyObject *) _PyCode_GetVarnames(PyCodeObject *);
 PyAPI_FUNC(PyObject *) _PyCode_GetCellvars(PyCodeObject *);
 PyAPI_FUNC(PyObject *) _PyCode_GetFreevars(PyCodeObject *);
-
-#define ADAPTIVE_CACHE_BACKOFF 64
-
-static inline void
-cache_backoff(_PyAdaptiveEntry *entry) {
-    entry->counter = ADAPTIVE_CACHE_BACKOFF;
-}
 
 /* Specialization functions */
 
