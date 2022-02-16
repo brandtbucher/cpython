@@ -2102,6 +2102,7 @@ handle_eval_breaker:
             if (_Py_Specialize_BinarySubscr(container, sub, next_instr - 1, cache) < 0) {
                 goto error;
             }
+            STAT_INC(BINARY_SUBSCR, deferred);
             JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
         }
 
@@ -2251,6 +2252,7 @@ handle_eval_breaker:
             if (_Py_Specialize_StoreSubscr(container, sub, next_instr - 1) < 0) {
                 goto error;
             }
+            STAT_INC(STORE_SUBSCR, deferred);
             JUMP_TO_INSTRUCTION(STORE_SUBSCR);
         }
 
@@ -2937,12 +2939,14 @@ handle_eval_breaker:
 
         TARGET(LOAD_GLOBAL_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
+            int original_oparg = ORIGINAL_OPARG();
             SpecializedCacheEntry *cache = GET_CACHE();
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            PyObject *name = GETITEM(names, original_oparg);
             if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr - 1, name, cache) < 0) {
                 goto error;
             }
-            oparg = ORIGINAL_OPARG();
+            oparg = original_oparg;
+            STAT_INC(LOAD_GLOBAL, deferred);
             JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
         }
 
@@ -3365,13 +3369,15 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
+            int original_oparg = ORIGINAL_OPARG();
             SpecializedCacheEntry *cache = GET_CACHE();
             PyObject *owner = TOP();
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            if (_Py_Specialize_LoadAttr(owner, next_instr - 1, name, cache) < 0) {
+            PyObject *name = GETITEM(names, original_oparg);
+            if (_Py_Specialize_LoadAttr(owner, next_instr - 1, name, cache, original_oparg) < 0) {
                 goto error;
             }
-            oparg = ORIGINAL_OPARG();
+            oparg = original_oparg;
+            STAT_INC(LOAD_ATTR, deferred);
             JUMP_TO_INSTRUCTION(LOAD_ATTR);
         }
 
@@ -3421,8 +3427,8 @@ handle_eval_breaker:
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            uint32_t hint = cache0->index;
+            PyObject *name = GETITEM(names, cache0->index & 0xFF);
+            uint32_t hint = cache0->index >> 8;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
             DEOPT_IF(ep->me_key != name, LOAD_ATTR);
@@ -3456,13 +3462,15 @@ handle_eval_breaker:
 
         TARGET(STORE_ATTR_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
+            int original_oparg = ORIGINAL_OPARG();
             SpecializedCacheEntry *cache = GET_CACHE();
             PyObject *owner = TOP();
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            if (_Py_Specialize_StoreAttr(owner, next_instr - 1, name, cache) < 0) {
+            PyObject *name = GETITEM(names, original_oparg);
+            if (_Py_Specialize_StoreAttr(owner, next_instr - 1, name, cache, original_oparg) < 0) {
                 goto error;
             }
-            oparg = ORIGINAL_OPARG();
+            oparg = original_oparg;
+            STAT_INC(STORE_ATTR, deferred);
             JUMP_TO_INSTRUCTION(STORE_ATTR);
         }
 
@@ -3505,8 +3513,8 @@ handle_eval_breaker:
             PyDictObject *dict = *(PyDictObject **)_PyObject_ManagedDictPointer(owner);
             DEOPT_IF(dict == NULL, STORE_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
-            uint32_t hint = cache0->index;
+            PyObject *name = GETITEM(names, cache0->index & 0xFF);
+            uint32_t hint = cache0->index >> 8;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, STORE_ATTR);
             PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
             DEOPT_IF(ep->me_key != name, STORE_ATTR);
@@ -3571,6 +3579,7 @@ handle_eval_breaker:
             _Py_Specialize_CompareOp(left, right, next_instr - 1, cache,
                                         original_oparg);
             oparg = original_oparg;
+            STAT_INC(COMPARE_OP, deferred);
             JUMP_TO_INSTRUCTION(COMPARE_OP);
         }
 
@@ -4294,13 +4303,15 @@ handle_eval_breaker:
 
         TARGET(LOAD_METHOD_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
+            int original_oparg = ORIGINAL_OPARG();
             SpecializedCacheEntry *cache = GET_CACHE();
             PyObject *owner = TOP();
-            PyObject *name = GETITEM(names, ORIGINAL_OPARG());
+            PyObject *name = GETITEM(names, original_oparg);
             if (_Py_Specialize_LoadMethod(owner, next_instr - 1, name, cache) < 0) {
                 goto error;
             }
-            oparg = ORIGINAL_OPARG();
+            oparg = original_oparg;
+            STAT_INC(LOAD_METHOD, deferred);
             JUMP_TO_INSTRUCTION(LOAD_METHOD);
         }
 
@@ -4527,10 +4538,11 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_ADAPTIVE) {
+            int original_oparg = ORIGINAL_OPARG();
             SpecializedCacheEntry *cache = GET_CACHE();
-            int named_args = ORIGINAL_OPARG();
-            assert((named_args == 0 && call_shape.kwnames == NULL)
-                || (named_args != 0 && named_args == PyTuple_GET_SIZE(call_shape.kwnames)));
+            int named_args = original_oparg;
+            assert((original_oparg == 0 && call_shape.kwnames == NULL)
+                || (original_oparg != 0 && original_oparg == PyTuple_GET_SIZE(call_shape.kwnames)));
             int nargs = call_shape.total_args;
             int err = _Py_Specialize_CallNoKw(
                 call_shape.callable, next_instr - 1, nargs,
@@ -4538,7 +4550,8 @@ handle_eval_breaker:
             if (err < 0) {
                 goto error;
             }
-            oparg = named_args;
+            oparg = original_oparg;
+            STAT_INC(CALL, deferred);
             goto call_function;
         }
 
@@ -4667,8 +4680,7 @@ handle_eval_breaker:
             PyTypeObject *tp = (PyTypeObject *)call_shape.callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
-            int kwnames_len = ORIGINAL_OPARG();
-
+            int kwnames_len = call_shape.kwnames ? PyTuple_GET_SIZE(call_shape.kwnames) : 0;
             int nargs = call_shape.total_args - kwnames_len;
             STACK_SHRINK(call_shape.total_args);
             PyObject *res = tp->tp_vectorcall((PyObject *)tp, stack_pointer, nargs, call_shape.kwnames);
@@ -4763,12 +4775,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            int kwnames_len = ORIGINAL_OPARG();
-            assert(
-                (call_shape.kwnames == NULL && kwnames_len == 0) ||
-                (call_shape.kwnames != NULL &&
-                 PyTuple_GET_SIZE(call_shape.kwnames) == kwnames_len)
-            );
+            int kwnames_len = call_shape.kwnames ? PyTuple_GET_SIZE(call_shape.kwnames) : 0;
             int nargs = call_shape.total_args - kwnames_len;
             STACK_SHRINK(call_shape.total_args);
             /* res = func(self, args, nargs, kwnames) */
@@ -5185,13 +5192,14 @@ handle_eval_breaker:
 
         TARGET(BINARY_OP_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
-            SpecializedCacheEntry *cache = GET_CACHE();
             int original_oparg = ORIGINAL_OPARG();
+            SpecializedCacheEntry *cache = GET_CACHE();
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
             _Py_Specialize_BinaryOp(lhs, rhs, next_instr - 1, cache, 
                                     original_oparg);
             oparg = original_oparg;
+            STAT_INC(BINARY_OP, deferred);
             JUMP_TO_INSTRUCTION(BINARY_OP);
         }
 
@@ -5286,7 +5294,6 @@ opname ## _miss: \
     { \
         STAT_INC(opcode, miss); \
         next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, _Py_OPARG(next_instr[-1])); \
-        STAT_INC(opname, deopt); \
         oparg = ORIGINAL_OPARG(); \
         JUMP_TO_INSTRUCTION(opname); \
     }
@@ -5296,7 +5303,6 @@ opname ## _miss: \
     { \
         STAT_INC(opname, miss); \
         next_instr[-1] = _Py_MAKECODEUNIT(opname ## _ADAPTIVE, 0); \
-        STAT_INC(opname, deopt); \
         JUMP_TO_INSTRUCTION(opname); \
     }
 

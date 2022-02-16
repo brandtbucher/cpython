@@ -731,7 +731,7 @@ specialize_dict_access(
     PyObject *owner, _Py_CODEUNIT *instr, PyTypeObject *type,
     DescriptorClassification kind, PyObject *name,
     _PyAdaptiveEntry *cache0,
-    int base_op, int values_op, int hint_op)
+    int base_op, int values_op, int hint_op, uint8_t oparg)
 {
     assert(kind == NON_OVERRIDING || kind == NON_DESCRIPTOR || kind == ABSENT ||
         kind == BUILTIN_CLASSMETHOD || kind == PYTHON_CLASSMETHOD);
@@ -765,11 +765,11 @@ specialize_dict_access(
         PyObject *value = NULL;
         Py_ssize_t hint =
             _PyDict_GetItemHint(dict, name, -1, &value);
-        if (hint != (uint32_t)hint) {
+        if (hint != ((uint32_t)hint) >> 8) {
             SPECIALIZATION_FAIL(base_op, SPEC_FAIL_OUT_OF_RANGE);
             return 0;
         }
-        cache0->index = (uint32_t)hint;
+        cache0->index = (((uint32_t)hint) << 8) | oparg;
         cache0->version = type->tp_version_tag;
         *instr = _Py_MAKECODEUNIT(hint_op, _Py_OPARG(*instr));
     }
@@ -777,7 +777,7 @@ specialize_dict_access(
 }
 
 int
-_Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache)
+_Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache, uint8_t oparg)
 {
     _PyAdaptiveEntry *cache0 = &cache->adaptive;
     if (PyModule_CheckExact(owner)) {
@@ -853,7 +853,7 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, Sp
     }
     int err = specialize_dict_access(
         owner, instr, type, kind, name, cache0,
-        LOAD_ATTR, LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_WITH_HINT
+        LOAD_ATTR, LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_WITH_HINT, oparg
     );
     if (err < 0) {
         return -1;
@@ -872,7 +872,7 @@ success:
 }
 
 int
-_Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache)
+_Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache, uint8_t oparg)
 {
     _PyAdaptiveEntry *cache0 = &cache->adaptive;
     PyTypeObject *type = Py_TYPE(owner);
@@ -932,7 +932,7 @@ _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, S
 
     int err = specialize_dict_access(
         owner, instr, type, kind, name, cache0,
-        STORE_ATTR, STORE_ATTR_INSTANCE_VALUE, STORE_ATTR_WITH_HINT
+        STORE_ATTR, STORE_ATTR_INSTANCE_VALUE, STORE_ATTR_WITH_HINT, oparg
     );
     if (err < 0) {
         return -1;
@@ -1431,6 +1431,7 @@ specialize_class_call(
             }
         }
         if (tp->tp_vectorcall != NULL) {
+            cache->adaptive.index = nargs;
             *instr = _Py_MAKECODEUNIT(CALL_BUILTIN_CLASS, _Py_OPARG(*instr));
             return 0;
         }
