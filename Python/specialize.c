@@ -557,23 +557,24 @@ initial_counter_value(void) {
 #define SPEC_FAIL_BINARY_OP_ADD_DIFFERENT_TYPES          8
 #define SPEC_FAIL_BINARY_OP_ADD_OTHER                    9
 #define SPEC_FAIL_BINARY_OP_AND_DIFFERENT_TYPES         10
-
+#define SPEC_FAIL_BINARY_OP_LSHIFT_DIFFERENT_TYPES      11
 #define SPEC_FAIL_BINARY_OP_AND_OTHER                   12
 #define SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE                13
-#define SPEC_FAIL_BINARY_OP_LSHIFT                      14
+#define SPEC_FAIL_BINARY_OP_LSHIFT_OTHER                14
 #define SPEC_FAIL_BINARY_OP_MATRIX_MULTIPLY             15
 #define SPEC_FAIL_BINARY_OP_MULTIPLY_DIFFERENT_TYPES    16
 #define SPEC_FAIL_BINARY_OP_MULTIPLY_OTHER              17
 #define SPEC_FAIL_BINARY_OP_OR                          18
 #define SPEC_FAIL_BINARY_OP_POWER                       19
 #define SPEC_FAIL_BINARY_OP_REMAINDER                   20
-#define SPEC_FAIL_BINARY_OP_RSHIFT                      21
+#define SPEC_FAIL_BINARY_OP_RSHIFT_OTHER                22
 #define SPEC_FAIL_BINARY_OP_SUBTRACT_DIFFERENT_TYPES    22
 #define SPEC_FAIL_BINARY_OP_SUBTRACT_OTHER              23
 #define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_DIFFERENT_TYPES 24
 #define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_FLOAT           25
 #define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_OTHER           26
 #define SPEC_FAIL_BINARY_OP_XOR                         27
+#define SPEC_FAIL_BINARY_OP_RSHIFT_DIFFERENT_TYPES      28
 
 /* Calls */
 #define SPEC_FAIL_CALL_COMPLEX_PARAMETERS 9
@@ -1766,7 +1767,7 @@ _Py_Specialize_CallNoKw(
 
 #ifdef Py_STATS
 static int
-binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
+binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr)
 {
     switch (oparg) {
         case NB_ADD:
@@ -1786,7 +1787,10 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
             return SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE;
         case NB_LSHIFT:
         case NB_INPLACE_LSHIFT:
-            return SPEC_FAIL_BINARY_OP_LSHIFT;
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                return SPEC_FAIL_BINARY_OP_LSHIFT_DIFFERENT_TYPES;
+            }
+            return SPEC_FAIL_BINARY_OP_LSHIFT_OTHER;
         case NB_MATRIX_MULTIPLY:
         case NB_INPLACE_MATRIX_MULTIPLY:
             return SPEC_FAIL_BINARY_OP_MATRIX_MULTIPLY;
@@ -1807,7 +1811,10 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
             return SPEC_FAIL_BINARY_OP_REMAINDER;
         case NB_RSHIFT:
         case NB_INPLACE_RSHIFT:
-            return SPEC_FAIL_BINARY_OP_RSHIFT;
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                return SPEC_FAIL_BINARY_OP_RSHIFT_DIFFERENT_TYPES;
+            }
+            return SPEC_FAIL_BINARY_OP_RSHIFT_OTHER;
         case NB_SUBTRACT:
         case NB_INPLACE_SUBTRACT:
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
@@ -1872,6 +1879,17 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             break;
+        case NB_LSHIFT:
+        case NB_INPLACE_LSHIFT:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs) && Py_SIZE(rhs) == 1) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_LSHIFT_INT,
+                                          _Py_OPARG(*instr));
+                goto success;
+            }
+            break;
         case NB_MULTIPLY:
         case NB_INPLACE_MULTIPLY:
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
@@ -1884,6 +1902,17 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             if (PyFloat_CheckExact(lhs)) {
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_MULTIPLY_FLOAT,
+                                          _Py_OPARG(*instr));
+                goto success;
+            }
+            break;
+        case NB_RSHIFT:
+        case NB_INPLACE_RSHIFT:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs) && Py_SIZE(rhs) == 1) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_RSHIFT_INT,
                                           _Py_OPARG(*instr));
                 goto success;
             }
@@ -1916,7 +1945,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
 #endif
     }
     SPECIALIZATION_FAIL(
-        BINARY_OP, binary_op_fail_kind(adaptive->original_oparg, lhs, rhs));
+        BINARY_OP, binary_op_fail_kind(adaptive->original_oparg, lhs, rhs, instr));
     STAT_INC(BINARY_OP, failure);
     cache_backoff(adaptive);
     return;

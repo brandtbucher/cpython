@@ -2082,16 +2082,56 @@ handle_eval_breaker:
 
         TARGET(BINARY_OP_AND_INT) {
             assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = _PyLong_And((PyLongObject *)left,
-                                        (PyLongObject *)right);
+            PyObject *res = _PyLong_And((PyLongObject *)lhs,
+                                        (PyLongObject *)rhs);
             SET_SECOND(res);
-            Py_DECREF(right);
-            Py_DECREF(left);
+            Py_DECREF(rhs);
+            Py_DECREF(lhs);
+            STACK_SHRINK(1);
+            if (res == NULL) {
+                goto error;
+            }
+            NOTRACE_DISPATCH();
+        }
+
+        TARGET(BINARY_OP_LSHIFT_INT) {
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            DEOPT_IF(Py_SIZE(rhs) != 1, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t r = ((PyLongObject *)rhs)->ob_digit[0];
+            PyObject *res = _PyLong_Lshift(lhs, r);
+            SET_SECOND(res);
+            Py_DECREF(rhs);
+            Py_DECREF(lhs);
+            STACK_SHRINK(1);
+            if (res == NULL) {
+                goto error;
+            }
+            NOTRACE_DISPATCH();
+        }
+
+        TARGET(BINARY_OP_RSHIFT_INT) {
+            assert(cframe.use_tracing == 0);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!PyLong_CheckExact(lhs), BINARY_OP);
+            DEOPT_IF(!PyLong_CheckExact(rhs), BINARY_OP);
+            DEOPT_IF(Py_SIZE(rhs) != 1, BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            size_t r = ((PyLongObject *)rhs)->ob_digit[0];
+            PyObject *res = _PyLong_Rshift(lhs, r);
+            SET_SECOND(res);
+            Py_DECREF(rhs);
+            Py_DECREF(lhs);
             STACK_SHRINK(1);
             if (res == NULL) {
                 goto error;
