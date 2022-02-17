@@ -557,7 +557,7 @@ initial_counter_value(void) {
 #define SPEC_FAIL_BINARY_OP_ADD_DIFFERENT_TYPES          8
 #define SPEC_FAIL_BINARY_OP_ADD_OTHER                    9
 #define SPEC_FAIL_BINARY_OP_AND_DIFFERENT_TYPES         10
-#define SPEC_FAIL_BINARY_OP_AND_INT                     11
+
 #define SPEC_FAIL_BINARY_OP_AND_OTHER                   12
 #define SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE                13
 #define SPEC_FAIL_BINARY_OP_LSHIFT                      14
@@ -1780,9 +1780,6 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
                 return SPEC_FAIL_BINARY_OP_AND_DIFFERENT_TYPES;
             }
-            if (PyLong_CheckExact(lhs)) {
-                return SPEC_FAIL_BINARY_OP_AND_INT;
-            }
             return SPEC_FAIL_BINARY_OP_AND_OTHER;
         case NB_FLOOR_DIVIDE:
         case NB_INPLACE_FLOOR_DIVIDE:
@@ -1862,6 +1859,16 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             if (PyFloat_CheckExact(lhs)) {
                 *instr = _Py_MAKECODEUNIT(BINARY_OP_ADD_FLOAT,
                                           _Py_OPARG(*instr));
+                goto success;
+            }
+            break;
+        case NB_AND:
+        case NB_INPLACE_AND:
+            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
+                break;
+            }
+            if (PyLong_CheckExact(lhs)) {
+                *instr = _Py_MAKECODEUNIT(BINARY_OP_AND_INT, _Py_OPARG(*instr));
                 goto success;
             }
             break;

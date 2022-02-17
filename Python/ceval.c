@@ -2080,6 +2080,25 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(BINARY_OP_AND_INT) {
+            assert(cframe.use_tracing == 0);
+            PyObject *left = SECOND();
+            PyObject *right = TOP();
+            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
+            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            PyObject *res = _PyLong_And((PyLongObject *)left,
+                                        (PyLongObject *)right);
+            SET_SECOND(res);
+            Py_DECREF(right);
+            Py_DECREF(left);
+            STACK_SHRINK(1);
+            if (res == NULL) {
+                goto error;
+            }
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(BINARY_SUBSCR) {
             PREDICTED(BINARY_SUBSCR);
             PyObject *sub = POP();

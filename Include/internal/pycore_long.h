@@ -38,6 +38,7 @@ static inline PyObject* _PyLong_GetOne(void)
 { return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS+1]; }
 
 PyObject *_PyLong_Add(PyLongObject *left, PyLongObject *right);
+PyObject *_PyLong_And(PyLongObject *left, PyLongObject *right);
 PyObject *_PyLong_Multiply(PyLongObject *left, PyLongObject *right);
 PyObject *_PyLong_Subtract(PyLongObject *left, PyLongObject *right);
 

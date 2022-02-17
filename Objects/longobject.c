@@ -4994,6 +4994,12 @@ long_and(PyObject *a, PyObject *b)
     CHECK_BINOP(a, b);
     PyLongObject *x = (PyLongObject*)a;
     PyLongObject *y = (PyLongObject*)b;
+    return _PyLong_And(x, y);
+}
+
+PyObject *
+_PyLong_And(PyLongObject *x, PyLongObject *y)
+{
     if (IS_MEDIUM_VALUE(x) && IS_MEDIUM_VALUE(y)) {
         return _PyLong_FromSTwoDigits(medium_value(x) & medium_value(y));
     }
