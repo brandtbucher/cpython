@@ -2777,6 +2777,24 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(UNPACK_SEQUENCE_TWO_TUPLE__STORE_FAST__STORE_FAST) {
+            // This comes up a lot when iterating over zips, enumerates,
+            // dictionary items, etc.
+            PyObject *seq = TOP();
+            DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
+            DEOPT_IF(PyTuple_GET_SIZE(seq) != 2, UNPACK_SEQUENCE);
+            STAT_INC(UNPACK_SEQUENCE, hit);
+            NEXTOPARG();
+            next_instr++;
+            SETLOCAL(oparg, Py_NewRef(PyTuple_GET_ITEM(seq, 0)));
+            NEXTOPARG();
+            next_instr++;
+            SETLOCAL(oparg, Py_NewRef(PyTuple_GET_ITEM(seq, 1)));
+            STACK_SHRINK(1);
+            Py_DECREF(seq);
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(UNPACK_SEQUENCE_TUPLE) {
             PyObject *seq = TOP();
             int len = GET_CACHE()->adaptive.original_oparg;
