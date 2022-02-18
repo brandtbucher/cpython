@@ -5311,6 +5311,17 @@ handle_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(SWAP__SWAP) {
+            assert(oparg != 0);
+            PyObject *peek = PEEK(oparg);
+            PEEK(oparg) = TOP();
+            NEXTOPARG();
+            next_instr++;
+            SET_TOP(PEEK(oparg));
+            PEEK(oparg) = peek;
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(EXTENDED_ARG) {
             int oldoparg = oparg;
             NEXTOPARG();

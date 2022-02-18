@@ -442,6 +442,11 @@ optimize(SpecializedCacheOrInstruction *quickened, int len)
                         instructions[i-1] = _Py_MAKECODEUNIT(LOAD_FAST__LOAD_CONST, previous_oparg);
                     }
                     break;
+                case SWAP:
+                    if (previous_opcode == SWAP) {
+                        instructions[i-1] = _Py_MAKECODEUNIT(SWAP__SWAP, previous_oparg);
+                    }
+                    break;
             }
             previous_opcode = opcode;
             previous_oparg = oparg;

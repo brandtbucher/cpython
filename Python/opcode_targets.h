@@ -168,7 +168,7 @@ static void *opcode_targets[256] = {
     &&TARGET_STORE_FAST__STORE_FAST,
     &&TARGET_PRECALL_FUNCTION,
     &&TARGET_PRECALL_METHOD,
-    &&_unknown_opcode,
+    &&TARGET_SWAP__SWAP,
     &&_unknown_opcode,
     &&TARGET_CALL,
     &&TARGET_KW_NAMES,
