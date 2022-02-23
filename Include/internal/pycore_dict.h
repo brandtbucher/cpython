@@ -68,6 +68,9 @@ struct _dictkeysobject {
     /* Size of the hash table (dk_indices). It must be a power of 2. */
     uint8_t dk_log2_size;
 
+    /* Size of the hash table (dk_indices) by bytes. */
+    uint8_t dk_log2_index_bytes;
+
     /* Kind of keys */
     uint8_t dk_kind;
 
@@ -99,11 +102,17 @@ struct _dictkeysobject {
        see the DK_ENTRIES() macro */
 };
 
-/* This must be no more than 16, for the order vector to fit in 64 bits */
-#define SHARED_KEYS_MAX_SIZE 16
+/* This must be no more than 250, for the prefix size to fit in one byte. */
+#define SHARED_KEYS_MAX_SIZE 30
+#define NEXT_LOG2_SHARED_KEYS_MAX_SIZE 6
 
+/* Layout of dict values:
+ *
+ * The PyObject *values are preceded by an array of bytes holding
+ * the insertion order and size.
+ * [-1] = prefix size. [-2] = used size. size[-2-n...] = insertion order.
+ */
 struct _dictvalues {
-    uint64_t mv_order;
     PyObject *values[1];
 };
 
@@ -123,13 +132,25 @@ struct _dictvalues {
             2 : sizeof(int32_t))
 #endif
 #define DK_ENTRIES(dk) \
-    ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))
+    ((PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[(size_t)1 << (dk)->dk_log2_index_bytes]))
 
 extern uint64_t _pydict_global_version;
 
 #define DICT_NEXT_VERSION() (++_pydict_global_version)
 
 PyObject *_PyObject_MakeDictFromInstanceAttributes(PyObject *obj, PyDictValues *values);
+
+static inline void
+_PyDictValues_AddToInsertionOrder(PyDictValues *values, Py_ssize_t ix)
+{
+    assert(ix < SHARED_KEYS_MAX_SIZE);
+    uint8_t *size_ptr = ((uint8_t *)values)-2;
+    int size = *size_ptr;
+    assert(size+2 < ((uint8_t *)values)[-1]);
+    size++;
+    size_ptr[-size] = (uint8_t)ix;
+    *size_ptr = size;
+}
 
 #ifdef __cplusplus
 }

@@ -271,14 +271,20 @@ int _Py_Specialize_LoadGlobal(PyObject *globals, PyObject *builtins, _Py_CODEUNI
 int _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name, SpecializedCacheEntry *cache);
 int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
 int _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr);
-int _Py_Specialize_CallNoKw(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
+int _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
+    PyObject *kwnames, SpecializedCacheEntry *cache);
+int _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
     PyObject *kwnames, SpecializedCacheEntry *cache, PyObject *builtins);
 void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                              SpecializedCacheEntry *cache);
 void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr, SpecializedCacheEntry *cache);
+void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
+                                   SpecializedCacheEntry *cache);
 
 /* Deallocator function for static codeobjects used in deepfreeze.py */
 void _PyStaticCode_Dealloc(PyCodeObject *co);
+/* Function to intern strings of codeobjects */
+void _PyStaticCode_InternStrings(PyCodeObject *co);
 
 #ifdef Py_STATS
 
@@ -303,6 +309,8 @@ typedef struct _opcode_stats {
 typedef struct _call_stats {
     uint64_t inlined_py_calls;
     uint64_t pyeval_calls;
+    uint64_t frames_pushed;
+    uint64_t frame_objects_created;
 } CallStats;
 
 typedef struct _object_stats {
