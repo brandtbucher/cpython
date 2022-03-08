@@ -56,6 +56,7 @@ module marshal
 #define TYPE_BINARY_COMPLEX     'y'
 #define TYPE_LONG               'l'
 #define TYPE_STRING             's'
+#define TYPE_BYTEARRAY          'b'
 #define TYPE_INTERNED           't'
 #define TYPE_REF                'r'
 #define TYPE_TUPLE              '('
@@ -422,6 +423,10 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
     else if (PyBytes_CheckExact(v)) {
         W_TYPE(TYPE_STRING, p);
         w_pstring(PyBytes_AS_STRING(v), PyBytes_GET_SIZE(v), p);
+    }
+    else if (PyByteArray_CheckExact(v)) {
+        W_TYPE(TYPE_BYTEARRAY, p);
+        w_pstring(PyByteArray_AS_STRING(v), PyByteArray_GET_SIZE(v), p);
     }
     else if (PyUnicode_CheckExact(v)) {
         if (p->version >= 4 && PyUnicode_IS_ASCII(v)) {
@@ -1113,6 +1118,30 @@ r_object(RFILE *p)
                 break;
             }
             memcpy(PyBytes_AS_STRING(v), ptr, n);
+            retval = v;
+            R_REF(retval);
+            break;
+        }
+
+    case TYPE_BYTEARRAY:
+        {
+            const char *ptr;
+            n = r_long(p);
+            if (PyErr_Occurred())
+                break;
+            if (n < 0 || n > SIZE32_MAX) {
+                PyErr_SetString(PyExc_ValueError, "bad marshal data (bytearray object size out of range)");
+                break;
+            }
+            v = PyByteArray_FromStringAndSize((char *)NULL, n);
+            if (v == NULL)
+                break;
+            ptr = r_string(n, p);
+            if (ptr == NULL) {
+                Py_DECREF(v);
+                break;
+            }
+            memcpy(PyByteArray_AS_STRING(v), ptr, n);
             retval = v;
             R_REF(retval);
             break;

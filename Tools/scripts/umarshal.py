@@ -21,6 +21,7 @@ class Type:
     BINARY_COMPLEX      = ord('y')
     LONG                = ord('l')
     STRING              = ord('s')
+    BYTEARRAY           = ord('b')
     INTERNED            = ord('t')
     REF                 = ord('r')
     TUPLE               = ord('(')
@@ -219,6 +220,9 @@ class Reader:
         elif type == Type.STRING:
             n = self.r_long()
             return R_REF(self.r_string(n))
+        elif type == Type.BYTEARRAY:
+            n = self.r_long()
+            return R_REF(bytearray(self.r_string(n)))
         elif type == Type.ASCII_INTERNED or type == Type.ASCII:
             n = self.r_long()
             return R_REF(self.r_string(n).decode("ascii"))

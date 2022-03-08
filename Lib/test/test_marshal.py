@@ -192,7 +192,7 @@ class BufferTestCase(unittest.TestCase, HelperMixin):
         b = bytearray(b"abc")
         self.helper(b)
         new = marshal.loads(marshal.dumps(b))
-        self.assertEqual(type(new), bytes)
+        self.assertEqual(type(new), bytearray)
 
     def test_memoryview(self):
         b = memoryview(b"abc")
