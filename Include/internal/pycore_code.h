@@ -250,21 +250,24 @@ extern int _PyLineTable_PreviousAddressRange(PyCodeAddressRange *range);
 
 /* Specialization functions */
 
-extern int _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr,
-                                   PyObject *name);
-extern int _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr,
+extern void _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr,
                                     PyObject *name);
-extern int _Py_Specialize_LoadGlobal(PyObject *globals, PyObject *builtins, _Py_CODEUNIT *instr, PyObject *name);
-extern int _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr,
+extern void _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr,
                                      PyObject *name);
-extern int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_CODEUNIT *instr);
-extern int _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr);
-extern int _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr,
-                               int nargs, PyObject *kwnames);
-extern int _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr,
-                                  int nargs, PyObject *kwnames, int oparg);
-extern void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                                    int oparg);
+extern void _Py_Specialize_LoadGlobal(PyObject *globals, PyObject *builtins,
+                                      _Py_CODEUNIT *instr, PyObject *name);
+extern void _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr,
+                                      PyObject *name);
+extern void _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container,
+                                        _Py_CODEUNIT *instr);
+extern void _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub,
+                                       _Py_CODEUNIT *instr);
+extern void _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr,
+                                int nargs, PyObject *kwnames);
+extern void _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr,
+                                   int nargs, PyObject *kwnames, int oparg);
+extern void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs,
+                                    _Py_CODEUNIT *instr, int oparg);
 extern void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs,
                                      _Py_CODEUNIT *instr, int oparg);
 extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,

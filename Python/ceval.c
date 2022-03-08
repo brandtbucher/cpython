@@ -2113,9 +2113,7 @@ handle_eval_breaker:
                 PyObject *sub = TOP();
                 PyObject *container = SECOND();
                 next_instr--;
-                if (_Py_Specialize_BinarySubscr(container, sub, next_instr) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_BinarySubscr(container, sub, next_instr);
                 DISPATCH();
             }
             else {
@@ -2277,9 +2275,7 @@ handle_eval_breaker:
                 PyObject *sub = TOP();
                 PyObject *container = SECOND();
                 next_instr--;
-                if (_Py_Specialize_StoreSubscr(container, sub, next_instr) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_StoreSubscr(container, sub, next_instr);
                 DISPATCH();
             }
             else {
@@ -3008,9 +3004,8 @@ handle_eval_breaker:
             if (cache->counter == 0) {
                 PyObject *name = GETITEM(names, oparg);
                 next_instr--;
-                if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr,
+                                          name);
                 DISPATCH();
             }
             else {
@@ -3431,9 +3426,7 @@ handle_eval_breaker:
                 PyObject *owner = TOP();
                 PyObject *name = GETITEM(names, oparg);
                 next_instr--;
-                if (_Py_Specialize_LoadAttr(owner, next_instr, name) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_LoadAttr(owner, next_instr, name);
                 DISPATCH();
             }
             else {
@@ -3540,9 +3533,7 @@ handle_eval_breaker:
                 PyObject *owner = TOP();
                 PyObject *name = GETITEM(names, oparg);
                 next_instr--;
-                if (_Py_Specialize_StoreAttr(owner, next_instr, name) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_StoreAttr(owner, next_instr, name);
                 DISPATCH();
             }
             else {
@@ -4411,9 +4402,7 @@ handle_eval_breaker:
                 PyObject *owner = TOP();
                 PyObject *name = GETITEM(names, oparg);
                 next_instr--;
-                if (_Py_Specialize_LoadMethod(owner, next_instr, name) < 0) {
-                    goto error;
-                }
+                _Py_Specialize_LoadMethod(owner, next_instr, name);
                 DISPATCH();
             }
             else {
@@ -4683,11 +4672,8 @@ handle_eval_breaker:
                 int is_meth = is_method(stack_pointer, oparg);
                 int nargs = oparg + is_meth;
                 PyObject *callable = PEEK(nargs + 1);
-                int err = _Py_Specialize_Precall(callable, next_instr, nargs,
-                                                 call_shape.kwnames, oparg);
-                if (err < 0) {
-                    goto error;
-                }
+                _Py_Specialize_Precall(callable, next_instr, nargs,
+                                       call_shape.kwnames, oparg);
                 DISPATCH();
             }
             else {
@@ -4704,11 +4690,8 @@ handle_eval_breaker:
                 int is_meth = is_method(stack_pointer, oparg);
                 int nargs = oparg + is_meth;
                 PyObject *callable = PEEK(nargs + 1);
-                int err = _Py_Specialize_Call(callable, next_instr, nargs,
-                                              call_shape.kwnames);
-                if (err < 0) {
-                    goto error;
-                }
+                _Py_Specialize_Call(callable, next_instr, nargs,
+                                    call_shape.kwnames);
                 DISPATCH();
             }
             else {

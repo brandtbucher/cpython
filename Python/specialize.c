@@ -707,7 +707,7 @@ specialize_dict_access(
     return 1;
 }
 
-int
+void
 _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
     assert(_PyOpcode_InlineCacheEntries[LOAD_ATTR] ==
@@ -723,9 +723,8 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
     }
     PyTypeObject *type = Py_TYPE(owner);
     if (type->tp_dict == NULL) {
-        if (PyType_Ready(type) < 0) {
-            return -1;
-        }
+        SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_NO_DICT);
+        goto fail;
     }
     PyObject *descr;
     DescriptorClassification kind = analyze_descriptor(type, name, &descr, 0);
@@ -788,9 +787,7 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         owner, instr, type, kind, name,
         LOAD_ATTR, LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_WITH_HINT
     );
-    if (err < 0) {
-        return -1;
-    }
+    assert(0 <= err);
     if (err) {
         goto success;
     }
@@ -798,15 +795,14 @@ fail:
     STAT_INC(LOAD_ATTR, failure);
     assert(!PyErr_Occurred());
     cache->counter = ADAPTIVE_CACHE_BACKOFF;
-    return 0;
+    return;
 success:
     STAT_INC(LOAD_ATTR, success);
     assert(!PyErr_Occurred());
     cache->counter = initial_counter_value();
-    return 0;
 }
 
-int
+void
 _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
     assert(_PyOpcode_InlineCacheEntries[STORE_ATTR] ==
@@ -871,9 +867,7 @@ _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         owner, instr, type, kind, name,
         STORE_ATTR, STORE_ATTR_INSTANCE_VALUE, STORE_ATTR_WITH_HINT
     );
-    if (err < 0) {
-        return -1;
-    }
+    assert(0 <= err);
     if (err) {
         goto success;
     }
@@ -881,12 +875,11 @@ fail:
     STAT_INC(STORE_ATTR, failure);
     assert(!PyErr_Occurred());
     cache->counter = ADAPTIVE_CACHE_BACKOFF;
-    return 0;
+    return;
 success:
     STAT_INC(STORE_ATTR, success);
     assert(!PyErr_Occurred());
     cache->counter = initial_counter_value();
-    return 0;
 }
 
 
@@ -967,7 +960,7 @@ typedef enum {
 // Please collect stats carefully before and after modifying. A subtle change
 // can cause a significant drop in cache hits. A possible test is
 // python.exe -m test_typing test_re test_dis test_zlib.
-int
+void
 _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
     assert(_PyOpcode_InlineCacheEntries[LOAD_METHOD] ==
@@ -986,9 +979,8 @@ _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         goto success;
     }
     if (owner_cls->tp_dict == NULL) {
-        if (PyType_Ready(owner_cls) < 0) {
-            return -1;
-        }
+        SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_NO_DICT);
+        goto fail;
     }
     if (PyType_Check(owner)) {
         int err = specialize_class_load_method(owner, instr, name);
@@ -1089,16 +1081,15 @@ success:
     STAT_INC(LOAD_METHOD, success);
     assert(!PyErr_Occurred());
     cache->counter = initial_counter_value();
-    return 0;
+    return;
 fail:
     STAT_INC(LOAD_METHOD, failure);
     assert(!PyErr_Occurred());
     cache->counter = ADAPTIVE_CACHE_BACKOFF;
-    return 0;
 
 }
 
-int
+void
 _Py_Specialize_LoadGlobal(
     PyObject *globals, PyObject *builtins,
     _Py_CODEUNIT *instr, PyObject *name)
@@ -1173,12 +1164,11 @@ fail:
     STAT_INC(LOAD_GLOBAL, failure);
     assert(!PyErr_Occurred());
     cache->counter = ADAPTIVE_CACHE_BACKOFF;
-    return 0;
+    return;
 success:
     STAT_INC(LOAD_GLOBAL, success);
     assert(!PyErr_Occurred());
     cache->counter = initial_counter_value();
-    return 0;
 }
 
 #ifdef Py_STATS
@@ -1236,7 +1226,7 @@ function_kind(PyCodeObject *code) {
     return SIMPLE_FUNCTION;
 }
 
-int
+void
 _Py_Specialize_BinarySubscr(
      PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
@@ -1302,15 +1292,14 @@ fail:
     STAT_INC(BINARY_SUBSCR, failure);
     assert(!PyErr_Occurred());
     cache->counter = ADAPTIVE_CACHE_BACKOFF;
-    return 0;
+    return;
 success:
     STAT_INC(BINARY_SUBSCR, success);
     assert(!PyErr_Occurred());
     cache->counter = initial_counter_value();
-    return 0;
 }
 
-int
+void
 _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
     PyTypeObject *container_type = Py_TYPE(container);
@@ -1407,11 +1396,10 @@ fail:
     STAT_INC(STORE_SUBSCR, failure);
     assert(!PyErr_Occurred());
     *instr = _Py_MAKECODEUNIT(_Py_OPCODE(*instr), ADAPTIVE_CACHE_BACKOFF);
-    return 0;
+    return;
 success:
     STAT_INC(STORE_SUBSCR, success);
     assert(!PyErr_Occurred());
-    return 0;
 }
 
 static int
@@ -1673,7 +1661,7 @@ call_fail_kind(PyObject *callable)
 #endif
 
 
-int
+void
 _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
                        PyObject *kwnames, int oparg)
 {
@@ -1713,14 +1701,13 @@ _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
         assert(!PyErr_Occurred());
         cache->counter = initial_counter_value();
     }
-    return 0;
 }
 
 
 /* TODO:
     - Specialize calling classes.
 */
-int
+void
 _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
                     PyObject *kwnames)
 {
@@ -1745,7 +1732,6 @@ _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
         assert(!PyErr_Occurred());
         cache->counter = initial_counter_value();
     }
-    return 0;
 }
 
 #ifdef Py_STATS
