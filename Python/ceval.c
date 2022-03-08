@@ -1327,7 +1327,7 @@ eval_frame_handle_pending(PyThreadState *tstate)
 
 /* Get opcode and oparg from original instructions, not quickened form. */
 #define TRACING_NEXTOPARG() do { \
-        _Py_CODEUNIT word = ((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[INSTR_OFFSET()]; \
+        _Py_CODEUNIT word = ((_Py_CODEUNIT *)PyByteArray_AS_STRING(frame->f_code->co_code))[INSTR_OFFSET()]; \
         opcode = _Py_OPCODE(word); \
         oparg = _Py_OPARG(word); \
     } while (0)
@@ -1568,7 +1568,7 @@ trace_function_exit(PyThreadState *tstate, _PyInterpreterFrame *frame, PyObject 
 static int
 skip_backwards_over_extended_args(PyCodeObject *code, int offset)
 {
-    _Py_CODEUNIT *instrs = (_Py_CODEUNIT *)PyBytes_AS_STRING(code->co_code);
+    _Py_CODEUNIT *instrs = (_Py_CODEUNIT *)PyByteArray_AS_STRING(code->co_code);
     while (offset > 0 && _Py_OPCODE(instrs[offset-1]) == EXTENDED_ARG) {
         offset--;
     }
@@ -5494,9 +5494,12 @@ handle_eval_breaker:
         default:
 #endif
             fprintf(stderr,
-                "XXX lineno: %d, opcode: %d\n",
+                "XXX filename: %s, name: %s, %d, lineno: %d, opcode: %d, %d, %d, %d\n",
+                PyUnicode_1BYTE_DATA(frame->f_code->co_filename),
+                PyUnicode_1BYTE_DATA(frame->f_code->co_name),
+                INSTR_OFFSET(),
                 PyCode_Addr2Line(frame->f_code, frame->f_lasti*sizeof(_Py_CODEUNIT)),
-                opcode);
+                opcode, oparg, _Py_OPCODE(next_instr[-2]), _Py_OPARG(next_instr[-2]));
             _PyErr_SetString(tstate, PyExc_SystemError, "unknown opcode");
             goto error;
 
@@ -6725,7 +6728,7 @@ maybe_call_line_trace(Py_tracefunc func, PyObject *obj,
        then call the trace function if we're tracing source lines.
     */
     initialize_trace_info(&tstate->trace_info, frame);
-    _Py_CODEUNIT prev = ((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[instr_prev];
+    _Py_CODEUNIT prev = ((_Py_CODEUNIT *)PyByteArray_AS_STRING(frame->f_code->co_code))[instr_prev];
     int lastline;
     if (_Py_OPCODE(prev) == RESUME && _Py_OPARG(prev) == 0) {
         lastline = -1;

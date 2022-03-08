@@ -167,6 +167,24 @@ class Printer:
             self.write(f".ob_sval = {make_string_literal(b)},")
         return f"& {name}.ob_base.ob_base"
 
+    def generate_bytearray(self, name: str, b: bytearray) -> str:
+        self.write(f"char {name}_buffer[] = {make_string_literal(b)};")
+        self.write("static")
+        with self.indent():
+            with self.block("struct"):
+                self.write("PyObject_VAR_HEAD")
+                self.write("Py_ssize_t ob_alloc;")
+                self.write("char *ob_bytes;")
+                self.write("char *ob_start;")
+                self.write("Py_ssize_t ob_exports;")
+        with self.block(f"{name} =", ";"):
+            self.object_var_head("PyByteArray_Type", len(b))
+            self.write(f".ob_alloc = {len(b) + 1},")
+            self.write(f".ob_bytes = {name}_buffer,")
+            self.write(f".ob_start = {name}_buffer,")
+            self.write(".ob_exports = 1,")
+        return f"& {name}.ob_base.ob_base"
+
     def generate_unicode(self, name: str, s: str) -> str:
         if s in identifiers:
             return f"&_Py_ID({s})"
@@ -256,7 +274,7 @@ class Printer:
             # otherwise MSVC doesn't like it.
             self.write(f".co_consts = {co_consts},")
             self.write(f".co_names = {co_names},")
-            self.write(f".co_firstinstr = (_Py_CODEUNIT *) {removesuffix(co_code, '.ob_base.ob_base')}.ob_sval,")
+            self.write(f".co_firstinstr = (_Py_CODEUNIT *) {removesuffix(co_code, '.ob_base.ob_base')}_buffer,")
             self.write(f".co_exceptiontable = {co_exceptiontable},")
             self.field(code, "co_flags")
             self.write(".co_warmup = QUICKENING_INITIAL_WARMUP_VALUE,")
@@ -370,11 +388,16 @@ class Printer:
 
     def generate(self, name: str, obj: object) -> str:
         # Use repr() in the key to distinguish -0.0 from +0.0
-        key = (type(obj), obj, repr(obj))
-        if key in self.cache:
-            self.hits += 1
-            # print(f"Cache hit {key!r:.40}: {self.cache[key]!r:.40}")
-            return self.cache[key]
+        try:
+            hash(obj)
+        except TypeError:
+            key = None
+        else:
+            key = (type(obj), obj, repr(obj))
+            if key in self.cache:
+                self.hits += 1
+                # print(f"Cache hit {key!r:.40}: {self.cache[key]!r:.40}")
+                return self.cache[key]
         self.misses += 1
         if isinstance(obj, (types.CodeType, umarshal.Code)) :
             val = self.generate_code(name, obj)
@@ -384,6 +407,8 @@ class Printer:
             val = self.generate_unicode(name, obj)
         elif isinstance(obj, bytes):
             val = self.generate_bytes(name, obj)
+        elif isinstance(obj, bytearray):
+            val = self.generate_bytearray(name, obj)
         elif obj is True:
             return "Py_True"
         elif obj is False:
@@ -403,8 +428,9 @@ class Printer:
         else:
             raise TypeError(
                 f"Cannot generate code for {type(obj).__name__} object")
-        # print(f"Cache store {key!r:.40}: {val!r:.40}")
-        self.cache[key] = val
+        if key is not None:
+            # print(f"Cache store {key!r:.40}: {val!r:.40}")
+            self.cache[key] = val
         return val
 
 

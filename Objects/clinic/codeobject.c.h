@@ -78,8 +78,8 @@ code_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     if (flags == -1 && PyErr_Occurred()) {
         goto exit;
     }
-    if (!PyBytes_Check(PyTuple_GET_ITEM(args, 6))) {
-        _PyArg_BadArgument("code", "argument 7", "bytes", PyTuple_GET_ITEM(args, 6));
+    if (!PyByteArray_Check(PyTuple_GET_ITEM(args, 6))) {
+        _PyArg_BadArgument("code", "argument 7", "bytearray", PyTuple_GET_ITEM(args, 6));
         goto exit;
     }
     code = PyTuple_GET_ITEM(args, 6);
@@ -180,7 +180,7 @@ static PyObject *
 code_replace_impl(PyCodeObject *self, int co_argcount,
                   int co_posonlyargcount, int co_kwonlyargcount,
                   int co_nlocals, int co_stacksize, int co_flags,
-                  int co_firstlineno, PyBytesObject *co_code,
+                  int co_firstlineno, PyByteArrayObject *co_code,
                   PyObject *co_consts, PyObject *co_names,
                   PyObject *co_varnames, PyObject *co_freevars,
                   PyObject *co_cellvars, PyObject *co_filename,
@@ -203,7 +203,7 @@ code_replace(PyCodeObject *self, PyObject *const *args, Py_ssize_t nargs, PyObje
     int co_stacksize = self->co_stacksize;
     int co_flags = self->co_flags;
     int co_firstlineno = self->co_firstlineno;
-    PyBytesObject *co_code = (PyBytesObject *)self->co_code;
+    PyByteArrayObject *co_code = (PyByteArrayObject *)self->co_code;
     PyObject *co_consts = self->co_consts;
     PyObject *co_names = self->co_names;
     PyObject *co_varnames = self->co_varnames;
@@ -288,11 +288,11 @@ code_replace(PyCodeObject *self, PyObject *const *args, Py_ssize_t nargs, PyObje
         }
     }
     if (args[7]) {
-        if (!PyBytes_Check(args[7])) {
-            _PyArg_BadArgument("replace", "argument 'co_code'", "bytes", args[7]);
+        if (!PyByteArray_Check(args[7])) {
+            _PyArg_BadArgument("replace", "argument 'co_code'", "bytearray", args[7]);
             goto exit;
         }
-        co_code = (PyBytesObject *)args[7];
+        co_code = (PyByteArrayObject *)args[7];
         if (!--noptargs) {
             goto skip_optional_kwonly;
         }
@@ -456,4 +456,4 @@ code__varname_from_oparg(PyCodeObject *self, PyObject *const *args, Py_ssize_t n
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=9e8c4a19474ec520 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=3c88550697f756fa input=a9049054013a1b77]*/

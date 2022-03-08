@@ -650,7 +650,6 @@ if 1:
         f2 = lambda a: a.b.c
 
         self.assertIs(f1.__code__.co_linetable, f2.__code__.co_linetable)
-        self.assertIs(f1.__code__.co_code, f2.__code__.co_code)
 
     # Stripping unused constants is not a strict requirement for the
     # Python semantics, it's a more an implementation detail.

@@ -36,7 +36,7 @@
 
 
 #define DEFAULT_BLOCK_SIZE 16
-#define DEFAULT_CODE_SIZE 128
+#define DEFAULT_CODE_SIZE 3  // RESUME + LOAD_CONST + RETURN_VALUE
 #define DEFAULT_LNOTAB_SIZE 16
 #define DEFAULT_CNOTAB_SIZE 32
 
@@ -6943,7 +6943,7 @@ compiler_match(struct compiler *c, stmt_ty s)
 */
 
 struct assembler {
-    PyObject *a_bytecode;  /* bytes containing bytecode */
+    PyObject *a_bytecode;  /* bytearray containing bytecode */
     int a_offset;              /* offset into bytecode */
     int a_nblocks;             /* number of reachable blocks */
     PyObject *a_lnotab;    /* bytes containing lnotab */
@@ -7063,7 +7063,7 @@ assemble_init(struct assembler *a, int nblocks, int firstlineno)
     a->a_cnotab = NULL;
     a->a_cnotab_off = 0;
     a->a_except_table = NULL;
-    a->a_bytecode = PyBytes_FromStringAndSize(NULL, DEFAULT_CODE_SIZE);
+    a->a_bytecode = PyByteArray_FromStringAndSize(NULL, DEFAULT_CODE_SIZE);
     if (a->a_bytecode == NULL) {
         goto error;
     }
@@ -7508,7 +7508,7 @@ assemble_cnotab(struct assembler* a, struct instr* i, int instr_size)
 static int
 assemble_emit(struct assembler *a, struct instr *i)
 {
-    Py_ssize_t len = PyBytes_GET_SIZE(a->a_bytecode);
+    Py_ssize_t len = PyByteArray_GET_SIZE(a->a_bytecode);
     _Py_CODEUNIT *code;
 
     int size = instr_size(i);
@@ -7521,13 +7521,10 @@ assemble_emit(struct assembler *a, struct instr *i)
     if (!assemble_cnotab(a, i, size)) {
         return 0;
     }
-    if (a->a_offset + size >= len / (int)sizeof(_Py_CODEUNIT)) {
-        if (len > PY_SSIZE_T_MAX / 2)
-            return 0;
-        if (_PyBytes_Resize(&a->a_bytecode, len * 2) < 0)
-            return 0;
+    if (PyByteArray_Resize(a->a_bytecode, len + sizeof(_Py_CODEUNIT) * size)) {
+        return 0;
     }
-    code = (_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode) + a->a_offset;
+    code = (_Py_CODEUNIT *)PyByteArray_AS_STRING(a->a_bytecode) + a->a_offset;
     a->a_offset += size;
     write_instr(code, i, size);
     return 1;
@@ -8298,10 +8295,7 @@ assemble(struct compiler *c, int addNone)
     if (!merge_const_one(c, &a.a_cnotab)) {
         goto error;
     }
-    if (_PyBytes_Resize(&a.a_bytecode, a.a_offset * sizeof(_Py_CODEUNIT)) < 0) {
-        goto error;
-    }
-    if (!merge_const_one(c, &a.a_bytecode)) {
+    if (PyByteArray_Resize(a.a_bytecode, a.a_offset * sizeof(_Py_CODEUNIT))) {
         goto error;
     }
 

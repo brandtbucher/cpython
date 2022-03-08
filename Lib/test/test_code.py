@@ -187,7 +187,7 @@ class CodeTest(unittest.TestCase):
 
         def new_code(c):
             '''A new code object with a __class__ cell added to freevars'''
-            return c.replace(co_freevars=c.co_freevars + ('__class__',), co_code=bytes([COPY_FREE_VARS, 1])+c.co_code)
+            return c.replace(co_freevars=c.co_freevars + ('__class__',), co_code=bytearray([COPY_FREE_VARS, 1])+c.co_code)
 
         def add_foreign_method(cls, name, f):
             code = new_code(f.__code__)

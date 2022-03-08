@@ -350,7 +350,7 @@ _PyGen_yf(PyGenObject *gen)
     if (gen->gi_frame_valid) {
         _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
         PyObject *bytecode = gen->gi_code->co_code;
-        unsigned char *code = (unsigned char *)PyBytes_AS_STRING(bytecode);
+        unsigned char *code = (unsigned char *)PyByteArray_AS_STRING(bytecode);
 
         if (frame->f_lasti < 1) {
             /* Return immediately if the frame didn't start yet. SEND
@@ -485,7 +485,7 @@ _gen_throw(PyGenObject *gen, int close_on_genexit,
             /* Termination repetition of SEND loop */
             assert(frame->f_lasti >= 0);
             PyObject *bytecode = gen->gi_code->co_code;
-            unsigned char *code = (unsigned char *)PyBytes_AS_STRING(bytecode);
+            unsigned char *code = (unsigned char *)PyByteArray_AS_STRING(bytecode);
             /* Backup to SEND */
             frame->f_lasti--;
             assert(code[frame->f_lasti*sizeof(_Py_CODEUNIT)] == SEND);
