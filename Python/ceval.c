@@ -1732,16 +1732,7 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            int err = _Py_IncrementCountAndMaybeQuicken(frame->f_code);
-            if (err) {
-                if (err < 0) {
-                    goto error;
-                }
-                /* Update first_instr and next_instr to point to newly quickened code */
-                int nexti = INSTR_OFFSET();
-                first_instr = frame->f_code->co_firstinstr;
-                next_instr = first_instr + nexti;
-            }
+            _Py_IncrementCountAndMaybeQuicken(frame->f_code);
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
 
@@ -4069,16 +4060,7 @@ handle_eval_breaker:
 
         TARGET(JUMP_ABSOLUTE) {
             PREDICTED(JUMP_ABSOLUTE);
-            int err = _Py_IncrementCountAndMaybeQuicken(frame->f_code);
-            if (err) {
-                if (err < 0) {
-                    goto error;
-                }
-                /* Update first_instr and next_instr to point to newly quickened code */
-                int nexti = INSTR_OFFSET();
-                first_instr = frame->f_code->co_firstinstr;
-                next_instr = first_instr + nexti;
-            }
+            _Py_IncrementCountAndMaybeQuicken(frame->f_code);
             JUMP_TO_INSTRUCTION(JUMP_ABSOLUTE_QUICK);
         }
 
@@ -5443,6 +5425,8 @@ handle_eval_breaker:
 #else
         case DO_TRACING: {
 #endif
+            // Un-quicken in-place:
+            _Py_SetCountAndUnquicken(frame->f_code);
             int instr_prev = skip_backwards_over_extended_args(frame->f_code, frame->f_lasti);
             frame->f_lasti = INSTR_OFFSET();
             TRACING_NEXTOPARG();
@@ -5494,12 +5478,9 @@ handle_eval_breaker:
         default:
 #endif
             fprintf(stderr,
-                "XXX filename: %s, name: %s, %d, lineno: %d, opcode: %d, %d, %d, %d\n",
-                PyUnicode_1BYTE_DATA(frame->f_code->co_filename),
-                PyUnicode_1BYTE_DATA(frame->f_code->co_name),
-                INSTR_OFFSET(),
+                "XXX lineno: %d, opcode: %d\n",
                 PyCode_Addr2Line(frame->f_code, frame->f_lasti*sizeof(_Py_CODEUNIT)),
-                opcode, oparg, _Py_OPCODE(next_instr[-2]), _Py_OPARG(next_instr[-2]));
+                opcode);
             _PyErr_SetString(tstate, PyExc_SystemError, "unknown opcode");
             goto error;
 

@@ -264,8 +264,8 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
         return -1;
     }
     if (PyByteArray_GET_SIZE(con->code) % sizeof(_Py_CODEUNIT) != 0 ||
-        !_Py_IS_ALIGNED(PyByteArray_AS_STRING(con->code), sizeof(_Py_CODEUNIT))
-        ) {
+        !_Py_IS_ALIGNED(PyByteArray_AS_STRING(con->code), sizeof(_Py_CODEUNIT)))
+    {
         PyErr_SetString(PyExc_ValueError, "code: co_code is malformed");
         return -1;
     }
@@ -1369,11 +1369,8 @@ code_dealloc(PyCodeObject *co)
     Py_XDECREF(co->co_endlinetable);
     Py_XDECREF(co->co_columntable);
     Py_XDECREF(co->co_exceptiontable);
-    if (co->co_weakreflist != NULL)
+    if (co->co_weakreflist != NULL) {
         PyObject_ClearWeakRefs((PyObject*)co);
-    if (co->co_quickened) {
-        PyMem_Free(co->co_quickened);
-        _Py_QuickenedCount--;
     }
     PyObject_Free(co);
 }
@@ -1426,6 +1423,7 @@ code_richcompare(PyObject *self, PyObject *other, int op)
     if (!eq) goto unequal;
     eq = co->co_firstlineno == cp->co_firstlineno;
     if (!eq) goto unequal;
+    // XXX: Differently-specialized code objects now compare unequal!
     eq = PyObject_RichCompareBool(co->co_code, cp->co_code, Py_EQ);
     if (eq <= 0) goto unequal;
 
@@ -1568,10 +1566,6 @@ code_sizeof(PyCodeObject *co, PyObject *Py_UNUSED(args))
     if (co_extra != NULL) {
         res += sizeof(_PyCodeObjectExtra) +
                (co_extra->ce_size-1) * sizeof(co_extra->ce_extras[0]);
-    }
-
-    if (co->co_quickened != NULL) {
-        res += PyByteArray_GET_SIZE(co->co_code);
     }
 
     return PyLong_FromSsize_t(res);
@@ -1913,11 +1907,6 @@ _PyCode_ConstantKey(PyObject *op)
 void
 _PyStaticCode_Dealloc(PyCodeObject *co)
 {
-    if (co->co_quickened) {
-        PyMem_Free(co->co_quickened);
-        co->co_quickened = NULL;
-         _Py_QuickenedCount--;
-    }
     co->co_warmup = QUICKENING_INITIAL_WARMUP_VALUE;
     PyMem_Free(co->co_extra);
     co->co_extra = NULL;
