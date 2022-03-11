@@ -206,9 +206,9 @@ code_replace(PyCodeObject *self, PyObject *const *args, Py_ssize_t nargs, PyObje
     PyBytesObject *co_code = (PyBytesObject *)self->co_code;
     PyObject *co_consts = self->co_consts;
     PyObject *co_names = self->co_names;
-    PyObject *co_varnames = self->co_varnames;
-    PyObject *co_freevars = self->co_freevars;
-    PyObject *co_cellvars = self->co_cellvars;
+    PyObject *co_varnames = NULL;
+    PyObject *co_freevars = NULL;
+    PyObject *co_cellvars = NULL;
     PyObject *co_filename = self->co_filename;
     PyObject *co_name = self->co_name;
     PyObject *co_qualname = self->co_qualname;
@@ -456,4 +456,4 @@ code__varname_from_oparg(PyCodeObject *self, PyObject *const *args, Py_ssize_t n
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=9e8c4a19474ec520 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=722ba184ab77f018 input=a9049054013a1b77]*/

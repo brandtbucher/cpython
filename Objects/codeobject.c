@@ -341,9 +341,6 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     co->co_nplaincellvars = nplaincellvars;
     co->co_ncellvars = ncellvars;
     co->co_nfreevars = nfreevars;
-    co->co_varnames = NULL;
-    co->co_cellvars = NULL;
-    co->co_freevars = NULL;
 
     /* not set */
     co->co_weakreflist = NULL;
@@ -520,13 +517,6 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
     if (co == NULL) {
         goto error;
     }
-
-    Py_INCREF(varnames);
-    co->co_varnames = varnames;
-    Py_INCREF(cellvars);
-    co->co_cellvars = cellvars;
-    Py_INCREF(freevars);
-    co->co_freevars = freevars;
 
 error:
     Py_XDECREF(localsplusnames);
@@ -1151,46 +1141,19 @@ _PyCode_SetExtra(PyObject *code, Py_ssize_t index, void *extra)
 PyObject *
 _PyCode_GetVarnames(PyCodeObject *co)
 {
-    if (co->co_varnames == NULL) {
-        // PyCodeObject owns this reference.
-        co->co_varnames = get_localsplus_names(co, CO_FAST_LOCAL,
-                                               co->co_nlocals);
-        if (co->co_varnames == NULL) {
-            return NULL;
-        }
-    }
-    Py_INCREF(co->co_varnames);
-    return co->co_varnames;
+    return get_localsplus_names(co, CO_FAST_LOCAL, co->co_nlocals);
 }
 
 PyObject *
 _PyCode_GetCellvars(PyCodeObject *co)
 {
-    if (co->co_cellvars == NULL) {
-        // PyCodeObject owns this reference.
-        co->co_cellvars = get_localsplus_names(co, CO_FAST_CELL,
-                                               co->co_ncellvars);
-        if (co->co_cellvars == NULL) {
-            return NULL;
-        }
-    }
-    Py_INCREF(co->co_cellvars);
-    return co->co_cellvars;
+    return get_localsplus_names(co, CO_FAST_CELL, co->co_ncellvars);
 }
 
 PyObject *
 _PyCode_GetFreevars(PyCodeObject *co)
 {
-    if (co->co_freevars == NULL) {
-        // PyCodeObject owns this reference.
-        co->co_freevars = get_localsplus_names(co, CO_FAST_FREE,
-                                               co->co_nfreevars);
-        if (co->co_freevars == NULL) {
-            return NULL;
-        }
-    }
-    Py_INCREF(co->co_freevars);
-    return co->co_freevars;
+    return get_localsplus_names(co, CO_FAST_FREE, co->co_nfreevars);
 }
 
 
@@ -1353,9 +1316,6 @@ code_dealloc(PyCodeObject *co)
     Py_XDECREF(co->co_names);
     Py_XDECREF(co->co_localsplusnames);
     Py_XDECREF(co->co_localspluskinds);
-    Py_XDECREF(co->co_varnames);
-    Py_XDECREF(co->co_freevars);
-    Py_XDECREF(co->co_cellvars);
     Py_XDECREF(co->co_filename);
     Py_XDECREF(co->co_name);
     Py_XDECREF(co->co_qualname);
@@ -1597,9 +1557,9 @@ code.replace
     co_code: PyBytesObject(c_default="(PyBytesObject *)self->co_code") = None
     co_consts: object(subclass_of="&PyTuple_Type", c_default="self->co_consts") = None
     co_names: object(subclass_of="&PyTuple_Type", c_default="self->co_names") = None
-    co_varnames: object(subclass_of="&PyTuple_Type", c_default="self->co_varnames") = None
-    co_freevars: object(subclass_of="&PyTuple_Type", c_default="self->co_freevars") = None
-    co_cellvars: object(subclass_of="&PyTuple_Type", c_default="self->co_cellvars") = None
+    co_varnames: object(subclass_of="&PyTuple_Type", c_default="NULL") = None
+    co_freevars: object(subclass_of="&PyTuple_Type", c_default="NULL") = None
+    co_cellvars: object(subclass_of="&PyTuple_Type", c_default="NULL") = None
     co_filename: unicode(c_default="self->co_filename") = None
     co_name: unicode(c_default="self->co_name") = None
     co_qualname: unicode(c_default="self->co_qualname") = None
@@ -1622,7 +1582,7 @@ code_replace_impl(PyCodeObject *self, int co_argcount,
                   PyObject *co_name, PyObject *co_qualname,
                   PyBytesObject *co_linetable, PyObject *co_endlinetable,
                   PyObject *co_columntable, PyBytesObject *co_exceptiontable)
-/*[clinic end generated code: output=f046bf0be3bab91f input=a63d09f248f00794]*/
+/*[clinic end generated code: output=f046bf0be3bab91f input=1ecbca5f57264b15]*/
 {
 #define CHECK_INT_ARG(ARG) \
         if (ARG < 0) { \
@@ -1653,21 +1613,21 @@ code_replace_impl(PyCodeObject *self, int co_argcount,
     PyObject *cellvars = NULL;
     PyObject *freevars = NULL;
     if (co_varnames == NULL) {
-        varnames = get_localsplus_names(self, CO_FAST_LOCAL, self->co_nlocals);
+        varnames = _PyCode_GetVarnames(self);
         if (varnames == NULL) {
             goto error;
         }
         co_varnames = varnames;
     }
     if (co_cellvars == NULL) {
-        cellvars = get_localsplus_names(self, CO_FAST_CELL, self->co_ncellvars);
+        cellvars = _PyCode_GetCellvars(self);
         if (cellvars == NULL) {
             goto error;
         }
         co_cellvars = cellvars;
     }
     if (co_freevars == NULL) {
-        freevars = get_localsplus_names(self, CO_FAST_FREE, self->co_nfreevars);
+        freevars = _PyCode_GetFreevars(self);
         if (freevars == NULL) {
             goto error;
         }

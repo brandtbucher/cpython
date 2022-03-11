@@ -41,9 +41,7 @@ struct PyCodeObject {
      * - co_code
      * - co_consts
      * - co_names
-     * - co_varnames
-     * - co_freevars
-     * - co_cellvars
+     * - co_localsplusnames
      *
      * This is done to preserve the name and line number for tracebacks
      * and debuggers; otherwise, constant de-duplication would collapse
@@ -68,6 +66,14 @@ struct PyCodeObject {
     int co_kwonlyargcount;      /* #keyword only arguments */
     int co_stacksize;           /* #entries needed for evaluation stack */
     int co_firstlineno;         /* first source line number */
+
+    // redundant values (derived from co_localsplusnames and co_localspluskinds)
+    int co_nlocalsplus;         /* number of local + cell + free variables */
+    int co_nlocals;             /* number of local variables */
+    int co_nplaincellvars;      /* number of non-arg cell variables */
+    int co_ncellvars;           /* total number of cell variables */
+    int co_nfreevars;           /* number of free variables */
+
     PyObject *co_code;          /* instruction opcodes */
     PyObject *co_localsplusnames;  /* tuple mapping offsets to names */
     PyObject *co_localspluskinds; /* Bytes mapping to local kinds (one byte per variable) */
@@ -81,19 +87,6 @@ struct PyCodeObject {
                                    lines */
     PyObject *co_columntable;   /* bytes object that holds start/end column
                                    offset each instruction */
-
-    /* These fields are set with computed values on new code objects. */
-
-    // redundant values (derived from co_localsplusnames and co_localspluskinds)
-    int co_nlocalsplus;         /* number of local + cell + free variables */
-    int co_nlocals;             /* number of local variables */
-    int co_nplaincellvars;      /* number of non-arg cell variables */
-    int co_ncellvars;           /* total number of cell variables */
-    int co_nfreevars;           /* number of free variables */
-    // lazily-computed values
-    PyObject *co_varnames;      /* tuple of strings (local variable names) */
-    PyObject *co_cellvars;      /* tuple of strings (cell variable names) */
-    PyObject *co_freevars;      /* tuple of strings (free variable names) */
 
     /* The remaining fields are zeroed out on new code objects. */
 
