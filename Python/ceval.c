@@ -4433,7 +4433,7 @@ handle_eval_breaker:
             DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
                      read_u32(cache->keys_version), LOAD_METHOD);
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *res = _PyType_Lookup(self_cls, GETITEM(names, oparg));
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4465,7 +4465,7 @@ handle_eval_breaker:
             DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->keys_version),
                      LOAD_METHOD);
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *res = _PyType_Lookup(self_cls, GETITEM(names, oparg));
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4484,7 +4484,7 @@ handle_eval_breaker:
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_METHOD);
             assert(self_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *res = _PyType_Lookup(self_cls, GETITEM(names, oparg));
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4520,7 +4520,8 @@ handle_eval_breaker:
             assert(type_version != 0);
 
             STAT_INC(LOAD_METHOD, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)cls,
+                                           GETITEM(names, oparg));
             assert(res != NULL);
             Py_INCREF(res);
             SET_TOP(NULL);

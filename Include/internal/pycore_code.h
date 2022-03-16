@@ -67,7 +67,6 @@ typedef struct {
     _Py_CODEUNIT type_version[2];
     _Py_CODEUNIT dict_offset;
     _Py_CODEUNIT keys_version[2];
-    _Py_CODEUNIT descr[4];
 } _PyLoadMethodCache;
 
 #define INLINE_CACHE_ENTRIES_LOAD_METHOD CACHE_ENTRIES(_PyLoadMethodCache)

@@ -933,7 +933,6 @@ specialize_class_load_method(PyObject *owner, _Py_CODEUNIT *instr,
         case METHOD:
         case NON_DESCRIPTOR:
             write_u32(cache->type_version, ((PyTypeObject *)owner)->tp_version_tag);
-            write_obj(cache->descr, descr);
             _Py_SET_OPCODE(*instr, LOAD_METHOD_CLASS);
             return 0;
 #ifdef Py_STATS
@@ -1078,7 +1077,6 @@ _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
     *  working since Python 2.6 and it's battle-tested.
     */
     write_u32(cache->type_version, owner_cls->tp_version_tag);
-    write_obj(cache->descr, descr);
     // Fall through.
 success:
     STAT_INC(LOAD_METHOD, success);

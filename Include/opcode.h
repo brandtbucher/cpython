@@ -218,7 +218,7 @@ const uint8_t _PyOpcode_InlineCacheEntries[256] = {
     [COMPARE_OP] = 2,
     [LOAD_GLOBAL] = 5,
     [BINARY_OP] = 1,
-    [LOAD_METHOD] = 10,
+    [LOAD_METHOD] = 6,
     [PRECALL] = 1,
     [CALL] = 4,
 };
