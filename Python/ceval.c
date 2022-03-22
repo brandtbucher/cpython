@@ -2570,6 +2570,54 @@ handle_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(THROW) {
+            assert(frame->is_entry);
+            assert(throwflag);
+            PyObject *exc_value = POP();
+            PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
+            PyObject *exc_traceback = PyException_GetTraceback(exc_value);
+            PyErr_NormalizeException(&exc_type, &exc_value, &exc_traceback);
+            PyObject *last_send = POP();
+            Py_DECREF(last_send);
+            PyObject *receiver = TOP();
+            PyObject *throw;
+            int found = _PyObject_LookupAttr(receiver, &_Py_ID(throw), &throw);
+            if (found < 0) {
+                if (PyErr_GivenExceptionMatches(exc_value, PyExc_GeneratorExit))
+                {
+                    PyErr_Clear();
+                    _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
+                }
+                goto error;
+            }
+            if (found == 0) {
+                _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
+                goto error;
+            }
+            PyObject *retval = PyObject_CallFunctionObjArgs(
+                throw, exc_type, exc_value, exc_traceback, NULL);
+            Py_DECREF(throw);
+            Py_DECREF(exc_type);
+            Py_DECREF(exc_value);
+            Py_XDECREF(exc_traceback);
+            if (retval) {
+                PUSH(retval);
+                DISPATCH();
+            }
+            if (tstate->c_tracefunc && 
+                _PyErr_ExceptionMatches(tstate, PyExc_StopIteration))
+            {
+                call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate,
+                               frame);
+            }
+            if (_PyGen_FetchStopIterationValue(&TOP())) {
+                goto error;
+            }
+            Py_DECREF(receiver);
+            JUMPBY(oparg);
+            DISPATCH();
+        }
+
         TARGET(ASYNC_GEN_WRAP) {
             PyObject *v = TOP();
             assert(frame->f_code->co_flags & CO_ASYNC_GENERATOR);
@@ -2583,6 +2631,8 @@ handle_eval_breaker:
         }
 
         TARGET(YIELD_VALUE) {
+            // NOTE: It's important that YIELD_VALUE never raises an exception!
+            // The compiler treats *anything* raised here as a throw() call.
             assert(frame->is_entry);
             PyObject *retval = POP();
             frame->f_state = FRAME_SUSPENDED;

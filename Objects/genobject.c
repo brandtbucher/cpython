@@ -417,93 +417,28 @@ _gen_throw(PyGenObject *gen, int close_on_genexit,
            PyObject *typ, PyObject *val, PyObject *tb)
 {
     PyObject *yf = _PyGen_yf(gen);
-
     if (yf) {
-        _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
-        PyObject *ret;
-        int err;
-        if (PyErr_GivenExceptionMatches(typ, PyExc_GeneratorExit) &&
-            close_on_genexit
-        ) {
+        if (close_on_genexit && 
+            PyErr_GivenExceptionMatches(typ, PyExc_GeneratorExit))
+        {
             /* Asynchronous generators *should not* be closed right away.
                We have to allow some awaits to work it through, hence the
                `close_on_genexit` parameter here.
             */
+           _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
             PyFrameState state = frame->f_state;
             frame->f_state = FRAME_EXECUTING;
-            err = gen_close_iter(yf);
+            int err = gen_close_iter(yf);
             frame->f_state = state;
             Py_DECREF(yf);
-            if (err < 0)
+            if (err < 0) {
                 return gen_send_ex(gen, Py_None, 1, 0);
-            goto throw_here;
-        }
-        if (PyGen_CheckExact(yf) || PyCoro_CheckExact(yf)) {
-            /* `yf` is a generator or a coroutine. */
-            PyThreadState *tstate = _PyThreadState_GET();
-            /* Since we are fast-tracking things by skipping the eval loop,
-               we need to update the current frame so the stack trace
-               will be reported correctly to the user. */
-            /* XXX We should probably be updating the current frame
-               somewhere in ceval.c. */
-            _PyInterpreterFrame *prev = tstate->cframe->current_frame;
-            frame->previous = prev;
-            tstate->cframe->current_frame = frame;
-            /* Close the generator that we are currently iterating with
-               'yield from' or awaiting on with 'await'. */
-            PyFrameState state = frame->f_state;
-            frame->f_state = FRAME_EXECUTING;
-            ret = _gen_throw((PyGenObject *)yf, close_on_genexit,
-                             typ, val, tb);
-            frame->f_state = state;
-            tstate->cframe->current_frame = prev;
-            frame->previous = NULL;
-        } else {
-            /* `yf` is an iterator or a coroutine-like object. */
-            PyObject *meth;
-            if (_PyObject_LookupAttr(yf, &_Py_ID(throw), &meth) < 0) {
-                Py_DECREF(yf);
-                return NULL;
-            }
-            if (meth == NULL) {
-                Py_DECREF(yf);
-                goto throw_here;
-            }
-            PyFrameState state = frame->f_state;
-            frame->f_state = FRAME_EXECUTING;
-            ret = PyObject_CallFunctionObjArgs(meth, typ, val, tb, NULL);
-            frame->f_state = state;
-            Py_DECREF(meth);
-        }
-        Py_DECREF(yf);
-        if (!ret) {
-            PyObject *val;
-            /* Pop subiterator from stack */
-            assert(gen->gi_frame_valid);
-            ret = _PyFrame_StackPop((_PyInterpreterFrame *)gen->gi_iframe);
-            assert(ret == yf);
-            Py_DECREF(ret);
-            // XXX: Performing this jump ourselves is awkward and problematic.
-            // See https://github.com/python/cpython/pull/31968.
-            /* Termination repetition of SEND loop */
-            assert(frame->f_lasti >= 0);
-            _Py_CODEUNIT *code = _PyCode_CODE(gen->gi_code);
-            /* Backup to SEND */
-            frame->f_lasti--;
-            assert(_Py_OPCODE(code[frame->f_lasti]) == SEND);
-            int jump = _Py_OPARG(code[frame->f_lasti]);
-            frame->f_lasti += jump;
-            if (_PyGen_FetchStopIterationValue(&val) == 0) {
-                ret = gen_send(gen, val);
-                Py_DECREF(val);
-            } else {
-                ret = gen_send_ex(gen, Py_None, 1, 0);
             }
         }
-        return ret;
+        else {
+            Py_DECREF(yf);
+        }
     }
-
-throw_here:
     /* First, check the traceback argument, replacing None with
        NULL. */
     if (tb == Py_None) {

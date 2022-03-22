@@ -252,6 +252,7 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     stacks[i+1] = next_stack;
                     break;
                 case SEND:
+                case THROW:
                     j = get_arg(code, i) + i + 1;
                     assert(j < len);
                     assert(stacks[j] == UNINITIALIZED || stacks[j] == pop_value(next_stack));

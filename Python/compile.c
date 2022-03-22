@@ -947,6 +947,8 @@ stack_effect(int opcode, int oparg, int jump)
             return jump > 0 ? -1 : 1;
         case SEND:
             return jump > 0 ? -1 : 0;
+        case THROW:
+            return jump > 0 ? -2 : -1;
         case STORE_ATTR:
             return -2;
         case DELETE_ATTR:
@@ -1875,19 +1877,34 @@ compiler_call_exit_with_nones(struct compiler *c) {
 static int
 compiler_add_yield_from(struct compiler *c, int await)
 {
-    basicblock *start, *resume, *exit;
-    start = compiler_new_block(c);
-    resume = compiler_new_block(c);
+
+    basicblock *body, *except, *exit;
+    basicblock *start = compiler_new_block(c);
+    body = compiler_new_block(c);
+    except = compiler_new_block(c);
     exit = compiler_new_block(c);
-    if (start == NULL || resume == NULL || exit == NULL) {
+    if (body == NULL || except == NULL || exit == NULL)
         return 0;
-    }
+
     compiler_use_next_block(c, start);
     ADDOP_JUMP(c, SEND, exit);
-    compiler_use_next_block(c, resume);
+
+
+    compiler_use_next_block(c, body);
+    ADDOP_JUMP(c, SETUP_FINALLY, except);
+    RETURN_IF_FALSE(compiler_push_fblock(c, TRY_EXCEPT, body, NULL, NULL));
+    // The only way YIELD_VALUE can raise is if throw() is called:
     ADDOP(c, YIELD_VALUE);
+    compiler_pop_fblock(c, TRY_EXCEPT, body);
+    ADDOP_NOLINE(c, POP_BLOCK);
+
     ADDOP_I(c, RESUME, await ? 3 : 2);
     ADDOP_JUMP(c, JUMP_NO_INTERRUPT, start);
+
+    compiler_use_next_block(c, except);
+    ADDOP_JUMP(c, THROW, exit);
+    ADDOP_JUMP(c, JUMP_NO_INTERRUPT, body);
+
     compiler_use_next_block(c, exit);
     return 1;
 }

@@ -669,6 +669,7 @@ class AsyncGenAsyncioTest(unittest.TestCase):
             agen = agenfn()
             with contextlib.closing(anext(agen, "default").__await__()) as g:
                 self.assertEqual(g.send(None), 1)
+                breakpoint()
                 g.close()
                 with self.assertRaisesRegex(RuntimeError, 'cannot reuse'):
                     self.assertEqual(g.send(None), 1)

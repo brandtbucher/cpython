@@ -166,6 +166,7 @@ def_op('STORE_DEREF', 138)
 hasfree.append(138)
 def_op('DELETE_DEREF', 139)
 hasfree.append(139)
+jrel_op('THROW', 140)
 
 def_op('CALL_FUNCTION_EX', 142)  # Flags
 
