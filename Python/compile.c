@@ -8645,10 +8645,7 @@ thread_jumps(struct instr *a)
             // changes (and we fall into an infinite loop):
             return;
         }
-        if (a->i_lineno == -1) {
-            a->i_lineno = b->i_lineno;
-        }
-        else if (a->i_lineno != b->i_lineno && b->i_lineno != -1) {
+        if (a->i_lineno != b->i_lineno) {
             // This thread would break tracing:
             return;
         }
