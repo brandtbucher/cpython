@@ -24,6 +24,12 @@ interpreter.
       Use 2 bytes for each instruction. Previously the number of bytes varied
       by instruction.
 
+   .. versionchanged:: 3.11
+      Some instructions are accompanied by one or more inline cache entries,
+      which take the form of :opcode:`CACHE` instructions. These instructions
+      are hidden by default, but can be shown by passing ``show_caches=True`` to
+      any :mod:`dis` utility.
+
 
 Example: Given the function :func:`myfunc`::
 
@@ -37,7 +43,7 @@ the following command can be used to display the disassembly of
      1           0 RESUME                   0
 
      2           2 PUSH_NULL
-                 4 LOAD_GLOBAL              0 (len)
+                 4 LOAD_GLOBAL              1 (NULL + len)
                  6 LOAD_FAST                0 (alist)
                  8 PRECALL                  1
                 10 CALL                     1
@@ -54,7 +60,7 @@ The bytecode analysis API allows pieces of Python code to be wrapped in a
 :class:`Bytecode` object that provides easy access to details of the compiled
 code.
 
-.. class:: Bytecode(x, *, first_line=None, current_offset=None)
+.. class:: Bytecode(x, *, first_line=None, current_offset=None, show_caches=False)
 
 
    Analyse the bytecode corresponding to a function, generator, asynchronous
@@ -74,7 +80,7 @@ code.
    disassembled code. Setting this means :meth:`.dis` will display a "current
    instruction" marker against the specified opcode.
 
-   .. classmethod:: from_traceback(tb)
+   .. classmethod:: from_traceback(tb, *, show_caches=False)
 
       Construct a :class:`Bytecode` instance from the given traceback, setting
       *current_offset* to the instruction responsible for the exception.
@@ -99,6 +105,9 @@ code.
 
    .. versionchanged:: 3.7
       This can now handle coroutine and asynchronous generator objects.
+
+   .. versionchanged:: 3.11
+      Added the ``show_caches`` parameter.
 
 Example::
 
@@ -153,7 +162,7 @@ operation is being performed, so the intermediate analysis object isn't useful:
       Added *file* parameter.
 
 
-.. function:: dis(x=None, *, file=None, depth=None)
+.. function:: dis(x=None, *, file=None, depth=None, show_caches=False)
 
    Disassemble the *x* object.  *x* can denote either a module, a class, a
    method, a function, a generator, an asynchronous generator, a coroutine,
@@ -183,8 +192,11 @@ operation is being performed, so the intermediate analysis object isn't useful:
    .. versionchanged:: 3.7
       This can now handle coroutine and asynchronous generator objects.
 
+   .. versionchanged:: 3.11
+      Added the ``show_caches`` parameter.
 
-.. function:: distb(tb=None, *, file=None)
+
+.. function:: distb(tb=None, *, file=None, show_caches=False)
 
    Disassemble the top-of-stack function of a traceback, using the last
    traceback if none was passed.  The instruction causing the exception is
@@ -196,9 +208,12 @@ operation is being performed, so the intermediate analysis object isn't useful:
    .. versionchanged:: 3.4
       Added *file* parameter.
 
+   .. versionchanged:: 3.11
+      Added the ``show_caches`` parameter.
 
-.. function:: disassemble(code, lasti=-1, *, file=None)
-              disco(code, lasti=-1, *, file=None)
+
+.. function:: disassemble(code, lasti=-1, *, file=None, show_caches=False)
+              disco(code, lasti=-1, *, file=None, show_caches=False)
 
    Disassemble a code object, indicating the last instruction if *lasti* was
    provided.  The output is divided in the following columns:
@@ -220,8 +235,11 @@ operation is being performed, so the intermediate analysis object isn't useful:
    .. versionchanged:: 3.4
       Added *file* parameter.
 
+   .. versionchanged:: 3.11
+      Added the ``show_caches`` parameter.
 
-.. function:: get_instructions(x, *, first_line=None)
+
+.. function:: get_instructions(x, *, first_line=None, show_caches=False)
 
    Return an iterator over the instructions in the supplied function, method,
    source code string or code object.
@@ -235,6 +253,9 @@ operation is being performed, so the intermediate analysis object isn't useful:
    object.
 
    .. versionadded:: 3.4
+
+   .. versionchanged:: 3.11
+      Added the ``show_caches`` parameter.
 
 
 .. function:: findlinestarts(code)
@@ -454,14 +475,23 @@ the original TOS1.
 
 **Coroutine opcodes**
 
-.. opcode:: GET_AWAITABLE
+.. opcode:: GET_AWAITABLE (where)
 
    Implements ``TOS = get_awaitable(TOS)``, where ``get_awaitable(o)``
    returns ``o`` if ``o`` is a coroutine object or a generator object with
    the CO_ITERABLE_COROUTINE flag, or resolves
    ``o.__await__``.
 
+    If the ``where`` operand is nonzero, it indicates where the instruction
+    occurs:
+
+    * ``1`` After a call to ``__aenter__``
+    * ``2`` After a call to ``__aexit__``
+
    .. versionadded:: 3.5
+
+   .. versionchanged:: 3.11
+      Previously, this instruction did not have an oparg.
 
 
 .. opcode:: GET_AITER
@@ -966,8 +996,11 @@ iterations of the loop.
 
 .. opcode:: LOAD_GLOBAL (namei)
 
-   Loads the global named ``co_names[namei]`` onto the stack.
+   Loads the global named ``co_names[namei>>1]`` onto the stack.
 
+   .. versionchanged:: 3.11
+      If the low bit of ``namei`` is set, then a ``NULL`` is pushed to the
+      stack before the global variable.
 
 .. opcode:: LOAD_FAST (var_num)
 
