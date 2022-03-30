@@ -1140,7 +1140,6 @@ def _prepare_test_cases():
 #_prepare_test_cases()
 
 Instruction = dis.Instruction
-
 expected_opinfo_outer = [
   Instruction(opname='MAKE_CELL', opcode=135, arg=0, argval='a', argrepr='a', offset=0, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='MAKE_CELL', opcode=135, arg=1, argval='b', argrepr='b', offset=2, starts_line=None, is_jump_target=False, positions=None),
@@ -1345,7 +1344,6 @@ expected_opinfo_jumpy = [
 
 # One last piece of inspect fodder to check the default line number handling
 def simple(): pass
-
 expected_opinfo_simple = [
   Instruction(opname='RESUME', opcode=151, arg=0, argval=0, argrepr='', offset=0, starts_line=simple.__code__.co_firstlineno, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=0, argval=None, argrepr='None', offset=2, starts_line=None, is_jump_target=False),

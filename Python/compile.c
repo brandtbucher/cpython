@@ -8591,7 +8591,10 @@ thread_jumps(struct instr *a)
         while (a->i_target->b_iused == 0) {
             a->i_target = a->i_target->b_next;
         }
-        struct instr *b = &a->i_target->b_instr[0];
+        struct instr *b = a->i_target->b_instr;
+        if (!is_jump(b) || a->i_lineno != b->i_lineno) {
+            return;
+        }
         int opcode;
         basicblock *target;
         switch (JUMP_TO_JUMP(a->i_opcode, b->i_opcode)) {
@@ -8643,10 +8646,6 @@ thread_jumps(struct instr *a)
         if (a->i_target == target) {
             // bpo-45773: If a->i_target == target, then nothing actually
             // changes (and we fall into an infinite loop):
-            return;
-        }
-        if (a->i_lineno != b->i_lineno) {
-            // This thread would break tracing:
             return;
         }
         a->i_opcode = opcode;
