@@ -600,7 +600,7 @@ def _find_imports(co):
     consts = co.co_consts
     names = co.co_names
     opargs = [(op, arg) for _, op, arg in _unpack_opargs(co.co_code)
-                  if op != EXTENDED_ARG]
+                  if op != EXTENDED_ARG and op != CACHE]
     for i, (op, oparg) in enumerate(opargs):
         if op == IMPORT_NAME and i >= 2:
             from_op = opargs[i-1]

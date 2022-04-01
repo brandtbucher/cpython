@@ -92,6 +92,12 @@ typedef struct {
 
 #define INLINE_CACHE_ENTRIES_STORE_SUBSCR CACHE_ENTRIES(_PyStoreSubscrCache)
 
+typedef struct {
+    _Py_CODEUNIT obj[4];
+} _PyLoadConstCache;
+
+#define INLINE_CACHE_ENTRIES_LOAD_CONST CACHE_ENTRIES(_PyLoadConstCache)
+
 #define QUICKENING_WARMUP_DELAY 8
 
 /* We want to compare to zero for efficiency, so we offset values accordingly */

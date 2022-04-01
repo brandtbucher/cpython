@@ -1752,10 +1752,19 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_CONST) {
-            PREDICTED(LOAD_CONST);
             PyObject *value = GETITEM(consts, oparg);
             Py_INCREF(value);
             PUSH(value);
+            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_CONST);
+            DISPATCH();
+        }
+
+        TARGET(LOAD_CONST_INLINE) {
+            PREDICTED(LOAD_CONST_INLINE);
+            _PyLoadConstCache *cache = (_PyLoadConstCache *)next_instr;
+            assert(read_obj(cache->obj));
+            PUSH(Py_NewRef(read_obj(cache->obj)));
+            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_CONST);
             DISPATCH();
         }
 
@@ -1784,18 +1793,17 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_CONST) {
+        TARGET(LOAD_FAST__LOAD_CONST_INLINE) {
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
-            NEXTOPARG();
             next_instr++;
             Py_INCREF(value);
             PUSH(value);
-            value = GETITEM(consts, oparg);
-            Py_INCREF(value);
-            PUSH(value);
+            _PyLoadConstCache *cache = (_PyLoadConstCache *)next_instr;
+            PUSH(Py_NewRef(read_obj(cache->obj)));
+            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_CONST);
             NOTRACE_DISPATCH();
         }
 
@@ -1823,13 +1831,13 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
-        TARGET(LOAD_CONST__LOAD_FAST) {
-            PyObject *value = GETITEM(consts, oparg);
+        TARGET(LOAD_CONST_INLINE__LOAD_FAST) {
+            _PyLoadConstCache *cache = (_PyLoadConstCache *)next_instr;
+            PUSH(Py_NewRef(read_obj(cache->obj)));
+            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_CONST);
             NEXTOPARG();
             next_instr++;
-            Py_INCREF(value);
-            PUSH(value);
-            value = GETLOCAL(oparg);
+            PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
@@ -2479,7 +2487,7 @@ handle_eval_breaker:
             }
 
             PUSH(awaitable);
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_INLINE);
             DISPATCH();
         }
 
@@ -2514,7 +2522,7 @@ handle_eval_breaker:
                 goto error;
             }
 
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_INLINE);
             DISPATCH();
         }
 
@@ -4188,7 +4196,7 @@ handle_eval_breaker:
                 if (iter == NULL)
                     goto error;
             }
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_INLINE);
             DISPATCH();
         }
 

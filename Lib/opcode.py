@@ -116,7 +116,7 @@ name_op('DELETE_ATTR', 96)      # ""
 name_op('STORE_GLOBAL', 97)     # ""
 name_op('DELETE_GLOBAL', 98)    # ""
 def_op('SWAP', 99)
-def_op('LOAD_CONST', 100)       # Index in const list
+def_op('LOAD_CONST', 100, 4)       # Index in const list
 hasconst.append(100)
 name_op('LOAD_NAME', 101)       # Index in name list
 def_op('BUILD_TUPLE', 102)      # Number of tuple items
@@ -270,10 +270,11 @@ _specializations = {
         "LOAD_ATTR_WITH_HINT",
     ],
     "LOAD_CONST": [
-        "LOAD_CONST__LOAD_FAST",
+        "LOAD_CONST_INLINE",
+        "LOAD_CONST_INLINE__LOAD_FAST",
     ],
     "LOAD_FAST": [
-        "LOAD_FAST__LOAD_CONST",
+        "LOAD_FAST__LOAD_CONST_INLINE",
         "LOAD_FAST__LOAD_FAST",
     ],
     "LOAD_GLOBAL": [

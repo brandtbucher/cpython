@@ -268,7 +268,6 @@ _PyCode_Quicken(PyCodeObject *code)
             i += _PyOpcode_Caches[opcode];
         }
         else {
-            assert(!_PyOpcode_Caches[opcode]);
             switch (opcode) {
                 case JUMP_ABSOLUTE:
                     _Py_SET_OPCODE(instructions[i], JUMP_ABSOLUTE_QUICK);
@@ -287,8 +286,8 @@ _PyCode_Quicken(PyCodeObject *code)
                                            STORE_FAST__LOAD_FAST);
                             break;
                         case LOAD_CONST:
-                            _Py_SET_OPCODE(instructions[i - 1],
-                                           LOAD_CONST__LOAD_FAST);
+                            _Py_SET_OPCODE(instructions[i - INLINE_CACHE_ENTRIES_LOAD_CONST - 1],
+                                           LOAD_CONST_INLINE__LOAD_FAST);
                             break;
                     }
                     break;
@@ -299,10 +298,18 @@ _PyCode_Quicken(PyCodeObject *code)
                     }
                     break;
                 case LOAD_CONST:
-                    if (previous_opcode == LOAD_FAST) {
-                        _Py_SET_OPCODE(instructions[i - 1],
-                                       LOAD_FAST__LOAD_CONST);
+                    if (previous_opcode != EXTENDED_ARG) {
+                        if (previous_opcode == LOAD_FAST) {
+                            _Py_SET_OPCODE(instructions[i - 1],
+                                           LOAD_FAST__LOAD_CONST_INLINE);
+                        }
+                        else {
+                            _Py_SET_OPCODE(instructions[i], LOAD_CONST_INLINE);
+                        }
+                        _PyLoadConstCache *cache = (_PyLoadConstCache *)&instructions[i + 1];
+                        write_obj(cache->obj, PyTuple_GET_ITEM(code->co_consts, _Py_OPARG(instructions[i])));
                     }
+                    i += INLINE_CACHE_ENTRIES_LOAD_CONST;
                     break;
             }
             previous_opcode = opcode;

@@ -381,6 +381,10 @@ class CodeTest(unittest.TestCase):
                 ('RESUME', 0),
                 ("PUSH_EXC_INFO", None),
                 ("LOAD_CONST", None), # artificial 'None'
+                ("CACHE", None),
+                ("CACHE", None),
+                ("CACHE", None),
+                ("CACHE", None),
                 ("STORE_NAME", "e"),  # XX: we know the location for this
                 ("DELETE_NAME", "e"),
                 ("RERAISE", 1),
