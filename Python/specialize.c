@@ -261,11 +261,11 @@ _PyCode_Quicken(PyCodeObject *code)
         int opcode = _Py_OPCODE(instructions[i]);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
-            _Py_SET_OPCODE(instructions[i], adaptive_opcode);
+            // _Py_SET_OPCODE(instructions[i], adaptive_opcode);
             // Make sure the adaptive counter is zero:
-            assert(instructions[i + 1] == 0);
+            // assert(instructions[i + 1] == 0);
             previous_opcode = -1;
-            i += _PyOpcode_Caches[opcode];
+            // i += _PyOpcode_Caches[opcode];
         }
         else {
             assert(!_PyOpcode_Caches[opcode]);
