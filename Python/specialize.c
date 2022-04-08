@@ -251,19 +251,22 @@ _Py_PrintSpecializationStats(int to_file)
 #endif
 
 // Insert adaptive instructions and superinstructions. This cannot fail.
-void
-_PyCode_Quicken(PyCodeObject *code)
+static void
+quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
 {
     _Py_QuickenedCount++;
     int previous_opcode = -1;
-    _Py_CODEUNIT *instructions = _PyCode_CODE(code);
-    for (int i = 0; i < Py_SIZE(code); i++) {
+    for (int i = 0; i < size; i++) {
         int opcode = _Py_OPCODE(instructions[i]);
+        assert(_PyOpcode_Deopt[opcode] == opcode);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
             _Py_SET_OPCODE(instructions[i], adaptive_opcode);
             // Make sure the adaptive counter is zero:
-            assert(instructions[i + 1] == 0);
+            if (instructions[i + 1] != 0) {
+                printf("%i %i %i\n", opcode, _Py_OPARG(instructions[i]), instructions[i + 1]);
+                assert(instructions[i + 1] == 0);
+            }
             previous_opcode = -1;
             i += _PyOpcode_Caches[opcode];
         }
@@ -308,6 +311,54 @@ _PyCode_Quicken(PyCodeObject *code)
             previous_opcode = opcode;
         }
     }
+}
+
+PyCodeObject *
+_PyCode_Quicken(PyCodeObject *code)
+{
+    _Py_CODEUNIT *instructions = PyMem_Malloc(_PyCode_NBYTES(code));
+    if (!instructions) {
+        return NULL;
+    }
+    memcpy(instructions, _PyCode_CODE(code), _PyCode_NBYTES(code));
+    quicken(instructions, Py_SIZE(code));
+    PyObject *co_code = PyBytes_FromStringAndSize((char *)instructions,
+                                                  _PyCode_NBYTES(code));
+    PyMem_Free(instructions);
+    if (co_code == NULL) {
+        return NULL;
+    }
+    struct _PyCodeConstructor c = {
+        .code = co_code,
+        .linetable = code->co_linetable,
+        .endlinetable = code->co_endlinetable,
+        .columntable = code->co_columntable,
+        .exceptiontable = code->co_exceptiontable,
+        .filename = code->co_filename,
+        .name = code->co_name,
+        .qualname = code->co_qualname,
+        .flags = code->co_flags,
+        .firstlineno = code->co_firstlineno,
+        .consts = code->co_consts,
+        .names = code->co_names,
+        .localsplusnames = code->co_localsplusnames,
+        .localspluskinds = code->co_localspluskinds,
+        .argcount = code->co_argcount,
+        .posonlyargcount = code->co_posonlyargcount,
+        .kwonlyargcount = code->co_kwonlyargcount,
+        .stacksize = code->co_stacksize,
+    };
+    if (_PyCode_Validate(&c)) {
+        Py_DECREF(co_code);
+        return NULL;
+    }
+    PyCodeObject *quickened = _PyCode_New(&c);
+    Py_DECREF(co_code);
+    if (quickened == NULL) {
+        return NULL;
+    }
+    quickened->co_warmup = 0;
+    return quickened;
 }
 
 static inline int

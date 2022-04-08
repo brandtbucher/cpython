@@ -1579,6 +1579,30 @@ is_method(PyObject **stack_pointer, int args) {
 #define KWNAMES_LEN() \
     (call_shape.kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(call_shape.kwnames)))
 
+PyCodeObject *_PyCode_Quicken(PyCodeObject *code);
+
+static inline bool
+_PyInterpreterFrame_Warmup(_PyInterpreterFrame *frame)
+{
+    PyCodeObject *code = frame->f_code;
+    if (code->co_warmup != 0) {
+        code->co_warmup++;
+        if (code->co_warmup == 0) {
+            PyCodeObject *quickened = _PyCode_Quicken(frame->f_code);
+            if (quickened == NULL) {
+                return true;
+            }
+            if (Py_Is(frame->f_func->func_code, (PyObject *)code)) {
+                Py_SETREF(frame->f_func->func_code, (PyObject *)quickened);
+            }
+            else {
+                Py_DECREF(quickened);
+            }
+        }
+    }
+    return false;
+}
+
 PyObject* _Py_HOT_FUNCTION
 _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int throwflag)
 {
@@ -1714,7 +1738,9 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            _PyCode_Warmup(frame->f_code);
+            if (_PyInterpreterFrame_Warmup(frame)) {
+                goto error;
+            }
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
 
@@ -3911,7 +3937,9 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD) {
-            _PyCode_Warmup(frame->f_code);
+            if (_PyInterpreterFrame_Warmup(frame)) {
+                goto error;
+            }
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
         }
 
