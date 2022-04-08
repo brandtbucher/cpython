@@ -235,9 +235,6 @@ class Printer:
         co_code = self.generate(name + "_code", code.co_code)
         co_consts = self.generate(name + "_consts", code.co_consts)
         co_names = self.generate(name + "_names", code.co_names)
-        co_varnames = self.generate(name + "_varnames", code.co_varnames)
-        co_freevars = self.generate(name + "_freevars", code.co_freevars)
-        co_cellvars = self.generate(name + "_cellvars", code.co_cellvars)
         co_filename = self.generate(name + "_filename", code.co_filename)
         co_name = self.generate(name + "_name", code.co_name)
         co_qualname = self.generate(name + "_qualname", code.co_qualname)
@@ -282,9 +279,6 @@ class Printer:
             self.write(f".co_nplaincellvars = {nplaincellvars},")
             self.write(f".co_ncellvars = {ncellvars},")
             self.write(f".co_nfreevars = {nfreevars},")
-            self.write(f".co_varnames = {co_varnames},")
-            self.write(f".co_cellvars = {co_cellvars},")
-            self.write(f".co_freevars = {co_freevars},")
         self.deallocs.append(f"_PyStaticCode_Dealloc(&{name});")
         self.interns.append(f"_PyStaticCode_InternStrings(&{name})")
         return f"& {name}.ob_base"
@@ -457,13 +451,13 @@ def generate(args: list[str], output: TextIO) -> None:
                 code = compile(fd.read(), f"<frozen {modname}>", "exec")
             printer.generate_file(modname, code)
     with printer.block(f"void\n_Py_Deepfreeze_Fini(void)"):
-            for p in printer.deallocs:
-                printer.write(p)
+        for p in printer.deallocs:
+            printer.write(p)
     with printer.block(f"int\n_Py_Deepfreeze_Init(void)"):
-            for p in printer.interns:
-                with printer.block(f"if ({p} < 0)"):
-                    printer.write("return -1;")
-            printer.write("return 0;")
+        for p in printer.interns:
+            with printer.block(f"if ({p} < 0)"):
+                printer.write("return -1;")
+        printer.write("return 0;")
     if verbose:
         print(f"Cache hits: {printer.hits}, misses: {printer.misses}")
 

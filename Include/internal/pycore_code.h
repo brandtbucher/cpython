@@ -92,27 +92,21 @@ typedef struct {
 
 #define INLINE_CACHE_ENTRIES_STORE_SUBSCR CACHE_ENTRIES(_PyStoreSubscrCache)
 
-/* Maximum size of code to quicken, in code units. */
-#define MAX_SIZE_TO_QUICKEN 10000
-
 #define QUICKENING_WARMUP_DELAY 8
 
 /* We want to compare to zero for efficiency, so we offset values accordingly */
 #define QUICKENING_INITIAL_WARMUP_VALUE (-QUICKENING_WARMUP_DELAY)
 #define QUICKENING_WARMUP_COLDEST 1
 
-int _Py_Quicken(PyCodeObject *code);
+int _PyCode_Quicken(PyCodeObject *code);
 
-/* Returns 1 if quickening occurs.
- * -1 if an error occurs
- * 0 otherwise */
 static inline int
-_Py_IncrementCountAndMaybeQuicken(PyCodeObject *code)
+_PyCode_Warmup(PyCodeObject *code)
 {
     if (code->co_warmup != 0) {
         code->co_warmup++;
         if (code->co_warmup == 0) {
-            return _Py_Quicken(code) ? -1 : 1;
+            return _PyCode_Quicken(code) ? -1 : 1;
         }
     }
     return 0;

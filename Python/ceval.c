@@ -1715,7 +1715,7 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            int err = _Py_IncrementCountAndMaybeQuicken(frame->f_code);
+            int err = _PyCode_Warmup(frame->f_code);
             if (err) {
                 if (err < 0) {
                     goto error;
@@ -3921,7 +3921,7 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD) {
-            int err = _Py_IncrementCountAndMaybeQuicken(frame->f_code);
+            int err = _PyCode_Warmup(frame->f_code);
             if (err) {
                 if (err < 0) {
                     goto error;

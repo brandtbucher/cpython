@@ -379,7 +379,7 @@ _specializations = {
     ),
 }
 _specialized_instructions = [
-    opcode for (caches, family) in _specializations.values() for opcode in family
+    opcode for caches, family in _specializations.values() for opcode in family
 ]
 _specialization_stats = [
     "success",

@@ -348,17 +348,13 @@ optimize(_Py_CODEUNIT *instructions, int len)
 }
 
 int
-_Py_Quicken(PyCodeObject *code) {
+_PyCode_Quicken(PyCodeObject *code) {
     return 0;
     if (code->co_quickened) {
         return 0;
     }
     Py_ssize_t size = PyBytes_GET_SIZE(code->co_code);
     int instr_count = (int)(size/sizeof(_Py_CODEUNIT));
-    if (instr_count > MAX_SIZE_TO_QUICKEN) {
-        code->co_warmup = QUICKENING_WARMUP_COLDEST;
-        return 0;
-    }
     _Py_CODEUNIT *quickened = allocate(instr_count);
     if (quickened == NULL) {
         return -1;
