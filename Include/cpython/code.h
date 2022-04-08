@@ -110,7 +110,6 @@ struct PyCodeObject {
      This should be treated as opaque by all code except the specializer and
      interpreter. */
     _Py_CODEUNIT *co_quickened;
-
 };
 
 /* Masks for co_flags above */
@@ -152,8 +151,6 @@ PyAPI_DATA(PyTypeObject) PyCode_Type;
 
 #define PyCode_Check(op) Py_IS_TYPE(op, &PyCode_Type)
 #define PyCode_GetNumFree(op) ((op)->co_nfreevars)
-#define _PyCode_CODE(CO) \
-    ((_Py_CODEUNIT *)PyBytes_AS_STRING(((PyCodeObject *)(CO))->co_code))
 
 /* Public interface */
 PyAPI_FUNC(PyCodeObject *) PyCode_New(

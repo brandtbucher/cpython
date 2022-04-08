@@ -171,7 +171,7 @@ top_of_stack(int64_t stack)
 static int64_t *
 mark_stacks(PyCodeObject *code_obj, int len)
 {
-    const _Py_CODEUNIT *code = _PyCode_CODE(code_obj);
+    const _Py_CODEUNIT *code = code_obj->co_firstinstr;
     int64_t *stacks = PyMem_New(int64_t, len+1);
     int i, j, opcode;
 
@@ -591,7 +591,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
     }
     /* Finally set the new lasti and return OK. */
     f->f_lineno = 0;
-    f->f_frame->prev_instr = _PyCode_CODE(f->f_frame->f_code) + best_addr;
+    f->f_frame->prev_instr = f->f_frame->f_code->co_firstinstr + best_addr;
     return 0;
 }
 
@@ -873,7 +873,7 @@ _PyFrame_OpAlreadyRan(_PyInterpreterFrame *frame, int opcode, int oparg)
     // This only works when opcode is a non-quickened form:
     assert(_PyOpcode_Deopt[opcode] == opcode);
     int check_oparg = 0;
-    for (_Py_CODEUNIT *instruction = _PyCode_CODE(frame->f_code); 
+    for (_Py_CODEUNIT *instruction = frame->f_code->co_firstinstr; 
          instruction < frame->prev_instr; instruction++)
     {
         int check_opcode = _PyOpcode_Deopt[_Py_OPCODE(*instruction)];
@@ -909,7 +909,7 @@ _PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
     // COPY_FREE_VARS has no quickened forms, so no need to use _PyOpcode_Deopt
     // here:
     int lasti = _PyInterpreterFrame_LASTI(frame);
-    if (lasti < 0 && _Py_OPCODE(_PyCode_CODE(co)[0]) == COPY_FREE_VARS) {
+    if (lasti < 0 && _Py_OPCODE(*co->co_firstinstr) == COPY_FREE_VARS) {
         /* Free vars have not been initialized -- Do that */
         PyCodeObject *co = frame->f_code;
         PyObject *closure = frame->f_func->func_closure;
@@ -920,7 +920,7 @@ _PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
             frame->localsplus[offset + i] = o;
         }
         // COPY_FREE_VARS doesn't have inline CACHEs, either:
-        frame->prev_instr = _PyCode_CODE(frame->f_code);
+        frame->prev_instr = frame->f_code->co_firstinstr;
     }
     for (int i = 0; i < co->co_nlocalsplus; i++) {
         _PyLocals_Kind kind = _PyLocals_GetKind(co->co_localspluskinds, i);
