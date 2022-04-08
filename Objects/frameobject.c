@@ -106,9 +106,8 @@ frame_getback(PyFrameObject *f, void *closure)
     return res;
 }
 
-// Given the index of the effective opcode, scan back to construct the oparg
-// with EXTENDED_ARG. This only works correctly with *unquickened* code,
-// obtained via a call to _PyCode_GetCode!
+/* Given the index of the effective opcode,
+   scan back to construct the oparg with EXTENDED_ARG */
 static unsigned int
 get_arg(const _Py_CODEUNIT *codestr, Py_ssize_t i)
 {
@@ -172,17 +171,12 @@ top_of_stack(int64_t stack)
 static int64_t *
 mark_stacks(PyCodeObject *code_obj, int len)
 {
-    PyObject *co_code = _PyCode_GetCode(code_obj);
-    if (co_code == NULL) {
-        return NULL;
-    }
-    _Py_CODEUNIT *code = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
+    const _Py_CODEUNIT *code = _PyCode_CODE(code_obj);
     int64_t *stacks = PyMem_New(int64_t, len+1);
     int i, j, opcode;
 
     if (stacks == NULL) {
         PyErr_NoMemory();
-        Py_DECREF(co_code);
         return NULL;
     }
     for (int i = 1; i <= len; i++) {
@@ -303,7 +297,6 @@ mark_stacks(PyCodeObject *code_obj, int len)
             }
         }
     }
-    Py_DECREF(co_code);
     return stacks;
 }
 
@@ -532,7 +525,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
 
     /* PyCode_NewWithPosOnlyArgs limits co_code to be under INT_MAX so this
      * should never overflow. */
-    int len = (int)Py_SIZE(f->f_frame->f_code);
+    int len = (int)(PyBytes_GET_SIZE(f->f_frame->f_code->co_code) / sizeof(_Py_CODEUNIT));
     int *lines = marklines(f->f_frame->f_code, len);
     if (lines == NULL) {
         return -1;

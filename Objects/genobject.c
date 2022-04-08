@@ -351,12 +351,14 @@ _PyGen_yf(PyGenObject *gen)
 
     if (gen->gi_frame_state < FRAME_CLEARED) {
         _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
+        PyObject *bytecode = gen->gi_code->co_code;
+        unsigned char *code = (unsigned char *)PyBytes_AS_STRING(bytecode);
 
         if (gen->gi_frame_state == FRAME_CREATED) {
             /* Return immediately if the frame didn't start yet. SEND
                always come after LOAD_CONST: a code object should not start
                with SEND */
-            assert(_Py_OPCODE(_PyCode_CODE(gen->gi_code)[0]) != SEND);
+            assert(code[0] != SEND);
             return NULL;
         }
         _Py_CODEUNIT next = frame->prev_instr[1];
@@ -487,8 +489,6 @@ _gen_throw(PyGenObject *gen, int close_on_genexit,
             ret = _PyFrame_StackPop((_PyInterpreterFrame *)gen->gi_iframe);
             assert(ret == yf);
             Py_DECREF(ret);
-            // XXX: Performing this jump ourselves is awkward and problematic.
-            // See https://github.com/python/cpython/pull/31968.
             /* Termination repetition of SEND loop */
             assert(_PyInterpreterFrame_LASTI(frame) >= 0);
             /* Backup to SEND */
