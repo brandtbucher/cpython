@@ -181,7 +181,7 @@ class PropertyTests(unittest.TestCase):
         refs_before = gettotalrefcount()
         for i in range(100):
             fake_prop.__init__('fget', 'fset', 'fdel', 'doc')
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=15)
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")

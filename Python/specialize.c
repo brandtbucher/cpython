@@ -258,15 +258,11 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
     int previous_opcode = -1;
     for (int i = 0; i < size; i++) {
         int opcode = _Py_OPCODE(instructions[i]);
-        assert(_PyOpcode_Deopt[opcode] == opcode);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
             _Py_SET_OPCODE(instructions[i], adaptive_opcode);
             // Make sure the adaptive counter is zero:
-            if (instructions[i + 1] != 0) {
-                printf("%i %i %i\n", opcode, _Py_OPARG(instructions[i]), instructions[i + 1]);
-                assert(instructions[i + 1] == 0);
-            }
+            assert(instructions[i + 1] == 0);
             previous_opcode = -1;
             i += _PyOpcode_Caches[opcode];
         }
