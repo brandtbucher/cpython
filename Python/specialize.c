@@ -260,14 +260,15 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
         int opcode = _Py_OPCODE(instructions[i]);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
+            assert(_PyOpcode_Caches[opcode]);
             _Py_SET_OPCODE(instructions[i], adaptive_opcode);
             // Make sure the adaptive counter is zero:
-            assert(instructions[i + 1] == 0);
+            instructions[i + 1] = 0;
             previous_opcode = -1;
             i += _PyOpcode_Caches[opcode];
         }
         else {
-            // assert(!_PyOpcode_Caches[opcode]);
+            assert(!_PyOpcode_Caches[opcode]);
             switch (opcode) {
                 case JUMP_BACKWARD:
                     _Py_SET_OPCODE(instructions[i], JUMP_BACKWARD_QUICK);
@@ -309,15 +310,107 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
     }
 }
 
+#define LOG_BITS_PER_INT 5
+#define MASK_LOW_LOG_BITS 31
+
+static inline int
+is_jump(int opcode)
+{
+    uint32_t word = _PyOpcode_Jump[opcode >> LOG_BITS_PER_INT];
+    return (word >> (opcode & MASK_LOW_LOG_BITS)) & 1;
+}
+
 PyCodeObject *
 _PyCode_Quicken(PyCodeObject *code)
 {
-    _Py_CODEUNIT *instructions = PyMem_Malloc(_PyCode_NBYTES(code));
+    int *offsets = PyMem_Malloc(Py_SIZE(code) * sizeof(int));
+    if (!offsets) {
+        return NULL;
+    }
+    int caches = 0;
+    for (int i = 0; i < Py_SIZE(code); i++) {
+        offsets[i] = i + caches;
+        caches += _PyOpcode_Caches[_Py_OPCODE(_PyCode_CODE(code)[i])];
+    }
+    _Py_CODEUNIT *instructions = PyMem_Calloc(
+        (Py_SIZE(code) + caches), sizeof(_Py_CODEUNIT));
     if (!instructions) {
         return NULL;
     }
-    memcpy(instructions, _PyCode_CODE(code), _PyCode_NBYTES(code));
-    quicken(instructions, Py_SIZE(code));
+    int oparg = 0;
+    int extended_args = 0;
+    for (int i = 0; i < Py_SIZE(code); i++) {
+        _Py_CODEUNIT instruction = _PyCode_CODE(code)[i];
+        instructions[offsets[i]] = instruction;
+        int opcode = _Py_OPCODE(instruction);
+        oparg |= _Py_OPARG(instruction);
+        if (opcode == EXTENDED_ARG) {
+            oparg <<= 8;
+            extended_args++;
+        }
+        else {
+            if (is_jump(opcode)) {
+                int target;
+                switch (opcode) {
+                    case JUMP_BACKWARD_NO_INTERRUPT:
+                    case JUMP_BACKWARD:
+                        target = -(offsets[i + 1 - oparg] - i - 1);
+                        break;
+                    case FOR_ITER:
+                    case JUMP_FORWARD:
+                    case SEND:
+                        target = offsets[i + 1 + oparg] - i - 1;
+                        break;
+                    case JUMP_IF_FALSE_OR_POP:
+                    case JUMP_IF_TRUE_OR_POP:
+                    case POP_JUMP_IF_FALSE:
+                    case POP_JUMP_IF_TRUE:
+                    case POP_JUMP_IF_NONE:
+                    case POP_JUMP_IF_NOT_NONE:
+                        target = offsets[oparg];
+                        break;
+                    default:
+                        printf("%d\n", opcode);
+                        Py_UNREACHABLE();
+                }
+                assert(0 <= target);
+                switch (extended_args) {
+                    case 3:
+                        instructions[offsets[i] - 3] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >> 24) & 0xFF);
+                        target &= 0x00FFFFFF;
+                        // Fall through...
+                    case 2:
+                        instructions[offsets[i] - 2] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >> 16) & 0xFF);
+                        target &= 0x0000FFFF;
+                        // Fall through...
+                    case 1:
+                        instructions[offsets[i] - 1] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >>  8) & 0xFF);
+                        target &= 0x000000FF;
+                        // Fall through...
+                    case 0:
+                        instructions[offsets[i]] = _Py_MAKECODEUNIT(
+                            opcode, target & 0xFF);
+                        if (target >> 8) {
+                            printf("\nDamn, we need more extended arguments!\n\n");
+                            PyMem_Free(instructions);
+                            PyMem_Free(offsets);
+                            Py_INCREF(code);
+                            return code;
+                        }
+                        break;
+                    default:
+                        Py_UNREACHABLE();
+                }
+            }
+            oparg = 0;
+            extended_args = 0;
+        }
+    }
+    PyMem_Free(offsets);
+    quicken(instructions, Py_SIZE(code) + caches);
     PyObject *co_code = PyBytes_FromStringAndSize((char *)instructions,
                                                   _PyCode_NBYTES(code));
     PyMem_Free(instructions);
