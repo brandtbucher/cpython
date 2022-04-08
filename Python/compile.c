@@ -167,8 +167,7 @@ instr_size(struct instr *instruction)
     assert(!IS_VIRTUAL_OPCODE(opcode));
     int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
     int extended_args = (0xFFFFFF < oparg) + (0xFFFF < oparg) + (0xFF < oparg);
-    int caches = _PyOpcode_Caches[opcode];
-    return extended_args + 1 + caches;
+    return extended_args + 1;
 }
 
 static void
@@ -177,8 +176,7 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
     int opcode = instruction->i_opcode;
     assert(!IS_VIRTUAL_OPCODE(opcode));
     int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
-    int caches = _PyOpcode_Caches[opcode];
-    switch (ilen - caches) {
+    switch (ilen) {
         case 4:
             *codestr++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 24) & 0xFF);
             /* fall through */
@@ -193,9 +191,6 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
             break;
         default:
             Py_UNREACHABLE();
-    }
-    while (caches--) {
-        *codestr++ = _Py_MAKECODEUNIT(CACHE, 0);
     }
 }
 

@@ -35,23 +35,20 @@ hasnargs = [] # unused
 opmap = {}
 opname = ['<%r>' % (op,) for op in range(256)]
 
-_inline_cache_entries = [0] * 256
-
-def def_op(name, op, entries=0):
+def def_op(name, op):
     opname[op] = name
     opmap[name] = op
-    _inline_cache_entries[op] = entries
 
-def name_op(name, op, entries=0):
-    def_op(name, op, entries)
+def name_op(name, op):
+    def_op(name, op)
     hasname.append(op)
 
-def jrel_op(name, op, entries=0):
-    def_op(name, op, entries)
+def jrel_op(name, op):
+    def_op(name, op)
     hasjrel.append(op)
 
-def jabs_op(name, op, entries=0):
-    def_op(name, op, entries)
+def jabs_op(name, op):
+    def_op(name, op)
     hasjabs.append(op)
 
 # Instruction opcodes for compiled code
@@ -68,7 +65,7 @@ def_op('UNARY_NOT', 12)
 
 def_op('UNARY_INVERT', 15)
 
-def_op('BINARY_SUBSCR', 25, 4)
+def_op('BINARY_SUBSCR', 25)
 
 def_op('GET_LEN', 30)
 def_op('MATCH_MAPPING', 31)
@@ -86,7 +83,7 @@ def_op('BEFORE_ASYNC_WITH', 52)
 def_op('BEFORE_WITH', 53)
 def_op('END_ASYNC_FOR', 54)
 
-def_op('STORE_SUBSCR', 60, 1)
+def_op('STORE_SUBSCR', 60)
 def_op('DELETE_SUBSCR', 61)
 
 def_op('GET_ITER', 68)
@@ -110,10 +107,10 @@ HAVE_ARGUMENT = 90              # Opcodes from here have an argument:
 
 name_op('STORE_NAME', 90)       # Index in name list
 name_op('DELETE_NAME', 91)      # ""
-def_op('UNPACK_SEQUENCE', 92, 1)   # Number of tuple items
+def_op('UNPACK_SEQUENCE', 92)   # Number of tuple items
 jrel_op('FOR_ITER', 93)
 def_op('UNPACK_EX', 94)
-name_op('STORE_ATTR', 95, 4)       # Index in name list
+name_op('STORE_ATTR', 95)       # Index in name list
 name_op('DELETE_ATTR', 96)      # ""
 name_op('STORE_GLOBAL', 97)     # ""
 name_op('DELETE_GLOBAL', 98)    # ""
@@ -125,8 +122,8 @@ def_op('BUILD_TUPLE', 102)      # Number of tuple items
 def_op('BUILD_LIST', 103)       # Number of list items
 def_op('BUILD_SET', 104)        # Number of set items
 def_op('BUILD_MAP', 105)        # Number of dict entries
-name_op('LOAD_ATTR', 106, 4)       # Index in name list
-def_op('COMPARE_OP', 107, 2)       # Comparison operator
+name_op('LOAD_ATTR', 106)       # Index in name list
+def_op('COMPARE_OP', 107)       # Comparison operator
 hascompare.append(107)
 name_op('IMPORT_NAME', 108)     # Index in name list
 name_op('IMPORT_FROM', 109)     # Index in name list
@@ -135,12 +132,12 @@ jabs_op('JUMP_IF_FALSE_OR_POP', 111) # Target byte offset from beginning of code
 jabs_op('JUMP_IF_TRUE_OR_POP', 112)  # ""
 jabs_op('POP_JUMP_IF_FALSE', 114)    # ""
 jabs_op('POP_JUMP_IF_TRUE', 115)     # ""
-name_op('LOAD_GLOBAL', 116, 5)     # Index in name list
+name_op('LOAD_GLOBAL', 116)     # Index in name list
 def_op('IS_OP', 117)
 def_op('CONTAINS_OP', 118)
 def_op('RERAISE', 119)
 def_op('COPY', 120)
-def_op('BINARY_OP', 122, 1)
+def_op('BINARY_OP', 122)
 jrel_op('SEND', 123) # Number of bytes to skip
 def_op('LOAD_FAST', 124)        # Local variable number
 haslocal.append(124)
@@ -185,15 +182,15 @@ def_op('FORMAT_VALUE', 155)
 def_op('BUILD_CONST_KEY_MAP', 156)
 def_op('BUILD_STRING', 157)
 
-name_op('LOAD_METHOD', 160, 10)
+name_op('LOAD_METHOD', 160)
 
 def_op('LIST_EXTEND', 162)
 def_op('SET_UPDATE', 163)
 def_op('DICT_MERGE', 164)
 def_op('DICT_UPDATE', 165)
-def_op('PRECALL', 166, 1)
+def_op('PRECALL', 166)
 
-def_op('CALL', 171, 4)
+def_op('CALL', 171)
 def_op('KW_NAMES', 172)
 hasconst.append(172)
 
@@ -230,111 +227,159 @@ _nb_ops = [
 ]
 
 _specializations = {
-    "BINARY_OP": [
-        "BINARY_OP_ADAPTIVE",
-        "BINARY_OP_ADD_FLOAT",
-        "BINARY_OP_ADD_INT",
-        "BINARY_OP_ADD_UNICODE",
-        "BINARY_OP_INPLACE_ADD_UNICODE",
-        "BINARY_OP_MULTIPLY_FLOAT",
-        "BINARY_OP_MULTIPLY_INT",
-        "BINARY_OP_SUBTRACT_FLOAT",
-        "BINARY_OP_SUBTRACT_INT",
-    ],
-    "BINARY_SUBSCR": [
-        "BINARY_SUBSCR_ADAPTIVE",
-        "BINARY_SUBSCR_DICT",
-        "BINARY_SUBSCR_GETITEM",
-        "BINARY_SUBSCR_LIST_INT",
-        "BINARY_SUBSCR_TUPLE_INT",
-    ],
-    "CALL": [
-        "CALL_ADAPTIVE",
-        "CALL_PY_EXACT_ARGS",
-        "CALL_PY_WITH_DEFAULTS",
-    ],
-    "COMPARE_OP": [
-        "COMPARE_OP_ADAPTIVE",
-        "COMPARE_OP_FLOAT_JUMP",
-        "COMPARE_OP_INT_JUMP",
-        "COMPARE_OP_STR_JUMP",
-    ],
-    "JUMP_BACKWARD": [
-        "JUMP_BACKWARD_QUICK",
-    ],
-    "LOAD_ATTR": [
-        "LOAD_ATTR_ADAPTIVE",
-        "LOAD_ATTR_INSTANCE_VALUE",
-        "LOAD_ATTR_MODULE",
-        "LOAD_ATTR_SLOT",
-        "LOAD_ATTR_WITH_HINT",
-    ],
-    "LOAD_CONST": [
-        "LOAD_CONST__LOAD_FAST",
-    ],
-    "LOAD_FAST": [
-        "LOAD_FAST__LOAD_CONST",
-        "LOAD_FAST__LOAD_FAST",
-    ],
-    "LOAD_GLOBAL": [
-        "LOAD_GLOBAL_ADAPTIVE",
-        "LOAD_GLOBAL_BUILTIN",
-        "LOAD_GLOBAL_MODULE",
-    ],
-    "LOAD_METHOD": [
-        "LOAD_METHOD_ADAPTIVE",
-        "LOAD_METHOD_CLASS",
-        "LOAD_METHOD_MODULE",
-        "LOAD_METHOD_NO_DICT",
-        "LOAD_METHOD_WITH_DICT",
-        "LOAD_METHOD_WITH_VALUES",
-    ],
-    "PRECALL": [
-        "PRECALL_ADAPTIVE",
-        "PRECALL_BOUND_METHOD",
-        "PRECALL_BUILTIN_CLASS",
-        "PRECALL_BUILTIN_FAST_WITH_KEYWORDS",
-        "PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
-        "PRECALL_NO_KW_BUILTIN_FAST",
-        "PRECALL_NO_KW_BUILTIN_O",
-        "PRECALL_NO_KW_ISINSTANCE",
-        "PRECALL_NO_KW_LEN",
-        "PRECALL_NO_KW_LIST_APPEND",
-        "PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST",
-        "PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS",
-        "PRECALL_NO_KW_METHOD_DESCRIPTOR_O",
-        "PRECALL_NO_KW_STR_1",
-        "PRECALL_NO_KW_TUPLE_1",
-        "PRECALL_NO_KW_TYPE_1",
-        "PRECALL_PYFUNC",
-    ],
-    "RESUME": [
-        "RESUME_QUICK",
-    ],
-    "STORE_ATTR": [
-        "STORE_ATTR_ADAPTIVE",
-        "STORE_ATTR_INSTANCE_VALUE",
-        "STORE_ATTR_SLOT",
-        "STORE_ATTR_WITH_HINT",
-    ],
-    "STORE_FAST": [
-        "STORE_FAST__LOAD_FAST",
-        "STORE_FAST__STORE_FAST",
-    ],
-    "STORE_SUBSCR": [
-        "STORE_SUBSCR_ADAPTIVE",
-        "STORE_SUBSCR_DICT",
-        "STORE_SUBSCR_LIST_INT",
-    ],
-    "UNPACK_SEQUENCE": [
-        "UNPACK_SEQUENCE_ADAPTIVE",
-        "UNPACK_SEQUENCE_LIST",
-        "UNPACK_SEQUENCE_TUPLE",
-        "UNPACK_SEQUENCE_TWO_TUPLE",
-    ],
+    "BINARY_OP": (
+        1,
+        [
+            "BINARY_OP_ADAPTIVE",
+            "BINARY_OP_ADD_FLOAT",
+            "BINARY_OP_ADD_INT",
+            "BINARY_OP_ADD_UNICODE",
+            "BINARY_OP_INPLACE_ADD_UNICODE",
+            "BINARY_OP_MULTIPLY_FLOAT",
+            "BINARY_OP_MULTIPLY_INT",
+            "BINARY_OP_SUBTRACT_FLOAT",
+            "BINARY_OP_SUBTRACT_INT",
+        ],
+    ),
+    "BINARY_SUBSCR": (
+        4,
+        [
+            "BINARY_SUBSCR_ADAPTIVE",
+            "BINARY_SUBSCR_DICT",
+            "BINARY_SUBSCR_GETITEM",
+            "BINARY_SUBSCR_LIST_INT",
+            "BINARY_SUBSCR_TUPLE_INT",
+        ],
+    ),
+    "CALL": (
+        4,
+        [
+            "CALL_ADAPTIVE",
+            "CALL_PY_EXACT_ARGS",
+            "CALL_PY_WITH_DEFAULTS",
+        ],
+    ),
+    "COMPARE_OP": (
+        2,
+        [
+            "COMPARE_OP_ADAPTIVE",
+            "COMPARE_OP_FLOAT_JUMP",
+            "COMPARE_OP_INT_JUMP",
+            "COMPARE_OP_STR_JUMP",
+        ],
+    ),
+    "JUMP_BACKWARD": (
+        0,
+        [
+            "JUMP_BACKWARD_QUICK",
+        ],
+    ),
+    "LOAD_ATTR": (
+        4,
+        [
+            "LOAD_ATTR_ADAPTIVE",
+            "LOAD_ATTR_INSTANCE_VALUE",
+            "LOAD_ATTR_MODULE",
+            "LOAD_ATTR_SLOT",
+            "LOAD_ATTR_WITH_HINT",
+        ],
+    ),
+    "LOAD_CONST": (
+        0,
+        [
+            "LOAD_CONST__LOAD_FAST",
+        ],
+    ),
+    "LOAD_FAST": (
+        0,
+        [
+            "LOAD_FAST__LOAD_CONST",
+            "LOAD_FAST__LOAD_FAST",
+        ],
+    ),
+    "LOAD_GLOBAL": (
+        5,
+        [
+            "LOAD_GLOBAL_ADAPTIVE",
+            "LOAD_GLOBAL_BUILTIN",
+            "LOAD_GLOBAL_MODULE",
+        ],
+    ),
+    "LOAD_METHOD": (
+        10,
+        [
+            "LOAD_METHOD_ADAPTIVE",
+            "LOAD_METHOD_CLASS",
+            "LOAD_METHOD_MODULE",
+            "LOAD_METHOD_NO_DICT",
+            "LOAD_METHOD_WITH_DICT",
+            "LOAD_METHOD_WITH_VALUES",
+        ],
+    ),
+    "PRECALL": (
+        1,
+        [
+            "PRECALL_ADAPTIVE",
+            "PRECALL_BOUND_METHOD",
+            "PRECALL_BUILTIN_CLASS",
+            "PRECALL_BUILTIN_FAST_WITH_KEYWORDS",
+            "PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
+            "PRECALL_NO_KW_BUILTIN_FAST",
+            "PRECALL_NO_KW_BUILTIN_O",
+            "PRECALL_NO_KW_ISINSTANCE",
+            "PRECALL_NO_KW_LEN",
+            "PRECALL_NO_KW_LIST_APPEND",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS",
+            "PRECALL_NO_KW_METHOD_DESCRIPTOR_O",
+            "PRECALL_NO_KW_STR_1",
+            "PRECALL_NO_KW_TUPLE_1",
+            "PRECALL_NO_KW_TYPE_1",
+            "PRECALL_PYFUNC",
+        ],
+    ),
+    "RESUME": (
+        0,
+        [
+            "RESUME_QUICK",
+        ],
+    ),
+    "STORE_ATTR": (
+        4,
+        [
+            "STORE_ATTR_ADAPTIVE",
+            "STORE_ATTR_INSTANCE_VALUE",
+            "STORE_ATTR_SLOT",
+            "STORE_ATTR_WITH_HINT",
+        ],
+    ),
+    "STORE_FAST": (
+        0,
+        [
+            "STORE_FAST__LOAD_FAST",
+            "STORE_FAST__STORE_FAST",
+        ],
+    ),
+    "STORE_SUBSCR": (
+        1,
+        [
+            "STORE_SUBSCR_ADAPTIVE",
+            "STORE_SUBSCR_DICT",
+            "STORE_SUBSCR_LIST_INT",
+        ],
+    ),
+    "UNPACK_SEQUENCE": (
+        1,
+        [
+            "UNPACK_SEQUENCE_ADAPTIVE",
+            "UNPACK_SEQUENCE_LIST",
+            "UNPACK_SEQUENCE_TUPLE",
+            "UNPACK_SEQUENCE_TWO_TUPLE",
+        ],
+    ),
 }
 _specialized_instructions = [
-    opcode for family in _specializations.values() for opcode in family
+    opcode for caches, family in _specializations.values() for opcode in family
 ]
 _specialization_stats = [
     "success",

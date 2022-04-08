@@ -2106,7 +2106,7 @@ handle_eval_breaker:
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            //  JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             DISPATCH();
         }
 
@@ -2124,6 +2124,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(BINARY_SUBSCR, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
                 JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
             }
         }
@@ -2271,7 +2272,7 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
+            //  JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
             DISPATCH();
         }
 
@@ -2289,6 +2290,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(STORE_SUBSCR, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
                 JUMP_TO_INSTRUCTION(STORE_SUBSCR);
             }
         }
@@ -2763,7 +2765,7 @@ handle_eval_breaker:
             }
             STACK_GROW(oparg);
             Py_DECREF(seq);
-            JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
+            // JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
             DISPATCH();
         }
 
@@ -2779,6 +2781,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(UNPACK_SEQUENCE, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
                 JUMP_TO_INSTRUCTION(UNPACK_SEQUENCE);
             }
         }
@@ -2851,7 +2854,7 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
+            // JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
             DISPATCH();
         }
 
@@ -3002,7 +3005,7 @@ handle_eval_breaker:
                 }
             }
             /* Skip over inline cache */
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            // JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             STACK_GROW(push_null);
             PUSH(v);
             DISPATCH();
@@ -3022,6 +3025,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_GLOBAL, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
                 JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
             }
         }
@@ -3432,7 +3436,7 @@ handle_eval_breaker:
             }
             Py_DECREF(owner);
             SET_TOP(res);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            // JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
             DISPATCH();
         }
 
@@ -3451,6 +3455,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_ATTR, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
                 JUMP_TO_INSTRUCTION(LOAD_ATTR);
             }
         }
@@ -3560,6 +3565,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(STORE_ATTR, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
                 JUMP_TO_INSTRUCTION(STORE_ATTR);
             }
         }
@@ -3671,7 +3677,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            // JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
             PREDICT(POP_JUMP_IF_FALSE);
             PREDICT(POP_JUMP_IF_TRUE);
             DISPATCH();
@@ -3690,6 +3696,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(COMPARE_OP, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
                 JUMP_TO_INSTRUCTION(COMPARE_OP);
             }
         }
@@ -4391,7 +4398,7 @@ handle_eval_breaker:
                 Py_DECREF(obj);
                 PUSH(meth);
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_METHOD);
+            // JUMPBY(INLINE_CACHE_ENTRIES_LOAD_METHOD);
             DISPATCH();
         }
 
@@ -4410,6 +4417,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(LOAD_METHOD, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_LOAD_METHOD);
                 JUMP_TO_INSTRUCTION(LOAD_METHOD);
             }
         }
@@ -4569,7 +4577,7 @@ handle_eval_breaker:
                 PEEK(oparg+2) = meth;
                 Py_DECREF(function);
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_PRECALL);
+            // JUMPBY(INLINE_CACHE_ENTRIES_PRECALL);
             DISPATCH();
         }
 
@@ -4629,8 +4637,8 @@ handle_eval_breaker:
                     goto error;
                 }
                 _PyFrame_SetStackPointer(frame, stack_pointer);
-                JUMPBY(INLINE_CACHE_ENTRIES_CALL);
-                frame->prev_instr = next_instr - 1;
+                // JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+                // frame->prev_instr = next_instr - 1;
                 new_frame->previous = frame;
                 cframe.current_frame = frame = new_frame;
                 CALL_STAT_INC(inlined_py_calls);
@@ -4662,7 +4670,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            // JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             CHECK_EVAL_BREAKER();
             DISPATCH();
         }
@@ -4684,6 +4692,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(PRECALL, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_PRECALL);
                 JUMP_TO_INSTRUCTION(PRECALL);
             }
         }
@@ -4705,6 +4714,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(CALL, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_CALL);
                 goto call_function;
             }
         }
@@ -5415,7 +5425,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
+            // JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
             DISPATCH();
         }
 
@@ -5432,6 +5442,7 @@ handle_eval_breaker:
             else {
                 STAT_INC(BINARY_OP, deferred);
                 cache->counter--;
+                JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
         }
@@ -5445,7 +5456,7 @@ handle_eval_breaker:
         }
 
         TARGET(EXTENDED_ARG) {
-            assert(oparg);
+            // assert(oparg);
             int oldoparg = oparg;
             NEXTOPARG();
             oparg |= oldoparg << 8;

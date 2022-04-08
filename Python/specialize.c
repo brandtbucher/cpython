@@ -18,17 +18,17 @@
 /* Map from opcode to adaptive opcode.
   Values of zero are ignored. */
 uint8_t _PyOpcode_Adaptive[256] = {
-    [LOAD_ATTR] = LOAD_ATTR_ADAPTIVE,
-    [LOAD_GLOBAL] = LOAD_GLOBAL_ADAPTIVE,
-    [LOAD_METHOD] = LOAD_METHOD_ADAPTIVE,
-    [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
-    [STORE_SUBSCR] = STORE_SUBSCR_ADAPTIVE,
-    [CALL] = CALL_ADAPTIVE,
-    [PRECALL] = PRECALL_ADAPTIVE,
-    [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
-    [BINARY_OP] = BINARY_OP_ADAPTIVE,
-    [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
-    [UNPACK_SEQUENCE] = UNPACK_SEQUENCE_ADAPTIVE,
+    // [LOAD_ATTR] = LOAD_ATTR_ADAPTIVE,
+    // [LOAD_GLOBAL] = LOAD_GLOBAL_ADAPTIVE,
+    // [LOAD_METHOD] = LOAD_METHOD_ADAPTIVE,
+    // [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
+    // [STORE_SUBSCR] = STORE_SUBSCR_ADAPTIVE,
+    // [CALL] = CALL_ADAPTIVE,
+    // [PRECALL] = PRECALL_ADAPTIVE,
+    // [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
+    // [BINARY_OP] = BINARY_OP_ADAPTIVE,
+    // [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
+    // [UNPACK_SEQUENCE] = UNPACK_SEQUENCE_ADAPTIVE,
 };
 
 Py_ssize_t _Py_QuickenedCount = 0;
@@ -267,7 +267,7 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
             i += _PyOpcode_Caches[opcode];
         }
         else {
-            assert(!_PyOpcode_Caches[opcode]);
+            // assert(!_PyOpcode_Caches[opcode]);
             switch (opcode) {
                 case JUMP_BACKWARD:
                     _Py_SET_OPCODE(instructions[i], JUMP_BACKWARD_QUICK);
