@@ -260,12 +260,12 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
         int opcode = _Py_OPCODE(instructions[i]);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
-            assert(_PyOpcode_Caches[opcode]);
+            assert(_PyOpcode_Caches[adaptive_opcode]);
             _Py_SET_OPCODE(instructions[i], adaptive_opcode);
             // Make sure the adaptive counter is zero:
             instructions[i + 1] = 0;
             previous_opcode = -1;
-            i += _PyOpcode_Caches[opcode];
+            i += _PyOpcode_Caches[adaptive_opcode];
         }
         else {
             assert(!_PyOpcode_Caches[opcode]);
@@ -323,6 +323,10 @@ is_jump(int opcode)
 PyCodeObject *
 _PyCode_Quicken(PyCodeObject *code)
 {
+    if (Py_SIZE(code->co_exceptiontable)) {
+        Py_INCREF(code);
+        return code;
+    }
     int *offsets = PyMem_Malloc(Py_SIZE(code) * sizeof(int));
     if (!offsets) {
         return NULL;
@@ -330,10 +334,13 @@ _PyCode_Quicken(PyCodeObject *code)
     int caches = 0;
     for (int i = 0; i < Py_SIZE(code); i++) {
         offsets[i] = i + caches;
-        caches += _PyOpcode_Caches[_Py_OPCODE(_PyCode_CODE(code)[i])];
+        int adaptive = _PyOpcode_Adaptive[_Py_OPCODE(_PyCode_CODE(code)[i])];
+        if (adaptive) {
+            caches += _PyOpcode_Caches[adaptive];
+        }
     }
-    _Py_CODEUNIT *instructions = PyMem_Calloc(
-        (Py_SIZE(code) + caches), sizeof(_Py_CODEUNIT));
+    _Py_CODEUNIT *instructions = PyMem_Malloc(
+        (Py_SIZE(code) + caches) * sizeof(_Py_CODEUNIT));
     if (!instructions) {
         return NULL;
     }
@@ -373,7 +380,6 @@ _PyCode_Quicken(PyCodeObject *code)
                         printf("%d\n", opcode);
                         Py_UNREACHABLE();
                 }
-                assert(0 <= target);
                 switch (extended_args) {
                     case 3:
                         instructions[offsets[i] - 3] = _Py_MAKECODEUNIT(
@@ -786,7 +792,8 @@ specialize_dict_access(
 int
 _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
-    assert(_PyOpcode_Caches[LOAD_ATTR] == INLINE_CACHE_ENTRIES_LOAD_ATTR);
+    assert(_PyOpcode_Caches[LOAD_ATTR_ADAPTIVE] == 
+           INLINE_CACHE_ENTRIES_LOAD_ATTR);
     _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     if (PyModule_CheckExact(owner)) {
         int err = specialize_module_load_attr(owner, instr, name, LOAD_ATTR,
@@ -884,7 +891,8 @@ success:
 int
 _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
-    assert(_PyOpcode_Caches[STORE_ATTR] == INLINE_CACHE_ENTRIES_STORE_ATTR);
+    assert(_PyOpcode_Caches[STORE_ATTR_ADAPTIVE] ==
+           INLINE_CACHE_ENTRIES_STORE_ATTR);
     _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     PyTypeObject *type = Py_TYPE(owner);
     if (PyModule_CheckExact(owner)) {
@@ -1044,7 +1052,8 @@ typedef enum {
 int
 _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
 {
-    assert(_PyOpcode_Caches[LOAD_METHOD] == INLINE_CACHE_ENTRIES_LOAD_METHOD);
+    assert(_PyOpcode_Caches[LOAD_METHOD_ADAPTIVE] ==
+           INLINE_CACHE_ENTRIES_LOAD_METHOD);
     _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
     PyTypeObject *owner_cls = Py_TYPE(owner);
 
@@ -1176,7 +1185,8 @@ _Py_Specialize_LoadGlobal(
     PyObject *globals, PyObject *builtins,
     _Py_CODEUNIT *instr, PyObject *name)
 {
-    assert(_PyOpcode_Caches[LOAD_GLOBAL] == INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+    assert(_PyOpcode_Caches[LOAD_GLOBAL_ADAPTIVE] ==
+           INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
     /* Use inline cache */
     _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)(instr + 1);
     assert(PyUnicode_CheckExact(name));
@@ -1312,7 +1322,7 @@ int
 _Py_Specialize_BinarySubscr(
      PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
-    assert(_PyOpcode_Caches[BINARY_SUBSCR] ==
+    assert(_PyOpcode_Caches[BINARY_SUBSCR_ADAPTIVE] ==
            INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
     _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)(instr + 1);
     PyTypeObject *container_type = Py_TYPE(container);
@@ -1747,7 +1757,7 @@ int
 _Py_Specialize_Precall(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
                        PyObject *kwnames, int oparg)
 {
-    assert(_PyOpcode_Caches[PRECALL] == INLINE_CACHE_ENTRIES_PRECALL);
+    assert(_PyOpcode_Caches[PRECALL_ADAPTIVE] == INLINE_CACHE_ENTRIES_PRECALL);
     _PyPrecallCache *cache = (_PyPrecallCache *)(instr + 1);
     int fail;
     if (PyCFunction_CheckExact(callable)) {
@@ -1793,7 +1803,7 @@ int
 _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
                     PyObject *kwnames)
 {
-    assert(_PyOpcode_Caches[CALL] == INLINE_CACHE_ENTRIES_CALL);
+    assert(_PyOpcode_Caches[CALL_ADAPTIVE] == INLINE_CACHE_ENTRIES_CALL);
     _PyCallCache *cache = (_PyCallCache *)(instr + 1);
     int fail;
     if (PyFunction_Check(callable)) {
@@ -1891,7 +1901,8 @@ void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         int oparg, PyObject **locals)
 {
-    assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
+    assert(_PyOpcode_Caches[BINARY_OP_ADAPTIVE] ==
+           INLINE_CACHE_ENTRIES_BINARY_OP);
     _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
     switch (oparg) {
         case NB_ADD:
@@ -2020,7 +2031,8 @@ void
 _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                          int oparg)
 {
-    assert(_PyOpcode_Caches[COMPARE_OP] == INLINE_CACHE_ENTRIES_COMPARE_OP);
+    assert(_PyOpcode_Caches[COMPARE_OP_ADAPTIVE] ==
+           INLINE_CACHE_ENTRIES_COMPARE_OP);
     _PyCompareOpCache *cache = (_PyCompareOpCache *)(instr + 1);
     int next_opcode = _Py_OPCODE(instr[INLINE_CACHE_ENTRIES_COMPARE_OP + 1]);
     if (next_opcode != POP_JUMP_IF_FALSE && next_opcode != POP_JUMP_IF_TRUE) {
@@ -2102,7 +2114,7 @@ unpack_sequence_fail_kind(PyObject *seq)
 void
 _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr, int oparg)
 {
-    assert(_PyOpcode_Caches[UNPACK_SEQUENCE] ==
+    assert(_PyOpcode_Caches[UNPACK_SEQUENCE_ADAPTIVE] ==
            INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
     _PyUnpackSequenceCache *cache = (_PyUnpackSequenceCache *)(instr + 1);
     if (PyTuple_CheckExact(seq)) {
