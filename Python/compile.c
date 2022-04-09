@@ -6139,12 +6139,16 @@ ensure_fail_pop(struct compiler *c, pattern_context *pc, Py_ssize_t n)
     if (size <= pc->fail_pop_size) {
         return 1;
     }
-    Py_ssize_t needed = sizeof(basicblock*) * size;
-    basicblock **resized = PyObject_Realloc(pc->fail_pop, needed);
+    Py_ssize_t needed = size;
+    while (needed < size) {
+        needed <<= 1;
+    }
+    basicblock **resized = _PyArena_Malloc(c->c_arena, needed * sizeof(basicblock*));
     if (resized == NULL) {
         PyErr_NoMemory();
         return 0;
     }
+    memcpy(resized, pc->fail_pop, pc->fail_pop_size * sizeof(basicblock *));
     pc->fail_pop = resized;
     while (pc->fail_pop_size < size) {
         basicblock *new_block;
@@ -6176,16 +6180,9 @@ emit_and_reset_fail_pop(struct compiler *c, pattern_context *pc)
     }
     while (--pc->fail_pop_size) {
         compiler_use_next_block(c, pc->fail_pop[pc->fail_pop_size]);
-        if (!compiler_addop(c, POP_TOP)) {
-            pc->fail_pop_size = 0;
-            PyObject_Free(pc->fail_pop);
-            pc->fail_pop = NULL;
-            return 0;
-        }
+        ADDOP(c, POP_TOP);
     }
     compiler_use_next_block(c, pc->fail_pop[0]);
-    PyObject_Free(pc->fail_pop);
-    pc->fail_pop = NULL;
     return 1;
 }
 
@@ -6591,28 +6588,26 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
     assert(size > 1);
     // We're going to be messing with pc. Keep the original info handy:
     pattern_context old_pc = *pc;
-    Py_INCREF(pc->stores);
     // control is the list of names bound by the first alternative. It is used
     // for checking different name bindings in alternatives, and for correcting
     // the order in which extracted elements are placed on the stack.
     PyObject *control = NULL;
-    // NOTE: We can't use returning macros anymore! goto error on error.
     for (Py_ssize_t i = 0; i < size; i++) {
         pattern_ty alt = asdl_seq_GET(p->v.MatchOr.patterns, i);
         SET_LOC(c, alt);
-        PyObject *pc_stores = PyList_New(0);
-        if (pc_stores == NULL) {
-            goto error;
+        pc->stores = PyList_New(0);
+        if (pc->stores == NULL || _PyArena_AddPyObject(c->c_arena, pc->stores))
+        {
+            Py_XDECREF(pc->stores);
+            return 0;
         }
-        Py_SETREF(pc->stores, pc_stores);
         // An irrefutable sub-pattern must be last, if it is allowed at all:
         pc->allow_irrefutable = (i == size - 1) && old_pc.allow_irrefutable;
         pc->fail_pop = NULL;
         pc->fail_pop_size = 0;
         pc->on_top = 0;
-        if (!compiler_addop_i(c, COPY, 1) || !compiler_pattern(c, alt, pc)) {
-            goto error;
-        }
+        ADDOP_I(c, COPY, 1);
+        RETURN_IF_FALSE(compiler_pattern(c, alt, pc));
         // Success!
         Py_ssize_t nstores = PyList_GET_SIZE(pc->stores);
         if (!i) {
@@ -6621,7 +6616,6 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
             // might need to be reordered):
             assert(control == NULL);
             control = pc->stores;
-            Py_INCREF(control);
         }
         else if (nstores != PyList_GET_SIZE(control)) {
             goto diff;
@@ -6655,7 +6649,7 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
                                         icontrol - istores, rotated))
                     {
                         Py_XDECREF(rotated);
-                        goto error;
+                        return 0;
                     }
                     Py_DECREF(rotated);
                     // That just did:
@@ -6665,29 +6659,21 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
                     // Do the same thing to the stack, using several
                     // rotations:
                     while (rotations--) {
-                        if (!pattern_helper_rotate(c, icontrol + 1)){
-                            goto error;
-                        }
+                        RETURN_IF_FALSE(pattern_helper_rotate(c, icontrol + 1));
                     }
                 }
             }
         }
         assert(control);
-        if (!compiler_addop_j(c, JUMP_FORWARD, end) ||
-            !emit_and_reset_fail_pop(c, pc))
-        {
-            goto error;
-        }
+        ADDOP_JUMP(c, JUMP_FORWARD, end);
+        RETURN_IF_FALSE(emit_and_reset_fail_pop(c, pc));
     }
-    Py_DECREF(pc->stores);
     *pc = old_pc;
-    Py_INCREF(pc->stores);
     // Need to NULL this for the PyObject_Free call in the error block.
     old_pc.fail_pop = NULL;
     // No match. Pop the remaining copy of the subject and fail:
-    if (!compiler_addop(c, POP_TOP) || !jump_to_fail_pop(c, pc, JUMP_FORWARD)) {
-        goto error;
-    }
+    ADDOP(c, POP_TOP);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, JUMP_FORWARD));
     compiler_use_next_block(c, end);
     Py_ssize_t nstores = PyList_GET_SIZE(control);
     // There's a bunch of stuff on the stack between where the new stores
@@ -6699,37 +6685,24 @@ compiler_pattern_or(struct compiler *c, pattern_ty p, pattern_context *pc)
     Py_ssize_t nrots = nstores + 1 + pc->on_top + PyList_GET_SIZE(pc->stores);
     for (Py_ssize_t i = 0; i < nstores; i++) {
         // Rotate this capture to its proper place on the stack:
-        if (!pattern_helper_rotate(c, nrots)) {
-            goto error;
-        }
+        RETURN_IF_FALSE(pattern_helper_rotate(c, nrots));
         // Update the list of previous stores with this new name, checking for
         // duplicates:
         PyObject *name = PyList_GET_ITEM(control, i);
         int dupe = PySequence_Contains(pc->stores, name);
         if (dupe < 0) {
-            goto error;
+            return 0;
         }
         if (dupe) {
-            compiler_error_duplicate_store(c, name);
-            goto error;
+            return compiler_error_duplicate_store(c, name);
         }
-        if (PyList_Append(pc->stores, name)) {
-            goto error;
-        }
+        RETURN_IF_FALSE(!PyList_Append(pc->stores, name));
     }
-    Py_DECREF(old_pc.stores);
-    Py_DECREF(control);
-    // NOTE: Returning macros are safe again.
     // Pop the copy of the subject:
     ADDOP(c, POP_TOP);
     return 1;
 diff:
-    compiler_error(c, "alternative patterns bind different names");
-error:
-    PyObject_Free(old_pc.fail_pop);
-    Py_DECREF(old_pc.stores);
-    Py_XDECREF(control);
-    return 0;
+    return compiler_error(c, "alternative patterns bind different names");
 }
 
 
@@ -6844,8 +6817,9 @@ compiler_pattern(struct compiler *c, pattern_ty p, pattern_context *pc)
 }
 
 static int
-compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
+compiler_match(struct compiler *c, stmt_ty s)
 {
+    pattern_context pc;
     VISIT(c, expr, s->v.Match.subject);
     basicblock *end;
     RETURN_IF_FALSE(end = compiler_new_block(c));
@@ -6860,32 +6834,27 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
         if (i != cases - has_default - 1) {
             ADDOP_I(c, COPY, 1);
         }
-        RETURN_IF_FALSE(pc->stores = PyList_New(0));
-        // Irrefutable cases must be either guarded, last, or both:
-        pc->allow_irrefutable = m->guard != NULL || i == cases - 1;
-        pc->fail_pop = NULL;
-        pc->fail_pop_size = 0;
-        pc->on_top = 0;
-        // NOTE: Can't use returning macros here (they'll leak pc->stores)!
-        if (!compiler_pattern(c, m->pattern, pc)) {
-            Py_DECREF(pc->stores);
+        pc.stores = PyList_New(0);
+        if (pc.stores == NULL || _PyArena_AddPyObject(c->c_arena, pc.stores)) {
+            Py_XDECREF(pc.stores);
             return 0;
         }
-        assert(!pc->on_top);
+        // Irrefutable cases must be either guarded, last, or both:
+        pc.allow_irrefutable = m->guard != NULL || i == cases - 1;
+        pc.fail_pop = NULL;
+        pc.fail_pop_size = 0;
+        pc.on_top = 0;
+        RETURN_IF_FALSE(compiler_pattern(c, m->pattern, &pc));
+        assert(!pc.on_top);
         // It's a match! Store all of the captured names (they're on the stack).
-        Py_ssize_t nstores = PyList_GET_SIZE(pc->stores);
+        Py_ssize_t nstores = PyList_GET_SIZE(pc.stores);
         for (Py_ssize_t n = 0; n < nstores; n++) {
-            PyObject *name = PyList_GET_ITEM(pc->stores, n);
-            if (!compiler_nameop(c, name, Store)) {
-                Py_DECREF(pc->stores);
-                return 0;
-            }
+            PyObject *name = PyList_GET_ITEM(pc.stores, n);
+            RETURN_IF_FALSE(compiler_nameop(c, name, Store));
         }
-        Py_DECREF(pc->stores);
-        // NOTE: Returning macros are safe again.
         if (m->guard) {
-            RETURN_IF_FALSE(ensure_fail_pop(c, pc, 0));
-            RETURN_IF_FALSE(compiler_jump_if(c, m->guard, pc->fail_pop[0], 0));
+            RETURN_IF_FALSE(ensure_fail_pop(c, &pc, 0));
+            RETURN_IF_FALSE(compiler_jump_if(c, m->guard, pc.fail_pop[0], 0));
         }
         // Success! Pop the subject off, we're done with it:
         if (i != cases - has_default - 1) {
@@ -6897,7 +6866,7 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
         // cleanup to be associated with the failed pattern, not the last line
         // of the body
         SET_LOC(c, m->pattern);
-        RETURN_IF_FALSE(emit_and_reset_fail_pop(c, pc));
+        RETURN_IF_FALSE(emit_and_reset_fail_pop(c, &pc));
     }
     if (has_default) {
         // A trailing "case _" is common, and lets us save a bit of redundant
@@ -6919,16 +6888,6 @@ compiler_match_inner(struct compiler *c, stmt_ty s, pattern_context *pc)
     }
     compiler_use_next_block(c, end);
     return 1;
-}
-
-static int
-compiler_match(struct compiler *c, stmt_ty s)
-{
-    pattern_context pc;
-    pc.fail_pop = NULL;
-    int result = compiler_match_inner(c, s, &pc);
-    PyObject_Free(pc.fail_pop);
-    return result;
 }
 
 #undef WILDCARD_CHECK
