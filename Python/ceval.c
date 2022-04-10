@@ -5549,17 +5549,18 @@ miss:
         STAT_INC(opcode, miss);
         opcode = _PyOpcode_Deopt[opcode];
         STAT_INC(opcode, miss);
+        int adaptive_opcode = _PyOpcode_Adaptive[opcode];
+        assert(adaptive_opcode);
         /* The counter is always the first cache entry: */
         _Py_CODEUNIT *counter = (_Py_CODEUNIT *)next_instr;
         *counter -= 1;
         if (*counter == 0) {
-            int adaptive_opcode = _PyOpcode_Adaptive[opcode];
-            assert(adaptive_opcode);
             _Py_SET_OPCODE(next_instr[-1], adaptive_opcode);
             STAT_INC(opcode, deopt);
             *counter = ADAPTIVE_CACHE_BACKOFF;
         }
         next_instr--;
+        JUMPBY(_PyOpcode_Caches[adaptive_opcode]);
         DISPATCH_GOTO();
     }
 

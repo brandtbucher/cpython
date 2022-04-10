@@ -18,17 +18,17 @@
 /* Map from opcode to adaptive opcode.
   Values of zero are ignored. */
 uint8_t _PyOpcode_Adaptive[256] = {
-    // [LOAD_ATTR] = LOAD_ATTR_ADAPTIVE,
-    // [LOAD_GLOBAL] = LOAD_GLOBAL_ADAPTIVE,
-    // [LOAD_METHOD] = LOAD_METHOD_ADAPTIVE,
-    // [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
-    // [STORE_SUBSCR] = STORE_SUBSCR_ADAPTIVE,
+    [LOAD_ATTR] = LOAD_ATTR_ADAPTIVE,
+    [LOAD_GLOBAL] = LOAD_GLOBAL_ADAPTIVE,
+    [LOAD_METHOD] = LOAD_METHOD_ADAPTIVE,
+    [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
+    [STORE_SUBSCR] = STORE_SUBSCR_ADAPTIVE,
     // [CALL] = CALL_ADAPTIVE,
     // [PRECALL] = PRECALL_ADAPTIVE,
-    // [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
-    // [BINARY_OP] = BINARY_OP_ADAPTIVE,
-    // [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
-    // [UNPACK_SEQUENCE] = UNPACK_SEQUENCE_ADAPTIVE,
+    [STORE_ATTR] = STORE_ATTR_ADAPTIVE,
+    [BINARY_OP] = BINARY_OP_ADAPTIVE,
+    [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
+    [UNPACK_SEQUENCE] = UNPACK_SEQUENCE_ADAPTIVE,
 };
 
 Py_ssize_t _Py_QuickenedCount = 0;
@@ -1964,7 +1964,9 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             // back to BINARY_OP (unless we're collecting stats, where it's more
             // important to get accurate hit counts for the unadaptive version
             // and each of the different failure types):
-            _Py_SET_OPCODE(*instr, BINARY_OP);
+            _Py_SET_OPCODE(instr[0], BINARY_OP);
+            assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1);
+            _Py_SET_OPCODE(instr[1], NOP);
             return;
 #endif
     }
@@ -2040,7 +2042,10 @@ _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         // counts for the unadaptive version and each of the different failure
         // types):
 #ifndef Py_STATS
-        _Py_SET_OPCODE(*instr, COMPARE_OP);
+        _Py_SET_OPCODE(instr[0], COMPARE_OP);
+        assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 2);
+        _Py_SET_OPCODE(instr[1], NOP);
+        _Py_SET_OPCODE(instr[2], NOP);
         return;
 #endif
         if (next_opcode == EXTENDED_ARG) {
