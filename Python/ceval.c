@@ -1319,12 +1319,6 @@ eval_frame_handle_pending(PyThreadState *tstate)
 #define SKIP_CALL() \
     JUMPBY(INLINE_CACHE_ENTRIES_PRECALL + 1 + INLINE_CACHE_ENTRIES_CALL)
 
-/* Get opcode and oparg from original instructions, not quickened form. */
-#define TRACING_NEXTOPARG() do { \
-        NEXTOPARG(); \
-        opcode = _PyOpcode_Deopt[opcode]; \
-    } while (0)
-
 /* OpCode prediction macros
     Some opcodes tend to come in pairs thus making it possible to
     predict the second code when the first is run.  For example,
@@ -5477,7 +5471,8 @@ handle_eval_breaker:
         if (tstate->tracing == 0) {
             int instr_prev = _PyInterpreterFrame_LASTI(frame);
             frame->prev_instr = next_instr;
-            TRACING_NEXTOPARG();
+            NEXTOPARG();
+            opcode = _PyOpcode_Deopt[opcode];
             switch(opcode) {
                 case COPY_FREE_VARS:
                 case MAKE_CELL:
@@ -5521,7 +5516,9 @@ handle_eval_breaker:
                     }
             }
         }
-        TRACING_NEXTOPARG();
+        NEXTOPARG();
+        JUMPBY(_PyOpcode_Caches[opcode]);
+        opcode = _PyOpcode_Deopt[opcode];
         PRE_DISPATCH_GOTO();
         DISPATCH_GOTO();
     }
