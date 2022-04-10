@@ -4632,7 +4632,7 @@ handle_eval_breaker:
                 }
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 // JUMPBY(INLINE_CACHE_ENTRIES_CALL);
-                // frame->prev_instr = next_instr - 1;
+                frame->prev_instr = next_instr - 1;
                 new_frame->previous = frame;
                 cframe.current_frame = frame = new_frame;
                 CALL_STAT_INC(inlined_py_calls);
