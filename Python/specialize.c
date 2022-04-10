@@ -361,12 +361,12 @@ _PyCode_Quicken(PyCodeObject *code)
                 switch (opcode) {
                     case JUMP_BACKWARD_NO_INTERRUPT:
                     case JUMP_BACKWARD:
-                        target = -(offsets[i + 1 - oparg] - i - 1);
+                        target = -(offsets[i + 1 - oparg] - offsets[i] - 1);
                         break;
                     case FOR_ITER:
                     case JUMP_FORWARD:
                     case SEND:
-                        target = offsets[i + 1 + oparg] - i - 1;
+                        target = offsets[i + 1 + oparg] - offsets[i] - 1;
                         break;
                     case JUMP_IF_FALSE_OR_POP:
                     case JUMP_IF_TRUE_OR_POP:
@@ -400,7 +400,6 @@ _PyCode_Quicken(PyCodeObject *code)
                         instructions[offsets[i]] = _Py_MAKECODEUNIT(
                             opcode, target & 0xFF);
                         if (target >> 8) {
-                            printf("\nDamn, we need more extended arguments!\n\n");
                             PyMem_Free(instructions);
                             PyMem_Free(offsets);
                             Py_INCREF(code);
@@ -417,8 +416,8 @@ _PyCode_Quicken(PyCodeObject *code)
     }
     PyMem_Free(offsets);
     quicken(instructions, Py_SIZE(code) + caches);
-    PyObject *co_code = PyBytes_FromStringAndSize((char *)instructions,
-                                                  _PyCode_NBYTES(code));
+    PyObject *co_code = PyBytes_FromStringAndSize(
+        (char *)instructions, (Py_SIZE(code) + caches) * sizeof(_Py_CODEUNIT));
     PyMem_Free(instructions);
     if (co_code == NULL) {
         return NULL;
