@@ -323,13 +323,18 @@ is_jump(int opcode)
 PyCodeObject *
 _PyCode_Quicken(PyCodeObject *code)
 {
+    int *offsets = NULL;
+    PyObject *co_linetable = NULL;
+    PyObject *co_endlinetable = NULL;
+    PyObject *co_columntable = NULL;
+    PyObject *co_code = NULL;
     if (Py_SIZE(code->co_exceptiontable)) {
-        Py_INCREF(code);
-        return code;
+        // XXX TODO
+        goto bail;
     }
-    int *offsets = PyMem_Malloc(Py_SIZE(code) * sizeof(int));
+    offsets = PyMem_Malloc(Py_SIZE(code) * sizeof(int));
     if (offsets == NULL) {
-        return NULL;
+        goto fail;
     }
     int caches = 0;
     for (int i = 0; i < Py_SIZE(code); i++) {
@@ -339,11 +344,11 @@ _PyCode_Quicken(PyCodeObject *code)
             caches += _PyOpcode_Caches[adaptive];
         }
     }
-    PyObject *co_linetable = PyBytes_FromStringAndSize(
+    co_linetable = PyBytes_FromStringAndSize(
         PyBytes_AS_STRING(code->co_linetable),
         PyBytes_GET_SIZE(code->co_linetable));
     if (co_linetable == NULL) {
-        return NULL;
+        goto fail;
     }
     for (int i = 0, j = 0, k = 0; k < PyBytes_GET_SIZE(co_linetable); k += 2) {
         j += ((unsigned char *)PyBytes_AS_STRING(co_linetable))[k];
@@ -357,15 +362,11 @@ _PyCode_Quicken(PyCodeObject *code)
         }
         int delta = (offset_j - offsets[i / sizeof(_Py_CODEUNIT)]) * sizeof(_Py_CODEUNIT);
         if (254 < delta) {
-            Py_DECREF(co_linetable);
-            Py_INCREF(code);
-            return code;
+            goto bail;
         }
         ((unsigned char *)PyBytes_AS_STRING(co_linetable))[k] = delta;
         i = j;
     }
-    PyObject *co_endlinetable;
-    PyObject *co_columntable;
     if (Py_IsNone(code->co_endlinetable)) {
         assert(Py_IsNone(code->co_columntable));
         co_endlinetable = Py_NewRef(Py_None);
@@ -376,9 +377,7 @@ _PyCode_Quicken(PyCodeObject *code)
             PyBytes_AS_STRING(code->co_endlinetable),
             PyBytes_GET_SIZE(code->co_endlinetable));
         if (co_endlinetable == NULL) {
-            Py_DECREF(co_linetable);
-            PyMem_Free(offsets);
-            return NULL;
+            goto fail;
         }
         for (int i = 0, j = 0, k = 0; k < PyBytes_GET_SIZE(co_endlinetable); k += 2)
         {
@@ -393,11 +392,7 @@ _PyCode_Quicken(PyCodeObject *code)
             }
             int delta = (offset_j - offsets[i / sizeof(_Py_CODEUNIT)]) * sizeof(_Py_CODEUNIT);
             if (254 < delta) {
-                Py_DECREF(co_linetable);
-                Py_DECREF(co_endlinetable);
-                PyMem_Free(offsets);
-                Py_INCREF(code);
-                return code;
+                goto bail;
             }
             ((unsigned char *)PyBytes_AS_STRING(co_endlinetable))[k] = delta;
             i = j;
@@ -405,10 +400,7 @@ _PyCode_Quicken(PyCodeObject *code)
         co_columntable = PyBytes_FromStringAndSize(
             NULL, (Py_SIZE(code) + caches) * 2);
         if (co_columntable == NULL) {
-            Py_DECREF(co_linetable);
-            Py_DECREF(co_endlinetable);
-            PyMem_Free(offsets);
-            return NULL;
+            goto fail;
         }
         for (int i = 0, j = 0; i < Py_SIZE(code); i++) {
             if (i == Py_SIZE(code) - 1) {
@@ -425,14 +417,10 @@ _PyCode_Quicken(PyCodeObject *code)
             }
         }
     }
-    PyObject *co_code = PyBytes_FromStringAndSize(
+    co_code = PyBytes_FromStringAndSize(
         NULL, (Py_SIZE(code) + caches) * sizeof(_Py_CODEUNIT));
     if (co_code == NULL) {
-        Py_DECREF(co_linetable);
-        Py_DECREF(co_endlinetable);
-        Py_DECREF(co_columntable);
-        PyMem_Free(offsets);
-        return NULL;
+        goto fail;
     }
     _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
     int oparg = 0;
@@ -494,13 +482,7 @@ _PyCode_Quicken(PyCodeObject *code)
                         instructions[offsets[i]] = _Py_MAKECODEUNIT(
                             opcode, target & 0xFF);
                         if (target >> 8) {
-                            Py_DECREF(co_linetable);
-                            Py_DECREF(co_endlinetable);
-                            Py_DECREF(co_columntable);
-                            Py_DECREF(co_code);
-                            PyMem_Free(offsets);
-                            Py_INCREF(code);
-                            return code;
+                            goto bail;
                         }
                         break;
                     default:
@@ -511,7 +493,6 @@ _PyCode_Quicken(PyCodeObject *code)
             extended_args = 0;
         }
     }
-    PyMem_Free(offsets);
     quicken(instructions, Py_SIZE(code) + caches);
     struct _PyCodeConstructor c = {
         .code = co_code,
@@ -534,15 +515,26 @@ _PyCode_Quicken(PyCodeObject *code)
         .stacksize = code->co_stacksize,
     };
     PyCodeObject *quickened = _PyCode_New(&c);
+    if (quickened == NULL) {
+        goto fail;
+    }
+    quickened->co_warmup = 0;
+    PyMem_Free(offsets);
     Py_DECREF(co_linetable);
     Py_DECREF(co_endlinetable);
     Py_DECREF(co_columntable);
     Py_DECREF(co_code);
-    if (quickened == NULL) {
-        return NULL;
-    }
-    quickened->co_warmup = 0;
     return quickened;
+fail:
+    code = NULL;
+bail:
+    PyMem_Free(offsets);
+    Py_XDECREF(co_linetable);
+    Py_XDECREF(co_endlinetable);
+    Py_XDECREF(co_columntable);
+    Py_XDECREF(co_code);
+    Py_XINCREF(code);
+    return code;
 }
 
 static inline int
