@@ -364,35 +364,41 @@ _PyCode_Quicken(PyCodeObject *code)
         ((unsigned char *)PyBytes_AS_STRING(co_linetable))[k] = delta;
         i = j;
     }
-    PyObject *co_endlinetable = PyBytes_FromStringAndSize(
-        PyBytes_AS_STRING(code->co_endlinetable),
-        PyBytes_GET_SIZE(code->co_endlinetable));
-    if (co_endlinetable == NULL) {
-        Py_DECREF(co_linetable);
-        PyMem_Free(offsets);
-        return NULL;
+    PyObject *co_endlinetable;
+    if (Py_IsNone(code->co_endlinetable)) {
+        co_endlinetable = Py_NewRef(Py_None);
     }
-    for (int i = 0, j = 0, k = 0; k < PyBytes_GET_SIZE(co_endlinetable); k += 2)
-    {
-        j += ((unsigned char *)PyBytes_AS_STRING(co_endlinetable))[k];
-        int offset_j;
-        if (_PyCode_NBYTES(code) <= j) {
-            assert(_PyCode_NBYTES(code) == j);
-            offset_j = offsets[j / sizeof(_Py_CODEUNIT) - 1] + 1;
-        }
-        else {
-            offset_j = offsets[j / sizeof(_Py_CODEUNIT)];
-        }
-        int delta = (offset_j - offsets[i / sizeof(_Py_CODEUNIT)]) * sizeof(_Py_CODEUNIT);
-        if (254 < delta) {
+    else {
+        co_endlinetable = PyBytes_FromStringAndSize(
+            PyBytes_AS_STRING(code->co_endlinetable),
+            PyBytes_GET_SIZE(code->co_endlinetable));
+        if (co_endlinetable == NULL) {
             Py_DECREF(co_linetable);
-            Py_DECREF(co_endlinetable);
             PyMem_Free(offsets);
-            Py_INCREF(code);
-            return code;
+            return NULL;
         }
-        ((unsigned char *)PyBytes_AS_STRING(co_endlinetable))[k] = delta;
-        i = j;
+        for (int i = 0, j = 0, k = 0; k < PyBytes_GET_SIZE(co_endlinetable); k += 2)
+        {
+            j += ((unsigned char *)PyBytes_AS_STRING(co_endlinetable))[k];
+            int offset_j;
+            if (_PyCode_NBYTES(code) <= j) {
+                assert(_PyCode_NBYTES(code) == j);
+                offset_j = offsets[j / sizeof(_Py_CODEUNIT) - 1] + 1;
+            }
+            else {
+                offset_j = offsets[j / sizeof(_Py_CODEUNIT)];
+            }
+            int delta = (offset_j - offsets[i / sizeof(_Py_CODEUNIT)]) * sizeof(_Py_CODEUNIT);
+            if (254 < delta) {
+                Py_DECREF(co_linetable);
+                Py_DECREF(co_endlinetable);
+                PyMem_Free(offsets);
+                Py_INCREF(code);
+                return code;
+            }
+            ((unsigned char *)PyBytes_AS_STRING(co_endlinetable))[k] = delta;
+            i = j;
+        }
     }
     PyObject *co_code = PyBytes_FromStringAndSize(
         NULL, (Py_SIZE(code) + caches) * sizeof(_Py_CODEUNIT));
