@@ -45,8 +45,13 @@ typedef struct {
 
 typedef struct {
     PyObject *me_key;   /* The key must be Unicode and have hash. */
-    PyObject *me_value; /* This field is only meaningful for combined tables */
+    PyObject *me_value;
 } PyDictUnicodeEntry;
+
+// DK_IS_UNICODE|DK_UNICODE_ENTRIES|DICT_KEYS_SPLIT|_PyDict_HasSplitTable|ma_values|PyDictUnicodeEntry
+typedef struct {
+    PyObject *me_key;   /* The key must be Unicode and have hash. */
+} PyDictSplitEntry;
 
 extern PyDictKeysObject *_PyDict_NewKeysForClass(void);
 extern PyObject *_PyDict_FromKeys(PyObject *, PyObject *, PyObject *);
@@ -120,7 +125,7 @@ struct _dictkeysobject {
        Dynamically sized, SIZEOF_VOID_P is minimum. */
     char dk_indices[];  /* char is required to avoid strict aliasing. */
 
-    /* "PyDictKeyEntry or PyDictUnicodeEntry dk_entries[USABLE_FRACTION(DK_SIZE(dk))];" array follows:
+    /* "PyDictKeyEntry/PyDictUnicodeEntry/PyDictSplitEntry dk_entries[USABLE_FRACTION(DK_SIZE(dk))];" array follows:
        see the DK_ENTRIES() macro */
 };
 
@@ -156,8 +161,11 @@ struct _dictvalues {
 #define DK_ENTRIES(dk) \
     (assert(dk->dk_kind == DICT_KEYS_GENERAL), (PyDictKeyEntry*)(&((int8_t*)((dk)->dk_indices))[(size_t)1 << (dk)->dk_log2_index_bytes]))
 #define DK_UNICODE_ENTRIES(dk) \
-    (assert(dk->dk_kind != DICT_KEYS_GENERAL), (PyDictUnicodeEntry*)(&((int8_t*)((dk)->dk_indices))[(size_t)1 << (dk)->dk_log2_index_bytes]))
-#define DK_IS_UNICODE(dk) ((dk)->dk_kind != DICT_KEYS_GENERAL)
+    (assert(dk->dk_kind == DICT_KEYS_UNICODE), (PyDictUnicodeEntry*)(&((int8_t*)((dk)->dk_indices))[(size_t)1 << (dk)->dk_log2_index_bytes]))
+#define DK_SPLIT_ENTRIES(dk) \
+    (assert(dk->dk_kind == DICT_KEYS_SPLIT), (PyDictSplitEntry*)(&((int8_t*)((dk)->dk_indices))[(size_t)1 << (dk)->dk_log2_index_bytes]))
+#define DK_IS_UNICODE(dk) ((dk)->dk_kind == DICT_KEYS_UNICODE)
+#define DK_IS_SPLIT(dk) ((dk)->dk_kind == DICT_KEYS_SPLIT)
 
 extern uint64_t _pydict_global_version;
 

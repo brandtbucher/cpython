@@ -777,8 +777,10 @@ class PyDictObjectPtr(PyObjectPtr):
         ent_addr = ent_addr.cast(_type_unsigned_char_ptr()) + offset
         if int(keys['dk_kind']) == 0:  # DICT_KEYS_GENERAL
             ent_ptr_t = gdb.lookup_type('PyDictKeyEntry').pointer()
-        else:
+        elif int(keys['dk_kind']) == 1:  # DICT_KEYS_UNICODE
             ent_ptr_t = gdb.lookup_type('PyDictUnicodeEntry').pointer()
+        else:  # DICT_KEYS_SPLIT
+            ent_ptr_t = gdb.lookup_type('PyDictSplitEntry').pointer()
         ent_addr = ent_addr.cast(ent_ptr_t)
 
         return ent_addr, dk_nentries
@@ -791,7 +793,7 @@ class PyListObjectPtr(PyObjectPtr):
         # Get the gdb.Value for the (PyObject*) with the given index:
         field_ob_item = self.field('ob_item')
         return field_ob_item[i]
-
+DEOPT_IF(DK_IS_SPLIT(dict->ma_keys));
     def proxyval(self, visited):
         # Guard against infinite loops:
         if self.as_address() in visited:

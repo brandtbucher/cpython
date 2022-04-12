@@ -486,7 +486,11 @@ static void
 dump_entries(PyDictKeysObject *dk)
 {
     for (Py_ssize_t i = 0; i < dk->dk_nentries; i++) {
-        if (DK_IS_UNICODE(dk)) {
+        if (DK_IS_SPLIT(dk)) {
+            PyDictSplitEntry *ep = &DK_SPLIT_ENTRIES(dk)[i];
+            printf("key=%p\n", ep->me_key);
+        }
+        else if (DK_IS_UNICODE(dk)) {
             PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(dk)[i];
             printf("key=%p value=%p\n", ep->me_key, ep->me_value);
         }
@@ -591,12 +595,21 @@ _PyDict_CheckConsistency(PyObject *op, int check_content)
 
 
 static PyDictKeysObject*
-new_keys_object(uint8_t log2_size, bool unicode)
+new_keys_object(uint8_t log2_size, DictKeysKind kind)
 {
     PyDictKeysObject *dk;
     Py_ssize_t usable;
     int log2_bytes;
-    size_t entry_size = unicode ? sizeof(PyDictUnicodeEntry) : sizeof(PyDictKeyEntry);
+    size_t entry_size;
+    if (kind == DICT_KEYS_SPLIT) {
+        entry_size = sizeof(PyDictSplitEntry);
+    }
+    else if (kind == DICT_KEYS_UNICODE) {
+        entry_size = sizeof(PyDictUnicodeEntry);
+    }
+    else {
+        entry_size = sizeof(PyDictKeyEntry);
+    }
 
     assert(log2_size >= PyDict_LOG_MINSIZE);
 
@@ -622,7 +635,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     // new_keys_object() must not be called after _PyDict_Fini()
     assert(state->keys_numfree != -1);
 #endif
-    if (log2_size == PyDict_LOG_MINSIZE && unicode && state->keys_numfree > 0) {
+    if (log2_size == PyDict_LOG_MINSIZE && kind != DICT_KEYS_GENERAL && state->keys_numfree > 0) {
         dk = state->keys_free_list[--state->keys_numfree];
     }
     else
@@ -642,7 +655,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_refcnt = 1;
     dk->dk_log2_size = log2_size;
     dk->dk_log2_index_bytes = log2_bytes;
-    dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
+    dk->dk_kind = kind;
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
@@ -655,7 +668,14 @@ static void
 free_keys_object(PyDictKeysObject *keys)
 {
     assert(keys != Py_EMPTY_KEYS);
-    if (DK_IS_UNICODE(keys)) {
+    if (DK_IS_SPLIT(keys)) {
+        PyDictSplitEntry *entries = DK_SPLIT_ENTRIES(keys);
+        Py_ssize_t i, n;
+        for (i = 0, n = keys->dk_nentries; i < n; i++) {
+            Py_XDECREF(entries[i].me_key);
+        }
+    }
+    else if (DK_IS_UNICODE(keys)) {
         PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(keys);
         Py_ssize_t i, n;
         for (i = 0, n = keys->dk_nentries; i < n; i++) {
@@ -860,6 +880,52 @@ lookdict_index(PyDictKeysObject *k, Py_hash_t hash, Py_ssize_t index)
     Py_UNREACHABLE();
 }
 
+// Search non-Unicode key from split table
+static Py_ssize_t
+splitkeys_lookup_generic(PyDictObject *mp, PyDictKeysObject* dk, PyObject *key, Py_hash_t hash)
+{
+    PyDictSplitEntry *ep0 = DK_SPLIT_ENTRIES(dk);
+    size_t mask = DK_MASK(dk);
+    size_t perturb = hash;
+    size_t i = (size_t)hash & mask;
+    Py_ssize_t ix;
+    for (;;) {
+        ix = dictkeys_get_index(dk, i);
+        if (ix >= 0) {
+            PyDictSplitEntry *ep = &ep0[ix];
+            assert(ep->me_key != NULL);
+            assert(PyUnicode_CheckExact(ep->me_key));
+            if (ep->me_key == key) {
+                return ix;
+            }
+            if (unicode_get_hash(ep->me_key) == hash) {
+                PyObject *startkey = ep->me_key;
+                Py_INCREF(startkey);
+                int cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                Py_DECREF(startkey);
+                if (cmp < 0) {
+                    return DKIX_ERROR;
+                }
+                if (dk == mp->ma_keys && ep->me_key == startkey) {
+                    if (cmp > 0) {
+                        return ix;
+                    }
+                }
+                else {
+                    /* The dict was mutated, restart */
+                    return DKIX_KEY_CHANGED;
+                }
+            }
+        }
+        else if (ix == DKIX_EMPTY) {
+            return DKIX_EMPTY;
+        }
+        perturb >>= PERTURB_SHIFT;
+        i = mask & (i*5 + perturb + 1);
+    }
+    Py_UNREACHABLE();
+}
+
 // Search non-Unicode key from Unicode table
 static Py_ssize_t
 unicodekeys_lookup_generic(PyDictObject *mp, PyDictKeysObject* dk, PyObject *key, Py_hash_t hash)
@@ -895,6 +961,50 @@ unicodekeys_lookup_generic(PyDictObject *mp, PyDictKeysObject* dk, PyObject *key
                     /* The dict was mutated, restart */
                     return DKIX_KEY_CHANGED;
                 }
+            }
+        }
+        else if (ix == DKIX_EMPTY) {
+            return DKIX_EMPTY;
+        }
+        perturb >>= PERTURB_SHIFT;
+        i = mask & (i*5 + perturb + 1);
+    }
+    Py_UNREACHABLE();
+}
+
+// Search Unicode key from split table.
+static Py_ssize_t _Py_HOT_FUNCTION
+splitkeys_lookup_unicode(PyDictKeysObject* dk, PyObject *key, Py_hash_t hash)
+{
+    PyDictSplitEntry *ep0 = DK_SPLIT_ENTRIES(dk);
+    size_t mask = DK_MASK(dk);
+    size_t perturb = hash;
+    size_t i = (size_t)hash & mask;
+    Py_ssize_t ix;
+    for (;;) {
+        ix = dictkeys_get_index(dk, i);
+        if (ix >= 0) {
+            PyDictSplitEntry *ep = &ep0[ix];
+            assert(ep->me_key != NULL);
+            assert(PyUnicode_CheckExact(ep->me_key));
+            if (ep->me_key == key ||
+                    (unicode_get_hash(ep->me_key) == hash && unicode_eq(ep->me_key, key))) {
+                return ix;
+            }
+        }
+        else if (ix == DKIX_EMPTY) {
+            return DKIX_EMPTY;
+        }
+        perturb >>= PERTURB_SHIFT;
+        i = mask & (i*5 + perturb + 1);
+        ix = dictkeys_get_index(dk, i);
+        if (ix >= 0) {
+            PyDictSplitEntry *ep = &ep0[ix];
+            assert(ep->me_key != NULL);
+            assert(PyUnicode_CheckExact(ep->me_key));
+            if (ep->me_key == key ||
+                    (unicode_get_hash(ep->me_key) == hash && unicode_eq(ep->me_key, key))) {
+                return ix;
             }
         }
         else if (ix == DKIX_EMPTY) {
@@ -1016,6 +1126,9 @@ _PyDictKeys_StringLookup(PyDictKeysObject* dk, PyObject *key)
             return DKIX_ERROR;
         }
     }
+    if (DK_IS_SPLIT(dk)) {
+        return splitkeys_lookup_unicode(dk, key, hash);
+    }
     return unicodekeys_lookup_unicode(dk, key, hash);
 }
 
@@ -1047,10 +1160,20 @@ start:
 
     if (kind != DICT_KEYS_GENERAL) {
         if (PyUnicode_CheckExact(key)) {
-            ix = unicodekeys_lookup_unicode(dk, key, hash);
+            if (DK_IS_SPLIT(dk)) {
+                ix = splitkeys_lookup_unicode(dk, key, hash);
+            }
+            else {
+                ix = unicodekeys_lookup_unicode(dk, key, hash);
+            }
         }
         else {
-            ix = unicodekeys_lookup_generic(mp, dk, key, hash);
+            if (DK_IS_SPLIT(dk)) {
+                ix = splitkeys_lookup_generic(mp, dk, key, hash);
+            }
+            else {
+                ix = unicodekeys_lookup_generic(mp, dk, key, hash);
+            }
             if (ix == DKIX_KEY_CHANGED) {
                 goto start;
             }
@@ -1131,7 +1254,9 @@ _PyDict_MaybeUntrack(PyObject *op)
         }
     }
     else {
-        if (DK_IS_UNICODE(mp->ma_keys)) {
+        if (DK_IS_SPLIT(mp->ma_keys)) {
+        }
+        else if (DK_IS_UNICODE(mp->ma_keys)) {
             PyDictUnicodeEntry *ep0 = DK_UNICODE_ENTRIES(mp->ma_keys);
             for (i = 0; i < numentries; i++) {
                 if ((value = ep0[i].me_value) == NULL)
@@ -1192,7 +1317,13 @@ insert_into_dictkeys(PyDictKeysObject *keys, PyObject *name)
             return DKIX_EMPTY;
         }
     }
-    Py_ssize_t ix = unicodekeys_lookup_unicode(keys, name, hash);
+    Py_ssize_t ix;
+    if (DK_IS_SPLIT(keys)) {
+        ix = splitkeys_lookup_unicode(keys, name, hash);
+    }
+    else {
+        ix = unicodekeys_lookup_unicode(keys, name, hash);
+    }
     if (ix == DKIX_EMPTY) {
         if (keys->dk_usable <= 0) {
             return DKIX_EMPTY;
@@ -1202,10 +1333,17 @@ insert_into_dictkeys(PyDictKeysObject *keys, PyObject *name)
         keys->dk_version = 0;
         Py_ssize_t hashpos = find_empty_slot(keys, hash);
         ix = keys->dk_nentries;
-        PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(keys)[ix];
+        if (DK_IS_SPLIT(keys)) {
+            PyDictSplitEntry *ep = &DK_SPLIT_ENTRIES(keys)[ix];
+            assert(ep->me_key == NULL);
+            ep->me_key = name;
+        }
+        else {
+            PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(keys)[ix];
+            assert(ep->me_key == NULL);
+            ep->me_key = name;
+        }
         dictkeys_set_index(keys, hashpos, ix);
-        assert(ep->me_key == NULL);
-        ep->me_key = name;
         keys->dk_usable--;
         keys->dk_nentries++;
     }
@@ -1224,7 +1362,7 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
 {
     PyObject *old_value;
 
-    if (DK_IS_UNICODE(mp->ma_keys) && !PyUnicode_CheckExact(key)) {
+    if ((DK_IS_UNICODE(mp->ma_keys) || DK_IS_SPLIT(mp->ma_keys)) && !PyUnicode_CheckExact(key)) {
         if (insertion_resize(mp, 0) < 0)
             goto Fail;
         assert(mp->ma_keys->dk_kind == DICT_KEYS_GENERAL);
@@ -1249,19 +1387,20 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         Py_ssize_t hashpos = find_empty_slot(mp->ma_keys, hash);
         dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries);
 
-        if (DK_IS_UNICODE(mp->ma_keys)) {
+        if (DK_IS_SPLIT(mp->ma_keys)) {
+            PyDictSplitEntry *ep;
+            ep = &DK_SPLIT_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
+            ep->me_key = key;
+            Py_ssize_t index = mp->ma_keys->dk_nentries;
+            _PyDictValues_AddToInsertionOrder(mp->ma_values, index);
+            assert (mp->ma_values->values[index] == NULL);
+            mp->ma_values->values[index] = value;
+        }
+        else if (DK_IS_UNICODE(mp->ma_keys)) {
             PyDictUnicodeEntry *ep;
             ep = &DK_UNICODE_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
             ep->me_key = key;
-            if (mp->ma_values) {
-                Py_ssize_t index = mp->ma_keys->dk_nentries;
-                _PyDictValues_AddToInsertionOrder(mp->ma_values, index);
-                assert (mp->ma_values->values[index] == NULL);
-                mp->ma_values->values[index] = value;
-            }
-            else {
-                ep->me_value = value;
-            }
+            ep->me_value = value;
         }
         else {
             PyDictKeyEntry *ep;
@@ -1317,8 +1456,8 @@ insert_to_emptydict(PyDictObject *mp, PyObject *key, Py_hash_t hash,
 {
     assert(mp->ma_keys == Py_EMPTY_KEYS);
 
-    int unicode = PyUnicode_CheckExact(key);
-    PyDictKeysObject *newkeys = new_keys_object(PyDict_LOG_MINSIZE, unicode);
+    DictKeysKind kind = PyUnicode_CheckExact(key) ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
+    PyDictKeysObject *newkeys = new_keys_object(PyDict_LOG_MINSIZE, kind);
     if (newkeys == NULL) {
         Py_DECREF(key);
         Py_DECREF(value);
@@ -1332,7 +1471,7 @@ insert_to_emptydict(PyDictObject *mp, PyObject *key, Py_hash_t hash,
 
     size_t hashpos = (size_t)hash & (PyDict_MINSIZE-1);
     dictkeys_set_index(mp->ma_keys, hashpos, 0);
-    if (unicode) {
+    if (kind == DICT_KEYS_UNICODE) {
         PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(mp->ma_keys);
         ep->me_key = key;
         ep->me_value = value;
@@ -1413,7 +1552,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
     oldkeys = mp->ma_keys;
     oldvalues = mp->ma_values;
 
-    if (!DK_IS_UNICODE(oldkeys)) {
+    if (!DK_IS_UNICODE(oldkeys) && !DK_IS_SPLIT(oldkeys)) {
         unicode = 0;
     }
 
@@ -1423,7 +1562,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
      */
 
     /* Allocate a new table. */
-    mp->ma_keys = new_keys_object(log2_newsize, unicode);
+    mp->ma_keys = new_keys_object(log2_newsize, unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL);
     if (mp->ma_keys == NULL) {
         mp->ma_keys = oldkeys;
         return -1;
@@ -1434,7 +1573,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
     Py_ssize_t numentries = mp->ma_used;
 
     if (oldvalues != NULL) {
-         PyDictUnicodeEntry *oldentries = DK_UNICODE_ENTRIES(oldkeys);
+         PyDictSplitEntry *oldentries = DK_SPLIT_ENTRIES(oldkeys);
         /* Convert split table into new combined table.
          * We must incref keys; we can transfer values.
          */
@@ -1444,7 +1583,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
             for (Py_ssize_t i = 0; i < numentries; i++) {
                 int index = get_index_from_order(mp, i);
-                PyDictUnicodeEntry *ep = &oldentries[index];
+                PyDictSplitEntry *ep = &oldentries[index];
                 assert(oldvalues->values[index] != NULL);
                 Py_INCREF(ep->me_key);
                 newentries[i].me_key = ep->me_key;
@@ -1458,7 +1597,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
             for (Py_ssize_t i = 0; i < numentries; i++) {
                 int index = get_index_from_order(mp, i);
-                PyDictUnicodeEntry *ep = &oldentries[index];
+                PyDictSplitEntry *ep = &oldentries[index];
                 assert(oldvalues->values[index] != NULL);
                 Py_INCREF(ep->me_key);
                 newentries[i].me_key = ep->me_key;
@@ -1560,7 +1699,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 }
 
 static PyObject *
-dict_new_presized(Py_ssize_t minused, bool unicode)
+dict_new_presized(Py_ssize_t minused, DictKeysKind kind)
 {
     const uint8_t log2_max_presize = 17;
     const Py_ssize_t max_presize = ((Py_ssize_t)1) << log2_max_presize;
@@ -1581,7 +1720,7 @@ dict_new_presized(Py_ssize_t minused, bool unicode)
         log2_newsize = estimate_log2_keysize(minused);
     }
 
-    new_keys = new_keys_object(log2_newsize, unicode);
+    new_keys = new_keys_object(log2_newsize, kind);
     if (new_keys == NULL)
         return NULL;
     return new_dict(new_keys, NULL, 0, 0);
@@ -1590,7 +1729,7 @@ dict_new_presized(Py_ssize_t minused, bool unicode)
 PyObject *
 _PyDict_NewPresized(Py_ssize_t minused)
 {
-    return dict_new_presized(minused, false);
+    return dict_new_presized(minused, DICT_KEYS_GENERAL);
 }
 
 PyObject *
@@ -1609,7 +1748,7 @@ _PyDict_FromItems(PyObject *const *keys, Py_ssize_t keys_offset,
         ks += keys_offset;
     }
 
-    PyObject *dict = dict_new_presized(length, unicode);
+    PyObject *dict = dict_new_presized(length, unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL);
     if (dict == NULL) {
         return NULL;
     }
@@ -1692,16 +1831,21 @@ _PyDict_GetItemHint(PyDictObject *mp, PyObject *key,
     if (hint >= 0 && hint < mp->ma_keys->dk_nentries) {
         PyObject *res = NULL;
 
-        if (DK_IS_UNICODE(mp->ma_keys)) {
+        if (DK_IS_SPLIT(mp->ma_keys)) {
+            PyDictSplitEntry *ep = DK_SPLIT_ENTRIES(mp->ma_keys) + (size_t)hint;
+            if (ep->me_key == key) {
+                assert(mp->ma_values != NULL);
+                res = mp->ma_values->values[(size_t)hint];
+                if (res != NULL) {
+                    *value = res;
+                    return hint;
+                }
+            }
+        }
+        else if (DK_IS_UNICODE(mp->ma_keys)) {
             PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(mp->ma_keys) + (size_t)hint;
             if (ep->me_key == key) {
-                if (mp->ma_keys->dk_kind == DICT_KEYS_SPLIT) {
-                    assert(mp->ma_values != NULL);
-                    res = mp->ma_values->values[(size_t)hint];
-                }
-                else {
-                    res = ep->me_value;
-                }
+                res = ep->me_value;
                 if (res != NULL) {
                     *value = res;
                     return hint;
@@ -2131,7 +2275,7 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
         int index = get_index_from_order(mp, i);
         value = mp->ma_values->values[index];
 
-        key = DK_UNICODE_ENTRIES(mp->ma_keys)[index].me_key;
+        key = DK_SPLIT_ENTRIES(mp->ma_keys)[index].me_key;
         hash = unicode_get_hash(key);
         assert(value != NULL);
     }
@@ -2278,7 +2422,7 @@ _PyDict_FromKeys(PyObject *cls, PyObject *iterable, PyObject *value)
             PyObject *key;
             Py_hash_t hash;
 
-            int unicode = DK_IS_UNICODE(((PyDictObject*)iterable)->ma_keys);
+            int unicode = DK_IS_UNICODE(((PyDictObject*)iterable)->ma_keys) || DK_IS_SPLIT(((PyDictObject*)iterable)->ma_keys);
             if (dictresize(mp, estimate_log2_keysize(PyDict_GET_SIZE(iterable)), unicode)) {
                 Py_DECREF(d);
                 return NULL;
@@ -2871,7 +3015,7 @@ dict_merge(PyObject *a, PyObject *b, int override)
          * that there will be no (or few) overlapping keys.
          */
         if (USABLE_FRACTION(DK_SIZE(mp->ma_keys)) < other->ma_used) {
-            int unicode = DK_IS_UNICODE(other->ma_keys);
+            int unicode = DK_IS_UNICODE(other->ma_keys) || DK_IS_SPLIT(other->ma_keys);
             if (dictresize(mp, estimate_log2_keysize(mp->ma_used + other->ma_used), unicode)) {
                return -1;
             }
@@ -3155,17 +3299,23 @@ dict_equal(PyDictObject *a, PyDictObject *b)
     for (i = 0; i < a->ma_keys->dk_nentries; i++) {
         PyObject *key, *aval;
         Py_hash_t hash;
-        if (DK_IS_UNICODE(a->ma_keys)) {
+        if (DK_IS_SPLIT(a->ma_keys)) {
+            PyDictSplitEntry *ep = &DK_SPLIT_ENTRIES(a->ma_keys)[i];
+            key = ep->me_key;
+            if (key == NULL) {
+                continue;
+            }
+            hash = unicode_get_hash(key);
+            aval = a->ma_values->values[i];
+        }
+        else if (DK_IS_UNICODE(a->ma_keys)) {
             PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(a->ma_keys)[i];
             key = ep->me_key;
             if (key == NULL) {
                 continue;
             }
             hash = unicode_get_hash(key);
-            if (a->ma_values)
-                aval = a->ma_values->values[i];
-            else
-                aval = ep->me_value;
+            aval = ep->me_value;
         }
         else {
             PyDictKeyEntry *ep = &DK_ENTRIES(a->ma_keys)[i];
@@ -3316,7 +3466,7 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
         return defaultobj;
     }
 
-    if (!PyUnicode_CheckExact(key) && DK_IS_UNICODE(mp->ma_keys)) {
+    if (!PyUnicode_CheckExact(key) && (DK_IS_UNICODE(mp->ma_keys) || DK_IS_SPLIT(mp->ma_keys))) {
         if (insertion_resize(mp, 0) < 0) {
             return NULL;
         }
@@ -3336,20 +3486,21 @@ PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj)
         }
         Py_ssize_t hashpos = find_empty_slot(mp->ma_keys, hash);
         dictkeys_set_index(mp->ma_keys, hashpos, mp->ma_keys->dk_nentries);
-        if (DK_IS_UNICODE(mp->ma_keys)) {
+        if (DK_IS_SPLIT(mp->ma_keys)) {
+            assert(PyUnicode_CheckExact(key));
+            PyDictSplitEntry *ep = &DK_SPLIT_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
+            ep->me_key = key;
+            Py_ssize_t index = (int)mp->ma_keys->dk_nentries;
+            assert(index < SHARED_KEYS_MAX_SIZE);
+            assert(mp->ma_values->values[index] == NULL);
+            mp->ma_values->values[index] = value;
+            _PyDictValues_AddToInsertionOrder(mp->ma_values, index);
+        }
+        else if (DK_IS_UNICODE(mp->ma_keys)) {
             assert(PyUnicode_CheckExact(key));
             PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
             ep->me_key = key;
-            if (_PyDict_HasSplitTable(mp)) {
-                Py_ssize_t index = (int)mp->ma_keys->dk_nentries;
-                assert(index < SHARED_KEYS_MAX_SIZE);
-                assert(mp->ma_values->values[index] == NULL);
-                mp->ma_values->values[index] = value;
-                _PyDictValues_AddToInsertionOrder(mp->ma_values, index);
-            }
-            else {
-                ep->me_value = value;
-            }
+            ep->me_value = value;
         }
         else {
             PyDictKeyEntry *ep = &DK_ENTRIES(mp->ma_keys)[mp->ma_keys->dk_nentries];
@@ -3530,17 +3681,15 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
     PyDictKeysObject *keys = mp->ma_keys;
     Py_ssize_t i, n = keys->dk_nentries;
 
-    if (DK_IS_UNICODE(keys)) {
-        if (mp->ma_values != NULL) {
-            for (i = 0; i < n; i++) {
-                Py_VISIT(mp->ma_values->values[i]);
-            }
+    if (DK_IS_SPLIT(keys)) {
+        for (i = 0; i < n; i++) {
+            Py_VISIT(mp->ma_values->values[i]);
         }
-        else {
-            PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(keys);
-            for (i = 0; i < n; i++) {
-                Py_VISIT(entries[i].me_value);
-            }
+    }
+    else if (DK_IS_UNICODE(keys)) {
+        PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(keys);
+        for (i = 0; i < n; i++) {
+            Py_VISIT(entries[i].me_value);
         }
     }
     else {
@@ -3584,8 +3733,16 @@ _PyDict_SizeOf(PyDictObject *mp)
 Py_ssize_t
 _PyDict_KeysSize(PyDictKeysObject *keys)
 {
-    size_t es = keys->dk_kind == DICT_KEYS_GENERAL
-        ?  sizeof(PyDictKeyEntry) : sizeof(PyDictUnicodeEntry);
+    size_t es;
+    if (DK_IS_SPLIT(keys)) {
+        es = sizeof(PyDictSplitEntry);
+    }
+    else if (DK_IS_UNICODE(keys)) {
+        es = sizeof(PyDictUnicodeEntry);
+    }
+    else {
+        es = sizeof(PyDictKeyEntry);
+    }
     return (sizeof(PyDictKeysObject)
             + ((size_t)1 << keys->dk_log2_index_bytes)
             + USABLE_FRACTION(DK_SIZE(keys)) * es);
@@ -4059,7 +4216,7 @@ dictiter_iternextkey(dictiterobject *di)
         if (i >= d->ma_used)
             goto fail;
         int index = get_index_from_order(d, i);
-        key = DK_UNICODE_ENTRIES(k)[index].me_key;
+        key = DK_SPLIT_ENTRIES(k)[index].me_key;
         assert(d->ma_values->values[index] != NULL);
     }
     else {
@@ -4259,7 +4416,7 @@ dictiter_iternextitem(dictiterobject *di)
         if (i >= d->ma_used)
             goto fail;
         int index = get_index_from_order(d, i);
-        key = DK_UNICODE_ENTRIES(d->ma_keys)[index].me_key;
+        key = DK_SPLIT_ENTRIES(d->ma_keys)[index].me_key;
         value = d->ma_values->values[index];
         assert(value != NULL);
     }
@@ -4390,7 +4547,7 @@ dictreviter_iternext(dictiterobject *di)
     }
     if (d->ma_values) {
         int index = get_index_from_order(d, i);
-        key = DK_UNICODE_ENTRIES(k)[index].me_key;
+        key = DK_SPLIT_ENTRIES(k)[index].me_key;
         value = d->ma_values->values[index];
         assert (value != NULL);
     }
@@ -5325,7 +5482,7 @@ dictvalues_reversed(_PyDictViewObject *dv, PyObject *Py_UNUSED(ignored))
 PyDictKeysObject *
 _PyDict_NewKeysForClass(void)
 {
-    PyDictKeysObject *keys = new_keys_object(NEXT_LOG2_SHARED_KEYS_MAX_SIZE, 1);
+    PyDictKeysObject *keys = new_keys_object(NEXT_LOG2_SHARED_KEYS_MAX_SIZE, DICT_KEYS_SPLIT);
     if (keys == NULL) {
         PyErr_Clear();
     }

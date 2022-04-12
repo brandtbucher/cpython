@@ -3486,6 +3486,7 @@ handle_eval_breaker:
                 res = ep->me_value;
             }
             else {
+                DEOPT_IF(DK_IS_SPLIT(dict->ma_keys), LOAD_ATTR);
                 PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
                 DEOPT_IF(ep->me_key != name, LOAD_ATTR);
                 res = ep->me_value;
@@ -3592,6 +3593,7 @@ handle_eval_breaker:
                 ep->me_value = value;
             }
             else {
+                DEOPT_IF(DK_IS_SPLIT(dict->ma_keys), STORE_ATTR);
                 PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
                 DEOPT_IF(ep->me_key != name, STORE_ATTR);
                 old_value = ep->me_value;
