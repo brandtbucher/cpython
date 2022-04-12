@@ -1629,8 +1629,8 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     /* Local "register" variables.
      * These are cached values from the frame and code object.  */
 
-    PyObject *names;
-    PyObject *consts;
+    register PyObject *names;
+    register PyObject *consts;
     _Py_CODEUNIT *first_instr;
     _Py_CODEUNIT *next_instr;
     PyObject **stack_pointer;
