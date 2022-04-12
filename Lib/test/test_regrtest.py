@@ -903,33 +903,33 @@ class ArgsTestCase(BaseTestCase):
             reflog = fp.read()
             self.assertIn(line2, reflog)
 
-    # @unittest.skipUnless(Py_DEBUG, 'need a debug build')
-    # def test_huntrleaks(self):
-    #     # test --huntrleaks
-    #     code = textwrap.dedent("""
-    #         import unittest
+    @unittest.skipUnless(Py_DEBUG, 'need a debug build')
+    def test_huntrleaks(self):
+        # test --huntrleaks
+        code = textwrap.dedent("""
+            import unittest
 
-    #         GLOBAL_LIST = []
+            GLOBAL_LIST = []
 
-    #         class RefLeakTest(unittest.TestCase):
-    #             def test_leak(self):
-    #                 GLOBAL_LIST.append(object())
-    #     """)
-    #     self.check_leak(code, 'references')
+            class RefLeakTest(unittest.TestCase):
+                def test_leak(self):
+                    GLOBAL_LIST.append(object())
+        """)
+        self.check_leak(code, 'references')
 
-    # @unittest.skipUnless(Py_DEBUG, 'need a debug build')
-    # def test_huntrleaks_fd_leak(self):
-    #     # test --huntrleaks for file descriptor leak
-    #     code = textwrap.dedent("""
-    #         import os
-    #         import unittest
+    @unittest.skipUnless(Py_DEBUG, 'need a debug build')
+    def test_huntrleaks_fd_leak(self):
+        # test --huntrleaks for file descriptor leak
+        code = textwrap.dedent("""
+            import os
+            import unittest
 
-    #         class FDLeakTest(unittest.TestCase):
-    #             def test_leak(self):
-    #                 fd = os.open(__file__, os.O_RDONLY)
-    #                 # bug: never close the file descriptor
-    #     """)
-    #     self.check_leak(code, 'file descriptors')
+            class FDLeakTest(unittest.TestCase):
+                def test_leak(self):
+                    fd = os.open(__file__, os.O_RDONLY)
+                    # bug: never close the file descriptor
+        """)
+        self.check_leak(code, 'file descriptors')
 
     def test_list_tests(self):
         # test --list-tests

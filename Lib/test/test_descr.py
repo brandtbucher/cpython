@@ -1597,7 +1597,7 @@ order (MRO) for bases """
         refs_before = gettotalrefcount()
         for i in range(100):
             cm.__init__(None)
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=15)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
     @support.impl_detail("the module 'xxsubtype' is internal")
     def test_classmethods_in_c(self):
@@ -1680,7 +1680,7 @@ order (MRO) for bases """
         refs_before = gettotalrefcount()
         for i in range(100):
             sm.__init__(None)
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=15)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
     @support.impl_detail("the module 'xxsubtype' is internal")
     def test_staticmethods_in_c(self):

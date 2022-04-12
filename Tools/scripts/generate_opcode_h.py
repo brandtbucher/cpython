@@ -36,7 +36,7 @@ def write_int_array_from_ops(name, ops, out):
     bits = 0
     for op in ops:
         bits |= 1<<op
-    out.write(f"const uint32_t {name}[8] = {{\n")
+    out.write(f"static const uint32_t {name}[8] = {{\n")
     for i in range(8):
         out.write(f"    {bits & UINT32_MASK}U,\n")
         bits >>= 32
@@ -77,8 +77,6 @@ def main(opcode_py, outfile='Include/opcode.h'):
         fobj.write(DEFINE.format('DO_TRACING', 255))
         fobj.write("\nextern const uint8_t _PyOpcode_Caches[256];\n")
         fobj.write("\nextern const uint8_t _PyOpcode_Deopt[256];\n")
-        fobj.write("\nextern const uint32_t _PyOpcode_RelativeJump[8];\n")
-        fobj.write("\nextern const uint32_t _PyOpcode_Jump[8];\n")
         fobj.write("\n#ifdef NEED_OPCODE_TABLES\n")
         write_int_array_from_ops("_PyOpcode_RelativeJump", opcode['hasjrel'], fobj)
         write_int_array_from_ops("_PyOpcode_Jump", opcode['hasjrel'] + opcode['hasjabs'], fobj)

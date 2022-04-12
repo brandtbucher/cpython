@@ -2505,7 +2505,7 @@ class CTask_CFuture_Tests(BaseTaskTests, SetMethodsTest,
         for i in range(100):
             task.__init__(coro(), loop=self.loop)
             self.loop.run_until_complete(task)
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=26)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
     def test_del__log_destroy_pending_segfault(self):
         async def coro():

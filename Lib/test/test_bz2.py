@@ -842,7 +842,7 @@ class BZ2DecompressorTest(BaseTest):
         refs_before = gettotalrefcount()
         for i in range(100):
             bzd.__init__()
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=15)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
 
 class CompressDecompressTest(BaseTest):

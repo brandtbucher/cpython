@@ -378,7 +378,7 @@ class CompressorDecompressorTestCase(unittest.TestCase):
         refs_before = gettotalrefcount()
         for i in range(100):
             lzd.__init__()
-        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=15)
+        self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
 
 class CompressDecompressFunctionTestCase(unittest.TestCase):
