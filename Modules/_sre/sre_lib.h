@@ -528,16 +528,16 @@ typedef struct {
         }                                                          \
     } while (0)
 
-#ifdef HAVE_COMPUTED_GOTOS
-    #ifndef USE_COMPUTED_GOTOS
-    #define USE_COMPUTED_GOTOS 1
-    #endif
-#elif defined(USE_COMPUTED_GOTOS) && USE_COMPUTED_GOTOS
-    #error "Computed gotos are not supported on this compiler."
-#else
+// #ifdef HAVE_COMPUTED_GOTOS
+//     #ifndef USE_COMPUTED_GOTOS
+//     #define USE_COMPUTED_GOTOS 1
+//     #endif
+// #elif defined(USE_COMPUTED_GOTOS) && USE_COMPUTED_GOTOS
+//     #error "Computed gotos are not supported on this compiler."
+// #else
     #undef USE_COMPUTED_GOTOS
     #define USE_COMPUTED_GOTOS 0
-#endif
+// #endif
 
 #if USE_COMPUTED_GOTOS
     #define TARGET(OP) TARGET_ ## OP
