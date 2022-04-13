@@ -67,7 +67,7 @@ typedef struct _PyInterpreterFrame {
 } _PyInterpreterFrame;
 
 #define _PyInterpreterFrame_LASTI(IF) \
-    ((int)((IF)->prev_instr - _PyCode_CODE((IF)->f_code)))
+    ((int)((IF)->prev_instr - (IF)->f_code->co_firstinstr))
 
 static inline PyObject **_PyFrame_Stackbase(_PyInterpreterFrame *f) {
     return f->localsplus + f->f_code->co_nlocalsplus;
@@ -107,7 +107,7 @@ _PyFrame_InitializeSpecials(
     frame->f_locals = Py_XNewRef(locals);
     frame->stacktop = nlocalsplus;
     frame->frame_obj = NULL;
-    frame->prev_instr = _PyCode_CODE(frame->f_code) - 1;
+    frame->prev_instr = frame->f_code->co_firstinstr - 1;
     frame->is_entry = false;
     frame->owner = FRAME_OWNED_BY_THREAD;
 }

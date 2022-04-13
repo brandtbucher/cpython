@@ -252,7 +252,7 @@ _Py_PrintSpecializationStats(int to_file)
 
 // Insert adaptive instructions and superinstructions. This cannot fail.
 static void
-quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
+optimize(_Py_CODEUNIT *instructions, Py_ssize_t size)
 {
     _Py_QuickenedCount++;
     int previous_opcode = -1;
@@ -311,9 +311,21 @@ quicken(_Py_CODEUNIT *instructions, Py_ssize_t size)
 }
 
 int
-_PyCode_Quicken(PyCodeObject *code)
-{
-    quicken(_PyCode_CODE(code), Py_SIZE(code));
+_PyCode_Quicken(PyCodeObject *code) {
+    return 0;  // XXX
+    if (code->co_quickened) {
+        return 0;
+    }
+    Py_ssize_t size = PyBytes_GET_SIZE(code->co_code);
+    int instr_count = (int)(size / sizeof(_Py_CODEUNIT));
+    _Py_CODEUNIT *quickened = PyMem_Malloc(instr_count);
+    if (quickened == NULL) {
+        return -1;
+    }
+    memcpy(quickened, code->co_firstinstr, size);
+    optimize(quickened, instr_count);
+    code->co_quickened = quickened;
+    code->co_firstinstr = quickened;
     return 0;
 }
 

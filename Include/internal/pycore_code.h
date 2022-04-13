@@ -96,6 +96,7 @@ typedef struct {
 
 /* We want to compare to zero for efficiency, so we offset values accordingly */
 #define QUICKENING_INITIAL_WARMUP_VALUE (-QUICKENING_WARMUP_DELAY)
+#define QUICKENING_WARMUP_COLDEST 1
 
 int _PyCode_Quicken(PyCodeObject *code);
 
@@ -220,7 +221,6 @@ PyAPI_FUNC(PyCodeObject *) _PyCode_New(struct _PyCodeConstructor *);
 extern PyObject* _PyCode_GetVarnames(PyCodeObject *);
 extern PyObject* _PyCode_GetCellvars(PyCodeObject *);
 extern PyObject* _PyCode_GetFreevars(PyCodeObject *);
-extern PyObject* _PyCode_GetCode(PyCodeObject *);
 
 /* Return the ending source code line number from a bytecode index. */
 extern int _PyCode_Addr2EndLine(PyCodeObject *, int);

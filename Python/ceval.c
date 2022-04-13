@@ -1635,7 +1635,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         PyCodeObject *co = frame->f_code; \
         names = co->co_names; \
         consts = co->co_consts; \
-        first_instr = _PyCode_CODE(co); \
+        first_instr = co->co_firstinstr; \
     } \
     assert(_PyInterpreterFrame_LASTI(frame) >= -1); \
     /* Jump back to the last instruction executed... */ \
@@ -1708,8 +1708,15 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            if (_PyCode_Warmup(frame->f_code)) {
-                goto error;
+            int err = _PyCode_Warmup(frame->f_code);
+            if (err) {
+                if (err < 0) {
+                    goto error;
+                }
+                /* Update first_instr and next_instr to point to newly quickened code */
+                int nexti = INSTR_OFFSET();
+                first_instr = frame->f_code->co_firstinstr;
+                next_instr = first_instr + nexti;
             }
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
@@ -3935,8 +3942,15 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD) {
-            if (_PyCode_Warmup(frame->f_code)) {
-                goto error;
+            int err = _PyCode_Warmup(frame->f_code);
+            if (err) {
+                if (err < 0) {
+                    goto error;
+                }
+                /* Update first_instr and next_instr to point to newly quickened code */
+                int nexti = INSTR_OFFSET();
+                first_instr = frame->f_code->co_firstinstr;
+                next_instr = first_instr + nexti;
             }
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
         }
@@ -6830,8 +6844,8 @@ maybe_call_line_trace(Py_tracefunc func, PyObject *obj,
     */
     initialize_trace_info(&tstate->trace_info, frame);
     int entry_point = 0;
-    _Py_CODEUNIT *code = _PyCode_CODE(frame->f_code);
-    while (_PyOpcode_Deopt[_Py_OPCODE(code[entry_point])] != RESUME) {
+    _Py_CODEUNIT *code = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);
+    while (_Py_OPCODE(code[entry_point]) != RESUME) {
         entry_point++;
     }
     int lastline;

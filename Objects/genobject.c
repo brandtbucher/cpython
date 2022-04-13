@@ -351,12 +351,14 @@ _PyGen_yf(PyGenObject *gen)
 
     if (gen->gi_frame_state < FRAME_CLEARED) {
         _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
+        PyObject *bytecode = gen->gi_code->co_code;
+        unsigned char *code = (unsigned char *)PyBytes_AS_STRING(bytecode);
 
         if (gen->gi_frame_state == FRAME_CREATED) {
             /* Return immediately if the frame didn't start yet. SEND
                always come after LOAD_CONST: a code object should not start
                with SEND */
-            assert(_Py_OPCODE(_PyCode_CODE(gen->gi_code)[0]) != SEND);
+            assert(code[0] != SEND);
             return NULL;
         }
         _Py_CODEUNIT next = frame->prev_instr[1];
