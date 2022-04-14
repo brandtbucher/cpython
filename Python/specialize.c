@@ -252,56 +252,54 @@ _Py_PrintSpecializationStats(int to_file)
 
 // Insert adaptive instructions and superinstructions. This cannot fail.
 static void
-optimize(_Py_CODEUNIT *instructions, Py_ssize_t size)
+optimize(_Py_CODEUNIT *quickened, Py_ssize_t size)
 {
-    _Py_QuickenedCount++;
     int previous_opcode = -1;
-    for (int i = 0; i < size; i++) {
-        int opcode = _Py_OPCODE(instructions[i]);
+    for (int j = 0; j < size; j++) {
+        int opcode = _Py_OPCODE(quickened[j]);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
             assert(_PyOpcode_Caches[adaptive_opcode]);
-            // _Py_SET_OPCODE(instructions[i], adaptive_opcode);
-            // // Make sure the adaptive counter is zero:
-            // instructions[i + 1] = 0;
+            _Py_SET_OPCODE(quickened[j], adaptive_opcode);
+            // Make sure the adaptive counter is zero:
+            quickened[j + 1] = 0;
             previous_opcode = -1;
-            // i += _PyOpcode_Caches[adaptive_opcode];
+            j += _PyOpcode_Caches[adaptive_opcode];
         }
         else {
             assert(!_PyOpcode_Caches[opcode]);
             switch (opcode) {
                 case JUMP_BACKWARD:
-                    _Py_SET_OPCODE(instructions[i], JUMP_BACKWARD_QUICK);
+                    _Py_SET_OPCODE(quickened[j], JUMP_BACKWARD_QUICK);
                     break;
                 case RESUME:
-                    _Py_SET_OPCODE(instructions[i], RESUME_QUICK);
+                    _Py_SET_OPCODE(quickened[j], RESUME_QUICK);
                     break;
                 case LOAD_FAST:
                     switch(previous_opcode) {
                         case LOAD_FAST:
-                            _Py_SET_OPCODE(instructions[i - 1],
+                            _Py_SET_OPCODE(quickened[j - 1],
                                            LOAD_FAST__LOAD_FAST);
                             break;
                         case STORE_FAST:
-                            _Py_SET_OPCODE(instructions[i - 1],
+                            _Py_SET_OPCODE(quickened[j - 1],
                                            STORE_FAST__LOAD_FAST);
                             break;
                         case LOAD_CONST:
-                            _Py_SET_OPCODE(instructions[i - 1],
+                            _Py_SET_OPCODE(quickened[j - 1],
                                            LOAD_CONST__LOAD_FAST);
                             break;
                     }
                     break;
                 case STORE_FAST:
                     if (previous_opcode == STORE_FAST) {
-                        _Py_SET_OPCODE(instructions[i - 1],
-                                       STORE_FAST__STORE_FAST);
+                        _Py_SET_OPCODE(quickened[j - 1], 
+                            STORE_FAST__STORE_FAST);
                     }
                     break;
                 case LOAD_CONST:
                     if (previous_opcode == LOAD_FAST) {
-                        _Py_SET_OPCODE(instructions[i - 1],
-                                       LOAD_FAST__LOAD_CONST);
+                        _Py_SET_OPCODE(quickened[j - 1], LOAD_FAST__LOAD_CONST);
                     }
                     break;
             }
@@ -310,20 +308,132 @@ optimize(_Py_CODEUNIT *instructions, Py_ssize_t size)
     }
 }
 
+#define LOG_BITS_PER_INT 5
+#define MASK_LOW_LOG_BITS 31
+
+static inline int
+is_jump(int opcode)
+{
+    uint32_t word = _PyOpcode_Jump[opcode >> LOG_BITS_PER_INT];
+    return (word >> (opcode & MASK_LOW_LOG_BITS)) & 1;
+}
+
+int
+fix_jumps(_Py_CODEUNIT *instructions, _Py_CODEUNIT *quickened, Py_ssize_t size)
+{
+    int *offsets = PyMem_Malloc(size * sizeof(int));
+    for (int i = 0, j = 0; i < size; i++, j++) {
+        offsets[i] = j;
+        int opcode = _Py_OPCODE(instructions[i]);
+        int adaptive = _PyOpcode_Adaptive[opcode];
+        if (adaptive) {
+            j += _PyOpcode_Caches[adaptive];
+        }
+    }
+    int oparg = 0;
+    int extended_args = 0;
+    for (int i = 0; i < size; i++) {
+        _Py_CODEUNIT instruction = instructions[i];
+        quickened[offsets[i]] = instruction;
+        int opcode = _Py_OPCODE(instruction);
+        oparg |= _Py_OPARG(instruction);
+        if (opcode == EXTENDED_ARG) {
+            oparg <<= 8;
+            extended_args++;
+        }
+        else {
+            if (is_jump(opcode)) {
+                int target;
+                switch (opcode) {
+                    case JUMP_BACKWARD_NO_INTERRUPT:
+                    case JUMP_BACKWARD:
+                    case POP_JUMP_BACKWARD_IF_FALSE:
+                    case POP_JUMP_BACKWARD_IF_TRUE:
+                    case POP_JUMP_BACKWARD_IF_NONE:
+                    case POP_JUMP_BACKWARD_IF_NOT_NONE:
+                        target = -(offsets[i + 1 - oparg] - offsets[i] - 1);
+                        break;
+                    case FOR_ITER:
+                    case JUMP_FORWARD:
+                    case POP_JUMP_FORWARD_IF_FALSE:
+                    case POP_JUMP_FORWARD_IF_TRUE:
+                    case POP_JUMP_FORWARD_IF_NONE:
+                    case POP_JUMP_FORWARD_IF_NOT_NONE:
+                    case SEND:
+                        target = offsets[i + 1 + oparg] - offsets[i] - 1;
+                        break;
+                    case JUMP_IF_FALSE_OR_POP:
+                    case JUMP_IF_TRUE_OR_POP:
+                        target = offsets[oparg];
+                        break;
+                    default:
+                        Py_UNREACHABLE();
+                }
+                switch (extended_args) {
+                    case 3:
+                        quickened[offsets[i] - 3] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >> 24) & 0xFF);
+                        target &= 0x00FFFFFF;
+                        // Fall through...
+                    case 2:
+                        quickened[offsets[i] - 2] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >> 16) & 0xFF);
+                        target &= 0x0000FFFF;
+                        // Fall through...
+                    case 1:
+                        quickened[offsets[i] - 1] = _Py_MAKECODEUNIT(
+                            EXTENDED_ARG, (target >>  8) & 0xFF);
+                        target &= 0x000000FF;
+                        // Fall through...
+                    case 0:
+                        quickened[offsets[i]] = _Py_MAKECODEUNIT(
+                            opcode, target & 0xFF);
+                        if (target >> 8) {
+                            PyMem_Free(offsets);
+                            return -1;
+                        }
+                        break;
+                    default:
+                        Py_UNREACHABLE();
+                }
+            }
+            oparg = 0;
+            extended_args = 0;
+        }
+    }
+    PyMem_Free(offsets);
+    return 0;
+}
+
 int
 _PyCode_Quicken(PyCodeObject *code) {
-    // return 0;  // XXX
     if (code->co_quickened) {
         return 0;
     }
+    if (PyBytes_GET_SIZE(code->co_exceptiontable)) {
+        return 0;
+    }
     Py_ssize_t size = PyBytes_GET_SIZE(code->co_code);
+    Py_ssize_t newsize = size;
     int instr_count = (int)(size / sizeof(_Py_CODEUNIT));
-    _Py_CODEUNIT *quickened = PyMem_Malloc(size);
+    _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code->co_code);
+    for (int i = 0; i < instr_count; i++) {
+        int opcode = _Py_OPCODE(instructions[i]);
+        int adaptive = _PyOpcode_Adaptive[opcode];
+        if (adaptive) {
+            newsize += _PyOpcode_Caches[adaptive] * sizeof(_Py_CODEUNIT);
+        }
+    }
+    _Py_CODEUNIT *quickened = PyMem_Malloc(newsize);
     if (quickened == NULL) {
         return -1;
     }
-    memcpy(quickened, code->co_firstinstr, size);
-    optimize(quickened, instr_count);
+    if (fix_jumps(instructions, quickened, instr_count)) {
+        PyMem_Free(quickened);
+        return 0;
+    }
+    _Py_QuickenedCount++;
+    optimize(quickened, newsize / sizeof(_Py_CODEUNIT));
     code->co_quickened = quickened;
     code->co_firstinstr = quickened;
     return 0;

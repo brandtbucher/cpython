@@ -131,17 +131,16 @@ _PyFrame_Push(PyThreadState *tstate, PyFunctionObject *func)
 int
 _PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame)
 {
+    int offset = frame->prev_instr - frame->first_instr;
     if (frame->first_instr == (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
-        return frame->prev_instr - frame->first_instr;
+        return offset;
     }
     assert(frame->first_instr == frame->f_code->co_quickened);
-    int lasti = -1;
     _Py_CODEUNIT *instruction = frame->first_instr;
-    while (instruction <= frame->prev_instr) {
-        instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
-        lasti += 1;
+    while (instruction < frame->prev_instr) {
+        offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction++)];
     }
-    return lasti;
+    return offset;
 }
 
 int

@@ -5657,7 +5657,21 @@ error:
 exception_unwind:
         {
             /* We can't use frame->f_lasti here, as RERAISE may have set it */  // XXX
-            int offset = INSTR_OFFSET()-1;  // XXX
+            int offset = next_instr - first_instr;
+            if (frame->first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
+                assert(frame->first_instr == frame->f_code->co_quickened);
+                _Py_CODEUNIT *instruction = frame->first_instr;
+                int stop = offset;
+                while (instruction < frame->first_instr + stop) {
+                    offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction++)];
+                }
+                int lasti = _PyInterpreterFrame_GetLastI(frame);
+                frame->first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);
+                frame->prev_instr = frame->first_instr + lasti;
+                first_instr = frame->first_instr;
+                next_instr = first_instr + offset;
+            }
+            offset -= 1;
             int level, handler, lasti;
             if (get_exception_handler(frame->f_code, offset, &level, &handler, &lasti) == 0) {
                 // No handlers, so exit.
@@ -6839,7 +6853,7 @@ maybe_call_line_trace(Py_tracefunc func, PyObject *obj,
     if (line != -1 && f->f_trace_lines) {
         /* Trace backward edges (except in 'yield from') or if line number has changed */
         int trace = line != lastline ||
-            (_PyInterpreterFrame_LASTI(frame) < instr_prev &&
+            (_PyInterpreterFrame_GetLastI(frame) < instr_prev &&
              // SEND has no quickened forms, so no need to use _PyOpcode_Deopt
              // here:
              _Py_OPCODE(*frame->prev_instr) != SEND);
