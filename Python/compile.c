@@ -939,7 +939,6 @@ stack_effect(int opcode, int oparg, int jump)
         case NOP:
         case EXTENDED_ARG:
         case RESUME:
-        case CACHE:
             return 0;
 
         /* Stack manipulation */

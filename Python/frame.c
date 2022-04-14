@@ -132,14 +132,22 @@ int
 _PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame)
 {
     int offset = frame->prev_instr - frame->first_instr;
-    if (frame->first_instr == (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
-        return offset;
+    if (frame->first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
+        assert(frame->first_instr == frame->f_code->co_quickened);
+        int j = -1;
+        _Py_CODEUNIT *instruction = frame->first_instr;
+        while (instruction <= frame->prev_instr) {
+            j++;
+            // printf("%d", _PyOpcode_Deopt[_Py_OPCODE(*instruction)]);
+            // printf(" %d",_Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[j]));
+            // printf(" %d %d\n", j, instruction - frame->first_instr);
+            assert(_PyOpcode_Deopt[_Py_OPCODE(*instruction)] == _Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[j]));
+            instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
+        }
+        offset = j;
     }
-    assert(frame->first_instr == frame->f_code->co_quickened);
-    _Py_CODEUNIT *instruction = frame->first_instr;
-    while (instruction < frame->prev_instr) {
-        offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction++)];
-    }
+    assert(-1 <= offset);
+    assert((int)(offset * sizeof(_Py_CODEUNIT)) < PyBytes_GET_SIZE(frame->f_code->co_code));
     return offset;
 }
 

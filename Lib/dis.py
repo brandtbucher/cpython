@@ -32,8 +32,6 @@ LOAD_GLOBAL = opmap['LOAD_GLOBAL']
 BINARY_OP = opmap['BINARY_OP']
 JUMP_BACKWARD = opmap['JUMP_BACKWARD']
 
-CACHE = opmap["CACHE"]
-
 def _try_compile(source, name):
     """Attempts to compile the given source, first as an expression and
        then as a statement if the first approach fails.
@@ -47,7 +45,7 @@ def _try_compile(source, name):
         c = compile(source, name, 'exec')
     return c
 
-def dis(x=None, *, file=None, depth=None, show_caches=False):
+def dis(x=None, *, file=None, depth=None):
     """Disassemble classes, methods, functions, and other compiled objects.
 
     With no argument, disassemble the last traceback.
@@ -57,7 +55,7 @@ def dis(x=None, *, file=None, depth=None, show_caches=False):
     in a special attribute.
     """
     if x is None:
-        distb(file=file, show_caches=show_caches)
+        distb(file=file)
         return
     # Extract functions from methods.
     if hasattr(x, '__func__'):
@@ -78,21 +76,21 @@ def dis(x=None, *, file=None, depth=None, show_caches=False):
             if isinstance(x1, _have_code):
                 print("Disassembly of %s:" % name, file=file)
                 try:
-                    dis(x1, file=file, depth=depth, show_caches=show_caches)
+                    dis(x1, file=file, depth=depth)
                 except TypeError as msg:
                     print("Sorry:", msg, file=file)
                 print(file=file)
     elif hasattr(x, 'co_code'): # Code object
-        _disassemble_recursive(x, file=file, depth=depth, show_caches=show_caches)
+        _disassemble_recursive(x, file=file, depth=depth)
     elif isinstance(x, (bytes, bytearray)): # Raw bytecode
-        _disassemble_bytes(x, file=file, show_caches=show_caches)
+        _disassemble_bytes(x, file=file)
     elif isinstance(x, str):    # Source code
-        _disassemble_str(x, file=file, depth=depth, show_caches=show_caches)
+        _disassemble_str(x, file=file, depth=depth)
     else:
         raise TypeError("don't know how to disassemble %s objects" %
                         type(x).__name__)
 
-def distb(tb=None, *, file=None, show_caches=False):
+def distb(tb=None, *, file=None):
     """Disassemble a traceback (default: last traceback)."""
     if tb is None:
         try:
@@ -100,7 +98,7 @@ def distb(tb=None, *, file=None, show_caches=False):
         except AttributeError:
             raise RuntimeError("no last traceback to disassemble") from None
         while tb.tb_next: tb = tb.tb_next
-    disassemble(tb.tb_frame.f_code, tb.tb_lasti, file=file, show_caches=show_caches)
+    disassemble(tb.tb_frame.f_code, tb.tb_lasti, file=file)
 
 # The inspect module interrogates this dictionary to build its
 # list of CO_* constants. It is also used by pretty_flags to
@@ -302,7 +300,7 @@ class Instruction(_Instruction):
         return ' '.join(fields).rstrip()
 
 
-def get_instructions(x, *, first_line=None, show_caches=False):
+def get_instructions(x, *, first_line=None):
     """Iterator for the opcodes in methods, functions or code
 
     Generates a series of Instruction named tuples giving the details of
@@ -323,8 +321,7 @@ def get_instructions(x, *, first_line=None, show_caches=False):
                                    co._varname_from_oparg,
                                    co.co_names, co.co_consts,
                                    linestarts, line_offset,
-                                   co_positions=co.co_positions(),
-                                   show_caches=show_caches)
+                                   co_positions=co.co_positions())
 
 def _get_const_value(op, arg, co_consts):
     """Helper to get the value of the const in a hasconst op.
@@ -398,8 +395,7 @@ def _is_backward_jump(op):
 def _get_instructions_bytes(code, varname_from_oparg=None,
                             names=None, co_consts=None,
                             linestarts=None, line_offset=0,
-                            exception_entries=(), co_positions=None,
-                            show_caches=False):
+                            exception_entries=(), co_positions=None):
     """Iterate over the instructions in a bytecode string.
 
     Generates a sequence of Instruction namedtuples giving the details of each
@@ -416,8 +412,6 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
             labels.add(target)
     starts_line = None
     for offset, op, arg in _unpack_opargs(code):
-        if not show_caches and op == CACHE:
-            continue
         if linestarts is not None:
             starts_line = linestarts.get(offset, None)
             if starts_line is not None:
@@ -469,7 +463,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                           arg, argval, argrepr,
                           offset, starts_line, is_jump_target, positions)
 
-def disassemble(co, lasti=-1, *, file=None, show_caches=False):
+def disassemble(co, lasti=-1, *, file=None):
     """Disassemble a code object."""
     linestarts = dict(findlinestarts(co))
     exception_entries = parse_exception_table(co)
@@ -477,10 +471,10 @@ def disassemble(co, lasti=-1, *, file=None, show_caches=False):
                        co._varname_from_oparg,
                        co.co_names, co.co_consts, linestarts, file=file,
                        exception_entries=exception_entries,
-                       co_positions=co.co_positions(), show_caches=show_caches)
+                       co_positions=co.co_positions())
 
-def _disassemble_recursive(co, *, file=None, depth=None, show_caches=False):
-    disassemble(co, file=file, show_caches=show_caches)
+def _disassemble_recursive(co, *, file=None, depth=None):
+    disassemble(co, file=file)
     if depth is None or depth > 0:
         if depth is not None:
             depth = depth - 1
@@ -489,13 +483,13 @@ def _disassemble_recursive(co, *, file=None, depth=None, show_caches=False):
                 print(file=file)
                 print("Disassembly of %r:" % (x,), file=file)
                 _disassemble_recursive(
-                    x, file=file, depth=depth, show_caches=show_caches
+                    x, file=file, depth=depth
                 )
 
 def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
                        names=None, co_consts=None, linestarts=None,
                        *, file=None, line_offset=0, exception_entries=(),
-                       co_positions=None, show_caches=False):
+                       co_positions=None):
     # Omit the line number column entirely if we have no line number info
     show_lineno = bool(linestarts)
     if show_lineno:
@@ -515,8 +509,7 @@ def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
                                          co_consts, linestarts,
                                          line_offset=line_offset,
                                          exception_entries=exception_entries,
-                                         co_positions=co_positions,
-                                         show_caches=show_caches):
+                                         co_positions=co_positions):
         new_source_line = (show_lineno and
                            instr.starts_line is not None and
                            instr.offset > 0)
@@ -641,7 +634,7 @@ class Bytecode:
 
     Iterating over this yields the bytecode operations as Instruction instances.
     """
-    def __init__(self, x, *, first_line=None, current_offset=None, show_caches=False):
+    def __init__(self, x, *, first_line=None, current_offset=None):
         self.codeobj = co = _get_code_object(x)
         if first_line is None:
             self.first_line = co.co_firstlineno
@@ -653,7 +646,6 @@ class Bytecode:
         self._original_object = x
         self.current_offset = current_offset
         self.exception_entries = parse_exception_table(co)
-        self.show_caches = show_caches
 
     def __iter__(self):
         co = self.codeobj
@@ -663,20 +655,19 @@ class Bytecode:
                                        self._linestarts,
                                        line_offset=self._line_offset,
                                        exception_entries=self.exception_entries,
-                                       co_positions=co.co_positions(),
-                                       show_caches=self.show_caches)
+                                       co_positions=co.co_positions())
 
     def __repr__(self):
         return "{}({!r})".format(self.__class__.__name__,
                                  self._original_object)
 
     @classmethod
-    def from_traceback(cls, tb, *, show_caches=False):
+    def from_traceback(cls, tb):
         """ Construct a Bytecode from the given traceback """
         while tb.tb_next:
             tb = tb.tb_next
         return cls(
-            tb.tb_frame.f_code, current_offset=tb.tb_lasti, show_caches=show_caches
+            tb.tb_frame.f_code, current_offset=tb.tb_lasti
         )
 
     def info(self):
@@ -699,8 +690,7 @@ class Bytecode:
                                file=output,
                                lasti=offset,
                                exception_entries=self.exception_entries,
-                               co_positions=co.co_positions(),
-                               show_caches=self.show_caches)
+                               co_positions=co.co_positions())
             return output.getvalue()
 
 

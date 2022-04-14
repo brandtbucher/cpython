@@ -1002,7 +1002,7 @@ if 1:
         )
 
         for line, instr in enumerate(
-            dis.Bytecode(if_else_break, show_caches=True)
+            dis.Bytecode(if_else_break)
         ):
             if instr.opname == 'JUMP_FORWARD':
                 self.assertNotEqual(instr.arg, 0)
@@ -1064,7 +1064,7 @@ class TestSourcePositions(unittest.TestCase):
             line, end_line, column, end_column, occurrence=1):
 
         for instr, position in zip(
-            dis.Bytecode(code, show_caches=True), code.co_positions(), strict=True
+            dis.Bytecode(code), code.co_positions(), strict=True
         ):
             if instr.opname == opcode:
                 occurrence -= 1

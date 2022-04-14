@@ -3630,6 +3630,11 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(COMPARE_OP_DEOPT) {
+            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            JUMP_TO_INSTRUCTION(COMPARE_OP);
+        }
+
         TARGET(COMPARE_OP) {
             PREDICTED(COMPARE_OP);
             assert(oparg <= Py_GE);
@@ -5456,6 +5461,11 @@ handle_eval_breaker:
             DISPATCH();
         }
 
+        TARGET(BINARY_OP_DEOPT) {
+            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
+            JUMP_TO_INSTRUCTION(BINARY_OP);
+        }
+
         TARGET(BINARY_OP) {
             PREDICTED(BINARY_OP);
             PyObject *rhs = POP();
@@ -5506,10 +5516,6 @@ handle_eval_breaker:
             oparg |= oldoparg << 8;
             PRE_DISPATCH_GOTO();
             DISPATCH_GOTO();
-        }
-
-        TARGET(CACHE) {
-            Py_UNREACHABLE();
         }
 
 #if USE_COMPUTED_GOTOS
@@ -5660,10 +5666,10 @@ exception_unwind:
             int offset = next_instr - first_instr;
             if (frame->first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
                 assert(frame->first_instr == frame->f_code->co_quickened);
-                _Py_CODEUNIT *instruction = frame->first_instr;
-                int stop = offset;
-                while (instruction < frame->first_instr + stop) {
-                    offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction++)];
+                _Py_CODEUNIT *instruction = first_instr;
+                while (instruction < next_instr) {
+                    offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction)];
+                    instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
                 }
                 int lasti = _PyInterpreterFrame_GetLastI(frame);
                 frame->first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);

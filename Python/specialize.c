@@ -1948,9 +1948,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             // back to BINARY_OP (unless we're collecting stats, where it's more
             // important to get accurate hit counts for the unadaptive version
             // and each of the different failure types):
-            _Py_SET_OPCODE(instr[0], BINARY_OP);
-            assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1);
-            _Py_SET_OPCODE(instr[1], NOP);
+            _Py_SET_OPCODE(*instr, BINARY_OP_DEOPT);
             return;
 #endif
     }
@@ -2029,10 +2027,7 @@ _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
         // counts for the unadaptive version and each of the different failure
         // types):
 #ifndef Py_STATS
-        _Py_SET_OPCODE(instr[0], COMPARE_OP);
-        assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 2);
-        _Py_SET_OPCODE(instr[1], NOP);
-        _Py_SET_OPCODE(instr[2], NOP);
+        _Py_SET_OPCODE(*instr, COMPARE_OP_DEOPT);
         return;
 #endif
         if (next_opcode == EXTENDED_ARG) {

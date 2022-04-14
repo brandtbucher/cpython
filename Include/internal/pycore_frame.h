@@ -57,7 +57,7 @@ typedef struct _PyInterpreterFrame {
     _Py_CODEUNIT *first_instr;
     // NOTE: This is not necessarily the last instruction started in the given
     // frame. Rather, it is the code unit *prior to* the *next* instruction. For
-    // example, it may be an inline CACHE entry, an instruction we just jumped
+    // example, it may be an inline cache entry, an instruction we just jumped
     // over, or (in the case of a newly-created frame) a totally invalid value:
     _Py_CODEUNIT *prev_instr;
     int stacktop;     /* Offset of TOS from localsplus  */

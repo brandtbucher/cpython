@@ -54,7 +54,6 @@ def jabs_op(name, op):
 # Instruction opcodes for compiled code
 # Blank lines correspond to available opcodes
 
-def_op('CACHE', 0)
 def_op('POP_TOP', 1)
 def_op('PUSH_NULL', 2)
 
@@ -239,6 +238,7 @@ _specializations = {
             "BINARY_OP_ADD_FLOAT",
             "BINARY_OP_ADD_INT",
             "BINARY_OP_ADD_UNICODE",
+            "BINARY_OP_DEOPT",
             "BINARY_OP_INPLACE_ADD_UNICODE",
             "BINARY_OP_MULTIPLY_FLOAT",
             "BINARY_OP_MULTIPLY_INT",
@@ -268,6 +268,7 @@ _specializations = {
         2,
         [
             "COMPARE_OP_ADAPTIVE",
+            "COMPARE_OP_DEOPT",
             "COMPARE_OP_FLOAT_JUMP",
             "COMPARE_OP_INT_JUMP",
             "COMPARE_OP_STR_JUMP",

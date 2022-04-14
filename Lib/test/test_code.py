@@ -357,7 +357,7 @@ class CodeTest(unittest.TestCase):
 
         artificial_instructions = []
         for instr, positions in zip(
-            dis.get_instructions(code, show_caches=True),
+            dis.get_instructions(code),
             code.co_positions(),
             strict=True
         ):
