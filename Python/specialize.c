@@ -411,9 +411,6 @@ _PyCode_Quicken(PyCodeObject *code) {
     {
         return 0;
     }
-    if (PyBytes_GET_SIZE(code->co_exceptiontable)) {
-        return 0;
-    }
     Py_ssize_t size = PyBytes_GET_SIZE(code->co_code);
     Py_ssize_t newsize = size;
     int instr_count = (int)(size / sizeof(_Py_CODEUNIT));
