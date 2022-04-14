@@ -5665,7 +5665,7 @@ exception_unwind:
             /* We can't use frame->f_lasti here, as RERAISE may have set it */  // XXX
             int offset = next_instr - first_instr;
             if (frame->first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
-                assert(frame->first_instr == frame->f_code->co_quickened);
+                assert(frame->first_instr == frame->f_code->co_first_instr);
                 _Py_CODEUNIT *instruction = first_instr;
                 while (instruction < next_instr) {
                     offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction)];

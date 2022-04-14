@@ -60,7 +60,7 @@ struct PyCodeObject {
     /* The hottest fields (in the eval loop) are grouped here at the top. */
     PyObject *co_consts;           /* list (constants used) */
     PyObject *co_names;            /* list of strings (names used) */
-    _Py_CODEUNIT *co_firstinstr;   /* Pointer to first instruction, used for
+    _Py_CODEUNIT *co_first_instr;   /* Pointer to first instruction, used for
                                       quickening. Unlike the other "hot" fields,
                                       this one is actually derived from co_code.
                                    */
@@ -106,10 +106,6 @@ struct PyCodeObject {
        Type is a void* to keep the format private in codeobject.c to force
        people to go through the proper APIs. */
     void *co_extra;
-    /* Quickened instructions and cache, or NULL
-     This should be treated as opaque by all code except the specializer and
-     interpreter. */
-    _Py_CODEUNIT *co_quickened;
 };
 
 /* Masks for co_flags above */

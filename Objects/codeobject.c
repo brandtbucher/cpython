@@ -306,7 +306,7 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
 
     Py_INCREF(con->code);
     co->co_code = con->code;
-    co->co_firstinstr = (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code);
+    co->co_first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code);
     co->co_firstlineno = con->firstlineno;
     Py_INCREF(con->linetable);
     co->co_linetable = con->linetable;
@@ -346,7 +346,6 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     co->co_extra = NULL;
 
     co->co_warmup = QUICKENING_INITIAL_WARMUP_VALUE;
-    co->co_quickened = NULL;
 }
 
 /* The caller is responsible for ensuring that the given data is valid. */
@@ -1310,6 +1309,10 @@ code_dealloc(PyCodeObject *co)
         PyMem_Free(co_extra);
     }
 
+    if (co->co_first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code)) {
+        PyMem_Free(co->co_first_instr);
+        _Py_QuickenedCount--;
+    }
     Py_XDECREF(co->co_code);
     Py_XDECREF(co->co_consts);
     Py_XDECREF(co->co_names);
@@ -1324,10 +1327,6 @@ code_dealloc(PyCodeObject *co)
     Py_XDECREF(co->co_exceptiontable);
     if (co->co_weakreflist != NULL) {
         PyObject_ClearWeakRefs((PyObject*)co);
-    }
-    if (co->co_quickened) {
-        PyMem_Free(co->co_quickened);
-        _Py_QuickenedCount--;
     }
     PyObject_Free(co);
 }
@@ -1515,8 +1514,18 @@ code_sizeof(PyCodeObject *co, PyObject *Py_UNUSED(args))
                (co_extra->ce_size-1) * sizeof(co_extra->ce_extras[0]);
     }
 
-    if (co->co_quickened != NULL) {
-        res += PyBytes_GET_SIZE(co->co_code);  // XXX
+    if (co->co_first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code)) {
+        for (int i = 0; 
+             i < (int)(PyBytes_GET_SIZE(co->co_code) / sizeof(_Py_CODEUNIT)); 
+             i++)
+        {
+            int opcode = _Py_OPCODE(co->co_first_instr[i]);
+            int adaptive = _PyOpcode_Adaptive[opcode];
+            if (adaptive) {
+                res += _PyOpcode_Caches[adaptive] * sizeof(_Py_CODEUNIT);
+            }
+            res += sizeof(_Py_CODEUNIT);
+        }
     }
 
     return PyLong_FromSsize_t(res);
@@ -1858,15 +1867,14 @@ _PyCode_ConstantKey(PyObject *op)
 void
 _PyStaticCode_Dealloc(PyCodeObject *co)
 {
-    if (co->co_quickened) {
-        PyMem_Free(co->co_quickened);
-        co->co_quickened = NULL;
-         _Py_QuickenedCount--;
+    if (co->co_first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code)) {
+        PyMem_Free(co->co_first_instr);
+        _Py_QuickenedCount--;
+        co->co_first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code);
     }
     co->co_warmup = QUICKENING_INITIAL_WARMUP_VALUE;
     PyMem_Free(co->co_extra);
     co->co_extra = NULL;
-    co->co_firstinstr = (_Py_CODEUNIT *)PyBytes_AS_STRING(co->co_code);
     if (co->co_weakreflist != NULL) {
         PyObject_ClearWeakRefs((PyObject *)co);
         co->co_weakreflist = NULL;

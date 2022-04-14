@@ -108,7 +108,7 @@ _PyFrame_InitializeSpecials(
     frame->f_locals = Py_XNewRef(locals);
     frame->stacktop = nlocalsplus;
     frame->frame_obj = NULL;
-    frame->first_instr = frame->f_code->co_firstinstr;
+    frame->first_instr = frame->f_code->co_first_instr;
     frame->prev_instr = frame->first_instr - 1;
     frame->is_entry = false;
     frame->owner = FRAME_OWNED_BY_THREAD;

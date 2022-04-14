@@ -407,7 +407,8 @@ fix_jumps(_Py_CODEUNIT *instructions, _Py_CODEUNIT *quickened, Py_ssize_t size)
 
 int
 _PyCode_Quicken(PyCodeObject *code) {
-    if (code->co_quickened) {
+    if (code->co_first_instr == (_Py_CODEUNIT *)PyBytes_AS_STRING(code->co_code))
+    {
         return 0;
     }
     if (PyBytes_GET_SIZE(code->co_exceptiontable)) {
@@ -434,8 +435,7 @@ _PyCode_Quicken(PyCodeObject *code) {
     }
     _Py_QuickenedCount++;
     optimize(quickened, newsize / sizeof(_Py_CODEUNIT));
-    code->co_quickened = quickened;
-    code->co_firstinstr = quickened;
+    code->co_first_instr = quickened;
     return 0;
 }
 

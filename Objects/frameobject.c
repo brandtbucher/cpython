@@ -172,7 +172,7 @@ top_of_stack(int64_t stack)
 static int64_t *
 mark_stacks(PyCodeObject *code_obj, int len)
 {
-    const _Py_CODEUNIT *code = code_obj->co_firstinstr;
+    const _Py_CODEUNIT *code = code_obj->co_first_instr;
     int64_t *stacks = PyMem_New(int64_t, len+1);
     int i, j, opcode;
 
@@ -602,7 +602,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
     }
     /* Finally set the new lasti and return OK. */
     f->f_lineno = 0;
-    f->f_frame->first_instr = f->f_frame->f_code->co_firstinstr;
+    f->f_frame->first_instr = f->f_frame->f_code->co_first_instr;
     f->f_frame->prev_instr = f->f_frame->first_instr + best_addr;
     return 0;
 }
@@ -885,7 +885,7 @@ _PyFrame_OpAlreadyRan(_PyInterpreterFrame *frame, int opcode, int oparg)
     // This only works when opcode is a non-quickened form:
     assert(_PyOpcode_Deopt[opcode] == opcode);
     int check_oparg = 0;
-    for (_Py_CODEUNIT *instruction = frame->f_code->co_firstinstr;
+    for (_Py_CODEUNIT *instruction = frame->f_code->co_first_instr;
          instruction < frame->prev_instr; instruction++)
     {
         int check_opcode = _PyOpcode_Deopt[_Py_OPCODE(*instruction)];
