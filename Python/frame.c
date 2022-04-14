@@ -138,7 +138,7 @@ _PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame)
     int lasti = -1;
     _Py_CODEUNIT *instruction = frame->first_instr;
     while (instruction <= frame->prev_instr) {
-        instruction += _PyOpcode_Caches[_Py_OPCODE(*instruction)] + 1;
+        instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
         lasti += 1;
     }
     return lasti;

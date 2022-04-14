@@ -424,7 +424,7 @@ _PyFrame_GetState(PyFrameObject *frame)
         }
         case FRAME_OWNED_BY_THREAD:
         {
-            if (_PyInterpreterFrame_GetLastI(frame->f_frame) < 0) {
+            if (_PyInterpreterFrame_LASTI(frame->f_frame) < 0) {
                 return FRAME_CREATED;
             }
             switch (_PyOpcode_Deopt[_Py_OPCODE(*frame->f_frame->prev_instr)])
@@ -559,7 +559,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
 
     int64_t best_stack = OVERFLOWED;
     int best_addr = -1;
-    int64_t start_stack = stacks[_PyInterpreterFrame_GetLastI(f->f_frame)];
+    int64_t start_stack = stacks[_PyInterpreterFrame_GetLastI(f->f_frame)];  // XXX
     int err = -1;
     const char *msg = "cannot find bytecode for specified line";
     for (int i = 0; i < len; i++) {
@@ -920,7 +920,7 @@ _PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
     fast = _PyFrame_GetLocalsArray(frame);
     // COPY_FREE_VARS has no quickened forms, so no need to use _PyOpcode_Deopt
     // here:
-    int lasti = _PyInterpreterFrame_GetLastI(frame);
+    int lasti = _PyInterpreterFrame_LASTI(frame);
     if (lasti < 0 && *frame->first_instr == COPY_FREE_VARS) {
         /* Free vars have not been initialized -- Do that */
         PyObject *closure = frame->f_func->func_closure;
