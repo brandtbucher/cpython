@@ -54,6 +54,7 @@ typedef struct _PyInterpreterFrame {
     PyFrameObject *frame_obj; /* Strong reference, may be NULL */
     /* Linkage section */
     struct _PyInterpreterFrame *previous;
+    _Py_CODEUNIT *first_instr;
     // NOTE: This is not necessarily the last instruction started in the given
     // frame. Rather, it is the code unit *prior to* the *next* instruction. For
     // example, it may be an inline CACHE entry, an instruction we just jumped
@@ -65,9 +66,6 @@ typedef struct _PyInterpreterFrame {
     /* Locals and stack */
     PyObject *localsplus[1];
 } _PyInterpreterFrame;
-
-#define _PyInterpreterFrame_LASTI(IF) \
-    ((int)((IF)->prev_instr - (IF)->f_code->co_firstinstr))
 
 static inline PyObject **_PyFrame_Stackbase(_PyInterpreterFrame *f) {
     return f->localsplus + f->f_code->co_nlocalsplus;
@@ -107,7 +105,8 @@ _PyFrame_InitializeSpecials(
     frame->f_locals = Py_XNewRef(locals);
     frame->stacktop = nlocalsplus;
     frame->frame_obj = NULL;
-    frame->prev_instr = frame->f_code->co_firstinstr - 1;
+    frame->first_instr = frame->f_code->co_firstinstr;
+    frame->prev_instr = frame->first_instr - 1;
     frame->is_entry = false;
     frame->owner = FRAME_OWNED_BY_THREAD;
 }
@@ -196,6 +195,7 @@ void _PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame *frame);
 _PyInterpreterFrame *
 _PyFrame_Push(PyThreadState *tstate, PyFunctionObject *func);
 
+int _PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame);
 int _PyInterpreterFrame_GetLine(_PyInterpreterFrame *frame);
 
 static inline

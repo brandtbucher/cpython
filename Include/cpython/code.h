@@ -110,7 +110,6 @@ struct PyCodeObject {
      This should be treated as opaque by all code except the specializer and
      interpreter. */
     _Py_CODEUNIT *co_quickened;
-    unsigned char *co_offsets;
 };
 
 /* Masks for co_flags above */

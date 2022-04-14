@@ -312,13 +312,13 @@ optimize(_Py_CODEUNIT *instructions, Py_ssize_t size)
 
 int
 _PyCode_Quicken(PyCodeObject *code) {
-    return 0;  // XXX
+    // return 0;  // XXX
     if (code->co_quickened) {
         return 0;
     }
     Py_ssize_t size = PyBytes_GET_SIZE(code->co_code);
     int instr_count = (int)(size / sizeof(_Py_CODEUNIT));
-    _Py_CODEUNIT *quickened = PyMem_Malloc(instr_count);
+    _Py_CODEUNIT *quickened = PyMem_Malloc(size);
     if (quickened == NULL) {
         return -1;
     }

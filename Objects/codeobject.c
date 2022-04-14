@@ -1516,7 +1516,6 @@ code_sizeof(PyCodeObject *co, PyObject *Py_UNUSED(args))
     }
 
     if (co->co_quickened != NULL) {
-        // Also co_offsets?
         res += PyBytes_GET_SIZE(co->co_code);  // XXX
     }
 

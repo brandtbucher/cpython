@@ -129,8 +129,24 @@ _PyFrame_Push(PyThreadState *tstate, PyFunctionObject *func)
 }
 
 int
+_PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame)
+{
+    if (frame->first_instr == (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
+        return frame->prev_instr - frame->first_instr;
+    }
+    assert(frame->first_instr == frame->f_code->co_quickened);
+    int lasti = -1;
+    _Py_CODEUNIT *instruction = frame->first_instr;
+    while (instruction <= frame->prev_instr) {
+        instruction += _PyOpcode_Caches[_Py_OPCODE(*instruction)] + 1;
+        lasti += 1;
+    }
+    return lasti;
+}
+
+int
 _PyInterpreterFrame_GetLine(_PyInterpreterFrame *frame)
 {
-    int addr = _PyInterpreterFrame_LASTI(frame) * sizeof(_Py_CODEUNIT);
+    int addr = _PyInterpreterFrame_GetLastI(frame) * sizeof(_Py_CODEUNIT);
     return PyCode_Addr2Line(frame->f_code, addr);
 }

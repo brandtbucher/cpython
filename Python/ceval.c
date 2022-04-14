@@ -58,10 +58,10 @@ static int prtrace(PyThreadState *, PyObject *, const char *);
 static void lltrace_instruction(_PyInterpreterFrame *frame, int opcode, int oparg)
 {
     if (HAS_ARG(opcode)) {
-        printf("%d: %d, %d\n", _PyInterpreterFrame_LASTI(frame), opcode, oparg);
+        printf("%d: %d, %d\n", _PyInterpreterFrame_GetLastI(frame), opcode, oparg);
     }
     else {
-        printf("%d: %d\n", _PyInterpreterFrame_LASTI(frame), opcode);
+        printf("%d: %d\n", _PyInterpreterFrame_GetLastI(frame), opcode);
     }
 }
 #endif
@@ -1635,10 +1635,10 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         PyCodeObject *co = frame->f_code; \
         names = co->co_names; \
         consts = co->co_consts; \
-        first_instr = co->co_firstinstr; \
     } \
-    assert(_PyInterpreterFrame_LASTI(frame) >= -1); \
+    assert(_PyInterpreterFrame_GetLastI(frame) >= -1); \
     /* Jump back to the last instruction executed... */ \
+    first_instr = frame->first_instr; \
     next_instr = frame->prev_instr + 1; \
     stack_pointer = _PyFrame_GetStackPointer(frame); \
     /* Set stackdepth to -1. \
@@ -1708,15 +1708,8 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            int err = _PyCode_Warmup(frame->f_code);
-            if (err) {
-                if (err < 0) {
-                    goto error;
-                }
-                /* Update first_instr and next_instr to point to newly quickened code */
-                int nexti = INSTR_OFFSET();
-                first_instr = frame->f_code->co_firstinstr;
-                next_instr = first_instr + nexti;
+            if (_PyCode_Warmup(frame->f_code)) {
+                goto error;
             }
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
@@ -3942,15 +3935,8 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD) {
-            int err = _PyCode_Warmup(frame->f_code);
-            if (err) {
-                if (err < 0) {
-                    goto error;
-                }
-                /* Update first_instr and next_instr to point to newly quickened code */
-                int nexti = INSTR_OFFSET();
-                first_instr = frame->f_code->co_firstinstr;
-                next_instr = first_instr + nexti;
+            if (_PyCode_Warmup(frame->f_code)) {
+                goto error;
             }
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
         }
@@ -5544,7 +5530,7 @@ handle_eval_breaker:
 #endif
     {
         if (tstate->tracing == 0) {
-            int instr_prev = _PyInterpreterFrame_LASTI(frame);
+            int instr_prev = _PyInterpreterFrame_GetLastI(frame);
             frame->prev_instr = next_instr;
             NEXTOPARG();
             opcode = _PyOpcode_Deopt[opcode];
@@ -5709,7 +5695,7 @@ exception_unwind:
             }
             PyObject *exc, *val, *tb;
             if (lasti) {
-                int frame_lasti = _PyInterpreterFrame_LASTI(frame);
+                int frame_lasti = _PyInterpreterFrame_GetLastI(frame);
                 PyObject *lasti = PyLong_FromLong(frame_lasti);
                 if (lasti == NULL) {
                     goto exception_unwind;
@@ -6802,9 +6788,9 @@ call_trace(Py_tracefunc func, PyObject *obj,
     int old_what = tstate->tracing_what;
     tstate->tracing_what = what;
     PyThreadState_EnterTracing(tstate);
-    assert(_PyInterpreterFrame_LASTI(frame) >= 0);
+    assert(_PyInterpreterFrame_GetLastI(frame) >= 0);
     initialize_trace_info(&tstate->trace_info, frame);
-    int addr = _PyInterpreterFrame_LASTI(frame) * sizeof(_Py_CODEUNIT);
+    int addr = _PyInterpreterFrame_GetLastI(frame) * sizeof(_Py_CODEUNIT);
     f->f_lineno = _PyCode_CheckLineNumber(addr, &tstate->trace_info.bounds);
     result = func(obj, f, what, arg);
     f->f_lineno = 0;
@@ -6855,7 +6841,7 @@ maybe_call_line_trace(Py_tracefunc func, PyObject *obj,
     else {
         lastline = _PyCode_CheckLineNumber(instr_prev*sizeof(_Py_CODEUNIT), &tstate->trace_info.bounds);
     }
-    int addr = _PyInterpreterFrame_LASTI(frame) * sizeof(_Py_CODEUNIT);
+    int addr = _PyInterpreterFrame_GetLastI(frame) * sizeof(_Py_CODEUNIT);
     int line = _PyCode_CheckLineNumber(addr, &tstate->trace_info.bounds);
     PyFrameObject *f = _PyFrame_GetFrameObject(frame);
     if (f == NULL) {
@@ -6864,7 +6850,7 @@ maybe_call_line_trace(Py_tracefunc func, PyObject *obj,
     if (line != -1 && f->f_trace_lines) {
         /* Trace backward edges (except in 'yield from') or if line number has changed */
         int trace = line != lastline ||
-            (_PyInterpreterFrame_LASTI(frame) < instr_prev &&
+            (_PyInterpreterFrame_GetLastI(frame) < instr_prev &&
              // SEND has no quickened forms, so no need to use _PyOpcode_Deopt
              // here:
              _Py_OPCODE(*frame->prev_instr) != SEND);
@@ -7832,11 +7818,11 @@ maybe_dtrace_line(_PyInterpreterFrame *frame,
     */
     initialize_trace_info(trace_info, frame);
     int lastline = _PyCode_CheckLineNumber(instr_prev*sizeof(_Py_CODEUNIT), &trace_info->bounds);
-    int addr = _PyInterpreterFrame_LASTI(frame) * sizeof(_Py_CODEUNIT);
+    int addr = _PyInterpreterFrame_GetLastI(frame) * sizeof(_Py_CODEUNIT);
     int line = _PyCode_CheckLineNumber(addr, &trace_info->bounds);
     if (line != -1) {
         /* Trace backward edges or first instruction of a new line */
-        if (_PyInterpreterFrame_LASTI(frame) < instr_prev ||
+        if (_PyInterpreterFrame_GetLastI(frame) < instr_prev ||
             (line != lastline && addr == trace_info->bounds.ar_start))
         {
             co_filename = PyUnicode_AsUTF8(frame->f_code->co_filename);

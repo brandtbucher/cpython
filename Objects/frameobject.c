@@ -58,7 +58,7 @@ frame_getlineno(PyFrameObject *f, void *closure)
 static PyObject *
 frame_getlasti(PyFrameObject *f, void *closure)
 {
-    int lasti = _PyInterpreterFrame_LASTI(f->f_frame);
+    int lasti = _PyInterpreterFrame_GetLastI(f->f_frame);
     if (lasti < 0) {
         return PyLong_FromLong(-1);
     }
@@ -424,7 +424,7 @@ _PyFrame_GetState(PyFrameObject *frame)
         }
         case FRAME_OWNED_BY_THREAD:
         {
-            if (_PyInterpreterFrame_LASTI(frame->f_frame) < 0) {
+            if (_PyInterpreterFrame_GetLastI(frame->f_frame) < 0) {
                 return FRAME_CREATED;
             }
             switch (_PyOpcode_Deopt[_Py_OPCODE(*frame->f_frame->prev_instr)])
@@ -559,7 +559,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
 
     int64_t best_stack = OVERFLOWED;
     int best_addr = -1;
-    int64_t start_stack = stacks[_PyInterpreterFrame_LASTI(f->f_frame)];
+    int64_t start_stack = stacks[_PyInterpreterFrame_GetLastI(f->f_frame)];
     int err = -1;
     const char *msg = "cannot find bytecode for specified line";
     for (int i = 0; i < len; i++) {
@@ -602,7 +602,8 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno, void *Py_UNUSED(ignore
     }
     /* Finally set the new lasti and return OK. */
     f->f_lineno = 0;
-    f->f_frame->prev_instr = f->f_frame->f_code->co_firstinstr + best_addr;
+    f->f_frame->first_instr = f->f_frame->f_code->co_firstinstr;
+    f->f_frame->prev_instr = f->f_frame->first_instr + best_addr;
     return 0;
 }
 
@@ -919,10 +920,9 @@ _PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
     fast = _PyFrame_GetLocalsArray(frame);
     // COPY_FREE_VARS has no quickened forms, so no need to use _PyOpcode_Deopt
     // here:
-    int lasti = _PyInterpreterFrame_LASTI(frame);
-    if (lasti < 0 && _Py_OPCODE(*co->co_firstinstr) == COPY_FREE_VARS) {
+    int lasti = _PyInterpreterFrame_GetLastI(frame);
+    if (lasti < 0 && *frame->first_instr == COPY_FREE_VARS) {
         /* Free vars have not been initialized -- Do that */
-        PyCodeObject *co = frame->f_code;
         PyObject *closure = frame->f_func->func_closure;
         int offset = co->co_nlocals + co->co_nplaincellvars;
         for (int i = 0; i < co->co_nfreevars; ++i) {
@@ -931,7 +931,7 @@ _PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
             frame->localsplus[offset + i] = o;
         }
         // COPY_FREE_VARS doesn't have inline CACHEs, either:
-        frame->prev_instr = frame->f_code->co_firstinstr;
+        frame->prev_instr = frame->first_instr;
     }
     for (int i = 0; i < co->co_nlocalsplus; i++) {
         _PyLocals_Kind kind = _PyLocals_GetKind(co->co_localspluskinds, i);
@@ -1142,7 +1142,7 @@ PyFrame_GetBuiltins(PyFrameObject *frame)
 int
 PyFrame_GetLasti(PyFrameObject *frame)
 {
-    int lasti = _PyInterpreterFrame_LASTI(frame->f_frame);
+    int lasti = _PyInterpreterFrame_GetLastI(frame->f_frame);
     if (lasti < 0) {
         return -1;
     }

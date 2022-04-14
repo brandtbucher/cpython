@@ -238,7 +238,7 @@ _PyTraceBack_FromFrame(PyObject *tb_next, PyFrameObject *frame)
 {
     assert(tb_next == NULL || PyTraceBack_Check(tb_next));
     assert(frame != NULL);
-    int addr = _PyInterpreterFrame_LASTI(frame->f_frame) * sizeof(_Py_CODEUNIT);
+    int addr = _PyInterpreterFrame_GetLastI(frame->f_frame) * sizeof(_Py_CODEUNIT);
     return tb_create_raw((PyTracebackObject *)tb_next, frame, addr,
                          PyFrame_GetLineNumber(frame));
 }

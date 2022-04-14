@@ -492,7 +492,7 @@ _gen_throw(PyGenObject *gen, int close_on_genexit,
             // XXX: Performing this jump ourselves is awkward and problematic.
             // See https://github.com/python/cpython/pull/31968.
             /* Termination repetition of SEND loop */
-            assert(_PyInterpreterFrame_LASTI(frame) >= 0);
+            assert(_PyInterpreterFrame_GetLastI(frame) >= 0);
             /* Backup to SEND */
             assert(_Py_OPCODE(frame->prev_instr[-1]) == SEND);
             int jump = _Py_OPARG(frame->prev_instr[-1]);

@@ -1015,8 +1015,8 @@ class PyFramePtr:
         return self._f_special("nlocalsplus", int_from_int)
 
     def _f_lasti(self):
+        first_instr = self._gdbval["first_instr"]
         prev_instr = self._gdbval["prev_instr"]
-        first_instr = self._f_code().field("co_firstinstr")
         return int(prev_instr - first_instr)
 
     def is_entry(self):
