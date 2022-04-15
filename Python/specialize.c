@@ -21,7 +21,7 @@ uint8_t _PyOpcode_Adaptive[256] = {
     [LOAD_ATTR] = LOAD_ATTR_ADAPTIVE,
     [LOAD_GLOBAL] = LOAD_GLOBAL_ADAPTIVE,
     [LOAD_METHOD] = LOAD_METHOD_ADAPTIVE,
-    [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,
+    // [BINARY_SUBSCR] = BINARY_SUBSCR_ADAPTIVE,  // XXX
     [STORE_SUBSCR] = STORE_SUBSCR_ADAPTIVE,
     [CALL] = CALL_ADAPTIVE,
     [PRECALL] = PRECALL_ADAPTIVE,
@@ -362,7 +362,7 @@ quicken(PyObject *co_code)
         if (false) {
         fix_jump:
             if (0xFF < (oparg >> (8 * extended_args))) {
-                assert(0);
+                assert(0);  // XXX
                 PyMem_Free(offsets);
                 PyMem_Free(quickened);
                 return NULL;
