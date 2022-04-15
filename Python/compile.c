@@ -138,6 +138,7 @@ struct instr {
     int i_end_lineno;
     int i_col_offset;
     int i_end_col_offset;
+    int i_oparg_max;
 };
 
 typedef struct excepthandler {
@@ -190,13 +191,13 @@ is_jump(struct instr *i)
 }
 
 static int
-instr_size(struct instr *instruction)
+instr_size(struct instr *instruction, bool caches)
 {
     int opcode = instruction->i_opcode;
     assert(!IS_VIRTUAL_OPCODE(opcode));
-    int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
+    int oparg = HAS_ARG(opcode) ? instruction->i_oparg_max : 0;
     int extended_args = (0xFFFFFF < oparg) + (0xFFFF < oparg) + (0xFF < oparg);
-    return extended_args + 1;
+    return extended_args + 1 + caches * _PyOpcode_Caches[_PyOpcode_Adaptive[opcode]];
 }
 
 static void
@@ -245,6 +246,7 @@ typedef struct basicblock_ {
     int b_startdepth;
     /* instruction offset for block, computed by assemble_jump_offsets() */
     int b_offset;
+    int b_offset_max;
     /* Basic block has no fall through (it ends with a return, raise or jump) */
     unsigned b_nofallthrough : 1;
     /* Basic block is an exception handler that preserves lasti */
@@ -7209,13 +7211,13 @@ assemble_free(struct assembler *a)
 }
 
 static int
-blocksize(basicblock *b)
+blocksize(basicblock *b, bool caches)
 {
     int i;
     int size = 0;
 
     for (i = 0; i < b->b_iused; i++) {
-        size += instr_size(&b->b_instr[i]);
+        size += instr_size(&b->b_instr[i], caches);
     }
     return size;
 }
@@ -7473,7 +7475,7 @@ assemble_exception_table(struct assembler *a)
                 start = ioffset;
                 handler = instr->i_except;
             }
-            ioffset += instr_size(instr);
+            ioffset += instr_size(instr, false);
         }
     }
     if (handler != NULL) {
@@ -7605,7 +7607,7 @@ assemble_emit(struct assembler *a, struct instr *i)
     Py_ssize_t len = PyBytes_GET_SIZE(a->a_bytecode);
     _Py_CODEUNIT *code;
 
-    int size = instr_size(i);
+    int size = instr_size(i, false);
     if (i->i_lineno && !assemble_lnotab(a, i)) {
         return 0;
     }
@@ -7675,60 +7677,67 @@ static void
 assemble_jump_offsets(struct assembler *a, struct compiler *c)
 {
     basicblock *b;
-    int bsize, totsize, extended_arg_recompile;
+    int extended_arg_recompile;
     int i;
 
     /* Compute the size of each block and fixup jump args.
        Replace block pointer with position in bytecode. */
+    for (basicblock *b = a->a_entry; b != NULL; b = b->b_next) {
+        for (i = 0; i < b->b_iused; i++) {
+            b->b_instr[i].i_oparg_max = b->b_instr[i].i_oparg;
+        }
+    }
     do {
-        totsize = 0;
+        int totsize = 0;
+        int totsize_max = 0;
         for (basicblock *b = a->a_entry; b != NULL; b = b->b_next) {
-            bsize = blocksize(b);
             b->b_offset = totsize;
-            totsize += bsize;
+            b->b_offset_max = totsize_max;
+            totsize += blocksize(b, false);
+            totsize_max += blocksize(b, true);
         }
         extended_arg_recompile = 0;
         for (b = c->u->u_blocks; b != NULL; b = b->b_list) {
-            bsize = b->b_offset;
+            int bsize = b->b_offset;
+            int bsize_max = b->b_offset_max;
             for (i = 0; i < b->b_iused; i++) {
                 struct instr *instr = &b->b_instr[i];
-                int isize = instr_size(instr);
+                int isize = instr_size(instr, false);
+                int isize_max = instr_size(instr, true);
                 /* Relative jumps are computed relative to
                    the instruction pointer after fetching
                    the jump instruction.
                 */
                 bsize += isize;
+                bsize_max += isize_max;
                 if (is_jump(instr)) {
                     instr->i_oparg = instr->i_target->b_offset;
+                    instr->i_oparg_max = instr->i_target->b_offset_max;
                     if (is_relative_jump(instr)) {
                         if (instr->i_oparg < bsize) {
                             assert(IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
                             instr->i_oparg = bsize - instr->i_oparg;
+                            instr->i_oparg_max = bsize_max - instr->i_oparg_max;
                         }
                         else {
                             assert(!IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
                             instr->i_oparg -= bsize;
+                            instr->i_oparg_max -= bsize_max;
                         }
                     }
-                    else {
-                        assert(!IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
-                    }
-                    if (instr_size(instr) != isize) {
+                    if (instr_size(instr, false) != isize) {
                         extended_arg_recompile = 1;
                     }
                 }
             }
         }
-
     /* XXX: This is an awful hack that could hurt performance, but
         on the bright side it should work until we come up
         with a better solution.
-
         The issue is that in the first loop blocksize() is called
         which calls instr_size() which requires i_oparg be set
         appropriately. There is a bootstrap problem because
         i_oparg is calculated in the second loop above.
-
         So we loop until we stop seeing new EXTENDED_ARGs.
         The only EXTENDED_ARGs that could be popping up are
         ones in jump instructions.  So this should converge
