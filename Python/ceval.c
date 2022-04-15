@@ -5668,8 +5668,9 @@ exception_unwind:
                 assert(frame->first_instr == frame->f_code->co_first_instr);
                 _Py_CODEUNIT *instruction = first_instr;
                 while (instruction < next_instr) {
-                    offset -= _PyOpcode_Caches[_Py_OPCODE(*instruction)];
-                    instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
+                    int caches = _PyOpcode_Caches[_Py_OPCODE(*instruction)];
+                    instruction += 1 + caches;
+                    offset -= caches;
                 }
                 int lasti = _PyInterpreterFrame_GetLastI(frame);
                 frame->first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);

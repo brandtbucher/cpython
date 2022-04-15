@@ -266,6 +266,9 @@ quicken(PyObject *co_code)
     _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
     int size = PyBytes_GET_SIZE(co_code) / sizeof(_Py_CODEUNIT);
     int *offsets = PyMem_Malloc(size * sizeof(int));
+    if (offsets == NULL) {
+        return NULL;
+    }
     int j = 0;
     // First pass: count caches and record new instruction offsets.
     for (int i = 0; i < size; i++, j++) {
@@ -284,121 +287,105 @@ quicken(PyObject *co_code)
     for (int i = 0; i < size; i++) {
         int j = offsets[i];
         _Py_CODEUNIT instruction = instructions[i];
-        quickened[j] = instruction;
         int opcode = _Py_OPCODE(instruction);
         oparg |= _Py_OPARG(instruction);
+        if (opcode == EXTENDED_ARG) {
+            quickened[j] = instruction;
+            previous_opcode = EXTENDED_ARG;
+            extended_args++;
+            oparg <<= 8;
+            continue;
+        }
         int adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {
-            assert(_PyOpcode_Caches[adaptive_opcode]);
-            _Py_SET_OPCODE(quickened[j], adaptive_opcode);
+            opcode = adaptive_opcode;
+            assert(_PyOpcode_Caches[opcode]);
             // Make sure the adaptive counter is zero:
             quickened[j + 1] = 0;
             previous_opcode = -1;
-            oparg = 0;
-            extended_args = 0;
         }
-        else if (opcode != EXTENDED_ARG) {
-            if (is_jump(opcode)) {
-                int target;
-                switch (opcode) {
-                    case JUMP_BACKWARD:
-                        opcode = JUMP_BACKWARD_QUICK;
-                        // Fall through...
-                    case JUMP_BACKWARD_NO_INTERRUPT:
-                    case POP_JUMP_BACKWARD_IF_FALSE:
-                    case POP_JUMP_BACKWARD_IF_TRUE:
-                    case POP_JUMP_BACKWARD_IF_NONE:
-                    case POP_JUMP_BACKWARD_IF_NOT_NONE:
-                        target = -(offsets[i + 1 - oparg] - j - 1);
-                        break;
-                    case FOR_ITER:
-                    case JUMP_FORWARD:
-                    case POP_JUMP_FORWARD_IF_FALSE:
-                    case POP_JUMP_FORWARD_IF_TRUE:
-                    case POP_JUMP_FORWARD_IF_NONE:
-                    case POP_JUMP_FORWARD_IF_NOT_NONE:
-                    case SEND:
-                        target = offsets[i + 1 + oparg] - j - 1;
-                        break;
-                    case JUMP_IF_FALSE_OR_POP:
-                    case JUMP_IF_TRUE_OR_POP:
-                        target = offsets[oparg];
-                        break;
-                    default:
-                        Py_UNREACHABLE();
-                }
-                switch (extended_args) {
-                    case 3:
-                        quickened[j - 3] = _Py_MAKECODEUNIT(
-                            EXTENDED_ARG, (target >> 24) & 0xFF);
-                        target &= 0x00FFFFFF;
-                        // Fall through...
-                    case 2:
-                        quickened[j - 2] = _Py_MAKECODEUNIT(
-                            EXTENDED_ARG, (target >> 16) & 0xFF);
-                        target &= 0x0000FFFF;
-                        // Fall through...
-                    case 1:
-                        quickened[j - 1] = _Py_MAKECODEUNIT(
-                            EXTENDED_ARG, (target >>  8) & 0xFF);
-                        target &= 0x000000FF;
-                        // Fall through...
-                    case 0:
-                        quickened[j] = _Py_MAKECODEUNIT(
-                            opcode, target & 0xFF);
-                        if (target >> 8) {
-                            PyMem_Free(offsets);
-                            PyMem_Free(quickened);
-                            return NULL;
-                        }
-                        break;
-                    default:
-                        Py_UNREACHABLE();
-                }
+        else if (is_jump(opcode)) {
+            switch (opcode) {
+                case JUMP_BACKWARD:
+                    opcode = JUMP_BACKWARD_QUICK;
+                    // Fall through...
+                case JUMP_BACKWARD_NO_INTERRUPT:
+                case POP_JUMP_BACKWARD_IF_FALSE:
+                case POP_JUMP_BACKWARD_IF_TRUE:
+                case POP_JUMP_BACKWARD_IF_NONE:
+                case POP_JUMP_BACKWARD_IF_NOT_NONE:
+                    oparg = -(offsets[i + 1 - oparg] - j - 1);
+                    break;
+                case FOR_ITER:
+                case JUMP_FORWARD:
+                case POP_JUMP_FORWARD_IF_FALSE:
+                case POP_JUMP_FORWARD_IF_TRUE:
+                case POP_JUMP_FORWARD_IF_NONE:
+                case POP_JUMP_FORWARD_IF_NOT_NONE:
+                case SEND:
+                    oparg = offsets[i + 1 + oparg] - j - 1;
+                    break;
+                case JUMP_IF_FALSE_OR_POP:
+                case JUMP_IF_TRUE_OR_POP:
+                    oparg = offsets[oparg];
+                    break;
+                default:
+                    Py_UNREACHABLE();
             }
-            else {
-                switch (opcode) {
-                    case RESUME:
-                        _Py_SET_OPCODE(quickened[j], RESUME_QUICK);
-                        break;
-                    case LOAD_FAST:
-                        switch (previous_opcode) {
-                            case LOAD_FAST:
-                                _Py_SET_OPCODE(quickened[j - 1],
-                                               LOAD_FAST__LOAD_FAST);
-                                break;
-                            case STORE_FAST:
-                                _Py_SET_OPCODE(quickened[j - 1],
-                                               STORE_FAST__LOAD_FAST);
-                                break;
-                            case LOAD_CONST:
-                                _Py_SET_OPCODE(quickened[j - 1],
-                                               LOAD_CONST__LOAD_FAST);
-                                break;
-                        }
-                        break;
-                    case STORE_FAST:
-                        if (previous_opcode == STORE_FAST) {
-                            _Py_SET_OPCODE(quickened[j - 1], 
-                                           STORE_FAST__STORE_FAST);
-                        }
-                        break;
-                    case LOAD_CONST:
-                        if (previous_opcode == LOAD_FAST) {
-                            _Py_SET_OPCODE(quickened[j - 1],
-                                           LOAD_FAST__LOAD_CONST);
-                        }
-                        break;
-                }
+            while (extended_args) {
+                quickened[j - extended_args] = _Py_MAKECODEUNIT(
+                    EXTENDED_ARG, (oparg >> (8 * extended_args)) & 0xFF);
+                oparg &= ~(0xFF << (8 * extended_args));
+                extended_args--;
+            }
+            if (oparg) {
+                PyMem_Free(offsets);
+                PyMem_Free(quickened);
+                return NULL;
             }
             previous_opcode = opcode;
-            oparg = 0;
-            extended_args = 0;
         }
         else {
-            oparg <<= 8;
-            extended_args++;
+            switch (opcode) {
+                case RESUME:
+                    opcode = RESUME_QUICK;
+                    break;
+                case LOAD_FAST:
+                    switch (previous_opcode) {
+                        case LOAD_FAST:
+                            _Py_SET_OPCODE(quickened[j - 1], 
+                                           LOAD_FAST__LOAD_FAST);
+                            break;
+                        case STORE_FAST:
+                            _Py_SET_OPCODE(quickened[j - 1],
+                                           STORE_FAST__LOAD_FAST);
+                            break;
+                        case LOAD_CONST:
+                            _Py_SET_OPCODE(quickened[j - 1],
+                                           LOAD_CONST__LOAD_FAST);
+                            break;
+                    }
+                    break;
+                case STORE_FAST:
+                    if (previous_opcode == STORE_FAST) {
+                        _Py_SET_OPCODE(quickened[j - 1],
+                                       STORE_FAST__STORE_FAST);
+                    }
+                    break;
+                case LOAD_CONST:
+                    if (previous_opcode == LOAD_FAST) {
+                        _Py_SET_OPCODE(quickened[j - 1],
+                                       LOAD_FAST__LOAD_CONST);
+                    }
+                    break;
+            }
+            previous_opcode = opcode;
         }
+        assert(0 <= oparg);
+        assert(oparg <= 0xFF);
+        quickened[j] = _Py_MAKECODEUNIT(opcode, oparg);
+        extended_args = 0;
+        oparg = 0;
     }
     PyMem_Free(offsets);
     _Py_QuickenedCount++;

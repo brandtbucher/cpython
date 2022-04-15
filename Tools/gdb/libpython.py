@@ -1015,6 +1015,7 @@ class PyFramePtr:
         return self._f_special("nlocalsplus", int_from_int)
 
     def _f_lasti(self):
+        # XXX: This gives the wrong value for quickened code...
         first_instr = self._gdbval["first_instr"]
         prev_instr = self._gdbval["prev_instr"]
         return int(prev_instr - first_instr)
