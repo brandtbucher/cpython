@@ -1573,6 +1573,27 @@ is_method(PyObject **stack_pointer, int args) {
 #define KWNAMES_LEN() \
     (call_shape.kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(call_shape.kwnames)))
 
+static inline int
+_PyInterpreterFrame_Warmup(_PyInterpreterFrame *frame)
+{
+    int quickened = _PyCode_Warmup(frame->f_code);
+    if (quickened <= 0) {
+        return quickened;
+    }
+    if (frame->first_instr == frame->f_code->co_first_instr) {
+        return 0;
+    }
+    int offset = _PyInterpreterFrame_LASTI(frame);
+    int caches = 0;
+    for (int i = 0; i < offset; i++) {
+        _Py_CODEUNIT instruction = ((_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code))[i];
+        caches += _PyOpcode_Caches[_PyOpcode_Adaptive[_Py_OPCODE(instruction)]];
+    }
+    frame->first_instr = frame->f_code->co_first_instr;
+    frame->prev_instr = frame->first_instr + offset + caches;
+    return 1;
+}
+
 PyObject* _Py_HOT_FUNCTION
 _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int throwflag)
 {
@@ -1708,8 +1729,13 @@ handle_eval_breaker:
         }
 
         TARGET(RESUME) {
-            if (_PyCode_Warmup(frame->f_code)) {
-                goto error;
+            int quickened = _PyInterpreterFrame_Warmup(frame);
+            if (quickened) {
+                if (quickened < 0) {
+                    goto error;
+                }
+                first_instr = frame->first_instr;
+                next_instr = frame->prev_instr + 1;
             }
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
@@ -3929,8 +3955,17 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD) {
-            if (_PyCode_Warmup(frame->f_code)) {
-                goto error;
+            int quickened = _PyInterpreterFrame_Warmup(frame);
+            if (quickened) {
+                if (quickened < 0) {
+                    goto error;
+                }
+                first_instr = frame->first_instr;
+                next_instr = frame->prev_instr + 1;
+                oparg = _Py_OPARG(next_instr[-1]);
+                for (int i = 1; _Py_OPCODE(next_instr[-1 - i]) == EXTENDED_ARG; i++) {
+                    oparg |= _Py_OPARG(next_instr[-1 - i]) << (i * 8);
+                }
             }
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
         }

@@ -103,13 +103,13 @@ int _PyCode_Quicken(PyCodeObject *code);
 static inline int
 _PyCode_Warmup(PyCodeObject *code)
 {
-    if (code->co_warmup != 0) {
-        code->co_warmup++;
-        if (code->co_warmup == 0) {
-            return _PyCode_Quicken(code);
-        }
+    if (code->co_warmup == 0) {
+        return 1;
     }
-    return 0;
+    if (++code->co_warmup) {
+        return 0;
+    }
+    return _PyCode_Quicken(code);
 }
 
 extern uint8_t _PyOpcode_Adaptive[256];

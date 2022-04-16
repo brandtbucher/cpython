@@ -395,16 +395,18 @@ quicken(PyObject *co_code)
 
 int
 _PyCode_Quicken(PyCodeObject *code) {
-    if (code->co_first_instr == 
+    if (code->co_first_instr != 
         (_Py_CODEUNIT *)PyBytes_AS_STRING(code->co_code))
     {
-        _Py_CODEUNIT *quickened = quicken(code->co_code);
-        if (quickened) {
-            code->co_first_instr = quickened;
-        }
-        else if (PyErr_Occurred()) {
-            return -1;
-        }
+        return 1;
+    }
+    _Py_CODEUNIT *quickened = quicken(code->co_code);
+    if (quickened) {
+        code->co_first_instr = quickened;
+        return 1;
+    }
+    if (PyErr_Occurred()) {
+        return -1;
     }
     return 0;
 }
