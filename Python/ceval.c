@@ -2076,7 +2076,6 @@ handle_eval_breaker:
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            //  JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             DISPATCH();
         }
 
@@ -2156,6 +2155,7 @@ handle_eval_breaker:
             STAT_INC(BINARY_SUBSCR, hit);
             PyObject *sub = TOP();
             PyObject *res = PyDict_GetItemWithError(dict, sub);
+            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);  // XXX
             if (res == NULL) {
                 goto binary_subscr_dict_error;
             }
@@ -2164,7 +2164,7 @@ handle_eval_breaker:
             Py_DECREF(sub);
             SET_TOP(res);
             Py_DECREF(dict);
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            // JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             DISPATCH();
         }
 
@@ -2242,7 +2242,6 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            //  JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
             DISPATCH();
         }
 
