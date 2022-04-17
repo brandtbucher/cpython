@@ -5667,6 +5667,19 @@ unbound_local_error:
         }
 
 error:
+        if (frame->first_instr != (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code)) {
+            assert(frame->first_instr == frame->f_code->co_first_instr);
+            _Py_CODEUNIT *instruction = first_instr;
+            while (instruction < next_instr) {
+                int caches = _PyOpcode_Caches[_Py_OPCODE(*instruction)];
+                instruction += 1 + caches;
+            }
+            int lasti = _PyInterpreterFrame_GetLastI(frame);
+            frame->first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);
+            frame->prev_instr = frame->first_instr + lasti;
+            first_instr = frame->first_instr;
+            next_instr = frame->prev_instr + 1;
+        }
         call_shape.kwnames = NULL;
         /* Double-check exception status. */
 #ifdef NDEBUG
