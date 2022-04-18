@@ -1525,7 +1525,13 @@ read_object(RFILE *p)
             return NULL;
         }
     }
+    // Unmarshalling creates lots of new objects, but very few (none?) are
+    // actually garbage. So turn off GC while unmarshalling:
+    int reenable = PyGC_Disable();
     v = r_object(p);
+    if (reenable) {
+        PyGC_Enable();
+    }
     if (v == NULL && !PyErr_Occurred())
         PyErr_SetString(PyExc_TypeError, "NULL object in marshal data for object");
     return v;
