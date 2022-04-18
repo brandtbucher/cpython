@@ -142,7 +142,18 @@ _PyInterpreterFrame_GetLastI(_PyInterpreterFrame *frame)
             instruction += 1 + _PyOpcode_Caches[_Py_OPCODE(*instruction)];
         }
         offset = j;
+        PyThreadState *tstate = _PyThreadState_GET();
+        _PyCFrame *cframe = tstate->cframe;
+        while (cframe != &tstate->root_cframe) {
+            if (cframe->current_frame == frame) {
+                goto done;
+            }
+            cframe = cframe->previous;
+        }
+        frame->first_instr = (_Py_CODEUNIT *)PyBytes_AS_STRING(frame->f_code->co_code);
+        frame->prev_instr = frame->first_instr + offset;
     }
+done:
     assert(-1 <= offset);
     assert((int)(offset * sizeof(_Py_CODEUNIT)) < PyBytes_GET_SIZE(frame->f_code->co_code));
     return offset;
