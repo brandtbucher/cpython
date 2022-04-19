@@ -62,6 +62,7 @@ typedef struct _PyInterpreterFrame {
     _Py_CODEUNIT *prev_instr;
     int stacktop;     /* Offset of TOS from localsplus  */
     bool is_entry;  // Whether this is the "root" frame for the current _PyCFrame.
+    bool is_active;
     char owner;
     /* Locals and stack */
     PyObject *localsplus[1];

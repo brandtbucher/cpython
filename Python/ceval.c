@@ -1629,6 +1629,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     /* Push frame */
     frame->previous = prev_cframe->current_frame;
     cframe.current_frame = frame;
+    frame->is_active = true;
 
     /* support for generator.throw() */
     if (throwflag) {
@@ -2227,7 +2228,9 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
+            frame->is_active = false;
             frame = cframe.current_frame = new_frame;
+            frame->is_active = true;
             CALL_STAT_INC(inlined_py_calls);
             goto start_frame;
         }
@@ -2395,7 +2398,9 @@ handle_eval_breaker:
             DTRACE_FUNCTION_EXIT();
             _Py_LeaveRecursiveCall(tstate);
             if (!frame->is_entry) {
+                frame->is_active = false;
                 frame = cframe.current_frame = pop_frame(tstate, frame);
+                frame->is_active = true;
                 _PyFrame_StackPush(frame, retval);
                 goto resume_frame;
             }
@@ -2404,6 +2409,7 @@ handle_eval_breaker:
             tstate->cframe->use_tracing = cframe.use_tracing;
             assert(tstate->cframe->current_frame == frame->previous);
             assert(!_PyErr_Occurred(tstate));
+            frame->is_active = false;
             return retval;
         }
 
@@ -2611,6 +2617,7 @@ handle_eval_breaker:
             tstate->cframe->use_tracing = cframe.use_tracing;
             assert(tstate->cframe->current_frame == frame->previous);
             assert(!_PyErr_Occurred(tstate));
+            frame->is_active = false;
             return retval;
         }
 
@@ -4721,7 +4728,9 @@ handle_eval_breaker:
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 frame->prev_instr = next_instr - 1;
                 new_frame->previous = frame;
+                frame->is_active = false;
                 cframe.current_frame = frame = new_frame;
+                frame->is_active = true;
                 CALL_STAT_INC(inlined_py_calls);
                 goto start_frame;
             }
@@ -4828,7 +4837,9 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
+            frame->is_active = false;
             frame = cframe.current_frame = new_frame;
+            frame->is_active = true;
             goto start_frame;
         }
 
@@ -4869,7 +4880,9 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
+            frame->is_active = false;
             frame = cframe.current_frame = new_frame;
+            frame->is_active = true;
             goto start_frame;
         }
 
@@ -5387,8 +5400,10 @@ handle_eval_breaker:
             _Py_LeaveRecursiveCall(tstate);
             if (!frame->is_entry) {
                 _PyInterpreterFrame *prev = frame->previous;
+                frame->is_active = false;
                 _PyThreadState_PopFrame(tstate, frame);
                 frame = cframe.current_frame = prev;
+                frame->is_active = true;
                 _PyFrame_StackPush(frame, (PyObject *)gen);
                 goto resume_frame;
             }
@@ -5402,6 +5417,7 @@ handle_eval_breaker:
             tstate->cframe->use_tracing = cframe.use_tracing;
             assert(tstate->cframe->current_frame == frame->previous);
             assert(!_PyErr_Occurred(tstate));
+            frame->is_active = false;
             return (PyObject *)gen;
         }
 
@@ -5782,9 +5798,12 @@ exit_unwind:
         tstate->cframe = cframe.previous;
         tstate->cframe->use_tracing = cframe.use_tracing;
         assert(tstate->cframe->current_frame == frame->previous);
+        frame->is_active = false;
         return NULL;
     }
+    frame->is_active = false;
     frame = cframe.current_frame = pop_frame(tstate, frame);
+    frame->is_active = true;
 
 resume_with_error:
     SET_LOCALS_FROM_FRAME();
