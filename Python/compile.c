@@ -191,41 +191,52 @@ is_jump(struct instr *i)
 }
 
 static int
-instr_size(struct instr *instruction)
+instr_size(struct instr *instruction, bool compressed)
 {
     int opcode = instruction->i_opcode;
     assert(!IS_VIRTUAL_OPCODE(opcode));
     int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
     int extended_args = (0xFFFFFF < oparg) + (0xFFFF < oparg) + (0xFF < oparg);
+    if (compressed) {
+        return 2 * extended_args + 1 + HAS_ARG(opcode);
+    }
     int caches = _PyOpcode_Caches[opcode];
     return extended_args + 1 + caches;
 }
 
 static void
-write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
+write_instr(unsigned char *codestr, struct instr *instruction, int ilen)
 {
     int opcode = instruction->i_opcode;
     assert(!IS_VIRTUAL_OPCODE(opcode));
     int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
-    int caches = _PyOpcode_Caches[opcode];
-    switch (ilen - caches) {
-        case 4:
-            *codestr++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 24) & 0xFF);
+    switch (ilen) {
+        case 8:
+            assert(0xFFFFFF < oparg);
+            *codestr++ = EXTENDED_ARG;
+            *codestr++ = (oparg >> 24) & 0xFF;
             /* fall through */
-        case 3:
-            *codestr++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 16) & 0xFF);
+        case 6:
+            assert(0xFFFF < oparg);
+            *codestr++ = EXTENDED_ARG;
+            *codestr++ = (oparg >> 16) & 0xFF;
+            /* fall through */
+        case 4:
+            assert(0xFF < oparg);
+            *codestr++ = EXTENDED_ARG;
+            *codestr++ = (oparg >> 8) & 0xFF;
             /* fall through */
         case 2:
-            *codestr++ = _Py_MAKECODEUNIT(EXTENDED_ARG, (oparg >> 8) & 0xFF);
-            /* fall through */
+            assert(HAS_ARG(opcode));
+            *codestr++ = opcode;
+            *codestr++ = oparg & 0xFF;
+            break;
         case 1:
-            *codestr++ = _Py_MAKECODEUNIT(opcode, oparg & 0xFF);
+            assert(!HAS_ARG(opcode));
+            *codestr++ = opcode;
             break;
         default:
             Py_UNREACHABLE();
-    }
-    while (caches--) {
-        *codestr++ = _Py_MAKECODEUNIT(CACHE, 0);
     }
 }
 
@@ -7062,6 +7073,7 @@ struct assembler {
     PyObject *a_except_table;  /* bytes containing exception table */
     basicblock *a_entry;
     int a_offset;              /* offset into bytecode */
+    int a_offset_compressed;              /* offset into compressed bytecode */
     int a_nblocks;             /* number of reachable blocks */
     int a_except_table_off;    /* offset into exception table */
     int a_lnotab_off;      /* offset into lnotab */
@@ -7226,7 +7238,7 @@ blocksize(basicblock *b)
     int size = 0;
 
     for (i = 0; i < b->b_iused; i++) {
-        size += instr_size(&b->b_instr[i]);
+        size += instr_size(&b->b_instr[i], false);
     }
     return size;
 }
@@ -7484,7 +7496,7 @@ assemble_exception_table(struct assembler *a)
                 start = ioffset;
                 handler = instr->i_except;
             }
-            ioffset += instr_size(instr);
+            ioffset += instr_size(instr, false);
         }
     }
     if (handler != NULL) {
@@ -7614,9 +7626,8 @@ static int
 assemble_emit(struct assembler *a, struct instr *i)
 {
     Py_ssize_t len = PyBytes_GET_SIZE(a->a_bytecode);
-    _Py_CODEUNIT *code;
 
-    int size = instr_size(i);
+    int size = instr_size(i, false);
     if (i->i_lineno && !assemble_lnotab(a, i)) {
         return 0;
     }
@@ -7626,15 +7637,17 @@ assemble_emit(struct assembler *a, struct instr *i)
     if (!assemble_cnotab(a, i, size)) {
         return 0;
     }
-    if (a->a_offset + size >= len / (int)sizeof(_Py_CODEUNIT)) {
+    a->a_offset += size;
+    int size_compressed = instr_size(i, true);
+    if (a->a_offset_compressed + size_compressed >= len) {
         if (len > PY_SSIZE_T_MAX / 2)
             return 0;
         if (_PyBytes_Resize(&a->a_bytecode, len * 2) < 0)
             return 0;
     }
-    code = (_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode) + a->a_offset;
-    a->a_offset += size;
-    write_instr(code, i, size);
+    unsigned char *code = (unsigned char *)PyBytes_AS_STRING(a->a_bytecode) + a->a_offset_compressed;
+    a->a_offset_compressed += size_compressed;
+    write_instr(code, i, size_compressed);
     return 1;
 }
 
@@ -7718,7 +7731,7 @@ assemble_jump_offsets(struct assembler *a, struct compiler *c)
             bsize = b->b_offset;
             for (i = 0; i < b->b_iused; i++) {
                 struct instr *instr = &b->b_instr[i];
-                int isize = instr_size(instr);
+                int isize = instr_size(instr, false);
                 /* Relative jumps are computed relative to
                    the instruction pointer after fetching
                    the jump instruction.
@@ -7739,7 +7752,7 @@ assemble_jump_offsets(struct assembler *a, struct compiler *c)
                     else {
                         assert(!IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
                     }
-                    if (instr_size(instr) != isize) {
+                    if (instr_size(instr, false) != isize) {
                         extended_arg_recompile = 1;
                     }
                 }
@@ -7969,33 +7982,6 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
         goto error;
     }
     compute_localsplus_info(c, nlocalsplus, localsplusnames, localspluskinds);
-    
-    int compressed_size = 0;
-    int i = 0;
-    while (i < (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT))) {
-        int opcode = _Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode))[i++]);
-        compressed_size += 1 + HAS_ARG(opcode);
-        i += _PyOpcode_Caches[opcode];
-    }
-    assert(i == (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT)));
-
-    code_compressed = PyBytes_FromStringAndSize(NULL, compressed_size);
-    if (code_compressed == NULL) {
-        goto error;
-    }
-
-    i = 0;
-    int j = 0;
-    while (i < (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT))) {
-        _Py_CODEUNIT instruction = ((_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode))[i++];
-        ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPCODE(instruction);
-        if (HAS_ARG(_Py_OPCODE(instruction))) {
-            ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPARG(instruction);
-        }
-        i += _PyOpcode_Caches[_Py_OPCODE(instruction)];
-    }
-    assert(i == (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT)));
-    assert(j == compressed_size);
 
     struct _PyCodeConstructor con = {
         .filename = c->c_filename,
@@ -8003,7 +7989,7 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
         .qualname = c->u->u_qualname ? c->u->u_qualname : c->u->u_name,
         .flags = flags,
 
-        .code_compressed = code_compressed,
+        .code_compressed = a->a_bytecode,
         .firstlineno = c->u->u_firstlineno,
         .linetable = a->a_lnotab,
         .endlinetable = a->a_enotab,
@@ -8473,7 +8459,7 @@ assemble(struct compiler *c, int addNone)
     if (!merge_const_one(c, &a.a_cnotab)) {
         goto error;
     }
-    if (_PyBytes_Resize(&a.a_bytecode, a.a_offset * sizeof(_Py_CODEUNIT)) < 0) {
+    if (_PyBytes_Resize(&a.a_bytecode, a.a_offset_compressed) < 0) {
         goto error;
     }
     if (!merge_const_one(c, &a.a_bytecode)) {
