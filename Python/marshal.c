@@ -1342,6 +1342,7 @@ r_object(RFILE *p)
             int kwonlyargcount;
             int stacksize;
             int flags;
+            PyObject *code_compressed = NULL;
             PyObject *consts = NULL;
             PyObject *names = NULL;
             PyObject *localsplusnames = NULL;
@@ -1354,7 +1355,6 @@ r_object(RFILE *p)
             PyObject* endlinetable = NULL;
             PyObject* columntable = NULL;
             PyObject *exceptiontable = NULL;
-            PyObject *code_compressed = NULL;
 
             idx = r_ref_reserve(flag, p);
             if (idx < 0)
@@ -1458,6 +1458,7 @@ r_object(RFILE *p)
             v = r_ref_insert(v, idx, flag, p);
 
           code_error:
+            Py_XDECREF(code_compressed);
             Py_XDECREF(consts);
             Py_XDECREF(names);
             Py_XDECREF(localsplusnames);
@@ -1469,7 +1470,6 @@ r_object(RFILE *p)
             Py_XDECREF(endlinetable);
             Py_XDECREF(columntable);
             Py_XDECREF(exceptiontable);
-            Py_XDECREF(code_compressed);
         }
         retval = v;
         break;
