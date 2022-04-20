@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+static const _Py_CODEUNIT EXPAND_OP = _Py_MAKECODEUNIT(3, 0);  // EXPAND
+
 /* PEP 659
  * Specialization and quickening structs and helper functions
  */
@@ -173,7 +175,7 @@ struct _PyCodeConstructor {
     int flags;
 
     /* the code */
-    PyObject *code;
+    PyObject *code_compressed;
     int firstlineno;
     PyObject *linetable;
     PyObject *endlinetable;
@@ -275,6 +277,8 @@ extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
 extern void _PyStaticCode_Dealloc(PyCodeObject *co);
 /* Function to intern strings of codeobjects */
 extern int _PyStaticCode_InternStrings(PyCodeObject *co);
+
+extern int _PyCode_NBytes(PyCodeObject *co);
 
 #ifdef Py_STATS
 

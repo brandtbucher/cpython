@@ -13,6 +13,7 @@ import re
 import time
 import types
 from typing import Dict, FrozenSet, TextIO, Tuple
+from opcode import HAVE_ARGUMENT
 
 import umarshal
 from generate_global_objects import get_identifiers_and_strings
@@ -102,6 +103,15 @@ def removesuffix(base: str, suffix: str) -> str:
         return base[:len(base) - len(suffix)]
     return base
 
+def compress_code(code: bytes) -> bytes:
+    out = bytearray()
+    for op, arg in zip(code[:-1:2], code[1::2], strict=True):
+        if op:
+            out.append(op)
+            if HAVE_ARGUMENT <= op:
+                out.append(arg) 
+    return bytes(out)
+
 class Printer:
 
     def __init__(self, file: TextIO) -> None:
@@ -116,6 +126,8 @@ class Printer:
         self.write('#include "internal/pycore_gc.h"')
         self.write('#include "internal/pycore_code.h"')
         self.write('#include "internal/pycore_long.h"')
+        self.write("")
+        self.write("extern const _Py_CODEUNIT EXPAND_OP;")
         self.write("")
 
     @contextlib.contextmanager
@@ -250,12 +262,12 @@ class Printer:
         # Derived values
         nlocals, nplaincellvars, ncellvars, nfreevars = \
             get_localsplus_counts(code, localsplusnames, localspluskinds)
-        co_code_adaptive = make_string_literal(code.co_code)
+        co_code_compressed = compress_code(code.co_code)
         self.write("static")
         with self.indent():
-            self.write(f"struct _PyCode_DEF({len(code.co_code)})")
+            self.write(f"struct _PyCode_DEF({len(co_code_compressed)})")
         with self.block(f"{name} =", ";"):
-            self.object_var_head("PyCode_Type", len(code.co_code) // 2)
+            self.object_var_head("PyCode_Type", len(co_code_compressed))
             # But the ordering here must match that in cpython/code.h
             # (which is a pain because we tend to reorder those for perf)
             # otherwise MSVC doesn't like it.
@@ -282,7 +294,8 @@ class Printer:
             self.write(f".co_linetable = {co_linetable},")
             self.write(f".co_endlinetable = {co_endlinetable},")
             self.write(f".co_columntable = {co_columntable},")
-            self.write(f".co_code_adaptive = {co_code_adaptive},")
+            self.write(".co_code_adaptive = (_Py_CODEUNIT *)&EXPAND_OP,")
+            self.write(f".co_code_compressed = {make_string_literal(co_code_compressed)},")
         name_as_code = f"(PyCodeObject *)&{name}"
         self.deallocs.append(f"_PyStaticCode_Dealloc({name_as_code});")
         self.interns.append(f"_PyStaticCode_InternStrings({name_as_code})")

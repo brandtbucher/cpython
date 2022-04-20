@@ -1790,6 +1790,19 @@ handle_eval_breaker:
             JUMP_TO_INSTRUCTION(RESUME_QUICK);
         }
 
+        TARGET(EXPAND) {
+            assert(INSTR_OFFSET() == 1);
+            int size = _PyCode_NBytes(frame->f_code);
+            PyObject * co_code = _PyCode_GetCode(frame->f_code);
+            first_instr = next_instr = frame->f_code->co_code_adaptive = PyMem_Malloc(size);
+            assert(first_instr != NULL);
+            memcpy(frame->f_code->co_code_adaptive, PyBytes_AS_STRING(co_code), size);
+            Py_DECREF(co_code);
+            frame->prev_instr = _PyCode_CODE(frame->f_code) - 1;
+            assert(INSTR_OFFSET() == 0);
+            DISPATCH();
+        }
+
         TARGET(RESUME_QUICK) {
             PREDICTED(RESUME_QUICK);
             assert(tstate->cframe == &cframe);
@@ -5590,6 +5603,9 @@ handle_eval_breaker:
         case DO_TRACING:
 #endif
     {
+        if (_Py_OPCODE(*next_instr) == EXPAND) {
+            NOTRACE_DISPATCH();
+        }
         if (tstate->tracing == 0) {
             int instr_prev = _PyInterpreterFrame_LASTI(frame);
             frame->prev_instr = next_instr;

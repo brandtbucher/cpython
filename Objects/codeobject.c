@@ -233,7 +233,7 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
     if (con->argcount < con->posonlyargcount || con->posonlyargcount < 0 ||
         con->kwonlyargcount < 0 ||
         con->stacksize < 0 || con->flags < 0 ||
-        con->code == NULL || !PyBytes_Check(con->code) ||
+        con->code_compressed == NULL || !PyBytes_Check(con->code_compressed) ||
         con->consts == NULL || !PyTuple_Check(con->consts) ||
         con->names == NULL || !PyTuple_Check(con->names) ||
         con->localsplusnames == NULL || !PyTuple_Check(con->localsplusnames) ||
@@ -257,17 +257,17 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
     /* Make sure that code is indexable with an int, this is
        a long running assumption in ceval.c and many parts of
        the interpreter. */
-    if (PyBytes_GET_SIZE(con->code) > INT_MAX) {
-        PyErr_SetString(PyExc_OverflowError,
-                        "code: co_code larger than INT_MAX");
-        return -1;
-    }
-    if (PyBytes_GET_SIZE(con->code) % sizeof(_Py_CODEUNIT) != 0 ||
-        !_Py_IS_ALIGNED(PyBytes_AS_STRING(con->code), sizeof(_Py_CODEUNIT))
-        ) {
-        PyErr_SetString(PyExc_ValueError, "code: co_code is malformed");
-        return -1;
-    }
+    // if (PyBytes_GET_SIZE(con->code) > INT_MAX) {
+    //     PyErr_SetString(PyExc_OverflowError,
+    //                     "code: co_code larger than INT_MAX");
+    //     return -1;
+    // }
+    // if (PyBytes_GET_SIZE(con->code) % sizeof(_Py_CODEUNIT) != 0 ||
+    //     !_Py_IS_ALIGNED(PyBytes_AS_STRING(con->code), sizeof(_Py_CODEUNIT))
+    //     ) {
+    //     PyErr_SetString(PyExc_ValueError, "code: co_code is malformed");
+    //     return -1;
+    // }
 
     /* Ensure that the co_varnames has enough names to cover the arg counts.
      * Note that totalargs = nlocals - nplainlocals.  We check nplainlocals
@@ -343,8 +343,9 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     co->co_extra = NULL;
 
     co->co_warmup = QUICKENING_INITIAL_WARMUP_VALUE;
-    memcpy(_PyCode_CODE(co), PyBytes_AS_STRING(con->code),
-           PyBytes_GET_SIZE(con->code));
+    co->co_code_adaptive = (_Py_CODEUNIT *)&EXPAND_OP;
+    memcpy(co->co_code_compressed, PyBytes_AS_STRING(con->code_compressed),
+           PyBytes_GET_SIZE(con->code_compressed));
 }
 
 /* The caller is responsible for ensuring that the given data is valid. */
@@ -380,7 +381,7 @@ _PyCode_New(struct _PyCodeConstructor *con)
         con->columntable = Py_None;
     }
 
-    Py_ssize_t size = PyBytes_GET_SIZE(con->code) / sizeof(_Py_CODEUNIT);
+    Py_ssize_t size = PyBytes_GET_SIZE(con->code_compressed);
     PyCodeObject *co = PyObject_NewVar(PyCodeObject, &PyCode_Type, size);
     if (co == NULL) {
         PyErr_NoMemory();
@@ -409,6 +410,7 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
     PyCodeObject *co = NULL;
     PyObject *localsplusnames = NULL;
     PyObject *localspluskinds = NULL;
+    PyObject *code_compressed = NULL;
 
     if (varnames == NULL || !PyTuple_Check(varnames) ||
         cellvars == NULL || !PyTuple_Check(cellvars) ||
@@ -473,13 +475,40 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
         }
     }
 
+    int compressed_size = 0;
+    int i = 0;
+    while (i < (int)(PyBytes_GET_SIZE(code) / sizeof(_Py_CODEUNIT))) {
+        int opcode = _Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(code))[i++]);
+        compressed_size += 1 + HAS_ARG(opcode);
+        i += _PyOpcode_Caches[opcode];
+    }
+    assert(i == (int)(PyBytes_GET_SIZE(code) / sizeof(_Py_CODEUNIT)));
+
+    code_compressed = PyBytes_FromStringAndSize(NULL, compressed_size);
+    if (code_compressed == NULL) {
+        goto error;
+    }
+
+    i = 0;
+    int j = 0;
+    while (i < (int)(PyBytes_GET_SIZE(code) / sizeof(_Py_CODEUNIT))) {
+        _Py_CODEUNIT instruction = ((_Py_CODEUNIT *)PyBytes_AS_STRING(code))[i++];
+        ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPCODE(instruction);
+        if (HAS_ARG(_Py_OPCODE(instruction))) {
+            ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPARG(instruction);
+        }
+        i += _PyOpcode_Caches[_Py_OPCODE(instruction)];
+    }
+    assert(i == (int)(PyBytes_GET_SIZE(code) / sizeof(_Py_CODEUNIT)));
+    assert(j == compressed_size);
+
     struct _PyCodeConstructor con = {
         .filename = filename,
         .name = name,
         .qualname = qualname,
         .flags = flags,
 
-        .code = code,
+        .code_compressed = code_compressed,
         .firstlineno = firstlineno,
         .linetable = linetable,
         .endlinetable = endlinetable,
@@ -503,8 +532,6 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
     if (_PyCode_Validate(&con) < 0) {
         goto error;
     }
-    assert(PyBytes_GET_SIZE(code) % sizeof(_Py_CODEUNIT) == 0);
-    assert(_Py_IS_ALIGNED(PyBytes_AS_STRING(code), sizeof(_Py_CODEUNIT)));
     if (nlocals != PyTuple_GET_SIZE(varnames)) {
         PyErr_SetString(PyExc_ValueError,
                         "code: co_nlocals != len(co_varnames)");
@@ -512,9 +539,6 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
     }
 
     co = _PyCode_New(&con);
-    if (co == NULL) {
-        goto error;
-    }
 
 error:
     Py_XDECREF(localsplusnames);
@@ -564,7 +588,7 @@ PyCode_NewEmpty(const char *filename, const char *funcname, int firstlineno)
         .filename = filename_ob,
         .name = funcname_ob,
         .qualname = funcname_ob,
-        .code = emptystring,
+        .code_compressed = emptystring,
         .firstlineno = firstlineno,
         .linetable = emptystring,
         .endlinetable = emptystring,
@@ -594,12 +618,25 @@ failed:
 */
 
 int
+_PyCode_NBytes(PyCodeObject *co)
+{
+    int total = 0;
+    int i = 0;
+    while (i < Py_SIZE(co)) {
+       unsigned char op = co->co_code_compressed[i++];
+       total += 1 + _PyOpcode_Caches[op];
+       i += HAS_ARG(op);
+    }
+    return total * sizeof(_Py_CODEUNIT);
+}
+
+int
 PyCode_Addr2Line(PyCodeObject *co, int addrq)
 {
     if (addrq < 0) {
         return co->co_firstlineno;
     }
-    assert(addrq >= 0 && addrq < _PyCode_NBYTES(co));
+    assert(addrq >= 0 && addrq < _PyCode_NBytes(co));
     PyCodeAddressRange bounds;
     _PyCode_InitAddressRange(co, &bounds);
     return _PyCode_CheckLineNumber(addrq, &bounds);
@@ -627,7 +664,7 @@ _PyCode_Addr2EndLine(PyCodeObject* co, int addrq)
         return -1;
     }
 
-    assert(addrq >= 0 && addrq < _PyCode_NBYTES(co));
+    assert(addrq >= 0 && addrq < _PyCode_NBytes(co));
     PyCodeAddressRange bounds;
     _PyCode_InitEndAddressRange(co, &bounds);
     return _PyCode_CheckLineNumber(addrq, &bounds);
@@ -983,7 +1020,7 @@ _source_offset_converter(int* value) {
 static PyObject*
 positionsiter_next(positionsiterator* pi)
 {
-    if (pi->pi_offset >= _PyCode_NBYTES(pi->pi_code)) {
+    if (pi->pi_offset >= _PyCode_NBytes(pi->pi_code)) {
         return NULL;
     }
 
@@ -1157,20 +1194,28 @@ _PyCode_GetFreevars(PyCodeObject *co)
 PyObject *
 _PyCode_GetCode(PyCodeObject *co)
 {
-    PyObject *code = PyBytes_FromStringAndSize(NULL, _PyCode_NBYTES(co));
+    int nbytes = _PyCode_NBytes(co);
+    PyObject *code = PyBytes_FromStringAndSize(NULL, nbytes);
     if (code == NULL) {
         return NULL;
     }
     _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code);
-    for (int i = 0; i < Py_SIZE(co); i++) {
-        _Py_CODEUNIT instruction = _PyCode_CODE(co)[i];
-        int opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
+    int i = 0;
+    int j = 0;
+    while (i < Py_SIZE(co)) {
+        unsigned char opcode = co->co_code_compressed[i++];
+        unsigned char oparg = HAS_ARG(opcode) ? co->co_code_compressed[i++] : 0;
+        instructions[j++] = _Py_MAKECODEUNIT(opcode, oparg);
         int caches = _PyOpcode_Caches[opcode];
-        instructions[i] = _Py_MAKECODEUNIT(opcode, _Py_OPARG(instruction));
         while (caches--) {
-            instructions[++i] = _Py_MAKECODEUNIT(CACHE, 0);
+            instructions[j++] = _Py_MAKECODEUNIT(CACHE, 0);
         }
     }
+    if (i != Py_SIZE(co)) {
+        printf("%d %d\n", i, Py_SIZE(co));
+        assert(0);
+    }
+    assert(j == (int)(nbytes / sizeof(_Py_CODEUNIT)));
     return code;
 }
 
@@ -1402,15 +1447,10 @@ code_richcompare(PyObject *self, PyObject *other, int op)
         goto unequal;
     }
     for (int i = 0; i < Py_SIZE(co); i++) {
-        _Py_CODEUNIT co_instr = _PyCode_CODE(co)[i];
-        _Py_CODEUNIT cp_instr = _PyCode_CODE(cp)[i];
-        _Py_SET_OPCODE(co_instr, _PyOpcode_Deopt[_Py_OPCODE(co_instr)]);
-        _Py_SET_OPCODE(cp_instr, _PyOpcode_Deopt[_Py_OPCODE(cp_instr)]);
-        eq = co_instr == cp_instr;
+        eq = co->co_code_compressed[i] == cp->co_code_compressed[i];
         if (!eq) {
             goto unequal;
         }
-        i += _PyOpcode_Caches[_Py_OPCODE(co_instr)];
     }
 
     /* compare constants */
@@ -1522,8 +1562,10 @@ code_getfreevars(PyCodeObject *code, void *closure)
 static PyObject *
 code_getcodeadaptive(PyCodeObject *code, void *closure)
 {
-    return PyBytes_FromStringAndSize(code->co_code_adaptive,
-                                     _PyCode_NBYTES(code));
+    if (code->co_code_adaptive == &EXPAND_OP) {
+        return _PyCode_GetCode(code);
+    }
+    return PyBytes_FromStringAndSize((char *)_PyCode_CODE(code), _PyCode_NBytes(code));
 }
 
 static PyObject *
@@ -1553,6 +1595,9 @@ code_sizeof(PyCodeObject *co, PyObject *Py_UNUSED(args))
     if (co_extra != NULL) {
         res += sizeof(_PyCodeObjectExtra) +
                (co_extra->ce_size-1) * sizeof(co_extra->ce_extras[0]);
+    }
+    if (co->co_code_adaptive != &EXPAND_OP) {
+        res += _PyCode_NBytes(co);
     }
 
     return PyLong_FromSsize_t(res);
@@ -1728,8 +1773,8 @@ static struct PyMethodDef code_methods[] = {
 PyTypeObject PyCode_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "code",
-    offsetof(PyCodeObject, co_code_adaptive),
-    sizeof(_Py_CODEUNIT),
+    offsetof(PyCodeObject, co_code_compressed),
+    sizeof(unsigned char),
     (destructor)code_dealloc,           /* tp_dealloc */
     0,                                  /* tp_vectorcall_offset */
     0,                                  /* tp_getattr */

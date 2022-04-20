@@ -947,6 +947,7 @@ stack_effect(int opcode, int oparg, int jump)
         case EXTENDED_ARG:
         case RESUME:
         case CACHE:
+        case EXPAND:
             return 0;
 
         /* Stack manipulation */
@@ -7928,6 +7929,7 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     PyObject *consts = NULL;
     PyObject *localsplusnames = NULL;
     PyObject *localspluskinds = NULL;
+    PyObject *code_compressed = NULL;
 
     names = dict_keys_inorder(c->u->u_names, 0);
     if (!names) {
@@ -7967,6 +7969,33 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
         goto error;
     }
     compute_localsplus_info(c, nlocalsplus, localsplusnames, localspluskinds);
+    
+    int compressed_size = 0;
+    int i = 0;
+    while (i < (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT))) {
+        int opcode = _Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode))[i++]);
+        compressed_size += 1 + HAS_ARG(opcode);
+        i += _PyOpcode_Caches[opcode];
+    }
+    assert(i == (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT)));
+
+    code_compressed = PyBytes_FromStringAndSize(NULL, compressed_size);
+    if (code_compressed == NULL) {
+        goto error;
+    }
+
+    i = 0;
+    int j = 0;
+    while (i < (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT))) {
+        _Py_CODEUNIT instruction = ((_Py_CODEUNIT *)PyBytes_AS_STRING(a->a_bytecode))[i++];
+        ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPCODE(instruction);
+        if (HAS_ARG(_Py_OPCODE(instruction))) {
+            ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPARG(instruction);
+        }
+        i += _PyOpcode_Caches[_Py_OPCODE(instruction)];
+    }
+    assert(i == (int)(PyBytes_GET_SIZE(a->a_bytecode) / sizeof(_Py_CODEUNIT)));
+    assert(j == compressed_size);
 
     struct _PyCodeConstructor con = {
         .filename = c->c_filename,
@@ -7974,7 +8003,7 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
         .qualname = c->u->u_qualname ? c->u->u_qualname : c->u->u_name,
         .flags = flags,
 
-        .code = a->a_bytecode,
+        .code_compressed = code_compressed,
         .firstlineno = c->u->u_firstlineno,
         .linetable = a->a_lnotab,
         .endlinetable = a->a_enotab,
@@ -8005,15 +8034,13 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     con.localsplusnames = localsplusnames;
 
     co = _PyCode_New(&con);
-    if (co == NULL) {
-        goto error;
-    }
 
  error:
     Py_XDECREF(names);
     Py_XDECREF(consts);
     Py_XDECREF(localsplusnames);
     Py_XDECREF(localspluskinds);
+    Py_XDECREF(code_compressed);
     return co;
 }
 

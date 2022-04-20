@@ -10,6 +10,7 @@ extern "C" {
 #define CACHE                                    0
 #define POP_TOP                                  1
 #define PUSH_NULL                                2
+#define EXPAND                                   3
 #define NOP                                      9
 #define UNARY_POSITIVE                          10
 #define UNARY_NEGATIVE                          11
@@ -118,76 +119,76 @@ extern "C" {
 #define POP_JUMP_BACKWARD_IF_NONE              174
 #define POP_JUMP_BACKWARD_IF_FALSE             175
 #define POP_JUMP_BACKWARD_IF_TRUE              176
-#define BINARY_OP_ADAPTIVE                       3
-#define BINARY_OP_ADD_FLOAT                      4
-#define BINARY_OP_ADD_INT                        5
-#define BINARY_OP_ADD_UNICODE                    6
-#define BINARY_OP_INPLACE_ADD_UNICODE            7
-#define BINARY_OP_MULTIPLY_FLOAT                 8
-#define BINARY_OP_MULTIPLY_INT                  13
-#define BINARY_OP_SUBTRACT_FLOAT                14
-#define BINARY_OP_SUBTRACT_INT                  16
-#define BINARY_SUBSCR_ADAPTIVE                  17
-#define BINARY_SUBSCR_DICT                      18
-#define BINARY_SUBSCR_GETITEM                   19
-#define BINARY_SUBSCR_LIST_INT                  20
-#define BINARY_SUBSCR_TUPLE_INT                 21
-#define CALL_ADAPTIVE                           22
-#define CALL_PY_EXACT_ARGS                      23
-#define CALL_PY_WITH_DEFAULTS                   24
-#define COMPARE_OP_ADAPTIVE                     26
-#define COMPARE_OP_FLOAT_JUMP                   27
-#define COMPARE_OP_INT_JUMP                     28
-#define COMPARE_OP_STR_JUMP                     29
-#define JUMP_BACKWARD_QUICK                     34
-#define LOAD_ATTR_ADAPTIVE                      38
-#define LOAD_ATTR_INSTANCE_VALUE                39
-#define LOAD_ATTR_MODULE                        40
-#define LOAD_ATTR_SLOT                          41
-#define LOAD_ATTR_WITH_HINT                     42
-#define LOAD_CONST__LOAD_FAST                   43
-#define LOAD_FAST__LOAD_CONST                   44
-#define LOAD_FAST__LOAD_FAST                    45
-#define LOAD_GLOBAL_ADAPTIVE                    46
-#define LOAD_GLOBAL_BUILTIN                     47
-#define LOAD_GLOBAL_MODULE                      48
-#define LOAD_METHOD_ADAPTIVE                    55
-#define LOAD_METHOD_CLASS                       56
-#define LOAD_METHOD_MODULE                      57
-#define LOAD_METHOD_NO_DICT                     58
-#define LOAD_METHOD_WITH_DICT                   59
-#define LOAD_METHOD_WITH_VALUES                 62
-#define PRECALL_ADAPTIVE                        63
-#define PRECALL_BOUND_METHOD                    64
-#define PRECALL_BUILTIN_CLASS                   65
-#define PRECALL_BUILTIN_FAST_WITH_KEYWORDS      66
-#define PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS  67
-#define PRECALL_NO_KW_BUILTIN_FAST              72
-#define PRECALL_NO_KW_BUILTIN_O                 73
-#define PRECALL_NO_KW_ISINSTANCE                76
-#define PRECALL_NO_KW_LEN                       77
-#define PRECALL_NO_KW_LIST_APPEND               78
-#define PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST    79
-#define PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS  80
-#define PRECALL_NO_KW_METHOD_DESCRIPTOR_O       81
-#define PRECALL_NO_KW_STR_1                    113
-#define PRECALL_NO_KW_TUPLE_1                  121
-#define PRECALL_NO_KW_TYPE_1                   127
-#define PRECALL_PYFUNC                         141
-#define RESUME_QUICK                           143
-#define STORE_ATTR_ADAPTIVE                    150
-#define STORE_ATTR_INSTANCE_VALUE              153
-#define STORE_ATTR_SLOT                        154
-#define STORE_ATTR_WITH_HINT                   158
-#define STORE_FAST__LOAD_FAST                  159
-#define STORE_FAST__STORE_FAST                 161
-#define STORE_SUBSCR_ADAPTIVE                  167
-#define STORE_SUBSCR_DICT                      168
-#define STORE_SUBSCR_LIST_INT                  169
-#define UNPACK_SEQUENCE_ADAPTIVE               170
-#define UNPACK_SEQUENCE_LIST                   177
-#define UNPACK_SEQUENCE_TUPLE                  178
-#define UNPACK_SEQUENCE_TWO_TUPLE              179
+#define BINARY_OP_ADAPTIVE                       4
+#define BINARY_OP_ADD_FLOAT                      5
+#define BINARY_OP_ADD_INT                        6
+#define BINARY_OP_ADD_UNICODE                    7
+#define BINARY_OP_INPLACE_ADD_UNICODE            8
+#define BINARY_OP_MULTIPLY_FLOAT                13
+#define BINARY_OP_MULTIPLY_INT                  14
+#define BINARY_OP_SUBTRACT_FLOAT                16
+#define BINARY_OP_SUBTRACT_INT                  17
+#define BINARY_SUBSCR_ADAPTIVE                  18
+#define BINARY_SUBSCR_DICT                      19
+#define BINARY_SUBSCR_GETITEM                   20
+#define BINARY_SUBSCR_LIST_INT                  21
+#define BINARY_SUBSCR_TUPLE_INT                 22
+#define CALL_ADAPTIVE                           23
+#define CALL_PY_EXACT_ARGS                      24
+#define CALL_PY_WITH_DEFAULTS                   26
+#define COMPARE_OP_ADAPTIVE                     27
+#define COMPARE_OP_FLOAT_JUMP                   28
+#define COMPARE_OP_INT_JUMP                     29
+#define COMPARE_OP_STR_JUMP                     34
+#define JUMP_BACKWARD_QUICK                     38
+#define LOAD_ATTR_ADAPTIVE                      39
+#define LOAD_ATTR_INSTANCE_VALUE                40
+#define LOAD_ATTR_MODULE                        41
+#define LOAD_ATTR_SLOT                          42
+#define LOAD_ATTR_WITH_HINT                     43
+#define LOAD_CONST__LOAD_FAST                   44
+#define LOAD_FAST__LOAD_CONST                   45
+#define LOAD_FAST__LOAD_FAST                    46
+#define LOAD_GLOBAL_ADAPTIVE                    47
+#define LOAD_GLOBAL_BUILTIN                     48
+#define LOAD_GLOBAL_MODULE                      55
+#define LOAD_METHOD_ADAPTIVE                    56
+#define LOAD_METHOD_CLASS                       57
+#define LOAD_METHOD_MODULE                      58
+#define LOAD_METHOD_NO_DICT                     59
+#define LOAD_METHOD_WITH_DICT                   62
+#define LOAD_METHOD_WITH_VALUES                 63
+#define PRECALL_ADAPTIVE                        64
+#define PRECALL_BOUND_METHOD                    65
+#define PRECALL_BUILTIN_CLASS                   66
+#define PRECALL_BUILTIN_FAST_WITH_KEYWORDS      67
+#define PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS  72
+#define PRECALL_NO_KW_BUILTIN_FAST              73
+#define PRECALL_NO_KW_BUILTIN_O                 76
+#define PRECALL_NO_KW_ISINSTANCE                77
+#define PRECALL_NO_KW_LEN                       78
+#define PRECALL_NO_KW_LIST_APPEND               79
+#define PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST    80
+#define PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS  81
+#define PRECALL_NO_KW_METHOD_DESCRIPTOR_O      113
+#define PRECALL_NO_KW_STR_1                    121
+#define PRECALL_NO_KW_TUPLE_1                  127
+#define PRECALL_NO_KW_TYPE_1                   141
+#define PRECALL_PYFUNC                         143
+#define RESUME_QUICK                           150
+#define STORE_ATTR_ADAPTIVE                    153
+#define STORE_ATTR_INSTANCE_VALUE              154
+#define STORE_ATTR_SLOT                        158
+#define STORE_ATTR_WITH_HINT                   159
+#define STORE_FAST__LOAD_FAST                  161
+#define STORE_FAST__STORE_FAST                 167
+#define STORE_SUBSCR_ADAPTIVE                  168
+#define STORE_SUBSCR_DICT                      169
+#define STORE_SUBSCR_LIST_INT                  170
+#define UNPACK_SEQUENCE_ADAPTIVE               177
+#define UNPACK_SEQUENCE_LIST                   178
+#define UNPACK_SEQUENCE_TUPLE                  179
+#define UNPACK_SEQUENCE_TWO_TUPLE              180
 #define DO_TRACING                             255
 
 extern const uint8_t _PyOpcode_Caches[256];
@@ -282,6 +283,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [DICT_MERGE] = DICT_MERGE,
     [DICT_UPDATE] = DICT_UPDATE,
     [END_ASYNC_FOR] = END_ASYNC_FOR,
+    [EXPAND] = EXPAND,
     [EXTENDED_ARG] = EXTENDED_ARG,
     [FORMAT_VALUE] = FORMAT_VALUE,
     [FOR_ITER] = FOR_ITER,
@@ -451,19 +453,20 @@ static const char *const _PyOpcode_OpName[256] = {
     [CACHE] = "CACHE",
     [POP_TOP] = "POP_TOP",
     [PUSH_NULL] = "PUSH_NULL",
+    [EXPAND] = "EXPAND",
     [BINARY_OP_ADAPTIVE] = "BINARY_OP_ADAPTIVE",
     [BINARY_OP_ADD_FLOAT] = "BINARY_OP_ADD_FLOAT",
     [BINARY_OP_ADD_INT] = "BINARY_OP_ADD_INT",
     [BINARY_OP_ADD_UNICODE] = "BINARY_OP_ADD_UNICODE",
     [BINARY_OP_INPLACE_ADD_UNICODE] = "BINARY_OP_INPLACE_ADD_UNICODE",
-    [BINARY_OP_MULTIPLY_FLOAT] = "BINARY_OP_MULTIPLY_FLOAT",
     [NOP] = "NOP",
     [UNARY_POSITIVE] = "UNARY_POSITIVE",
     [UNARY_NEGATIVE] = "UNARY_NEGATIVE",
     [UNARY_NOT] = "UNARY_NOT",
+    [BINARY_OP_MULTIPLY_FLOAT] = "BINARY_OP_MULTIPLY_FLOAT",
     [BINARY_OP_MULTIPLY_INT] = "BINARY_OP_MULTIPLY_INT",
-    [BINARY_OP_SUBTRACT_FLOAT] = "BINARY_OP_SUBTRACT_FLOAT",
     [UNARY_INVERT] = "UNARY_INVERT",
+    [BINARY_OP_SUBTRACT_FLOAT] = "BINARY_OP_SUBTRACT_FLOAT",
     [BINARY_OP_SUBTRACT_INT] = "BINARY_OP_SUBTRACT_INT",
     [BINARY_SUBSCR_ADAPTIVE] = "BINARY_SUBSCR_ADAPTIVE",
     [BINARY_SUBSCR_DICT] = "BINARY_SUBSCR_DICT",
@@ -472,20 +475,20 @@ static const char *const _PyOpcode_OpName[256] = {
     [BINARY_SUBSCR_TUPLE_INT] = "BINARY_SUBSCR_TUPLE_INT",
     [CALL_ADAPTIVE] = "CALL_ADAPTIVE",
     [CALL_PY_EXACT_ARGS] = "CALL_PY_EXACT_ARGS",
-    [CALL_PY_WITH_DEFAULTS] = "CALL_PY_WITH_DEFAULTS",
     [BINARY_SUBSCR] = "BINARY_SUBSCR",
+    [CALL_PY_WITH_DEFAULTS] = "CALL_PY_WITH_DEFAULTS",
     [COMPARE_OP_ADAPTIVE] = "COMPARE_OP_ADAPTIVE",
     [COMPARE_OP_FLOAT_JUMP] = "COMPARE_OP_FLOAT_JUMP",
     [COMPARE_OP_INT_JUMP] = "COMPARE_OP_INT_JUMP",
-    [COMPARE_OP_STR_JUMP] = "COMPARE_OP_STR_JUMP",
     [GET_LEN] = "GET_LEN",
     [MATCH_MAPPING] = "MATCH_MAPPING",
     [MATCH_SEQUENCE] = "MATCH_SEQUENCE",
     [MATCH_KEYS] = "MATCH_KEYS",
-    [JUMP_BACKWARD_QUICK] = "JUMP_BACKWARD_QUICK",
+    [COMPARE_OP_STR_JUMP] = "COMPARE_OP_STR_JUMP",
     [PUSH_EXC_INFO] = "PUSH_EXC_INFO",
     [CHECK_EXC_MATCH] = "CHECK_EXC_MATCH",
     [CHECK_EG_MATCH] = "CHECK_EG_MATCH",
+    [JUMP_BACKWARD_QUICK] = "JUMP_BACKWARD_QUICK",
     [LOAD_ATTR_ADAPTIVE] = "LOAD_ATTR_ADAPTIVE",
     [LOAD_ATTR_INSTANCE_VALUE] = "LOAD_ATTR_INSTANCE_VALUE",
     [LOAD_ATTR_MODULE] = "LOAD_ATTR_MODULE",
@@ -496,40 +499,39 @@ static const char *const _PyOpcode_OpName[256] = {
     [LOAD_FAST__LOAD_FAST] = "LOAD_FAST__LOAD_FAST",
     [LOAD_GLOBAL_ADAPTIVE] = "LOAD_GLOBAL_ADAPTIVE",
     [LOAD_GLOBAL_BUILTIN] = "LOAD_GLOBAL_BUILTIN",
-    [LOAD_GLOBAL_MODULE] = "LOAD_GLOBAL_MODULE",
     [WITH_EXCEPT_START] = "WITH_EXCEPT_START",
     [GET_AITER] = "GET_AITER",
     [GET_ANEXT] = "GET_ANEXT",
     [BEFORE_ASYNC_WITH] = "BEFORE_ASYNC_WITH",
     [BEFORE_WITH] = "BEFORE_WITH",
     [END_ASYNC_FOR] = "END_ASYNC_FOR",
+    [LOAD_GLOBAL_MODULE] = "LOAD_GLOBAL_MODULE",
     [LOAD_METHOD_ADAPTIVE] = "LOAD_METHOD_ADAPTIVE",
     [LOAD_METHOD_CLASS] = "LOAD_METHOD_CLASS",
     [LOAD_METHOD_MODULE] = "LOAD_METHOD_MODULE",
     [LOAD_METHOD_NO_DICT] = "LOAD_METHOD_NO_DICT",
-    [LOAD_METHOD_WITH_DICT] = "LOAD_METHOD_WITH_DICT",
     [STORE_SUBSCR] = "STORE_SUBSCR",
     [DELETE_SUBSCR] = "DELETE_SUBSCR",
+    [LOAD_METHOD_WITH_DICT] = "LOAD_METHOD_WITH_DICT",
     [LOAD_METHOD_WITH_VALUES] = "LOAD_METHOD_WITH_VALUES",
     [PRECALL_ADAPTIVE] = "PRECALL_ADAPTIVE",
     [PRECALL_BOUND_METHOD] = "PRECALL_BOUND_METHOD",
     [PRECALL_BUILTIN_CLASS] = "PRECALL_BUILTIN_CLASS",
     [PRECALL_BUILTIN_FAST_WITH_KEYWORDS] = "PRECALL_BUILTIN_FAST_WITH_KEYWORDS",
-    [PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS] = "PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
     [GET_ITER] = "GET_ITER",
     [GET_YIELD_FROM_ITER] = "GET_YIELD_FROM_ITER",
     [PRINT_EXPR] = "PRINT_EXPR",
     [LOAD_BUILD_CLASS] = "LOAD_BUILD_CLASS",
+    [PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS] = "PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS",
     [PRECALL_NO_KW_BUILTIN_FAST] = "PRECALL_NO_KW_BUILTIN_FAST",
-    [PRECALL_NO_KW_BUILTIN_O] = "PRECALL_NO_KW_BUILTIN_O",
     [LOAD_ASSERTION_ERROR] = "LOAD_ASSERTION_ERROR",
     [RETURN_GENERATOR] = "RETURN_GENERATOR",
+    [PRECALL_NO_KW_BUILTIN_O] = "PRECALL_NO_KW_BUILTIN_O",
     [PRECALL_NO_KW_ISINSTANCE] = "PRECALL_NO_KW_ISINSTANCE",
     [PRECALL_NO_KW_LEN] = "PRECALL_NO_KW_LEN",
     [PRECALL_NO_KW_LIST_APPEND] = "PRECALL_NO_KW_LIST_APPEND",
     [PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST] = "PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST",
     [PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS] = "PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS",
-    [PRECALL_NO_KW_METHOD_DESCRIPTOR_O] = "PRECALL_NO_KW_METHOD_DESCRIPTOR_O",
     [LIST_TO_TUPLE] = "LIST_TO_TUPLE",
     [RETURN_VALUE] = "RETURN_VALUE",
     [IMPORT_STAR] = "IMPORT_STAR",
@@ -561,7 +563,7 @@ static const char *const _PyOpcode_OpName[256] = {
     [JUMP_FORWARD] = "JUMP_FORWARD",
     [JUMP_IF_FALSE_OR_POP] = "JUMP_IF_FALSE_OR_POP",
     [JUMP_IF_TRUE_OR_POP] = "JUMP_IF_TRUE_OR_POP",
-    [PRECALL_NO_KW_STR_1] = "PRECALL_NO_KW_STR_1",
+    [PRECALL_NO_KW_METHOD_DESCRIPTOR_O] = "PRECALL_NO_KW_METHOD_DESCRIPTOR_O",
     [POP_JUMP_FORWARD_IF_FALSE] = "POP_JUMP_FORWARD_IF_FALSE",
     [POP_JUMP_FORWARD_IF_TRUE] = "POP_JUMP_FORWARD_IF_TRUE",
     [LOAD_GLOBAL] = "LOAD_GLOBAL",
@@ -569,13 +571,13 @@ static const char *const _PyOpcode_OpName[256] = {
     [CONTAINS_OP] = "CONTAINS_OP",
     [RERAISE] = "RERAISE",
     [COPY] = "COPY",
-    [PRECALL_NO_KW_TUPLE_1] = "PRECALL_NO_KW_TUPLE_1",
+    [PRECALL_NO_KW_STR_1] = "PRECALL_NO_KW_STR_1",
     [BINARY_OP] = "BINARY_OP",
     [SEND] = "SEND",
     [LOAD_FAST] = "LOAD_FAST",
     [STORE_FAST] = "STORE_FAST",
     [DELETE_FAST] = "DELETE_FAST",
-    [PRECALL_NO_KW_TYPE_1] = "PRECALL_NO_KW_TYPE_1",
+    [PRECALL_NO_KW_TUPLE_1] = "PRECALL_NO_KW_TUPLE_1",
     [POP_JUMP_FORWARD_IF_NOT_NONE] = "POP_JUMP_FORWARD_IF_NOT_NONE",
     [POP_JUMP_FORWARD_IF_NONE] = "POP_JUMP_FORWARD_IF_NONE",
     [RAISE_VARARGS] = "RAISE_VARARGS",
@@ -589,46 +591,46 @@ static const char *const _PyOpcode_OpName[256] = {
     [STORE_DEREF] = "STORE_DEREF",
     [DELETE_DEREF] = "DELETE_DEREF",
     [JUMP_BACKWARD] = "JUMP_BACKWARD",
-    [PRECALL_PYFUNC] = "PRECALL_PYFUNC",
+    [PRECALL_NO_KW_TYPE_1] = "PRECALL_NO_KW_TYPE_1",
     [CALL_FUNCTION_EX] = "CALL_FUNCTION_EX",
-    [RESUME_QUICK] = "RESUME_QUICK",
+    [PRECALL_PYFUNC] = "PRECALL_PYFUNC",
     [EXTENDED_ARG] = "EXTENDED_ARG",
     [LIST_APPEND] = "LIST_APPEND",
     [SET_ADD] = "SET_ADD",
     [MAP_ADD] = "MAP_ADD",
     [LOAD_CLASSDEREF] = "LOAD_CLASSDEREF",
     [COPY_FREE_VARS] = "COPY_FREE_VARS",
-    [STORE_ATTR_ADAPTIVE] = "STORE_ATTR_ADAPTIVE",
+    [RESUME_QUICK] = "RESUME_QUICK",
     [RESUME] = "RESUME",
     [MATCH_CLASS] = "MATCH_CLASS",
+    [STORE_ATTR_ADAPTIVE] = "STORE_ATTR_ADAPTIVE",
     [STORE_ATTR_INSTANCE_VALUE] = "STORE_ATTR_INSTANCE_VALUE",
-    [STORE_ATTR_SLOT] = "STORE_ATTR_SLOT",
     [FORMAT_VALUE] = "FORMAT_VALUE",
     [BUILD_CONST_KEY_MAP] = "BUILD_CONST_KEY_MAP",
     [BUILD_STRING] = "BUILD_STRING",
+    [STORE_ATTR_SLOT] = "STORE_ATTR_SLOT",
     [STORE_ATTR_WITH_HINT] = "STORE_ATTR_WITH_HINT",
-    [STORE_FAST__LOAD_FAST] = "STORE_FAST__LOAD_FAST",
     [LOAD_METHOD] = "LOAD_METHOD",
-    [STORE_FAST__STORE_FAST] = "STORE_FAST__STORE_FAST",
+    [STORE_FAST__LOAD_FAST] = "STORE_FAST__LOAD_FAST",
     [LIST_EXTEND] = "LIST_EXTEND",
     [SET_UPDATE] = "SET_UPDATE",
     [DICT_MERGE] = "DICT_MERGE",
     [DICT_UPDATE] = "DICT_UPDATE",
     [PRECALL] = "PRECALL",
+    [STORE_FAST__STORE_FAST] = "STORE_FAST__STORE_FAST",
     [STORE_SUBSCR_ADAPTIVE] = "STORE_SUBSCR_ADAPTIVE",
     [STORE_SUBSCR_DICT] = "STORE_SUBSCR_DICT",
     [STORE_SUBSCR_LIST_INT] = "STORE_SUBSCR_LIST_INT",
-    [UNPACK_SEQUENCE_ADAPTIVE] = "UNPACK_SEQUENCE_ADAPTIVE",
     [CALL] = "CALL",
     [KW_NAMES] = "KW_NAMES",
     [POP_JUMP_BACKWARD_IF_NOT_NONE] = "POP_JUMP_BACKWARD_IF_NOT_NONE",
     [POP_JUMP_BACKWARD_IF_NONE] = "POP_JUMP_BACKWARD_IF_NONE",
     [POP_JUMP_BACKWARD_IF_FALSE] = "POP_JUMP_BACKWARD_IF_FALSE",
     [POP_JUMP_BACKWARD_IF_TRUE] = "POP_JUMP_BACKWARD_IF_TRUE",
+    [UNPACK_SEQUENCE_ADAPTIVE] = "UNPACK_SEQUENCE_ADAPTIVE",
     [UNPACK_SEQUENCE_LIST] = "UNPACK_SEQUENCE_LIST",
     [UNPACK_SEQUENCE_TUPLE] = "UNPACK_SEQUENCE_TUPLE",
     [UNPACK_SEQUENCE_TWO_TUPLE] = "UNPACK_SEQUENCE_TWO_TUPLE",
-    [180] = "<180>",
     [181] = "<181>",
     [182] = "<182>",
     [183] = "<183>",

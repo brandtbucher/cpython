@@ -257,7 +257,8 @@ _PyCode_Quicken(PyCodeObject *code)
     _Py_QuickenedCount++;
     int previous_opcode = -1;
     _Py_CODEUNIT *instructions = _PyCode_CODE(code);
-    for (int i = 0; i < Py_SIZE(code); i++) {
+    int size = _PyCode_NBytes(code) / sizeof(_Py_CODEUNIT);
+    for (int i = 0; i < size; i++) {
         int opcode = _Py_OPCODE(instructions[i]);
         uint8_t adaptive_opcode = _PyOpcode_Adaptive[opcode];
         if (adaptive_opcode) {

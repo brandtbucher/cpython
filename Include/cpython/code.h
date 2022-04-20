@@ -61,6 +61,7 @@ typedef uint16_t _Py_CODEUNIT;
     PyObject *co_names;            /* list of strings (names used) */          \
     PyObject *co_exceptiontable;   /* Byte string encoding exception handling  \
                                       table */                                 \
+    _Py_CODEUNIT *co_code_adaptive;                                            \
     int co_flags;                  /* CO_..., see below */                     \
     int co_warmup;                 /* Warmup counter for quickening */         \
                                                                                \
@@ -100,7 +101,7 @@ typedef uint16_t _Py_CODEUNIT;
        Type is a void* to keep the format private in codeobject.c to force     \
        people to go through the proper APIs. */                                \
     void *co_extra;                                                            \
-    char co_code_adaptive[(SIZE)];                                             \
+    unsigned char co_code_compressed[(SIZE)];                                            \
 }
 
 /* Bytecode object */
@@ -145,8 +146,7 @@ PyAPI_DATA(PyTypeObject) PyCode_Type;
 
 #define PyCode_Check(op) Py_IS_TYPE(op, &PyCode_Type)
 #define PyCode_GetNumFree(op) ((op)->co_nfreevars)
-#define _PyCode_CODE(CO) ((_Py_CODEUNIT *)(CO)->co_code_adaptive)
-#define _PyCode_NBYTES(CO) (Py_SIZE(CO) * (Py_ssize_t)sizeof(_Py_CODEUNIT))
+#define _PyCode_CODE(CO) ((CO)->co_code_adaptive)
 
 /* Public interface */
 PyAPI_FUNC(PyCodeObject *) PyCode_New(

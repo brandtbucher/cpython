@@ -1,6 +1,7 @@
-# Implementat marshal.loads() in pure Python
+# Implement marshal.loads() in pure Python
 
 import ast
+import opcode
 
 from typing import Any, Tuple
 
@@ -47,6 +48,18 @@ CO_FAST_LOCAL = 0x20
 CO_FAST_CELL = 0x40
 CO_FAST_FREE = 0x80
 
+def decompress_code(code: bytes) -> bytes:
+    out = bytearray()
+    ops = iter(code)
+    for op in ops:
+        out.append(op)
+        if opcode.HAVE_ARGUMENT <= op:
+            out.append(next(ops))
+        else:
+            out.append(0)
+        for _ in range(2 * opcode._inline_cache_entries[op]):
+            out.append(0)
+    return bytes(out)
 
 class Code:
     def __init__(self, **kwds: Any):
@@ -279,7 +292,9 @@ class Reader:
             retval.co_kwonlyargcount = self.r_long()
             retval.co_stacksize = self.r_long()
             retval.co_flags = self.r_long()
-            retval.co_code = self.r_object()
+            size = self.r_long()
+            co_code_compressed = self.r_string(size)
+            retval.co_code = decompress_code(co_code_compressed)
             retval.co_consts = self.r_object()
             retval.co_names = self.r_object()
             retval.co_localsplusnames = self.r_object()

@@ -543,18 +543,14 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
     }
     else if (PyCode_Check(v)) {
         PyCodeObject *co = (PyCodeObject *)v;
-        PyObject *co_code = _PyCode_GetCode(co);
-        if (co_code == NULL) {
-            p->error = WFERR_NOMEMORY;
-            return;
-        }
         W_TYPE(TYPE_CODE, p);
         w_long(co->co_argcount, p);
         w_long(co->co_posonlyargcount, p);
         w_long(co->co_kwonlyargcount, p);
         w_long(co->co_stacksize, p);
         w_long(co->co_flags, p);
-        w_object(co_code, p);
+        w_long(Py_SIZE(co), p);
+        w_string(co->co_code_compressed, Py_SIZE(co), p);
         w_object(co->co_consts, p);
         w_object(co->co_names, p);
         w_object(co->co_localsplusnames, p);
@@ -567,7 +563,6 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_object(co->co_endlinetable, p);
         w_object(co->co_columntable, p);
         w_object(co->co_exceptiontable, p);
-        Py_DECREF(co_code);
     }
     else if (PyObject_CheckBuffer(v)) {
         /* Write unknown bytes-like objects as a bytes object */
@@ -1348,7 +1343,6 @@ r_object(RFILE *p)
             int kwonlyargcount;
             int stacksize;
             int flags;
-            PyObject *code = NULL;
             PyObject *consts = NULL;
             PyObject *names = NULL;
             PyObject *localsplusnames = NULL;
@@ -1361,6 +1355,7 @@ r_object(RFILE *p)
             PyObject* endlinetable = NULL;
             PyObject* columntable = NULL;
             PyObject *exceptiontable = NULL;
+            PyObject *o_code_compressed = NULL;
 
             idx = r_ref_reserve(flag, p);
             if (idx < 0)
@@ -1385,8 +1380,9 @@ r_object(RFILE *p)
             flags = (int)r_long(p);
             if (PyErr_Occurred())
                 goto code_error;
-            code = r_object(p);
-            if (code == NULL)
+            int size = (int)r_long(p);
+            const unsigned char *code_compressed = r_string(size, p);
+            if (code_compressed == NULL)
                 goto code_error;
             consts = r_object(p);
             if (consts == NULL)
@@ -1424,6 +1420,7 @@ r_object(RFILE *p)
             exceptiontable = r_object(p);
             if (exceptiontable == NULL)
                 goto code_error;
+            o_code_compressed = PyBytes_FromStringAndSize(code_compressed, size);
 
             struct _PyCodeConstructor con = {
                 .filename = filename,
@@ -1431,7 +1428,7 @@ r_object(RFILE *p)
                 .qualname = qualname,
                 .flags = flags,
 
-                .code = code,
+                .code_compressed = o_code_compressed,
                 .firstlineno = firstlineno,
                 .linetable = linetable,
                 .endlinetable = endlinetable,
@@ -1464,7 +1461,6 @@ r_object(RFILE *p)
             v = r_ref_insert(v, idx, flag, p);
 
           code_error:
-            Py_XDECREF(code);
             Py_XDECREF(consts);
             Py_XDECREF(names);
             Py_XDECREF(localsplusnames);
@@ -1476,6 +1472,7 @@ r_object(RFILE *p)
             Py_XDECREF(endlinetable);
             Py_XDECREF(columntable);
             Py_XDECREF(exceptiontable);
+            Py_XDECREF(o_code_compressed);
         }
         retval = v;
         break;
