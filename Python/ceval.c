@@ -1791,15 +1791,19 @@ handle_eval_breaker:
         }
 
         TARGET(EXPAND) {
-            assert(INSTR_OFFSET() == 1);
-            int size = _PyCode_NBytes(frame->f_code);
-            PyObject * co_code = _PyCode_GetCode(frame->f_code);
-            first_instr = next_instr = frame->f_code->co_code_adaptive = PyMem_Malloc(size);
-            assert(first_instr != NULL);
-            memcpy(frame->f_code->co_code_adaptive, PyBytes_AS_STRING(co_code), size);
+            PyObject *co_code = _PyCode_GetCode(frame->f_code);
+            if (co_code == NULL) {
+                goto error;
+            }
+            _Py_CODEUNIT *adaptive = PyMem_Malloc(PyBytes_GET_SIZE(co_code));
+            if (adaptive == NULL) {
+                Py_DECREF(co_code);
+                goto error;
+            }
+            memcpy(adaptive, PyBytes_AS_STRING(co_code), PyBytes_GET_SIZE(co_code));
             Py_DECREF(co_code);
+            first_instr = next_instr = _PyCode_CODE(frame->f_code) = adaptive;
             frame->prev_instr = _PyCode_CODE(frame->f_code) - 1;
-            assert(INSTR_OFFSET() == 0);
             DISPATCH();
         }
 

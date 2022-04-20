@@ -549,8 +549,7 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_long(co->co_kwonlyargcount, p);
         w_long(co->co_stacksize, p);
         w_long(co->co_flags, p);
-        w_long(Py_SIZE(co), p);
-        w_string(co->co_code_compressed, Py_SIZE(co), p);
+        w_object(co->co_code_compressed, p);
         w_object(co->co_consts, p);
         w_object(co->co_names, p);
         w_object(co->co_localsplusnames, p);
@@ -1355,7 +1354,7 @@ r_object(RFILE *p)
             PyObject* endlinetable = NULL;
             PyObject* columntable = NULL;
             PyObject *exceptiontable = NULL;
-            PyObject *o_code_compressed = NULL;
+            PyObject *code_compressed = NULL;
 
             idx = r_ref_reserve(flag, p);
             if (idx < 0)
@@ -1380,8 +1379,7 @@ r_object(RFILE *p)
             flags = (int)r_long(p);
             if (PyErr_Occurred())
                 goto code_error;
-            int size = (int)r_long(p);
-            const unsigned char *code_compressed = r_string(size, p);
+            code_compressed = r_object(p);
             if (code_compressed == NULL)
                 goto code_error;
             consts = r_object(p);
@@ -1420,7 +1418,6 @@ r_object(RFILE *p)
             exceptiontable = r_object(p);
             if (exceptiontable == NULL)
                 goto code_error;
-            o_code_compressed = PyBytes_FromStringAndSize(code_compressed, size);
 
             struct _PyCodeConstructor con = {
                 .filename = filename,
@@ -1428,7 +1425,7 @@ r_object(RFILE *p)
                 .qualname = qualname,
                 .flags = flags,
 
-                .code_compressed = o_code_compressed,
+                .code_compressed = code_compressed,
                 .firstlineno = firstlineno,
                 .linetable = linetable,
                 .endlinetable = endlinetable,
@@ -1472,7 +1469,7 @@ r_object(RFILE *p)
             Py_XDECREF(endlinetable);
             Py_XDECREF(columntable);
             Py_XDECREF(exceptiontable);
-            Py_XDECREF(o_code_compressed);
+            Py_XDECREF(code_compressed);
         }
         retval = v;
         break;

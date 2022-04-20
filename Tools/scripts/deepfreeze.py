@@ -127,8 +127,6 @@ class Printer:
         self.write('#include "internal/pycore_code.h"')
         self.write('#include "internal/pycore_long.h"')
         self.write("")
-        self.write("extern const _Py_CODEUNIT EXPAND_OP;")
-        self.write("")
 
     @contextlib.contextmanager
     def indent(self) -> None:
@@ -255,6 +253,7 @@ class Printer:
         co_endlinetable = self.generate(name + "_endlinetable", code.co_endlinetable)
         co_columntable = self.generate(name + "_columntable", code.co_columntable)
         co_exceptiontable = self.generate(name + "_exceptiontable", code.co_exceptiontable)
+        co_code_compressed = self.generate(name + "_code_compressed", compress_code(code.co_code))
         # These fields are not directly accessible
         localsplusnames, localspluskinds = get_localsplus(code)
         co_localsplusnames = self.generate(name + "_localsplusnames", localsplusnames)
@@ -262,12 +261,8 @@ class Printer:
         # Derived values
         nlocals, nplaincellvars, ncellvars, nfreevars = \
             get_localsplus_counts(code, localsplusnames, localspluskinds)
-        co_code_compressed = compress_code(code.co_code)
-        self.write("static")
-        with self.indent():
-            self.write(f"struct _PyCode_DEF({len(co_code_compressed)})")
-        with self.block(f"{name} =", ";"):
-            self.object_var_head("PyCode_Type", len(co_code_compressed))
+        with self.block(f"static PyCodeObject {name} =", ";"):
+            self.object_head("PyCode_Type")
             # But the ordering here must match that in cpython/code.h
             # (which is a pain because we tend to reorder those for perf)
             # otherwise MSVC doesn't like it.
@@ -295,11 +290,10 @@ class Printer:
             self.write(f".co_endlinetable = {co_endlinetable},")
             self.write(f".co_columntable = {co_columntable},")
             self.write(".co_code_adaptive = (_Py_CODEUNIT *)&EXPAND_OP,")
-            self.write(f".co_code_compressed = {make_string_literal(co_code_compressed)},")
-        name_as_code = f"(PyCodeObject *)&{name}"
-        self.deallocs.append(f"_PyStaticCode_Dealloc({name_as_code});")
-        self.interns.append(f"_PyStaticCode_InternStrings({name_as_code})")
-        return f"& {name}.ob_base.ob_base"
+            self.write(f".co_code_compressed = {co_code_compressed},")
+        self.deallocs.append(f"_PyStaticCode_Dealloc(&{name});")
+        self.interns.append(f"_PyStaticCode_InternStrings(&{name})")
+        return f"&{name}.ob_base"
 
     def generate_tuple(self, name: str, t: Tuple[object, ...]) -> str:
         if len(t) == 0:

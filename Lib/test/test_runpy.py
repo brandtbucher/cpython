@@ -672,14 +672,14 @@ class RunPathTestCase(unittest.TestCase, CodeExecutionMixin):
             self._check_script(script_name, "<run_path>", script_name,
                                script_name, expect_spec=False)
 
-    # def test_script_compiled(self):
-    #     with temp_dir() as script_dir:
-    #         mod_name = 'script'
-    #         script_name = self._make_test_script(script_dir, mod_name)
-    #         compiled_name = py_compile.compile(script_name, doraise=True)
-    #         os.remove(script_name)
-    #         self._check_script(compiled_name, "<run_path>", compiled_name,
-    #                            compiled_name, expect_spec=False)
+    def test_script_compiled(self):
+        with temp_dir() as script_dir:
+            mod_name = 'script'
+            script_name = self._make_test_script(script_dir, mod_name)
+            compiled_name = py_compile.compile(script_name, doraise=True)
+            os.remove(script_name)
+            self._check_script(compiled_name, "<run_path>", compiled_name,
+                               compiled_name, expect_spec=False)
 
     def test_directory(self):
         with temp_dir() as script_dir:
