@@ -89,6 +89,9 @@ class TestLLTrace(unittest.TestCase):
             else:
                 (opname,) = opname_oparg
                 oparg = None
+            if opname == "EXPAND":
+                self.assertEqual(offset, 0)
+                continue
             self.assertEqual(instr_map[offset].opname, opname)
             self.assertEqual(instr_map[offset].arg, oparg)
 
