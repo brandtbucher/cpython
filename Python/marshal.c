@@ -554,26 +554,35 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
             w_object(co->co_code_compressed, p);
         }
         else {
-            PyObject *code_compressed = PyBytes_FromStringAndSize(NULL, _PyCode_NBytes(co));
+            int compressed_size = 0;
+            int i = 0;
+            int nbytes = _PyCode_NBytes(co);
+            while (i < (int)(nbytes / sizeof(_Py_CODEUNIT))) {
+                int opcode = _PyOpcode_Deopt[_Py_OPCODE(co->co_code_adaptive[i++])];
+                compressed_size += 1 + HAS_ARG(opcode);
+                i += _PyOpcode_Caches[opcode];
+            }
+            assert(i == (int)(nbytes / sizeof(_Py_CODEUNIT)));
+
+            PyObject *code_compressed = PyBytes_FromStringAndSize(NULL, compressed_size);
             if (code_compressed == NULL) {
                 p->error = WFERR_NOMEMORY;
                 return;
             }
-            int i = 0;
+
+            i = 0;
             int j = 0;
-            while (i < _PyCode_NBytes(co)) {
+            while (i < (int)(nbytes / sizeof(_Py_CODEUNIT))) {
                 _Py_CODEUNIT instruction = co->co_code_adaptive[i++];
-                unsigned char opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
+                int opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
                 ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = opcode;
                 if (HAS_ARG(opcode)) {
                     ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPARG(instruction);
                 }
                 i += _PyOpcode_Caches[opcode];
             }
-            if (_PyBytes_Resize(&code_compressed, j)) {
-                p->error = WFERR_NOMEMORY;
-                return;
-            }
+            assert(i == (int)(nbytes / sizeof(_Py_CODEUNIT)));
+            assert(j == compressed_size);
             w_object(code_compressed, p);
             Py_DECREF(code_compressed);
         }

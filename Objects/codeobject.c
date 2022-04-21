@@ -477,6 +477,7 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
 
     int compressed_size = 0;
     int i = 0;
+    // XXX Broken for specialized code.
     while (i < (int)(PyBytes_GET_SIZE(code) / sizeof(_Py_CODEUNIT))) {
         int opcode = _Py_OPCODE(((_Py_CODEUNIT *)PyBytes_AS_STRING(code))[i++]);
         compressed_size += 1 + HAS_ARG(opcode);
@@ -1989,7 +1990,9 @@ _PyStaticCode_Dealloc(PyCodeObject *co, PyObject *code_compressed)
         PyMem_Free(_PyCode_CODE(co));
         _PyCode_CODE(co) = (_Py_CODEUNIT *)&EXPAND_OP;
     }
-    co->co_code_compressed = Py_NewRef(code_compressed);
+    if (co->co_code_compressed == NULL) {
+        co->co_code_compressed = Py_NewRef(code_compressed);
+    }
 }
 
 int
