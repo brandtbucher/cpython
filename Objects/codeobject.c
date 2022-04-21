@@ -544,6 +544,7 @@ PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
 error:
     Py_XDECREF(localsplusnames);
     Py_XDECREF(localspluskinds);
+    Py_XDECREF(code_compressed);
     return co;
 }
 
