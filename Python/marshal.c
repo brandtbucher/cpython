@@ -13,6 +13,7 @@
 #include "pycore_code.h"          // _PyCode_New()
 #include "pycore_hashtable.h"     // _Py_hashtable_t
 #include "marshal.h"              // Py_MARSHAL_VERSION
+#include "opcode.h"
 
 /*[clinic input]
 module marshal
@@ -549,7 +550,33 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_long(co->co_kwonlyargcount, p);
         w_long(co->co_stacksize, p);
         w_long(co->co_flags, p);
-        w_object(co->co_code_compressed, p);
+        if (co->co_code_compressed) {
+            w_object(co->co_code_compressed, p);
+        }
+        else {
+            PyObject *code_compressed = PyBytes_FromStringAndSize(NULL, _PyCode_NBytes(co));
+            if (code_compressed == NULL) {
+                p->error = WFERR_NOMEMORY;
+                return;
+            }
+            int i = 0;
+            int j = 0;
+            while (i < _PyCode_NBytes(co)) {
+                _Py_CODEUNIT instruction = co->co_code_adaptive[i++];
+                unsigned char opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
+                ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = opcode;
+                if (HAS_ARG(opcode)) {
+                    ((unsigned char *)PyBytes_AS_STRING(code_compressed))[j++] = _Py_OPARG(instruction);
+                }
+                i += _PyOpcode_Caches[opcode];
+            }
+            if (_PyBytes_Resize(&code_compressed, j)) {
+                p->error = WFERR_NOMEMORY;
+                return;
+            }
+            w_object(code_compressed, p);
+            Py_DECREF(code_compressed);
+        }
         w_object(co->co_consts, p);
         w_object(co->co_names, p);
         w_object(co->co_localsplusnames, p);

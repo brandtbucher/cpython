@@ -291,7 +291,8 @@ class Printer:
             self.write(f".co_columntable = {co_columntable},")
             self.write(".co_code_adaptive = (_Py_CODEUNIT *)&EXPAND_OP,")
             self.write(f".co_code_compressed = {co_code_compressed},")
-        self.deallocs.append(f"_PyStaticCode_Dealloc(&{name});")
+            self.write(f".co_code_nbytes = -1,")
+        self.deallocs.append(f"_PyStaticCode_Dealloc(&{name}, {co_code_compressed});")
         self.interns.append(f"_PyStaticCode_InternStrings(&{name})")
         return f"&{name}.ob_base"
 

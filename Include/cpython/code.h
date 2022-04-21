@@ -101,6 +101,7 @@ struct PyCodeObject {
        people to go through the proper APIs. */
     void *co_extra;
     PyObject *co_code_compressed;
+    int co_code_nbytes;
 };
 
 /* Masks for co_flags above */

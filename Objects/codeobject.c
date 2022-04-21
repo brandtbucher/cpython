@@ -346,6 +346,7 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     _PyCode_CODE(co) = (_Py_CODEUNIT *)&EXPAND_OP;
     Py_INCREF(con->code_compressed);
     co->co_code_compressed = con->code_compressed;
+    co->co_code_nbytes = -1;
 }
 
 /* The caller is responsible for ensuring that the given data is valid. */
@@ -619,14 +620,18 @@ failed:
 int
 _PyCode_NBytes(PyCodeObject *co)
 {
-    int total = 0;
-    int i = 0;
-    while (i < PyBytes_GET_SIZE(co->co_code_compressed)) {
-       unsigned char op = ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++];
-       total += 1 + _PyOpcode_Caches[op];
-       i += HAS_ARG(op);
+    if (co->co_code_nbytes < 0) {
+        int total = 0;
+        int i = 0;
+        assert(co->co_code_compressed);
+        while (i < PyBytes_GET_SIZE(co->co_code_compressed)) {
+            unsigned char op = ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++];
+            total += 1 + _PyOpcode_Caches[op];
+            i += HAS_ARG(op);
+        }
+        co->co_code_nbytes = total * sizeof(_Py_CODEUNIT);
     }
-    return total * sizeof(_Py_CODEUNIT);
+    return co->co_code_nbytes;
 }
 
 int
@@ -1200,18 +1205,32 @@ _PyCode_GetCode(PyCodeObject *co)
     }
     _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code);
     int i = 0;
-    int j = 0;
-    while (i < PyBytes_GET_SIZE(co->co_code_compressed)) {
-        unsigned char opcode = ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++];
-        unsigned char oparg = HAS_ARG(opcode) ? ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++] : 0;
-        instructions[j++] = _Py_MAKECODEUNIT(opcode, oparg);
-        int caches = _PyOpcode_Caches[opcode];
-        while (caches--) {
-            instructions[j++] = _Py_MAKECODEUNIT(CACHE, 0);
+    if (co->co_code_compressed) {
+        int j = 0;
+        while (i < PyBytes_GET_SIZE(co->co_code_compressed)) {
+            unsigned char opcode = ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++];
+            unsigned char oparg = HAS_ARG(opcode) ? ((unsigned char *)PyBytes_AS_STRING(co->co_code_compressed))[i++] : 0;
+            instructions[j++] = _Py_MAKECODEUNIT(opcode, oparg);
+            int caches = _PyOpcode_Caches[opcode];
+            while (caches--) {
+                instructions[j++] = _Py_MAKECODEUNIT(CACHE, 0);
+            }
         }
+        assert(i == PyBytes_GET_SIZE(co->co_code_compressed));
+        assert(j == (int)(nbytes / sizeof(_Py_CODEUNIT)));
     }
-    assert(i == PyBytes_GET_SIZE(co->co_code_compressed));
-    assert(j == (int)(nbytes / sizeof(_Py_CODEUNIT)));
+    else {
+        while (i < (int)(nbytes / sizeof(_Py_CODEUNIT))) {
+            _Py_CODEUNIT instruction = co->co_code_adaptive[i];
+            int opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
+            instructions[i++] = _Py_MAKECODEUNIT(opcode, _Py_OPARG(instruction));
+            int caches = _PyOpcode_Caches[opcode];
+            while (caches--) {
+                instructions[i++] = _Py_MAKECODEUNIT(CACHE, 0);
+            }
+        }
+        assert(i == (int)(nbytes / sizeof(_Py_CODEUNIT)));
+    }
     return code;
 }
 
@@ -1443,7 +1462,19 @@ code_richcompare(PyObject *self, PyObject *other, int op)
     if (!eq) goto unequal;
     eq = co->co_firstlineno == cp->co_firstlineno;
     if (!eq) goto unequal;
-    eq = PyObject_RichCompareBool(co->co_code_compressed, cp->co_code_compressed, Py_EQ);
+    // XXX
+    PyObject *co_code = _PyCode_GetCode(co);
+    if (co_code == NULL) {
+        return NULL;
+    }
+    PyObject *cp_code = _PyCode_GetCode(cp);
+    if (cp_code == NULL) {
+        Py_DECREF(co_code);
+        return NULL;
+    }
+    eq = PyObject_RichCompareBool(co_code, cp_code, Py_EQ);
+    Py_DECREF(co_code);
+    Py_DECREF(cp_code);
     if (eq <= 0) {
         goto unequal;
     }
@@ -1942,7 +1973,7 @@ _PyCode_ConstantKey(PyObject *op)
 }
 
 void
-_PyStaticCode_Dealloc(PyCodeObject *co)
+_PyStaticCode_Dealloc(PyCodeObject *co, PyObject *code_compressed)
 {
     if (co->co_warmup == 0) {
          _Py_QuickenedCount--;
@@ -1958,6 +1989,7 @@ _PyStaticCode_Dealloc(PyCodeObject *co)
         PyMem_Free(_PyCode_CODE(co));
         _PyCode_CODE(co) = (_Py_CODEUNIT *)&EXPAND_OP;
     }
+    co->co_code_compressed = Py_NewRef(code_compressed);
 }
 
 int

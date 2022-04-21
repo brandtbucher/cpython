@@ -1804,6 +1804,7 @@ handle_eval_breaker:
             Py_DECREF(co_code);
             first_instr = next_instr = _PyCode_CODE(frame->f_code) = adaptive;
             frame->prev_instr = _PyCode_CODE(frame->f_code) - 1;
+            Py_CLEAR(frame->f_code->co_code_compressed);
             DISPATCH();
         }
 
