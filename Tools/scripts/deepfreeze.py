@@ -250,8 +250,6 @@ class Printer:
         co_name = self.generate(name + "_name", code.co_name)
         co_qualname = self.generate(name + "_qualname", code.co_qualname)
         co_linetable = self.generate(name + "_linetable", code.co_linetable)
-        co_endlinetable = self.generate(name + "_endlinetable", code.co_endlinetable)
-        co_columntable = self.generate(name + "_columntable", code.co_columntable)
         co_exceptiontable = self.generate(name + "_exceptiontable", code.co_exceptiontable)
         co_code_compressed = self.generate(name + "_code_compressed", compress_code(code.co_code))
         # These fields are not directly accessible
@@ -287,8 +285,6 @@ class Printer:
             self.write(f".co_name = {co_name},")
             self.write(f".co_qualname = {co_qualname},")
             self.write(f".co_linetable = {co_linetable},")
-            self.write(f".co_endlinetable = {co_endlinetable},")
-            self.write(f".co_columntable = {co_columntable},")
             self.write(".co_code_adaptive = (_Py_CODEUNIT *)&EXPAND_OP,")
             self.write(f".co_code_compressed = {co_code_compressed},")
             self.write(f".co_code_nbytes = -1,")
