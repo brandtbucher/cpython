@@ -18,7 +18,7 @@ import umarshal
 from generate_global_objects import get_identifiers_and_strings
 
 verbose = False
-identifiers = get_identifiers_and_strings()[0]
+identifiers, strings = get_identifiers_and_strings()
 
 def isprintable(b: bytes) -> bool:
     return all(0x20 <= c < 0x7f for c in b)
@@ -168,6 +168,8 @@ class Printer:
         return f"& {name}.ob_base.ob_base"
 
     def generate_unicode(self, name: str, s: str) -> str:
+        if s in strings:
+            return f"&_Py_STR({strings[s]})"
         if s in identifiers:
             return f"&_Py_ID({s})"
         if re.match(r'\A[A-Za-z0-9_]+\Z', s):
@@ -239,8 +241,6 @@ class Printer:
         co_name = self.generate(name + "_name", code.co_name)
         co_qualname = self.generate(name + "_qualname", code.co_qualname)
         co_linetable = self.generate(name + "_linetable", code.co_linetable)
-        co_endlinetable = self.generate(name + "_endlinetable", code.co_endlinetable)
-        co_columntable = self.generate(name + "_columntable", code.co_columntable)
         co_exceptiontable = self.generate(name + "_exceptiontable", code.co_exceptiontable)
         # These fields are not directly accessible
         localsplusnames, localspluskinds = get_localsplus(code)
@@ -265,6 +265,11 @@ class Printer:
             self.field(code, "co_kwonlyargcount")
             self.field(code, "co_stacksize")
             self.field(code, "co_firstlineno")
+            self.write(f".co_nlocalsplus = {len(localsplusnames)},")
+            self.field(code, "co_nlocals")
+            self.write(f".co_nplaincellvars = {nplaincellvars},")
+            self.write(f".co_ncellvars = {ncellvars},")
+            self.write(f".co_nfreevars = {nfreevars},")
             self.write(f".co_code = {co_code},")
             self.write(f".co_localsplusnames = {co_localsplusnames},")
             self.write(f".co_localspluskinds = {co_localspluskinds},")
@@ -272,13 +277,6 @@ class Printer:
             self.write(f".co_name = {co_name},")
             self.write(f".co_qualname = {co_qualname},")
             self.write(f".co_linetable = {co_linetable},")
-            self.write(f".co_endlinetable = {co_endlinetable},")
-            self.write(f".co_columntable = {co_columntable},")
-            self.write(f".co_nlocalsplus = {len(localsplusnames)},")
-            self.field(code, "co_nlocals")
-            self.write(f".co_nplaincellvars = {nplaincellvars},")
-            self.write(f".co_ncellvars = {ncellvars},")
-            self.write(f".co_nfreevars = {nfreevars},")
         self.deallocs.append(f"_PyStaticCode_Dealloc(&{name});")
         self.interns.append(f"_PyStaticCode_InternStrings(&{name})")
         return f"& {name}.ob_base"

@@ -347,16 +347,14 @@ quicken(PyObject *co_code)
                 goto fix_jump;
             case FOR_ITER:
             case JUMP_FORWARD:
+            case JUMP_IF_FALSE_OR_POP:
+            case JUMP_IF_TRUE_OR_POP:
             case POP_JUMP_FORWARD_IF_FALSE:
             case POP_JUMP_FORWARD_IF_TRUE:
             case POP_JUMP_FORWARD_IF_NONE:
             case POP_JUMP_FORWARD_IF_NOT_NONE:
             case SEND:
                 oparg = offsets[i + 1 + oparg] - j - 1;
-                goto fix_jump;
-            case JUMP_IF_FALSE_OR_POP:
-            case JUMP_IF_TRUE_OR_POP:
-                oparg = offsets[oparg];
                 goto fix_jump;
         }
         if (false) {
