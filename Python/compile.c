@@ -8381,6 +8381,8 @@ assemble(struct compiler *c, int addNone)
         goto error;
     }
 
+    maxdepth += 1;
+
     if (label_exception_targets(entryblock)) {
         goto error;
     }

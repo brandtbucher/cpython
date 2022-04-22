@@ -1648,6 +1648,60 @@ is_method(PyObject **stack_pointer, int args) {
 #define KWNAMES_LEN() \
     (call_shape.kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(call_shape.kwnames)))
 
+#define UOP_IS(ARG) (PEEK(ARG) = Py_Is(TOP(), PEEK(ARG)) ? Py_True : Py_False)  // XXX
+
+#define UOP_PEEK(ARG) SET_TOP(PEEK(ARG))
+#define UOP_PREPARE_JUMP_FORWARD_IF(ARG)  \
+    do {                                  \
+        switch (PyObject_IsTrue(TOP())) { \
+            case 1: JUMPBY(ARG); break;   \
+            case 0: break;                \
+            case -1: goto error;          \
+            default: Py_UNREACHABLE();    \
+        }                                 \
+    } while (0)
+#define UOP_PREPARE_JUMP_FORWARD(ARG)  JUMPBY(ARG)
+#define UOP_PREPARE_JUMP_BACKWARD(ARG) JUMPBY(-ARG)  // XXX
+#define UOP_XDECREF(ARG)      Py_XDECREF(PEEK(ARG))
+#define UOP_DECREF(ARG)       Py_DECREF(PEEK(ARG))
+#define UOP_INCREF(ARG)       Py_INCREF(PEEK(ARG))
+#define UOP_STACK_GROW(ARG)   STACK_GROW(ARG)
+#define UOP_STACK_SHRINK(ARG) STACK_SHRINK(ARG)
+#define UOP_LOAD_CONST(ARG)   SET_TOP(GETITEM(consts, ARG))
+#define UOP_LOAD_FAST(ARG)    SET_TOP(GETLOCAL(ARG))
+#define UOP_NOT(ARG)                          \
+    do {                                      \
+        switch (PyObject_Not(PEEK(ARG))) {    \
+            case 1: SET_TOP(Py_True); break;  \
+            case 0: SET_TOP(Py_False); break; \
+            case -1: SET_TOP(NULL); break;    \
+            default: Py_UNREACHABLE();        \
+        }                                     \
+    } while (0)
+#define UOP_SWAP(ARG)        \
+    do {                     \
+        PyObject *o = TOP(); \
+        SET_TOP(PEEK(ARG));  \
+        PEEK(ARG) = o;       \
+    } while (0)
+#define UOP_SET_NULL(ARG)       (PEEK(ARG) = NULL)
+#define UOP_STORE_FAST(ARG)     (GETLOCAL(ARG) = TOP())
+#define UOP_DISPATCH(ARG)       DISPATCH();
+#define UOP_CHECK_BREAKER(ARG)  CHECK_EVAL_BREAKER()
+#define UOP_CHECK_ERROR(ARG)    if (PEEK(ARG) == NULL) goto error;
+#define UOP_CHECK_FAST(ARG)     if (PEEK(ARG) == NULL) goto unbound_local_error;
+#define UOP_UNARY_POSITIVE(ARG) SET_TOP(PyNumber_Positive(PEEK(ARG)))
+#define UOP_UNARY_NEGATIVE(ARG) SET_TOP(PyNumber_Negative(PEEK(ARG)))
+#define UOP_UNARY_INVERT(ARG)   SET_TOP(PyNumber_Invert(PEEK(ARG)))
+#define UOP_BINARY_OP(ARG)      SET_TOP(binary_ops[ARG](THIRD(), SECOND()))
+
+// UOP_STACK_GROW
+// ...
+// UOP_SWAP
+// UOP_DECREF/UOP_XDECREF
+// UOP_INCREF
+// UOP_STACK_SHRINK
+
 PyObject* _Py_HOT_FUNCTION
 _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int throwflag)
 {
@@ -1784,7 +1838,187 @@ handle_eval_breaker:
            and that all operation that succeed call DISPATCH() ! */
 
         TARGET(NOP) {
-            DISPATCH();
+
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(LOAD_CLOSURE) {
+
+            UOP_STACK_GROW(1);
+            UOP_LOAD_FAST(oparg);
+            UOP_CHECK_FAST(1);
+            UOP_INCREF(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(LOAD_FAST) {
+
+            UOP_STACK_GROW(1);
+            UOP_LOAD_FAST(oparg);
+            UOP_CHECK_FAST(1);
+            UOP_INCREF(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(LOAD_CONST) {
+            PREDICTED(LOAD_CONST);
+
+            UOP_STACK_GROW(1);
+            UOP_LOAD_CONST(oparg);
+            UOP_INCREF(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(STORE_FAST) {
+            PREDICTED(STORE_FAST);
+            
+            UOP_STACK_GROW(1);
+            UOP_LOAD_FAST(oparg);
+            UOP_SWAP(2);
+            UOP_STORE_FAST(oparg);
+            UOP_XDECREF(2);
+            UOP_STACK_SHRINK(2);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(POP_TOP) {
+
+            UOP_DECREF(1);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(PUSH_NULL) {
+            
+            UOP_STACK_GROW(1);
+            UOP_SET_NULL(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(UNARY_NOT) {
+            
+            UOP_STACK_GROW(1);
+            UOP_NOT(2);
+            UOP_CHECK_ERROR(1);
+            UOP_SWAP(2);
+            UOP_DECREF(1);
+            UOP_INCREF(2);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(DELETE_FAST) {
+
+            UOP_STACK_GROW(2);
+            UOP_SET_NULL(2);
+            UOP_LOAD_FAST(oparg);
+            UOP_CHECK_FAST(1);
+            UOP_SWAP(2);
+            UOP_STORE_FAST(oparg);
+            UOP_DECREF(2);
+            UOP_STACK_SHRINK(2);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(JUMP_FORWARD) {
+            
+            UOP_PREPARE_JUMP_FORWARD(oparg);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(POP_JUMP_FORWARD_IF_FALSE) {
+            PREDICTED(POP_JUMP_FORWARD_IF_FALSE);
+
+            UOP_STACK_GROW(1);
+            UOP_NOT(2);
+            UOP_CHECK_ERROR(1);
+            UOP_PREPARE_JUMP_FORWARD_IF(oparg);
+            UOP_DECREF(2);
+            UOP_STACK_SHRINK(2);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(POP_JUMP_FORWARD_IF_TRUE) {
+           
+            UOP_PREPARE_JUMP_FORWARD_IF(oparg);
+            UOP_DECREF(1);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(COPY) {
+
+            UOP_STACK_GROW(1);
+            UOP_PEEK(oparg + 1);
+            UOP_INCREF(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(SWAP) {
+            
+            UOP_SWAP(oparg);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(JUMP_BACKWARD_NO_INTERRUPT) {
+
+            UOP_PREPARE_JUMP_BACKWARD(oparg);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(JUMP_BACKWARD_QUICK) {
+            PREDICTED(JUMP_BACKWARD_QUICK);
+
+            UOP_PREPARE_JUMP_BACKWARD(oparg);
+            UOP_CHECK_BREAKER();
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(UNARY_POSITIVE) {
+
+            UOP_STACK_GROW(1);
+            UOP_UNARY_POSITIVE(2);
+            UOP_CHECK_ERROR(1);
+            UOP_SWAP(2);
+            UOP_DECREF(1);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(UNARY_NEGATIVE) {
+
+            UOP_STACK_GROW(1);
+            UOP_UNARY_NEGATIVE(2);
+            UOP_CHECK_ERROR(1);
+            UOP_SWAP(2);
+            UOP_DECREF(1);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(UNARY_INVERT) {
+
+            UOP_STACK_GROW(1);
+            UOP_UNARY_INVERT(2);
+            UOP_CHECK_ERROR(1);
+            UOP_SWAP(2);
+            UOP_DECREF(1);
+            UOP_STACK_SHRINK(1);
+            UOP_DISPATCH(0);
+        }
+
+        TARGET(BINARY_OP) {
+            PREDICTED(BINARY_OP);
+
+            UOP_STACK_GROW(1);
+            UOP_BINARY_OP(oparg);
+            UOP_PREPARE_JUMP_FORWARD(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_CHECK_ERROR(1);
+            UOP_SWAP(3);
+            UOP_DECREF(1);
+            UOP_DECREF(2);
+            UOP_STACK_SHRINK(2);
+            UOP_DISPATCH(0);
         }
 
         TARGET(RESUME) {
@@ -1799,42 +2033,6 @@ handle_eval_breaker:
             if (_Py_atomic_load_relaxed(eval_breaker) && oparg < 2) {
                 goto handle_eval_breaker;
             }
-            DISPATCH();
-        }
-
-        TARGET(LOAD_CLOSURE) {
-            /* We keep LOAD_CLOSURE so that the bytecode stays more readable. */
-            PyObject *value = GETLOCAL(oparg);
-            if (value == NULL) {
-                goto unbound_local_error;
-            }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
-        }
-
-        TARGET(LOAD_FAST) {
-            PyObject *value = GETLOCAL(oparg);
-            if (value == NULL) {
-                goto unbound_local_error;
-            }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
-        }
-
-        TARGET(LOAD_CONST) {
-            PREDICTED(LOAD_CONST);
-            PyObject *value = GETITEM(consts, oparg);
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
-        }
-
-        TARGET(STORE_FAST) {
-            PREDICTED(STORE_FAST);
-            PyObject *value = POP();
-            SETLOCAL(oparg, value);
             DISPATCH();
         }
 
@@ -1908,66 +2106,6 @@ handle_eval_breaker:
             Py_INCREF(value);
             PUSH(value);
             NOTRACE_DISPATCH();
-        }
-
-        TARGET(POP_TOP) {
-            PyObject *value = POP();
-            Py_DECREF(value);
-            DISPATCH();
-        }
-
-        TARGET(PUSH_NULL) {
-            /* Use BASIC_PUSH as NULL is not a valid object pointer */
-            BASIC_PUSH(NULL);
-            DISPATCH();
-        }
-
-        TARGET(UNARY_POSITIVE) {
-            PyObject *value = TOP();
-            PyObject *res = PyNumber_Positive(value);
-            Py_DECREF(value);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
-
-        TARGET(UNARY_NEGATIVE) {
-            PyObject *value = TOP();
-            PyObject *res = PyNumber_Negative(value);
-            Py_DECREF(value);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
-        }
-
-        TARGET(UNARY_NOT) {
-            PyObject *value = TOP();
-            int err = PyObject_IsTrue(value);
-            Py_DECREF(value);
-            if (err == 0) {
-                Py_INCREF(Py_True);
-                SET_TOP(Py_True);
-                DISPATCH();
-            }
-            else if (err > 0) {
-                Py_INCREF(Py_False);
-                SET_TOP(Py_False);
-                DISPATCH();
-            }
-            STACK_SHRINK(1);
-            goto error;
-        }
-
-        TARGET(UNARY_INVERT) {
-            PyObject *value = TOP();
-            PyObject *res = PyNumber_Invert(value);
-            Py_DECREF(value);
-            SET_TOP(res);
-            if (res == NULL)
-                goto error;
-            DISPATCH();
         }
 
         TARGET(BINARY_OP_MULTIPLY_INT) {
@@ -3120,15 +3258,6 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
-        TARGET(DELETE_FAST) {
-            PyObject *v = GETLOCAL(oparg);
-            if (v != NULL) {
-                SETLOCAL(oparg, NULL);
-                DISPATCH();
-            }
-            goto unbound_local_error;
-        }
-
         TARGET(MAKE_CELL) {
             // "initial" is probably NULL but not if it's an arg (or set
             // via PyFrame_LocalsToFast() before MAKE_CELL has run).
@@ -3996,11 +4125,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(JUMP_FORWARD) {
-            JUMPBY(oparg);
-            DISPATCH();
-        }
-
         TARGET(JUMP_BACKWARD) {
             _PyCode_Warmup(frame->f_code);
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
@@ -4032,30 +4156,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_FALSE) {
-            PREDICTED(POP_JUMP_FORWARD_IF_FALSE);
-            PyObject *cond = POP();
-            if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                Py_DECREF(cond);
-                if (err > 0)
-                    ;
-                else if (err == 0) {
-                    JUMPBY(oparg);
-                }
-                else
-                    goto error;
-            }
-            DISPATCH();
-        }
-
         TARGET(POP_JUMP_BACKWARD_IF_TRUE) {
             PyObject *cond = POP();
             if (Py_IsFalse(cond)) {
@@ -4078,29 +4178,6 @@ handle_eval_breaker:
                 ;
             else
                 goto error;
-            DISPATCH();
-        }
-
-        TARGET(POP_JUMP_FORWARD_IF_TRUE) {
-            PyObject *cond = POP();
-            if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                Py_DECREF(cond);
-                if (err > 0) {
-                    JUMPBY(oparg);
-                }
-                else if (err == 0)
-                    ;
-                else
-                    goto error;
-            }
             DISPATCH();
         }
 
@@ -4196,24 +4273,6 @@ handle_eval_breaker:
             }
             else
                 goto error;
-            DISPATCH();
-        }
-
-        TARGET(JUMP_BACKWARD_NO_INTERRUPT) {
-            /* This bytecode is used in the `yield from` or `await` loop.
-             * If there is an interrupt, we want it handled in the innermost
-             * generator or coroutine, so we deliberately do not check it here.
-             * (see bpo-30039).
-             */
-            JUMPBY(-oparg);
-            DISPATCH();
-        }
-
-        TARGET(JUMP_BACKWARD_QUICK) {
-            PREDICTED(JUMP_BACKWARD_QUICK);
-            assert(oparg < INSTR_OFFSET());
-            JUMPBY(-oparg);
-            CHECK_EVAL_BREAKER();
             DISPATCH();
         }
 
@@ -5524,32 +5583,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(COPY) {
-            assert(oparg != 0);
-            PyObject *peek = PEEK(oparg);
-            Py_INCREF(peek);
-            PUSH(peek);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP) {
-            PREDICTED(BINARY_OP);
-            PyObject *rhs = POP();
-            PyObject *lhs = TOP();
-            assert(0 <= oparg);
-            assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-            assert(binary_ops[oparg]);
-            PyObject *res = binary_ops[oparg](lhs, rhs);
-            Py_DECREF(lhs);
-            Py_DECREF(rhs);
-            SET_TOP(res);
-            if (res == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
         TARGET(BINARY_OP_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
@@ -5565,14 +5598,6 @@ handle_eval_breaker:
                 cache->counter--;
                 JUMP_TO_INSTRUCTION(BINARY_OP);
             }
-        }
-
-        TARGET(SWAP) {
-            assert(oparg != 0);
-            PyObject *top = TOP();
-            SET_TOP(PEEK(oparg));
-            PEEK(oparg) = top;
-            DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {
