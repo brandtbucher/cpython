@@ -613,11 +613,22 @@ class TestTranforms(BytecodeTestCase):
         self.assertNotInBytecode(f, "SWAP")
 
     def test_static_swaps_match_mapping(self):
+        swaps = {
+            "{'a': a, 'b': b, 'c': c}",
+            "{'a': _, 'b': b, 'c': c}",
+            "{'a': a, 'b': _, 'c': c}",
+            "{'a': a, 'b': b, 'c': _}",
+        }
         for a, b, c in product("_a", "_b", "_c"):
             pattern = f"{{'a': {a}, 'b': {b}, 'c': {c}}}"
             with self.subTest(pattern):
                 code = compile_pattern_with_fast_locals(pattern)
-                self.assertNotInBytecode(code, "SWAP")
+                if pattern in swaps:
+                    # If this fails... great! Remove this pattern from swaps to
+                    # prevent regressing on any improvement:
+                    self.assertInBytecode(code, "SWAP")
+                else:
+                    self.assertNotInBytecode(code, "SWAP")
 
     def test_static_swaps_match_class(self):
         forms = [

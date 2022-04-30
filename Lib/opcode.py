@@ -73,7 +73,6 @@ def_op('BINARY_SUBSCR', 25, 4)
 def_op('GET_LEN', 30)
 def_op('MATCH_MAPPING', 31)
 def_op('MATCH_SEQUENCE', 32)
-def_op('MATCH_KEYS', 33)
 
 def_op('PUSH_EXC_INFO', 35)
 def_op('CHECK_EXC_MATCH', 36)
@@ -166,7 +165,7 @@ hasfree.append(138)
 def_op('DELETE_DEREF', 139)
 hasfree.append(139)
 jrel_op('JUMP_BACKWARD', 140)    # Number of words to skip (backwards)
-
+def_op('CHECK_DUPLICATE_KEYS', 141)
 def_op('CALL_FUNCTION_EX', 142)  # Flags
 
 def_op('EXTENDED_ARG', 144)

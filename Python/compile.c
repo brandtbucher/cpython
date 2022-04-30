@@ -1183,13 +1183,14 @@ stack_effect(int opcode, int oparg, int jump)
         case GET_LEN:
         case MATCH_MAPPING:
         case MATCH_SEQUENCE:
-        case MATCH_KEYS:
             return 1;
         case COPY:
         case PUSH_NULL:
             return 1;
         case BINARY_OP:
             return -1;
+        case CHECK_DUPLICATE_KEYS:
+            return 0;
         default:
             return PY_INVALID_STACK_EFFECT;
     }
@@ -6575,95 +6576,78 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
     }
     // We have a double-star target if "rest" is set
     PyObject *star_target = p->v.MatchMapping.rest;
-    // We need to keep the subject on top during the mapping and length checks:
+    // We need to keep the subject on top during the mapping check:
     pc->on_top++;
     ADDOP(c, MATCH_MAPPING);
     RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
-    if (!size && !star_target) {
-        // If the pattern is just "{}", we're done! Pop the subject:
-        pc->on_top--;
-        ADDOP(c, POP_TOP);
-        return 1;
-    }
-    if (size) {
-        // If the pattern has any keys in it, perform a length check:
-        ADDOP(c, GET_LEN);
-        ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(size));
-        ADDOP_COMPARE(c, GtE);
-        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
-    }
     if (INT_MAX < size - 1) {
         return compiler_error(c, "too many sub-patterns in mapping pattern");
     }
-    // Collect all of the keys into a tuple for MATCH_KEYS and
-    // **rest. They can either be dotted names or literals:
-
     // Maintaining a set of Constant_kind kind keys allows us to raise a
     // SyntaxError in the case of duplicates.
     PyObject *seen = PySet_New(NULL);
     if (seen == NULL) {
         return 0;
     }
-
-    // NOTE: goto error on failure in the loop below to avoid leaking `seen`
+    // DECREF'ing seen isn't our problem anymore:
+    if (_PyArena_AddPyObject(c->c_arena, seen)) {
+        Py_DECREF(seen);
+        return 0;
+    }
+    bool runtime_keys = false;
     for (Py_ssize_t i = 0; i < size; i++) {
         expr_ty key = asdl_seq_GET(keys, i);
         if (key == NULL) {
             const char *e = "can't use NULL keys in MatchMapping "
                             "(set 'rest' parameter instead)";
-            SET_LOC(c, ((pattern_ty) asdl_seq_GET(patterns, i)));
-            compiler_error(c, e);
-            goto error;
+            SET_LOC(c, (pattern_ty)asdl_seq_GET(patterns, i));
+            return compiler_error(c, e);
         }
 
         if (key->kind == Constant_kind) {
             int in_seen = PySet_Contains(seen, key->v.Constant.value);
             if (in_seen < 0) {
-                goto error;
+                return 0;
             }
             if (in_seen) {
                 const char *e = "mapping pattern checks duplicate key (%R)";
-                compiler_error(c, e, key->v.Constant.value);
-                goto error;
+                return compiler_error(c, e, key->v.Constant.value);
             }
-            if (PySet_Add(seen, key->v.Constant.value)) {
-                goto error;
-            }
+            RETURN_IF_FALSE(!PySet_Add(seen, key->v.Constant.value));
         }
-
         else if (key->kind != Attribute_kind) {
             const char *e = "mapping pattern keys may only match literals and attribute lookups";
-            compiler_error(c, e);
-            goto error;
+            return compiler_error(c, e);
         }
-        if (!compiler_visit_expr(c, key)) {
-            goto error;
+        else {
+            runtime_keys = true;
         }
+        VISIT(c, expr, key);
     }
-
-    // all keys have been checked; there are no duplicates
-    Py_DECREF(seen);
-
-    ADDOP_I(c, BUILD_TUPLE, size);
-    ADDOP(c, MATCH_KEYS);
-    // There's now a tuple of keys and a tuple of values on top of the subject:
-    pc->on_top += 2;
-    ADDOP_I(c, COPY, 1);
-    ADDOP_LOAD_CONST(c, Py_None);
-    ADDOP_I(c, IS_OP, 1);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
-    // So far so good. Use that tuple of values on the stack to match
-    // sub-patterns against:
-    ADDOP_I(c, UNPACK_SEQUENCE, size);
-    pc->on_top += size - 1;
+    pc->on_top += size;
+    if (runtime_keys) {
+        ADDOP_I(c, CHECK_DUPLICATE_KEYS, size);
+    }
+    // See if we have the required keys:
     for (Py_ssize_t i = 0; i < size; i++) {
-        pc->on_top--;
+        ADDOP_I(c, COPY, size - i);  // Key.
+        ADDOP_I(c, COPY, size + 2);  // Subject.
+        ADDOP_I(c, CONTAINS_OP, 0);
+        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    }
+    // They're all there. Now, match the values:
+    for (Py_ssize_t i = 0; i < size; i++) {
         pattern_ty pattern = asdl_seq_GET(patterns, i);
-        RETURN_IF_FALSE(compiler_pattern_subpattern(c, pattern, pc));
+        if (!WILDCARD_CHECK(pattern)) {
+            ADDOP_I(c, COPY, size + 1);  // Subject.
+            ADDOP_I(c, COPY, size + 1 - i);  // Key.
+            ADDOP(c, BINARY_SUBSCR);
+            RETURN_IF_FALSE(compiler_pattern_subpattern(c, pattern, pc));
+        }
     }
     // If we get this far, it's a match! Whatever happens next should consume
-    // the tuple of keys and the subject:
-    pc->on_top -= 2;
+    // the keys and the subject:
+    pc->on_top -= size + 1;
     if (star_target) {
         // If we have a starred name, bind a dict of remaining items to it (this may
         // seem a bit inefficient, but keys is rarely big enough to actually impact
@@ -6671,10 +6655,9 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
         // rest = dict(TOS1)
         // for key in TOS:
         //     del rest[key]
-        ADDOP_I(c, BUILD_MAP, 0);           // [subject, keys, empty]
-        ADDOP_I(c, SWAP, 3);                // [empty, keys, subject]
-        ADDOP_I(c, DICT_UPDATE, 2);         // [copy, keys]
-        ADDOP_I(c, UNPACK_SEQUENCE, size);  // [copy, keys...]
+        ADDOP_I(c, BUILD_MAP, 0);           // [subject, keys..., empty]
+        ADDOP_I(c, SWAP, size + 2);         // [empty, keys..., subject]
+        ADDOP_I(c, DICT_UPDATE, size + 1);  // [copy, keys...]
         while (size) {
             ADDOP_I(c, COPY, 1 + size--);   // [copy, keys..., copy]
             ADDOP_I(c, SWAP, 2);            // [copy, keys..., copy, key]
@@ -6683,14 +6666,12 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
         RETURN_IF_FALSE(pattern_helper_store_name(c, star_target, pc));
     }
     else {
-        ADDOP(c, POP_TOP);  // Tuple of keys.
+        for (Py_ssize_t i = 0; i < size; i++) {
+            ADDOP(c, POP_TOP);  // Key.
+        }
         ADDOP(c, POP_TOP);  // Subject.
     }
     return 1;
-
-error:
-    Py_DECREF(seen);
-    return 0;
 }
 
 static int

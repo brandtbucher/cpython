@@ -723,17 +723,12 @@ iterations of the loop.
    .. versionadded:: 3.10
 
 
-.. opcode:: MATCH_KEYS
+.. opcode:: CHECK_DUPLICATE_KEYS (count)
 
-   TOS is a tuple of mapping keys, and TOS1 is the match subject.  If TOS1
-   contains all of the keys in TOS, push a :class:`tuple` containing the
-   corresponding values. Otherwise, push ``None``.
+   Check the top *count* items on the stack for duplicates. If so, raise a
+   :exc:`ValueError`.
 
-   .. versionadded:: 3.10
-
-   .. versionchanged:: 3.11
-      Previously, this instruction also pushed a boolean value indicating
-      success (``True``) or failure (``False``).
+   .. versionadded:: 3.11
 
 
 .. opcode:: STORE_NAME (namei)

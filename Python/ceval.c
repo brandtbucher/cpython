@@ -953,89 +953,6 @@ static const binaryfunc binary_ops[] = {
 
 // PEP 634: Structural Pattern Matching
 
-
-// Return a tuple of values corresponding to keys, with error checks for
-// duplicate/missing keys.
-static PyObject*
-match_keys(PyThreadState *tstate, PyObject *map, PyObject *keys)
-{
-    assert(PyTuple_CheckExact(keys));
-    Py_ssize_t nkeys = PyTuple_GET_SIZE(keys);
-    if (!nkeys) {
-        // No keys means no items.
-        return PyTuple_New(0);
-    }
-    PyObject *seen = NULL;
-    PyObject *dummy = NULL;
-    PyObject *values = NULL;
-    PyObject *get = NULL;
-    // We use the two argument form of map.get(key, default) for two reasons:
-    // - Atomically check for a key and get its value without error handling.
-    // - Don't cause key creation or resizing in dict subclasses like
-    //   collections.defaultdict that define __missing__ (or similar).
-    int meth_found = _PyObject_GetMethod(map, &_Py_ID(get), &get);
-    if (get == NULL) {
-        goto fail;
-    }
-    seen = PySet_New(NULL);
-    if (seen == NULL) {
-        goto fail;
-    }
-    // dummy = object()
-    dummy = _PyObject_CallNoArgs((PyObject *)&PyBaseObject_Type);
-    if (dummy == NULL) {
-        goto fail;
-    }
-    values = PyTuple_New(nkeys);
-    if (values == NULL) {
-        goto fail;
-    }
-    for (Py_ssize_t i = 0; i < nkeys; i++) {
-        PyObject *key = PyTuple_GET_ITEM(keys, i);
-        if (PySet_Contains(seen, key) || PySet_Add(seen, key)) {
-            if (!_PyErr_Occurred(tstate)) {
-                // Seen it before!
-                _PyErr_Format(tstate, PyExc_ValueError,
-                              "mapping pattern checks duplicate key (%R)", key);
-            }
-            goto fail;
-        }
-        PyObject *args[] = { map, key, dummy };
-        PyObject *value = NULL;
-        if (meth_found) {
-            value = PyObject_Vectorcall(get, args, 3, NULL);
-        }
-        else {
-            value = PyObject_Vectorcall(get, &args[1], 2, NULL);
-        }
-        if (value == NULL) {
-            goto fail;
-        }
-        if (value == dummy) {
-            // key not in map!
-            Py_DECREF(value);
-            Py_DECREF(values);
-            // Return None:
-            Py_INCREF(Py_None);
-            values = Py_None;
-            goto done;
-        }
-        PyTuple_SET_ITEM(values, i, value);
-    }
-    // Success:
-done:
-    Py_DECREF(get);
-    Py_DECREF(seen);
-    Py_DECREF(dummy);
-    return values;
-fail:
-    Py_XDECREF(get);
-    Py_XDECREF(seen);
-    Py_XDECREF(dummy);
-    Py_XDECREF(values);
-    return NULL;
-}
-
 // Extract a named attribute from the subject, with additional bookkeeping to
 // raise TypeErrors for repeated lookups. On failure, return NULL (with no
 // error set). Use _PyErr_Occurred(tstate) to disambiguate.
@@ -4329,15 +4246,31 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(MATCH_KEYS) {
-            // On successful match, PUSH(values). Otherwise, PUSH(None).
-            PyObject *keys = TOP();
-            PyObject *subject = SECOND();
-            PyObject *values_or_none = match_keys(tstate, subject, keys);
-            if (values_or_none == NULL) {
+        TARGET(CHECK_DUPLICATE_KEYS) {
+            // if len(set(stack[-oparg:])) != oparg: raise ValueError
+            PyObject *seen = PySet_New(NULL);
+            if (seen == NULL) {
                 goto error;
             }
-            PUSH(values_or_none);
+            while (oparg) {
+                PyObject *key = PEEK(oparg--);
+                int dupe = PySet_Contains(seen, key);
+                if (dupe < 0) {
+                    Py_DECREF(seen);
+                    goto error;
+                }
+                if (dupe) {
+                    const char *e = "mapping pattern checks duplicate key (%R)";
+                    _PyErr_Format(tstate, PyExc_ValueError, e, key);
+                    Py_DECREF(seen);
+                    goto error;
+                }
+                if (PySet_Add(seen, key)) {
+                    Py_DECREF(seen);
+                    goto error;
+                }
+            }
+            Py_DECREF(seen);
             DISPATCH();
         }
 

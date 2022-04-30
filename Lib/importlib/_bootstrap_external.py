@@ -218,7 +218,7 @@ _code_type = type(_write_atomic.__code__)
 #
 # There were a variety of old schemes for setting the magic number.
 # The current working scheme is to increment the previous value by
-# 10.
+# 1.
 #
 # Starting with the adoption of PEP 3147 in Python 3.2, every bump in magic
 # number also includes a new "magic tag", i.e. a human readable string used
@@ -402,9 +402,10 @@ _code_type = type(_write_atomic.__code__)
 #                         add JUMP_BACKWARD_NO_INTERRUPT, make JUMP_NO_INTERRUPT virtual)
 #     Python 3.11a7 3492 (make POP_JUMP_IF_NONE/NOT_NONE/TRUE/FALSE relative)
 #     Python 3.11a7 3493 (Make JUMP_IF_TRUE_OR_POP/JUMP_IF_FALSE_OR_POP relative)
-#    Python 3.11a7 3494 (New location info table)
-#     Python 3.12 will start with magic number 3500
+#     Python 3.11a7 3494 (New location info table)
+#     Python 3.11a7 3495 (Replace MATCH_KEYS with CHACK_DUPLICATE_KEYS)
 
+#     Python 3.12 will start with magic number 3500
 
 #
 # MAGIC must change whenever the bytecode emitted by the compiler may no
@@ -416,7 +417,7 @@ _code_type = type(_write_atomic.__code__)
 # Whenever MAGIC_NUMBER is changed, the ranges in the magic_values array
 # in PC/launcher.c must also be updated.
 
-MAGIC_NUMBER = (3494).to_bytes(2, 'little') + b'\r\n'
+MAGIC_NUMBER = (3495).to_bytes(2, 'little') + b'\r\n'
 
 _RAW_MAGIC_NUMBER = int.from_bytes(MAGIC_NUMBER, 'little')  # For import.c
 
