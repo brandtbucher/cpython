@@ -6622,33 +6622,45 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
         else {
             runtime_keys = true;
         }
-        VISIT(c, expr, key);
     }
-    pc->on_top += size;
-    if (runtime_keys) {
-        ADDOP_I(c, CHECK_DUPLICATE_KEYS, size);
-    }
-    // See if we have the required keys:
     for (Py_ssize_t i = 0; i < size; i++) {
-        ADDOP_I(c, COPY, size - i);  // Key.
-        ADDOP_I(c, COPY, size + 2);  // Subject.
+        expr_ty key = asdl_seq_GET(keys, i);
+        VISIT(c, expr, key);
+        if (runtime_keys) {
+            pc->on_top++;
+            ADDOP_I(c, COPY, 1);
+            ADDOP_I(c, COPY, i + 3);
+        }
+        else {
+            ADDOP_I(c, COPY, 2);
+        }
         ADDOP_I(c, CONTAINS_OP, 0);
         RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
     }
-    // They're all there. Now, match the values:
+    if (runtime_keys) {
+        ADDOP_I(c, CHECK_DUPLICATE_KEYS, size);
+    }
+    // So far so good. Now, match the values:
     for (Py_ssize_t i = 0; i < size; i++) {
         pattern_ty pattern = asdl_seq_GET(patterns, i);
-        if (!WILDCARD_CHECK(pattern)) {
+        if (WILDCARD_CHECK(pattern)) {
+            continue;
+        }
+        if (!runtime_keys) {
+            ADDOP_I(c, COPY, 1);  // Subject.
+            VISIT(c, expr, asdl_seq_GET(keys, i));  // Key.
+        }
+        else {
             ADDOP_I(c, COPY, size + 1);  // Subject.
             ADDOP_I(c, COPY, size + 1 - i);  // Key.
-            ADDOP(c, BINARY_SUBSCR);
-            RETURN_IF_FALSE(compiler_pattern_subpattern(c, pattern, pc));
         }
+        ADDOP(c, BINARY_SUBSCR);
+        RETURN_IF_FALSE(compiler_pattern_subpattern(c, pattern, pc));
     }
     // If we get this far, it's a match! Whatever happens next should consume
     // the keys and the subject:
-    pc->on_top -= size + 1;
-    if (star_target) {
+    pc->on_top -= runtime_keys * size + 1;
+    if (star_target && runtime_keys) {
         // If we have a starred name, bind a dict of remaining items to it (this may
         // seem a bit inefficient, but keys is rarely big enough to actually impact
         // runtime):
@@ -6665,9 +6677,22 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
         }
         RETURN_IF_FALSE(pattern_helper_store_name(c, star_target, pc));
     }
+    else if (star_target) {
+        ADDOP_I(c, BUILD_MAP, 0);                      // [subject, empty]
+        ADDOP_I(c, SWAP, 2);                           // [empty, subject]
+        ADDOP_I(c, DICT_UPDATE, 1);                    // [copy]
+        while (size--) {
+            ADDOP_I(c, COPY, 1);                       // [copy, copy]
+            VISIT(c, expr, asdl_seq_GET(keys, size));  // [copy, copy, key]
+            ADDOP(c, DELETE_SUBSCR);                   // [copy]
+        }
+        RETURN_IF_FALSE(pattern_helper_store_name(c, star_target, pc));
+    }
     else {
-        for (Py_ssize_t i = 0; i < size; i++) {
-            ADDOP(c, POP_TOP);  // Key.
+        if (runtime_keys) {
+            while (size--) {
+                ADDOP(c, POP_TOP);  // Key.
+            }
         }
         ADDOP(c, POP_TOP);  // Subject.
     }
