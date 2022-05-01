@@ -1195,6 +1195,28 @@ _Py_Specialize_BinarySubscr(
         goto fail;
     }
     if (container_type == &PyDict_Type) {
+        PyDictKeysObject *keys = ((PyDictObject *)container)->ma_keys;
+        if (PyUnicode_CheckExact(sub) && keys->dk_kind == DICT_KEYS_UNICODE) {
+            Py_ssize_t index = _PyDictKeys_StringLookup(keys, sub);
+            if (index == DKIX_EMPTY) {
+                SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_EXPECTED_ERROR);
+                goto fail;
+            }
+            if (UINT16_MAX < index) {
+                SPECIALIZATION_FAIL(BINARY_SUBSCR, SPEC_FAIL_OUT_OF_RANGE);
+                goto fail;
+            }
+            assert(0 <= index);
+            uint32_t keys_version = _PyDictKeys_GetVersionForCurrentState(keys);
+            if (keys_version == 0) {
+                SPECIALIZATION_FAIL(opcode, SPEC_FAIL_OUT_OF_VERSIONS);
+                goto fail;
+            }
+            write_u32(cache->type_version, keys_version);
+            cache->func_version = index;
+            _Py_SET_OPCODE(*instr, BINARY_SUBSCR_DICT_UNICODE);
+            goto success;
+        }
         _Py_SET_OPCODE(*instr, BINARY_SUBSCR_DICT);
         goto success;
     }
