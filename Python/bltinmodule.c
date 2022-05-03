@@ -1665,13 +1665,14 @@ builtin_len(PyObject *module, PyObject *obj)
             Py_DECREF(len);
             return NULL;
         }
-        if (sizeof(Py_ssize_t) * 8 < (size_t)Py_SIZE(len) * PyLong_SHIFT) {
-            if (PyLong_AsSsize_t(len) == -1) {
-                assert(PyErr_Occurred());
-                Py_DECREF(len);
-                return NULL;
-            }
+        if (sizeof(Py_ssize_t) * 8 < (size_t)Py_SIZE(len) * PyLong_SHIFT &&
+            PyLong_AsSsize_t(len) == -1)
+        {
+            assert(PyErr_Occurred());
+            Py_DECREF(len);
+            return NULL;
         }
+        return len;
     }
     Py_ssize_t res = PyObject_Size(obj);
     if (res < 0) {
