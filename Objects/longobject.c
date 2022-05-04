@@ -1516,6 +1516,46 @@ _PyLong_Size_t_Converter(PyObject *obj, void *ptr)
 }
 
 
+PyObject *
+_PyLong_FromLength(PyObject *o)
+{
+    PyObject *lenfunc = _PyType_Lookup(Py_TYPE(o), &_Py_ID(__len__));
+    if (lenfunc && PyFunction_Check(lenfunc)) {
+        PyObject *len = PyObject_CallOneArg(lenfunc, o);
+        if (len == NULL) {
+            return NULL;
+        }
+        if (!PyLong_CheckExact(len)) {
+            Py_SETREF(len, PyNumber_Index(len));
+            if (len == NULL) {
+                return NULL;
+            }
+        }
+        assert(PyLong_CheckExact(len));
+        if (Py_SIZE(len) < 0) {
+            PyErr_SetString(PyExc_ValueError, "__len__() should return >= 0");
+            Py_DECREF(len);
+            return NULL;
+        }
+        size_t len_max_bits = Py_SIZE(len) * PyLong_SHIFT;
+        size_t ssize_t_max_bits = sizeof(Py_ssize_t) * 8 - 1;
+        Py_BUILD_ASSERT(PY_SSIZE_T_MAX == ((size_t)1 << ssize_t_max_bits) - 1);
+        if (ssize_t_max_bits < len_max_bits && PyLong_AsSsize_t(len) == -1) {
+            assert(PyErr_Occurred());
+            Py_DECREF(len);
+            return NULL;
+        }
+        return len;
+    }
+    Py_ssize_t res = PyObject_Size(o);
+    if (res < 0) {
+        assert(PyErr_Occurred());
+        return NULL;
+    }
+    return PyLong_FromSsize_t(res);
+}
+
+
 #define CHECK_BINOP(v,w)                                \
     do {                                                \
         if (!PyLong_Check(v) || !PyLong_Check(w))       \

@@ -4267,15 +4267,11 @@ handle_eval_breaker:
 
         TARGET(GET_LEN) {
             // PUSH(len(TOS))
-            Py_ssize_t len_i = PyObject_Length(TOP());
-            if (len_i < 0) {
+            PyObject *len = _PyLong_FromLength(TOP());
+            if (len == NULL) {
                 goto error;
             }
-            PyObject *len_o = PyLong_FromSsize_t(len_i);
-            if (len_o == NULL) {
-                goto error;
-            }
-            PUSH(len_o);
+            PUSH(len);
             DISPATCH();
         }
 
@@ -5177,11 +5173,7 @@ handle_eval_breaker:
             STAT_INC(PRECALL, hit);
             SKIP_CALL();
             PyObject *arg = TOP();
-            Py_ssize_t len_i = PyObject_Length(arg);
-            if (len_i < 0) {
-                goto error;
-            }
-            PyObject *res = PyLong_FromSsize_t(len_i);
+            PyObject *res = _PyLong_FromLength(arg);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
 
             STACK_SHRINK(2-is_meth);

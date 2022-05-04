@@ -1647,39 +1647,7 @@ static PyObject *
 builtin_len(PyObject *module, PyObject *obj)
 /*[clinic end generated code: output=fa7a270d314dfb6c input=bc55598da9e9c9b5]*/
 {
-    PyObject *lenfunc = _PyType_Lookup(Py_TYPE(obj), &_Py_ID(__len__));
-    if (lenfunc && PyFunction_Check(lenfunc)) {
-        PyObject *len = PyObject_CallOneArg(lenfunc, obj);
-        if (len == NULL) {
-            return NULL;
-        }
-        if (!PyLong_CheckExact(len)) {
-            Py_SETREF(len, PyNumber_Index(len));
-            if (len == NULL) {
-                return NULL;
-            }
-        }
-        assert(PyLong_CheckExact(len));
-        if (Py_SIZE(len) < 0) {
-            PyErr_SetString(PyExc_ValueError, "__len__() should return >= 0");
-            Py_DECREF(len);
-            return NULL;
-        }
-        if (sizeof(Py_ssize_t) * 8 < (size_t)Py_SIZE(len) * PyLong_SHIFT &&
-            PyLong_AsSsize_t(len) == -1)
-        {
-            assert(PyErr_Occurred());
-            Py_DECREF(len);
-            return NULL;
-        }
-        return len;
-    }
-    Py_ssize_t res = PyObject_Size(obj);
-    if (res < 0) {
-        assert(PyErr_Occurred());
-        return NULL;
-    }
-    return PyLong_FromSsize_t(res);
+    return _PyLong_FromLength(obj);
 }
 
 
