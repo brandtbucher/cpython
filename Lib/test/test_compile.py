@@ -126,7 +126,7 @@ def f(x):
     # the expressions above have no effect, x == argument
     while x:
         x -= 1
-        # EXTENDED_ARG/JUMP_ABSOLUTE here
+        # EXTENDED_ARG/JUMP_BACKWARD here
     return x
 ''' % ((longexpr,)*10)
         exec(code, g)
@@ -803,7 +803,7 @@ if 1:
         for func in funcs:
             with self.subTest(func=func):
                 opcodes = list(dis.get_instructions(func))
-                self.assertLessEqual(len(opcodes), 3)
+                self.assertLessEqual(len(opcodes), 8)
                 self.assertIn('LOAD_', opcodes[-2].opname)
                 self.assertEqual('RETURN_VALUE', opcodes[-1].opname)
 
@@ -1000,9 +1000,8 @@ if 1:
 
         INSTR_SIZE = 2
         HANDLED_JUMPS = (
-            'POP_JUMP_IF_FALSE',
-            'POP_JUMP_IF_TRUE',
-            'JUMP_ABSOLUTE',
+            'POP_JUMP_FORWARD_IF',
+            'JUMP_BACKWARD',
             'JUMP_FORWARD',
         )
 
@@ -1088,7 +1087,7 @@ class TestSourcePositions(unittest.TestCase):
 
     def test_compiles_to_extended_op_arg(self):
         # Make sure we still have valid positions when the code compiles to an
-        # EXTENDED_ARG by performing a loop which needs a JUMP_ABSOLUTE after
+        # EXTENDED_ARG by performing a loop which needs a JUMP_BACKWARD after
         # a bunch of opcodes.
         snippet = "x = x\n" * 10_000
         snippet += ("while x != 0:\n"

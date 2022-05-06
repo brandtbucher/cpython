@@ -33,10 +33,10 @@ class OpcodeTests(unittest.TestCase):
                 self.assertRaises(ValueError, stack_effect, code, 0)
 
     def test_stack_effect_jump(self):
-        JUMP_IF_TRUE_OR_POP = dis.opmap['JUMP_IF_TRUE_OR_POP']
-        self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0), 0)
-        self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0, jump=True), 0)
-        self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0, jump=False), -1)
+        POP_JUMP_FORWARD_IF = dis.opmap['POP_JUMP_FORWARD_IF']
+        self.assertEqual(stack_effect(POP_JUMP_FORWARD_IF, 0), -1)
+        self.assertEqual(stack_effect(POP_JUMP_FORWARD_IF, 0, jump=True), -1)
+        self.assertEqual(stack_effect(POP_JUMP_FORWARD_IF, 0, jump=False), -1)
         FOR_ITER = dis.opmap['FOR_ITER']
         self.assertEqual(stack_effect(FOR_ITER, 0), 1)
         self.assertEqual(stack_effect(FOR_ITER, 0, jump=True), -1)

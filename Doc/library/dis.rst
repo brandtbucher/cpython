@@ -937,81 +937,11 @@ iterations of the loop.
    .. versionadded:: 3.11
 
 
-.. opcode:: POP_JUMP_FORWARD_IF_TRUE (delta)
+.. opcode:: POP_JUMP_FORWARD_IF (delta)
 
    If TOS is true, increments the bytecode counter by *delta*.  TOS is popped.
 
    .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_BACKWARD_IF_TRUE (delta)
-
-   If TOS is true, decrements the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_FORWARD_IF_FALSE (delta)
-
-   If TOS is false, increments the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_BACKWARD_IF_FALSE (delta)
-
-   If TOS is false, decrements the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_FORWARD_IF_NOT_NONE (delta)
-
-   If TOS is not ``None``, increments the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_BACKWARD_IF_NOT_NONE (delta)
-
-   If TOS is not ``None``, decrements the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_FORWARD_IF_NONE (delta)
-
-   If TOS is ``None``, increments the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: POP_JUMP_BACKWARD_IF_NONE (delta)
-
-   If TOS is ``None``, decrements the bytecode counter by *delta*.  TOS is popped.
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: JUMP_IF_TRUE_OR_POP (delta)
-
-   If TOS is true, increments the bytecode counter by *delta* and leaves TOS on the
-   stack.  Otherwise (TOS is false), TOS is popped.
-
-   .. versionadded:: 3.1
-
-   .. versionchanged:: 3.11
-      The oparg is now a relative delta rather than an absolute target.
-
-.. opcode:: JUMP_IF_FALSE_OR_POP (delta)
-
-   If TOS is false, increments the bytecode counter by *delta* and leaves TOS on the
-   stack.  Otherwise (TOS is true), TOS is popped.
-
-   .. versionadded:: 3.1
-
-   .. versionchanged:: 3.11
-      The oparg is now a relative delta rather than an absolute target.
 
 
 .. opcode:: FOR_ITER (delta)

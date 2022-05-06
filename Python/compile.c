@@ -79,13 +79,8 @@
 #define SETUP_WITH -3
 #define POP_BLOCK -4
 #define JUMP -5
-#define JUMP_NO_INTERRUPT -6
-#define POP_JUMP_IF_FALSE -7
-#define POP_JUMP_IF_TRUE -8
-#define POP_JUMP_IF_NONE -9
-#define POP_JUMP_IF_NOT_NONE -10
 
-#define MIN_VIRTUAL_OPCODE -10
+#define MIN_VIRTUAL_OPCODE -5
 #define MAX_ALLOWED_OPCODE 254
 
 #define IS_WITHIN_OPCODE_RANGE(opcode) \
@@ -94,35 +89,17 @@
 #define IS_VIRTUAL_OPCODE(opcode) ((opcode) < 0)
 
 #define IS_VIRTUAL_JUMP_OPCODE(opcode) \
-        ((opcode) == JUMP || \
-         (opcode) == JUMP_NO_INTERRUPT || \
-         (opcode) == POP_JUMP_IF_NONE || \
-         (opcode) == POP_JUMP_IF_NOT_NONE || \
-         (opcode) == POP_JUMP_IF_FALSE || \
-         (opcode) == POP_JUMP_IF_TRUE)
+        ((opcode) == JUMP)
 
 /* opcodes which are not emitted in codegen stage, only by the assembler */
 #define IS_ASSEMBLER_OPCODE(opcode) \
         ((opcode) == JUMP_FORWARD || \
-         (opcode) == JUMP_BACKWARD || \
-         (opcode) == JUMP_BACKWARD_NO_INTERRUPT || \
-         (opcode) == POP_JUMP_FORWARD_IF_NONE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_NONE || \
-         (opcode) == POP_JUMP_FORWARD_IF_NOT_NONE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_NOT_NONE || \
-         (opcode) == POP_JUMP_FORWARD_IF_TRUE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_TRUE || \
-         (opcode) == POP_JUMP_FORWARD_IF_FALSE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_FALSE)
+         (opcode) == JUMP_BACKWARD)
 
 
 #define IS_BACKWARDS_JUMP_OPCODE(opcode) \
         ((opcode) == JUMP_BACKWARD || \
-         (opcode) == JUMP_BACKWARD_NO_INTERRUPT || \
-         (opcode) == POP_JUMP_BACKWARD_IF_NONE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_NOT_NONE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_TRUE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_FALSE)
+         (opcode) == JUMP_BACKWARD_NO_INTERRUPT)
 
 
 #define IS_TOP_LEVEL_AWAIT(c) ( \
@@ -1052,25 +1029,9 @@ stack_effect(int opcode, int oparg, int jump)
         case JUMP_BACKWARD:
         case JUMP:
         case JUMP_BACKWARD_NO_INTERRUPT:
-        case JUMP_NO_INTERRUPT:
             return 0;
 
-        case JUMP_IF_TRUE_OR_POP:
-        case JUMP_IF_FALSE_OR_POP:
-            return jump ? 0 : -1;
-
-        case POP_JUMP_BACKWARD_IF_NONE:
-        case POP_JUMP_FORWARD_IF_NONE:
-        case POP_JUMP_IF_NONE:
-        case POP_JUMP_BACKWARD_IF_NOT_NONE:
-        case POP_JUMP_FORWARD_IF_NOT_NONE:
-        case POP_JUMP_IF_NOT_NONE:
-        case POP_JUMP_FORWARD_IF_FALSE:
-        case POP_JUMP_BACKWARD_IF_FALSE:
-        case POP_JUMP_IF_FALSE:
-        case POP_JUMP_FORWARD_IF_TRUE:
-        case POP_JUMP_BACKWARD_IF_TRUE:
-        case POP_JUMP_IF_TRUE:
+        case POP_JUMP_FORWARD_IF:
             return -1;
 
         case LOAD_GLOBAL:
@@ -1967,7 +1928,7 @@ compiler_add_yield_from(struct compiler *c, int await)
     compiler_use_next_block(c, resume);
     ADDOP(c, YIELD_VALUE);
     ADDOP_I(c, RESUME, await ? 3 : 2);
-    ADDOP_JUMP(c, JUMP_NO_INTERRUPT, start);
+    ADDOP_JUMP(c, JUMP_BACKWARD_NO_INTERRUPT, start);
     compiler_use_next_block(c, exit);
     return 1;
 }
@@ -2942,15 +2903,19 @@ compiler_jump_if(struct compiler *c, expr_ty e, basicblock *next, int cond)
                 ADDOP_I(c, SWAP, 2);
                 ADDOP_I(c, COPY, 2);
                 ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, i));
-                ADDOP_JUMP(c, POP_JUMP_IF_FALSE, cleanup);
+                ADDOP(c, UNARY_NOT);
+                ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, cleanup);
             }
             VISIT(c, expr, (expr_ty)asdl_seq_GET(e->v.Compare.comparators, n));
             ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, n));
-            ADDOP_JUMP(c, cond ? POP_JUMP_IF_TRUE : POP_JUMP_IF_FALSE, next);
             basicblock *end = compiler_new_block(c);
             if (end == NULL)
                 return 0;
-            ADDOP_JUMP_NOLINE(c, JUMP, end);
+            if (cond) {
+                ADDOP(c, UNARY_NOT);
+            }
+            ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, end);
+            ADDOP_JUMP(c, JUMP, next);
             compiler_use_next_block(c, cleanup);
             ADDOP(c, POP_TOP);
             if (!cond) {
@@ -2969,7 +2934,13 @@ compiler_jump_if(struct compiler *c, expr_ty e, basicblock *next, int cond)
 
     /* general implementation */
     VISIT(c, expr, e);
-    ADDOP_JUMP(c, cond ? POP_JUMP_IF_TRUE : POP_JUMP_IF_FALSE, next);
+    if (cond) {
+        ADDOP(c, UNARY_NOT);
+    }
+    basicblock *end = compiler_new_block(c);
+    ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, end);
+    ADDOP_JUMP(c, JUMP, next);
+    compiler_use_next_block(c, end);
     return 1;
 }
 
@@ -3488,7 +3459,8 @@ compiler_try_except(struct compiler *c, stmt_ty s)
         if (handler->v.ExceptHandler.type) {
             VISIT(c, expr, handler->v.ExceptHandler.type);
             ADDOP(c, CHECK_EXC_MATCH);
-            ADDOP_JUMP(c, POP_JUMP_IF_FALSE, except);
+            ADDOP(c, UNARY_NOT);
+            ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, except);
         }
         if (handler->v.ExceptHandler.name) {
             basicblock *cleanup_end, *cleanup_body;
@@ -3703,7 +3675,9 @@ compiler_try_star_except(struct compiler *c, stmt_ty s)
             VISIT(c, expr, handler->v.ExceptHandler.type);
             ADDOP(c, CHECK_EG_MATCH);
             ADDOP_I(c, COPY, 1);
-            ADDOP_JUMP(c, POP_JUMP_IF_NOT_NONE, handle_match);
+            ADDOP_LOAD_CONST(c, Py_None);
+            ADDOP_COMPARE(c, IsNot);
+            ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, handle_match);
             ADDOP(c, POP_TOP);  // match
             ADDOP_JUMP(c, JUMP, except);
         }
@@ -3791,7 +3765,9 @@ compiler_try_star_except(struct compiler *c, stmt_ty s)
     compiler_use_next_block(c, reraise_star);
     ADDOP(c, PREP_RERAISE_STAR);
     ADDOP_I(c, COPY, 1);
-    ADDOP_JUMP(c, POP_JUMP_IF_NOT_NONE, reraise);
+    ADDOP_LOAD_CONST(c, Py_None);
+    ADDOP_COMPARE(c, IsNot);
+    ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, reraise);
 
     /* Nothing to reraise */
     ADDOP(c, POP_TOP);
@@ -4305,15 +4281,9 @@ static int
 compiler_boolop(struct compiler *c, expr_ty e)
 {
     basicblock *end;
-    int jumpi;
     Py_ssize_t i, n;
     asdl_expr_seq *s;
 
-    assert(e->kind == BoolOp_kind);
-    if (e->v.BoolOp.op == And)
-        jumpi = JUMP_IF_FALSE_OR_POP;
-    else
-        jumpi = JUMP_IF_TRUE_OR_POP;
     end = compiler_new_block(c);
     if (end == NULL)
         return 0;
@@ -4322,7 +4292,13 @@ compiler_boolop(struct compiler *c, expr_ty e)
     assert(n >= 0);
     for (i = 0; i < n; ++i) {
         VISIT(c, expr, (expr_ty)asdl_seq_GET(s, i));
-        ADDOP_JUMP(c, jumpi, end);
+        ADDOP_I(c, COPY, 1)
+        assert(e->kind == BoolOp_kind);
+        if (e->v.BoolOp.op == And) {
+            ADDOP(c, UNARY_NOT);
+        }
+        ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, end);
+        ADDOP(c, POP_TOP);
         basicblock *next = compiler_new_block(c);
         if (next == NULL) {
             return 0;
@@ -4632,7 +4608,10 @@ compiler_compare(struct compiler *c, expr_ty e)
             ADDOP_I(c, SWAP, 2);
             ADDOP_I(c, COPY, 2);
             ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, i));
-            ADDOP_JUMP(c, JUMP_IF_FALSE_OR_POP, cleanup);
+            ADDOP_I(c, COPY, 1)
+            ADDOP(c, UNARY_NOT);
+            ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, cleanup);
+            ADDOP(c, POP_TOP);
         }
         VISIT(c, expr, (expr_ty)asdl_seq_GET(e->v.Compare.comparators, n));
         ADDOP_COMPARE(c, asdl_seq_GET(e->v.Compare.ops, n));
@@ -5536,7 +5515,7 @@ compiler_with_except_finish(struct compiler *c, basicblock * cleanup) {
     exit = compiler_new_block(c);
     if (exit == NULL)
         return 0;
-    ADDOP_JUMP(c, POP_JUMP_IF_TRUE, exit);
+    ADDOP_JUMP(c, POP_JUMP_FORWARD_IF, exit);
     ADDOP_I(c, RERAISE, 2);
     compiler_use_next_block(c, cleanup);
     POP_EXCEPT_AND_RERAISE(c);
@@ -6535,7 +6514,8 @@ compiler_pattern_class(struct compiler *c, pattern_ty p, pattern_context *pc)
     ADDOP_I(c, IS_OP, 1);
     // TOS is now a tuple of (nargs + nattrs) attributes (or None):
     pc->on_top++;
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP(c, UNARY_NOT);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     ADDOP_I(c, UNPACK_SEQUENCE, nargs + nattrs);
     pc->on_top += nargs + nattrs - 1;
     for (i = 0; i < nargs + nattrs; i++) {
@@ -6578,7 +6558,8 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
     // We need to keep the subject on top during the mapping and length checks:
     pc->on_top++;
     ADDOP(c, MATCH_MAPPING);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP(c, UNARY_NOT);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     if (!size && !star_target) {
         // If the pattern is just "{}", we're done! Pop the subject:
         pc->on_top--;
@@ -6589,8 +6570,8 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
         // If the pattern has any keys in it, perform a length check:
         ADDOP(c, GET_LEN);
         ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(size));
-        ADDOP_COMPARE(c, GtE);
-        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+        ADDOP_COMPARE(c, Lt);
+        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     }
     if (INT_MAX < size - 1) {
         return compiler_error(c, "too many sub-patterns in mapping pattern");
@@ -6650,8 +6631,8 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
     pc->on_top += 2;
     ADDOP_I(c, COPY, 1);
     ADDOP_LOAD_CONST(c, Py_None);
-    ADDOP_I(c, IS_OP, 1);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP_COMPARE(c, Is);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     // So far so good. Use that tuple of values on the stack to match
     // sub-patterns against:
     ADDOP_I(c, UNPACK_SEQUENCE, size);
@@ -6872,20 +6853,21 @@ compiler_pattern_sequence(struct compiler *c, pattern_ty p, pattern_context *pc)
     // We need to keep the subject on top during the sequence and length checks:
     pc->on_top++;
     ADDOP(c, MATCH_SEQUENCE);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP(c, UNARY_NOT);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     if (star < 0) {
         // No star: len(subject) == size
         ADDOP(c, GET_LEN);
         ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(size));
-        ADDOP_COMPARE(c, Eq);
-        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+        ADDOP_COMPARE(c, NotEq);
+        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     }
     else if (size > 1) {
         // Star: len(subject) >= size - 1
         ADDOP(c, GET_LEN);
         ADDOP_LOAD_CONST_NEW(c, PyLong_FromSsize_t(size - 1));
-        ADDOP_COMPARE(c, GtE);
-        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+        ADDOP_COMPARE(c, Lt);
+        RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     }
     // Whatever comes next should consume the subject:
     pc->on_top--;
@@ -6912,8 +6894,8 @@ compiler_pattern_value(struct compiler *c, pattern_ty p, pattern_context *pc)
         return compiler_error(c, e);
     }
     VISIT(c, expr, value);
-    ADDOP_COMPARE(c, Eq);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP_COMPARE(c, NotEq);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     return 1;
 }
 
@@ -6922,8 +6904,8 @@ compiler_pattern_singleton(struct compiler *c, pattern_ty p, pattern_context *pc
 {
     assert(p->kind == MatchSingleton_kind);
     ADDOP_LOAD_CONST(c, p->v.MatchSingleton.value);
-    ADDOP_COMPARE(c, Is);
-    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_IF_FALSE));
+    ADDOP_COMPARE(c, IsNot);
+    RETURN_IF_FALSE(jump_to_fail_pop(c, pc, POP_JUMP_FORWARD_IF));
     return 1;
 }
 
@@ -7142,8 +7124,8 @@ stackdepth(struct compiler *c)
             }
             depth = new_depth;
             assert(!IS_ASSEMBLER_OPCODE(instr->i_opcode));
-            if (instr->i_opcode == JUMP_NO_INTERRUPT ||
-                instr->i_opcode == JUMP ||
+            if (instr->i_opcode == JUMP ||
+                instr->i_opcode == JUMP_BACKWARD_NO_INTERRUPT ||
                 instr->i_opcode == RETURN_VALUE ||
                 instr->i_opcode == RAISE_VARARGS ||
                 instr->i_opcode == RERAISE)
@@ -7648,40 +7630,13 @@ normalize_jumps(struct assembler *a)
                 case JUMP:
                     last->i_opcode = is_forward ? JUMP_FORWARD : JUMP_BACKWARD;
                     break;
-                case JUMP_NO_INTERRUPT:
-                    last->i_opcode = is_forward ?
-                        JUMP_FORWARD : JUMP_BACKWARD_NO_INTERRUPT;
+                case JUMP_BACKWARD_NO_INTERRUPT:
+                    assert(!is_forward);
                     break;
-                case POP_JUMP_IF_NOT_NONE:
-                    last->i_opcode = is_forward ?
-                        POP_JUMP_FORWARD_IF_NOT_NONE : POP_JUMP_BACKWARD_IF_NOT_NONE;
-                    break;
-                case POP_JUMP_IF_NONE:
-                    last->i_opcode = is_forward ?
-                        POP_JUMP_FORWARD_IF_NONE : POP_JUMP_BACKWARD_IF_NONE;
-                    break;
-                case POP_JUMP_IF_FALSE:
-                    last->i_opcode = is_forward ?
-                        POP_JUMP_FORWARD_IF_FALSE : POP_JUMP_BACKWARD_IF_FALSE;
-                    break;
-                case POP_JUMP_IF_TRUE:
-                    last->i_opcode = is_forward ?
-                        POP_JUMP_FORWARD_IF_TRUE : POP_JUMP_BACKWARD_IF_TRUE;
-                    break;
-                case JUMP_IF_TRUE_OR_POP:
-                case JUMP_IF_FALSE_OR_POP:
-                    if (!is_forward) {
-                        /* As far as we can tell, the compiler never emits
-                         * these jumps with a backwards target. If/when this
-                         * exception is raised, we have found a use case for
-                         * a backwards version of this jump (or to replace
-                         * it with the sequence (COPY 1, POP_JUMP_IF_T/F, POP)
-                         */
-                        PyErr_Format(PyExc_SystemError,
-                            "unexpected %s jumping backwards",
-                            last->i_opcode == JUMP_IF_TRUE_OR_POP ?
-                                "JUMP_IF_TRUE_OR_POP" : "JUMP_IF_FALSE_OR_POP");
-                    }
+                case SEND:
+                case FOR_ITER:
+                case POP_JUMP_FORWARD_IF:
+                    assert(is_forward);
                     break;
             }
         }
@@ -8729,6 +8684,7 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
     struct instr nop;
     nop.i_opcode = NOP;
     struct instr *target;
+    bb->b_visited = 1;
     for (int i = 0; i < bb->b_iused; i++) {
         struct instr *inst = &bb->b_instr[i];
         int oparg = inst->i_oparg;
@@ -8751,10 +8707,40 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
             {
                 PyObject* cnt;
                 int is_true;
-                int jump_if_true;
                 switch(nextop) {
-                    case POP_JUMP_IF_FALSE:
-                    case POP_JUMP_IF_TRUE:
+                    case UNARY_NOT:
+                        cnt = get_const_value(inst->i_opcode, oparg, consts);
+                        if (cnt == NULL) {
+                            goto error;
+                        }
+                        int not = PyObject_Not(cnt);
+                        Py_DECREF(cnt);
+                        if (not < 0) {
+                            goto error;
+                        }
+                        cnt = PyBool_FromLong(not);
+                        if (merge_const_one(c, &cnt) == 0) {
+                            Py_DECREF(cnt);
+                            goto error;
+                        }
+                        Py_ssize_t index;
+                        for (index = 0; index < PyList_GET_SIZE(consts); index++) {
+                            if (PyList_GET_ITEM(consts, index) == cnt) {
+                                break;
+                            }
+                        }
+                        if (index == PyList_GET_SIZE(consts) &&
+                            PyList_Append(consts, cnt))
+                        {
+                            Py_DECREF(cnt);
+                            return -1;
+                        }
+                        Py_DECREF(cnt);
+                        inst->i_opcode = NOP;
+                        bb->b_instr[i+1].i_opcode = LOAD_CONST;
+                        bb->b_instr[i+1].i_oparg = index;
+                        break;
+                    case POP_JUMP_FORWARD_IF:
                         cnt = get_const_value(inst->i_opcode, oparg, consts);
                         if (cnt == NULL) {
                             goto error;
@@ -8765,50 +8751,13 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                             goto error;
                         }
                         inst->i_opcode = NOP;
-                        jump_if_true = nextop == POP_JUMP_IF_TRUE;
-                        if (is_true == jump_if_true) {
+                        if (is_true) {
                             bb->b_instr[i+1].i_opcode = JUMP;
                             bb->b_nofallthrough = 1;
                         }
                         else {
                             bb->b_instr[i+1].i_opcode = NOP;
                         }
-                        break;
-                    case JUMP_IF_FALSE_OR_POP:
-                    case JUMP_IF_TRUE_OR_POP:
-                        cnt = get_const_value(inst->i_opcode, oparg, consts);
-                        if (cnt == NULL) {
-                            goto error;
-                        }
-                        is_true = PyObject_IsTrue(cnt);
-                        Py_DECREF(cnt);
-                        if (is_true == -1) {
-                            goto error;
-                        }
-                        jump_if_true = nextop == JUMP_IF_TRUE_OR_POP;
-                        if (is_true == jump_if_true) {
-                            bb->b_instr[i+1].i_opcode = JUMP;
-                            bb->b_nofallthrough = 1;
-                        }
-                        else {
-                            inst->i_opcode = NOP;
-                            bb->b_instr[i+1].i_opcode = NOP;
-                        }
-                        break;
-                    case IS_OP:
-                        cnt = get_const_value(inst->i_opcode, oparg, consts);
-                        if (cnt == NULL) {
-                            goto error;
-                        }
-                        int jump_op = i+2 < bb->b_iused ? bb->b_instr[i+2].i_opcode : 0;
-                        if (Py_IsNone(cnt) && (jump_op == POP_JUMP_IF_FALSE || jump_op == POP_JUMP_IF_TRUE)) {
-                            unsigned char nextarg = bb->b_instr[i+1].i_oparg;
-                            inst->i_opcode = NOP;
-                            bb->b_instr[i+1].i_opcode = NOP;
-                            bb->b_instr[i+2].i_opcode = nextarg ^ (jump_op == POP_JUMP_IF_FALSE) ?
-                                    POP_JUMP_IF_NOT_NONE : POP_JUMP_IF_NONE;
-                        }
-                        Py_DECREF(cnt);
                         break;
                 }
                 break;
@@ -8838,100 +8787,19 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                     }
                 }
                 break;
-
-                /* Simplify conditional jump to conditional jump where the
-                   result of the first test implies the success of a similar
-                   test or the failure of the opposite test.
-                   Arises in code like:
-                   "a and b or c"
-                   "(a and b) and c"
-                   "(a or b) or c"
-                   "(a or b) and c"
-                   x:JUMP_IF_FALSE_OR_POP y   y:JUMP_IF_FALSE_OR_POP z
-                      -->  x:JUMP_IF_FALSE_OR_POP z
-                   x:JUMP_IF_FALSE_OR_POP y   y:JUMP_IF_TRUE_OR_POP z
-                      -->  x:POP_JUMP_IF_FALSE y+1
-                   where y+1 is the instruction following the second test.
-                */
-            case JUMP_IF_FALSE_OR_POP:
-                switch (target->i_opcode) {
-                    case POP_JUMP_IF_FALSE:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_FALSE);
-                        break;
-                    case JUMP:
-                    case JUMP_IF_FALSE_OR_POP:
-                        i -= jump_thread(inst, target, JUMP_IF_FALSE_OR_POP);
-                        break;
-                    case JUMP_IF_TRUE_OR_POP:
-                    case POP_JUMP_IF_TRUE:
-                        if (inst->i_lineno == target->i_lineno) {
-                            // We don't need to bother checking for loops here,
-                            // since a block's b_next cannot point to itself:
-                            assert(inst->i_target != inst->i_target->b_next);
-                            inst->i_opcode = POP_JUMP_IF_FALSE;
-                            inst->i_target = inst->i_target->b_next;
-                            --i;
-                        }
-                        break;
-                }
-                break;
-            case JUMP_IF_TRUE_OR_POP:
-                switch (target->i_opcode) {
-                    case POP_JUMP_IF_TRUE:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_TRUE);
-                        break;
-                    case JUMP:
-                    case JUMP_IF_TRUE_OR_POP:
-                        i -= jump_thread(inst, target, JUMP_IF_TRUE_OR_POP);
-                        break;
-                    case JUMP_IF_FALSE_OR_POP:
-                    case POP_JUMP_IF_FALSE:
-                        if (inst->i_lineno == target->i_lineno) {
-                            // We don't need to bother checking for loops here,
-                            // since a block's b_next cannot point to itself:
-                            assert(inst->i_target != inst->i_target->b_next);
-                            inst->i_opcode = POP_JUMP_IF_TRUE;
-                            inst->i_target = inst->i_target->b_next;
-                            --i;
-                        }
-                        break;
-                }
-                break;
-            case POP_JUMP_IF_NOT_NONE:
-            case POP_JUMP_IF_NONE:
-                switch (target->i_opcode) {
-                    case JUMP:
-                        i -= jump_thread(inst, target, inst->i_opcode);
-                }
-                break;
-            case POP_JUMP_IF_FALSE:
-                switch (target->i_opcode) {
-                    case JUMP:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_FALSE);
-                }
-                break;
-            case POP_JUMP_IF_TRUE:
-                switch (target->i_opcode) {
-                    case JUMP:
-                        i -= jump_thread(inst, target, POP_JUMP_IF_TRUE);
+            case POP_JUMP_FORWARD_IF:
+                if (target->i_opcode == JUMP && !target->i_target->b_visited) {
+                    i -= jump_thread(inst, target, POP_JUMP_FORWARD_IF);
                 }
                 break;
             case JUMP:
-                switch (target->i_opcode) {
-                    case JUMP:
-                        i -= jump_thread(inst, target, JUMP);
+                if (target->i_opcode == JUMP) {
+                    i -= jump_thread(inst, target, JUMP);
                 }
                 break;
             case FOR_ITER:
-                if (target->i_opcode == JUMP) {
-                    /* This will not work now because the jump (at target) could
-                     * be forward or backward and FOR_ITER only jumps forward. We
-                     * can re-enable this if ever we implement a backward version
-                     * of FOR_ITER.
-                     */
-                    /*
+                if (target->i_opcode == JUMP && !target->i_target->b_visited) {
                     i -= jump_thread(inst, target, FOR_ITER);
-                    */
                 }
                 break;
             case SWAP:
@@ -9054,15 +8922,10 @@ normalize_basic_block(basicblock *bb) {
                 bb->b_nofallthrough = 1;
                 break;
             case JUMP:
-            case JUMP_NO_INTERRUPT:
+            case JUMP_BACKWARD_NO_INTERRUPT:
                 bb->b_nofallthrough = 1;
                 /* fall through */
-            case POP_JUMP_IF_NOT_NONE:
-            case POP_JUMP_IF_NONE:
-            case POP_JUMP_IF_FALSE:
-            case POP_JUMP_IF_TRUE:
-            case JUMP_IF_FALSE_OR_POP:
-            case JUMP_IF_TRUE_OR_POP:
+            case POP_JUMP_FORWARD_IF:
             case FOR_ITER:
                 if (i != bb->b_iused-1) {
                     PyErr_SetString(PyExc_SystemError, "malformed control flow graph.");
@@ -9198,6 +9061,9 @@ static int
 optimize_cfg(struct compiler *c, struct assembler *a, PyObject *consts)
 {
     for (basicblock *b = a->a_entry; b != NULL; b = b->b_next) {
+        b->b_visited = 0;
+    }
+    for (basicblock *b = a->a_entry; b != NULL; b = b->b_next) {
         if (optimize_basic_block(c, b, consts)) {
             return -1;
         }
@@ -9234,7 +9100,7 @@ optimize_cfg(struct compiler *c, struct assembler *a, PyObject *consts)
             struct instr *b_last_instr = &b->b_instr[b->b_iused - 1];
             assert(!IS_ASSEMBLER_OPCODE(b_last_instr->i_opcode));
             if (b_last_instr->i_opcode == JUMP ||
-                b_last_instr->i_opcode == JUMP_NO_INTERRUPT) {
+                b_last_instr->i_opcode == JUMP_BACKWARD_NO_INTERRUPT) {
                 if (b_last_instr->i_target == b->b_next) {
                     assert(b->b_next->b_iused);
                     b->b_nofallthrough = 0;
