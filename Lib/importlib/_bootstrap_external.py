@@ -403,7 +403,7 @@ _code_type = type(_write_atomic.__code__)
 #     Python 3.11a7 3492 (make POP_JUMP_IF_NONE/NOT_NONE/TRUE/FALSE relative)
 #     Python 3.11a7 3493 (Make JUMP_IF_TRUE_OR_POP/JUMP_IF_FALSE_OR_POP relative)
 #     Python 3.11a7 3494 (New location info table)
-#     Python 3.11a6 3495 (Add THROW)
+#     Python 3.11a7 3495 (Add THROW)
 
 #     Python 3.12 will start with magic number 3500
 

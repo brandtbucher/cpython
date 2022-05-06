@@ -1962,10 +1962,8 @@ compiler_add_yield_from(struct compiler *c, int await)
     RETURN_IF_FALSE(body = compiler_new_block(c));
     RETURN_IF_FALSE(except = compiler_new_block(c));
     RETURN_IF_FALSE(exit = compiler_new_block(c));
-
     compiler_use_next_block(c, start);
     ADDOP_JUMP(c, SEND, exit);
-
     compiler_use_next_block(c, body);
     ADDOP_JUMP(c, SETUP_FINALLY, except);
     RETURN_IF_FALSE(compiler_push_fblock(c, TRY_EXCEPT, body, NULL, NULL));
@@ -1975,12 +1973,10 @@ compiler_add_yield_from(struct compiler *c, int await)
     ADDOP_NOLINE(c, POP_BLOCK);
     ADDOP_I(c, RESUME, await ? 3 : 2);
     ADDOP_JUMP(c, JUMP_NO_INTERRUPT, start);
-
     compiler_use_next_block(c, except);
     ADDOP_JUMP(c, THROW, exit);
     ADDOP_I(c, RESUME, await ? 3 : 2);
     ADDOP_JUMP(c, JUMP_NO_INTERRUPT, body);
-    
     compiler_use_next_block(c, exit);
     return 1;
 }
