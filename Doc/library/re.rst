@@ -87,7 +87,7 @@ Some characters, like ``'|'`` or ``'('``, are special. Special
 characters either stand for classes of ordinary characters, or affect
 how the regular expressions around them are interpreted.
 
-Repetition qualifiers (``*``, ``+``, ``?``, ``{m,n}``, etc) cannot be
+Repetition operators or quantifiers (``*``, ``+``, ``?``, ``{m,n}``, etc) cannot be
 directly nested. This avoids ambiguity with the non-greedy modifier suffix
 ``?``, and with other modifiers in other implementations. To apply a second
 repetition to an inner repetition, parentheses may be used. For example,
@@ -146,10 +146,10 @@ The special characters are:
    single: ??; in regular expressions
 
 ``*?``, ``+?``, ``??``
-   The ``'*'``, ``'+'``, and ``'?'`` qualifiers are all :dfn:`greedy`; they match
+   The ``'*'``, ``'+'``, and ``'?'`` quantifiers are all :dfn:`greedy`; they match
    as much text as possible.  Sometimes this behaviour isn't desired; if the RE
    ``<.*>`` is matched against ``'<a> b <c>'``, it will match the entire
-   string, and not just ``'<a>'``.  Adding ``?`` after the qualifier makes it
+   string, and not just ``'<a>'``.  Adding ``?`` after the quantifier makes it
    perform the match in :dfn:`non-greedy` or :dfn:`minimal` fashion; as *few*
    characters as possible will be matched.  Using the RE ``<.*?>`` will match
    only ``'<a>'``.
@@ -160,21 +160,21 @@ The special characters are:
    single: ?+; in regular expressions
 
 ``*+``, ``++``, ``?+``
-  Like the ``'*'``, ``'+'``, and ``'?'`` qualifiers, those where ``'+'`` is
+  Like the ``'*'``, ``'+'``, and ``'?'`` quantifiers, those where ``'+'`` is
   appended also match as many times as possible.
-  However, unlike the true greedy qualifiers, these do not allow
+  However, unlike the true greedy quantifiers, these do not allow
   back-tracking when the expression following it fails to match.
-  These are known as :dfn:`possessive` qualifiers.
+  These are known as :dfn:`possessive` quantifiers.
   For example, ``a*a`` will match ``'aaaa'`` because the ``a*`` will match
-  all 4 ``'a'``s, but, when the final ``'a'`` is encountered, the
+  all 4 ``'a'``\ s, but, when the final ``'a'`` is encountered, the
   expression is backtracked so that in the end the ``a*`` ends up matching
-  3 ``'a'``s total, and the fourth ``'a'`` is matched by the final ``'a'``.
+  3 ``'a'``\ s total, and the fourth ``'a'`` is matched by the final ``'a'``.
   However, when ``a*+a`` is used to match ``'aaaa'``, the ``a*+`` will
   match all 4 ``'a'``, but when the final ``'a'`` fails to find any more
   characters to match, the expression cannot be backtracked and will thus
   fail to match.
   ``x*+``, ``x++`` and ``x?+`` are equivalent to ``(?>x*)``, ``(?>x+)``
-  and ``(?>x?)`` correspondigly.
+  and ``(?>x?)`` correspondingly.
 
    .. versionadded:: 3.11
 
@@ -198,7 +198,7 @@ The special characters are:
 ``{m,n}?``
    Causes the resulting RE to match from *m* to *n* repetitions of the preceding
    RE, attempting to match as *few* repetitions as possible.  This is the
-   non-greedy version of the previous qualifier.  For example, on the
+   non-greedy version of the previous quantifier.  For example, on the
    6-character string ``'aaaaaa'``, ``a{3,5}`` will match 5 ``'a'`` characters,
    while ``a{3,5}?`` will only match 3 characters.
 
@@ -206,12 +206,12 @@ The special characters are:
    Causes the resulting RE to match from *m* to *n* repetitions of the
    preceding RE, attempting to match as many repetitions as possible
    *without* establishing any backtracking points.
-   This is the possessive version of the qualifier above.
+   This is the possessive version of the quantifier above.
    For example, on the 6-character string ``'aaaaaa'``, ``a{3,5}+aa``
-   attempt to match 5 ``'a'`` characters, then, requiring 2 more ``'a'``s,
+   attempt to match 5 ``'a'`` characters, then, requiring 2 more ``'a'``\ s,
    will need more characters than available and thus fail, while
-   ``a{3,5}aa`` will match with ``a{3,5}`` capturing 5, then 4 ``'a'``s
-   by backtracking and then the final 2 ``'a'``s are matched by the final
+   ``a{3,5}aa`` will match with ``a{3,5}`` capturing 5, then 4 ``'a'``\ s
+   by backtracking and then the final 2 ``'a'``\ s are matched by the final
    ``aa`` in the pattern.
    ``x{m,n}+`` is equivalent to ``(?>x{m,n})``.
 
@@ -417,6 +417,9 @@ The special characters are:
    |                                       | * ``\1``                         |
    +---------------------------------------+----------------------------------+
 
+   .. deprecated:: 3.11
+      Group names containing non-ASCII characters in bytes patterns.
+
 .. index:: single: (?P=; in regular expressions
 
 ``(?P=name)``
@@ -485,6 +488,9 @@ The special characters are:
    ``(<)?(\w+@\w+(?:\.\w+)+)(?(1)>|$)`` is a poor email matching pattern, which
    will match with ``'<user@host.com>'`` as well as ``'user@host.com'``, but
    not with ``'<user@host.com'`` nor ``'user@host.com>'``.
+
+   .. deprecated:: 3.11
+      Group *id* containing anything except ASCII digits.
 
 
 The special sequences consist of ``'\'`` and a character from the list below.
@@ -994,6 +1000,10 @@ form.
    .. versionchanged:: 3.7
       Empty matches for the pattern are replaced when adjacent to a previous
       non-empty match.
+
+   .. deprecated:: 3.11
+      Group *id* containing anything except ASCII digits.
+      Group names containing non-ASCII characters in bytes replacement strings.
 
 
 .. function:: subn(pattern, repl, string, count=0, flags=0)
