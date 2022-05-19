@@ -284,6 +284,7 @@ _PyCode_Quicken(PyCodeObject *code)
                     _Py_SET_OPCODE(instructions[i], RESUME_QUICK);
                     break;
                 case LOAD_FAST:
+                    _Py_SET_OPCODE(instructions[i], LOAD_FAST_QUICK);
                     switch(previous_opcode) {
                         case LOAD_FAST:
                             _Py_SET_OPCODE(instructions[i - 1],
@@ -306,6 +307,7 @@ _PyCode_Quicken(PyCodeObject *code)
                     }
                     break;
                 case LOAD_CONST:
+                    _Py_SET_OPCODE(instructions[i], LOAD_CONST_QUICK);
                     if (previous_opcode == LOAD_FAST) {
                         _Py_SET_OPCODE(instructions[i - 1],
                                        LOAD_FAST__LOAD_CONST);

@@ -579,12 +579,12 @@ dis_load_test_quickened_code = """\
 %3d           0 RESUME_QUICK             0
 
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
-              4 LOAD_FAST                1 (y)
+              4 LOAD_FAST_QUICK          1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
               8 STORE_FAST__LOAD_FAST     2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
-             12 LOAD_FAST                3 (b)
+             12 LOAD_FAST_QUICK          3 (b)
              14 BUILD_TUPLE              2
              16 RETURN_VALUE
 """ % (load_test.__code__.co_firstlineno,
@@ -599,21 +599,21 @@ dis_loop_test_quickened_code = """\
 %3d        RESUME_QUICK             0
 
 %3d        BUILD_LIST               0
-           LOAD_CONST               1 ((1, 2, 3))
+           LOAD_CONST_QUICK         1 ((1, 2, 3))
            LIST_EXTEND              1
-           LOAD_CONST               2 (3)
+           LOAD_CONST_QUICK         2 (3)
            BINARY_OP_ADAPTIVE       5 (*)
            GET_ITER
            FOR_ITER                15 (to 48)
            STORE_FAST               0 (i)
 
 %3d        LOAD_GLOBAL_MODULE       1 (NULL + load_test)
-           LOAD_FAST                0 (i)
+           LOAD_FAST_QUICK          0 (i)
            CALL_PY_WITH_DEFAULTS     1
            POP_TOP
            JUMP_BACKWARD_QUICK     16 (to 16)
 
-%3d     >> LOAD_CONST               0 (None)
+%3d     >> LOAD_CONST_QUICK         0 (None)
            RETURN_VALUE
 """ % (loop_test.__code__.co_firstlineno,
        loop_test.__code__.co_firstlineno + 1,
@@ -946,7 +946,7 @@ class DisTests(DisTestBase):
               0 RESUME_QUICK             0
 
   1           2 LOAD_NAME                0 (a)
-              4 LOAD_CONST               0 (0)
+              4 LOAD_CONST_QUICK         0 (0)
               6 %s
              16 RETURN_VALUE
 """
@@ -965,7 +965,7 @@ class DisTests(DisTestBase):
         load_attr_quicken = """\
               0 RESUME_QUICK             0
 
-  1           2 LOAD_CONST               0 ('a')
+  1           2 LOAD_CONST_QUICK         0 ('a')
               4 LOAD_ATTR_SLOT           0 (__class__)
              14 RETURN_VALUE
 """
@@ -981,7 +981,7 @@ class DisTests(DisTestBase):
 
   1        PUSH_NULL
            LOAD_NAME                0 (str)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_QUICK         0 (1)
            CALL_NO_KW_STR_1         1
            RETURN_VALUE
 """

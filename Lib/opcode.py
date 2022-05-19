@@ -289,9 +289,11 @@ _specializations = {
         "LOAD_ATTR_WITH_HINT",
     ],
     "LOAD_CONST": [
+        "LOAD_CONST_QUICK",
         "LOAD_CONST__LOAD_FAST",
     ],
     "LOAD_FAST": [
+        "LOAD_FAST_QUICK",
         "LOAD_FAST__LOAD_CONST",
         "LOAD_FAST__LOAD_FAST",
     ],

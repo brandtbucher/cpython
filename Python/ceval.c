@@ -1870,13 +1870,30 @@ handle_eval_breaker:
             PUSH(value);
             DISPATCH();
         }
+        
+        TARGET(LOAD_FAST_QUICK) {
+            PyObject *value = GETLOCAL(oparg);
+            if (value == NULL) {
+                goto unbound_local_error;
+            }
+            Py_INCREF(value);
+            PUSH(value);
+            NOTRACE_DISPATCH();
+        }
 
         TARGET(LOAD_CONST) {
-            PREDICTED(LOAD_CONST);
             PyObject *value = GETITEM(consts, oparg);
             Py_INCREF(value);
             PUSH(value);
             DISPATCH();
+        }
+
+        TARGET(LOAD_CONST_QUICK) {
+            PREDICTED(LOAD_CONST_QUICK);
+            PyObject *value = GETITEM(consts, oparg);
+            Py_INCREF(value);
+            PUSH(value);
+            NOTRACE_DISPATCH();
         }
 
         TARGET(STORE_FAST) {
@@ -2597,7 +2614,7 @@ handle_eval_breaker:
             }
 
             PUSH(awaitable);
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_QUICK);
             DISPATCH();
         }
 
@@ -2632,7 +2649,7 @@ handle_eval_breaker:
                 goto error;
             }
 
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_QUICK);
             DISPATCH();
         }
 
@@ -4378,7 +4395,7 @@ handle_eval_breaker:
                 if (iter == NULL)
                     goto error;
             }
-            PREDICT(LOAD_CONST);
+            PREDICT(LOAD_CONST_QUICK);
             DISPATCH();
         }
 
