@@ -903,7 +903,8 @@ typedef enum {
     MANAGED_VALUES = 1,
     MANAGED_DICT = 2,
     OFFSET_DICT = 3,
-    NO_DICT = 4
+    NO_DICT = 4,
+    NO_DICT_YET = 5,
 } ObjectDictKind;
 
 // Please collect stats carefully before and after modifying. A subtle change
@@ -972,14 +973,16 @@ _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         else {
             PyObject *dict = *(PyObject **) ((char *)owner + dictoffset);
             if (dict == NULL) {
-                SPECIALIZATION_FAIL(LOAD_METHOD, SPEC_FAIL_NO_DICT);
-                goto fail;
+                dictkind = NO_DICT_YET;
+                keys = NULL;
             }
-            keys = ((PyDictObject *)dict)->ma_keys;
-            dictkind = OFFSET_DICT;
+            else {
+                keys = ((PyDictObject *)dict)->ma_keys;
+                dictkind = OFFSET_DICT;
+            }
         }
     }
-    if (dictkind != NO_DICT) {
+    if (dictkind != NO_DICT && dictkind != NO_DICT_YET) {
         Py_ssize_t index = _PyDictKeys_StringLookup(keys, name);
         if (index != DKIX_EMPTY) {
             SPECIALIZATION_FAIL(LOAD_METHOD, SPEC_FAIL_LOAD_METHOD_IS_ATTR);
@@ -995,6 +998,9 @@ _Py_Specialize_LoadMethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
     switch(dictkind) {
         case NO_DICT:
             _Py_SET_OPCODE(*instr, LOAD_METHOD_NO_DICT);
+            break;
+        case NO_DICT_YET:
+            _Py_SET_OPCODE(*instr, LOAD_METHOD_NO_DICT_YET);
             break;
         case MANAGED_VALUES:
             _Py_SET_OPCODE(*instr, LOAD_METHOD_WITH_VALUES);
