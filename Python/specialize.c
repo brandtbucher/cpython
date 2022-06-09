@@ -28,6 +28,7 @@ uint8_t _PyOpcode_Adaptive[256] = {
     [BINARY_OP] = BINARY_OP_ADAPTIVE,
     [COMPARE_OP] = COMPARE_OP_ADAPTIVE,
     [UNPACK_SEQUENCE] = UNPACK_SEQUENCE_ADAPTIVE,
+    [UNARY_NOT] = UNARY_NOT_ADAPTIVE,
 };
 
 Py_ssize_t _Py_QuickenedCount = 0;
@@ -120,6 +121,7 @@ _Py_GetSpecializationStats(void) {
     err += add_stat_dict(stats, BINARY_OP, "binary_op");
     err += add_stat_dict(stats, COMPARE_OP, "compare_op");
     err += add_stat_dict(stats, UNPACK_SEQUENCE, "unpack_sequence");
+    err += add_stat_dict(stats, UNARY_NOT, "unary_not");
     if (err < 0) {
         Py_DECREF(stats);
         return NULL;
@@ -2003,6 +2005,28 @@ failure:
     return;
 success:
     STAT_INC(UNPACK_SEQUENCE, success);
+    cache->counter = miss_counter_start();
+}
+
+void
+_Py_Specialize_UnaryNot(PyObject *value, _Py_CODEUNIT *instr)
+{
+    assert(_PyOpcode_Caches[UNARY_NOT] == INLINE_CACHE_ENTRIES_UNARY_NOT);
+    _PyUnaryNotCache *cache = (_PyUnaryNotCache *)(instr + 1);
+    if (PyBool_Check(value) || 
+        PyLong_CheckExact(value) ||
+        PyList_CheckExact(value) ||
+        PyTuple_CheckExact(value))
+    {
+        _Py_SET_OPCODE(*instr, UNARY_NOT_SIZE);
+        goto success;
+    }
+    SPECIALIZATION_FAIL(UNARY_NOT, SPEC_FAIL_OTHER);
+    STAT_INC(UNARY_NOT, failure);
+    cache->counter = adaptive_counter_backoff(cache->counter);
+    return;
+success:
+    STAT_INC(UNARY_NOT, success);
     cache->counter = miss_counter_start();
 }
 

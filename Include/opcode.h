@@ -185,10 +185,12 @@ extern "C" {
 #define STORE_SUBSCR_ADAPTIVE                  167
 #define STORE_SUBSCR_DICT                      168
 #define STORE_SUBSCR_LIST_INT                  169
-#define UNPACK_SEQUENCE_ADAPTIVE               170
-#define UNPACK_SEQUENCE_LIST                   177
-#define UNPACK_SEQUENCE_TUPLE                  178
-#define UNPACK_SEQUENCE_TWO_TUPLE              179
+#define UNARY_NOT_ADAPTIVE                     170
+#define UNARY_NOT_SIZE                         177
+#define UNPACK_SEQUENCE_ADAPTIVE               178
+#define UNPACK_SEQUENCE_LIST                   179
+#define UNPACK_SEQUENCE_TUPLE                  180
+#define UNPACK_SEQUENCE_TWO_TUPLE              181
 #define DO_TRACING                             255
 
 #define HAS_CONST(op) (false\

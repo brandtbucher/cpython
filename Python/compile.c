@@ -204,6 +204,9 @@ static int
 instr_size(struct instr *instruction)
 {
     int opcode = instruction->i_opcode;
+    if (IS_VIRTUAL_OPCODE(opcode)) {
+        printf("%d\n", opcode);
+    }
     assert(!IS_VIRTUAL_OPCODE(opcode));
     int oparg = HAS_ARG(opcode) ? instruction->i_oparg : 0;
     int extended_args = (0xFFFFFF < oparg) + (0xFFFF < oparg) + (0xFF < oparg);
@@ -7821,14 +7824,25 @@ normalize_jumps(struct assembler *a)
                     last->i_opcode = is_forward ?
                         POP_JUMP_FORWARD_IF_NONE : POP_JUMP_BACKWARD_IF_NONE;
                     break;
-                case POP_JUMP_IF_FALSE:
-                    last->i_opcode = is_forward ?
-                        POP_JUMP_FORWARD_IF_FALSE : POP_JUMP_BACKWARD_IF_FALSE;
-                    break;
-                case POP_JUMP_IF_TRUE:
-                    last->i_opcode = is_forward ?
+                case POP_JUMP_IF_FALSE: {
+                    struct instr jump = *last;
+                    jump.i_opcode = is_forward ?
                         POP_JUMP_FORWARD_IF_TRUE : POP_JUMP_BACKWARD_IF_TRUE;
+                    basicblock_next_instr(b);
+                    b->b_instr[b->b_iused-2].i_opcode = UNARY_NOT;
+                    b->b_instr[b->b_iused-1] = jump;
                     break;
+                }
+                case POP_JUMP_IF_TRUE: {
+                    ;
+                    struct instr jump = *last;
+                    jump.i_opcode = is_forward ?
+                        POP_JUMP_FORWARD_IF_FALSE : POP_JUMP_BACKWARD_IF_FALSE;
+                    basicblock_next_instr(b);
+                    b->b_instr[b->b_iused-2].i_opcode = UNARY_NOT;
+                    b->b_instr[b->b_iused-1] = jump;
+                    break;
+                }
                 case JUMP_IF_TRUE_OR_POP:
                 case JUMP_IF_FALSE_OR_POP:
                     if (!is_forward) {

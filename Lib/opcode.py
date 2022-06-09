@@ -329,6 +329,10 @@ _specializations = {
         "STORE_SUBSCR_DICT",
         "STORE_SUBSCR_LIST_INT",
     ],
+    "UNARY_NOT": [
+        "UNARY_NOT_ADAPTIVE",
+        "UNARY_NOT_SIZE",
+    ],
     "UNPACK_SEQUENCE": [
         "UNPACK_SEQUENCE_ADAPTIVE",
         "UNPACK_SEQUENCE_LIST",
@@ -392,6 +396,9 @@ _cache_format = {
         "min_args": 1,
     },
     "STORE_SUBSCR": {
+        "counter": 1,
+    },
+    "UNARY_NOT": {
         "counter": 1,
     },
 }

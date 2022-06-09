@@ -1941,21 +1941,45 @@ handle_eval_breaker:
         }
 
         TARGET(UNARY_NOT) {
+            PREDICTED(UNARY_NOT);
             PyObject *value = TOP();
             int err = PyObject_IsTrue(value);
+            if (err < 0) {
+                goto error;
+            }
             Py_DECREF(value);
-            if (err == 0) {
-                Py_INCREF(Py_True);
-                SET_TOP(Py_True);
-                DISPATCH();
+            SET_TOP(PyBool_FromLong(!err));
+            JUMPBY(INLINE_CACHE_ENTRIES_UNARY_NOT);
+            DISPATCH();
+        }
+
+        TARGET(UNARY_NOT_ADAPTIVE) {
+            assert(cframe.use_tracing == 0);
+            _PyUnaryNotCache *cache = (_PyUnaryNotCache *)next_instr;
+            if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
+                next_instr--;
+                _Py_Specialize_UnaryNot(TOP(), next_instr);
+                NOTRACE_DISPATCH_SAME_OPARG();
             }
-            else if (err > 0) {
-                Py_INCREF(Py_False);
-                SET_TOP(Py_False);
-                DISPATCH();
+            else {
+                STAT_INC(UNARY_NOT, deferred);
+                DECREMENT_ADAPTIVE_COUNTER(cache);
+                JUMP_TO_INSTRUCTION(UNARY_NOT);
             }
-            STACK_SHRINK(1);
-            goto error;
+        }
+
+        TARGET(UNARY_NOT_SIZE) {
+            assert(cframe.use_tracing == 0);
+            PyObject *value = TOP();
+            DEOPT_IF(!(PyBool_Check(value) ||
+                       PyLong_CheckExact(value) ||
+                       PyList_CheckExact(value) ||
+                       PyTuple_CheckExact(value)), UNARY_NOT);
+            STAT_INC(UNARY_NOT, hit);
+            SET_TOP(PyBool_FromLong(!Py_SIZE(value)));
+            Py_DECREF(value);
+            JUMPBY(INLINE_CACHE_ENTRIES_UNARY_NOT);
+            DISPATCH();
         }
 
         TARGET(UNARY_INVERT) {
@@ -4006,100 +4030,40 @@ handle_eval_breaker:
         }
 
         TARGET(POP_JUMP_BACKWARD_IF_FALSE) {
-            PREDICTED(POP_JUMP_BACKWARD_IF_FALSE);
             PyObject *cond = POP();
-            if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
-            }
+            assert(PyBool_Check(cond));
+            _Py_DECREF_NO_DEALLOC(cond);
             if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
-                DISPATCH();
-            }
-            int err = PyObject_IsTrue(cond);
-            Py_DECREF(cond);
-            if (err > 0)
-                ;
-            else if (err == 0) {
                 JUMPBY(-oparg);
                 CHECK_EVAL_BREAKER();
             }
-            else
-                goto error;
             DISPATCH();
         }
 
         TARGET(POP_JUMP_FORWARD_IF_FALSE) {
-            PREDICTED(POP_JUMP_FORWARD_IF_FALSE);
             PyObject *cond = POP();
-            if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                Py_DECREF(cond);
-                if (err > 0)
-                    ;
-                else if (err == 0) {
-                    JUMPBY(oparg);
-                }
-                else
-                    goto error;
-            }
+            assert(PyBool_Check(cond));
+            _Py_DECREF_NO_DEALLOC(cond);
+            JUMPBY(oparg * Py_IsFalse(cond));
             DISPATCH();
         }
 
         TARGET(POP_JUMP_BACKWARD_IF_TRUE) {
             PyObject *cond = POP();
-            if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
-            }
+            assert(PyBool_Check(cond));
+            _Py_DECREF_NO_DEALLOC(cond);
             if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
-                DISPATCH();
-            }
-            int err = PyObject_IsTrue(cond);
-            Py_DECREF(cond);
-            if (err > 0) {
                 JUMPBY(-oparg);
                 CHECK_EVAL_BREAKER();
             }
-            else if (err == 0)
-                ;
-            else
-                goto error;
             DISPATCH();
         }
 
         TARGET(POP_JUMP_FORWARD_IF_TRUE) {
             PyObject *cond = POP();
-            if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                Py_DECREF(cond);
-                if (err > 0) {
-                    JUMPBY(oparg);
-                }
-                else if (err == 0)
-                    ;
-                else
-                    goto error;
-            }
+            assert(PyBool_Check(cond));
+            _Py_DECREF_NO_DEALLOC(cond);
+            JUMPBY(oparg * Py_IsTrue(cond));
             DISPATCH();
         }
 
@@ -4264,8 +4228,6 @@ handle_eval_breaker:
             PyObject *res = match ? Py_True : Py_False;
             Py_INCREF(res);
             PUSH(res);
-            PREDICT(POP_JUMP_FORWARD_IF_FALSE);
-            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);
             DISPATCH();
         }
 
@@ -4275,8 +4237,6 @@ handle_eval_breaker:
             PyObject *res = match ? Py_True : Py_False;
             Py_INCREF(res);
             PUSH(res);
-            PREDICT(POP_JUMP_FORWARD_IF_FALSE);
-            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);
             DISPATCH();
         }
 
