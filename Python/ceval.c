@@ -3779,6 +3779,9 @@ handle_eval_breaker:
             STACK_SHRINK(2);
             _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
             _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            assert(_PyOpcode_Deopt[opcode] == UNARY_NOT);
+            JUMPBY(1 + INLINE_CACHE_ENTRIES_UNARY_NOT);
+            NEXTOPARG();
             assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
                    opcode == POP_JUMP_BACKWARD_IF_FALSE ||
                    opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -3822,6 +3825,9 @@ handle_eval_breaker:
             STACK_SHRINK(2);
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
+            assert(_PyOpcode_Deopt[opcode] == UNARY_NOT);
+            JUMPBY(1 + INLINE_CACHE_ENTRIES_UNARY_NOT);
+            NEXTOPARG();
             assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
                    opcode == POP_JUMP_BACKWARD_IF_FALSE ||
                    opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -3860,6 +3866,9 @@ handle_eval_breaker:
             }
             assert(oparg == Py_EQ || oparg == Py_NE);
             JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            NEXTOPARG();
+            assert(_PyOpcode_Deopt[opcode] == UNARY_NOT);
+            JUMPBY(1 + INLINE_CACHE_ENTRIES_UNARY_NOT);
             NEXTOPARG();
             assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
                    opcode == POP_JUMP_BACKWARD_IF_FALSE ||
