@@ -1968,18 +1968,102 @@ handle_eval_breaker:
             }
         }
 
+        TARGET(UNARY_NOT_NONE) {
+            assert(cframe.use_tracing == 0);
+            _PyUnaryNotCache *cache = (_PyUnaryNotCache *)next_instr;
+            PyObject *value = TOP();
+            DEOPT_IF(!Py_IsNone(value), UNARY_NOT);
+            STAT_INC(UNARY_NOT, hit);
+            JUMPBY(INLINE_CACHE_ENTRIES_UNARY_NOT);
+            NEXTOPARG();
+            assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
+                   opcode == POP_JUMP_BACKWARD_IF_FALSE ||
+                   opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                   opcode == POP_JUMP_BACKWARD_IF_TRUE);
+            int jump = (5 << 1) & cache->mask;
+            if (!jump) {
+                JUMPBY(1);
+            }
+            else if (8 <= jump) {
+                assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
+                       opcode == POP_JUMP_BACKWARD_IF_FALSE);
+                JUMPBY(1 - oparg);
+                CHECK_EVAL_BREAKER();
+            }
+            else {
+                assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                       opcode == POP_JUMP_FORWARD_IF_FALSE);
+                JUMPBY(1 + oparg);
+            }
+            STACK_SHRINK(1);
+            _Py_DECREF_NO_DEALLOC(value);
+            NOTRACE_DISPATCH();
+        }
+
+        TARGET(UNARY_NOT_BOOL) {
+            assert(cframe.use_tracing == 0);
+            _PyUnaryNotCache *cache = (_PyUnaryNotCache *)next_instr;
+            PyObject *value = TOP();
+            DEOPT_IF(!PyBool_Check(value), UNARY_NOT);
+            STAT_INC(UNARY_NOT, hit);
+            JUMPBY(INLINE_CACHE_ENTRIES_UNARY_NOT);
+            NEXTOPARG();
+            assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
+                   opcode == POP_JUMP_BACKWARD_IF_FALSE ||
+                   opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                   opcode == POP_JUMP_BACKWARD_IF_TRUE);
+            int jump = (5 << Py_IsFalse(value)) & cache->mask;
+            if (!jump) {
+                JUMPBY(1);
+            }
+            else if (4 <= jump) {
+                assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
+                       opcode == POP_JUMP_BACKWARD_IF_FALSE);
+                JUMPBY(1 - oparg);
+                CHECK_EVAL_BREAKER();
+            }
+            else {
+                assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                       opcode == POP_JUMP_FORWARD_IF_FALSE);
+                JUMPBY(1 + oparg);
+            }
+            STACK_SHRINK(1);
+            _Py_DECREF_NO_DEALLOC(value);
+            NOTRACE_DISPATCH();
+        }
+
         TARGET(UNARY_NOT_SIZE) {
             assert(cframe.use_tracing == 0);
+            _PyUnaryNotCache *cache = (_PyUnaryNotCache *)next_instr;
             PyObject *value = TOP();
-            DEOPT_IF(!(PyBool_Check(value) ||
-                       PyLong_CheckExact(value) ||
+            DEOPT_IF(!(PyLong_CheckExact(value) ||
                        PyList_CheckExact(value) ||
                        PyTuple_CheckExact(value)), UNARY_NOT);
             STAT_INC(UNARY_NOT, hit);
-            SET_TOP(PyBool_FromLong(!Py_SIZE(value)));
-            Py_DECREF(value);
             JUMPBY(INLINE_CACHE_ENTRIES_UNARY_NOT);
-            DISPATCH();
+            NEXTOPARG();
+            assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
+                   opcode == POP_JUMP_BACKWARD_IF_FALSE ||
+                   opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                   opcode == POP_JUMP_BACKWARD_IF_TRUE);
+            int jump = (5 << !Py_SIZE(value)) & cache->mask;
+            if (!jump) {
+                JUMPBY(1);
+            }
+            else if (4 <= jump) {
+                assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
+                       opcode == POP_JUMP_BACKWARD_IF_FALSE);
+                JUMPBY(1 - oparg);
+                CHECK_EVAL_BREAKER();
+            }
+            else {
+                assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
+                       opcode == POP_JUMP_FORWARD_IF_FALSE);
+                JUMPBY(1 + oparg);
+            }
+            STACK_SHRINK(1);
+            Py_DECREF(value);
+            NOTRACE_DISPATCH();
         }
 
         TARGET(UNARY_INVERT) {

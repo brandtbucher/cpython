@@ -485,6 +485,12 @@ miss_counter_start(void) {
 #define SPEC_FAIL_UNPACK_SEQUENCE_ITERATOR 8
 #define SPEC_FAIL_UNPACK_SEQUENCE_SEQUENCE 9
 
+// UNARY_NOT
+
+
+#define SPEC_FAIL_UNARY_NOT_NOT_FOLLOWED_BY_COND_JUMP 8
+#define SPEC_FAIL_UNARY_NOT_EXTENDED_ARG 9
+
 
 static int
 specialize_module_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
@@ -2018,8 +2024,45 @@ _Py_Specialize_UnaryNot(PyObject *value, _Py_CODEUNIT *instr)
 {
     assert(_PyOpcode_Caches[UNARY_NOT] == INLINE_CACHE_ENTRIES_UNARY_NOT);
     _PyUnaryNotCache *cache = (_PyUnaryNotCache *)(instr + 1);
-    if (PyBool_Check(value) || 
-        PyLong_CheckExact(value) ||
+    int next_opcode = _Py_OPCODE(instr[INLINE_CACHE_ENTRIES_UNARY_NOT + 1]);
+    if (next_opcode != POP_JUMP_FORWARD_IF_FALSE &&
+        next_opcode != POP_JUMP_BACKWARD_IF_FALSE &&
+        next_opcode != POP_JUMP_FORWARD_IF_TRUE &&
+        next_opcode != POP_JUMP_BACKWARD_IF_TRUE) {
+        // Can't ever combine, so don't don't bother being adaptive (unless
+        // we're collecting stats, where it's more important to get accurate hit
+        // counts for the unadaptive version and each of the different failure
+        // types):
+#ifndef Py_STATS
+        _Py_SET_OPCODE(*instr, UNARY_NOT);
+        return;
+#endif
+        if (next_opcode == EXTENDED_ARG) {
+            SPECIALIZATION_FAIL(COMPARE_OP, SPEC_FAIL_UNARY_NOT_EXTENDED_ARG);
+            goto failure;
+        }
+        SPECIALIZATION_FAIL(UNARY_NOT, SPEC_FAIL_UNARY_NOT_NOT_FOLLOWED_BY_COND_JUMP);
+        goto failure;
+    }
+    int mask = 1;
+    if (next_opcode == POP_JUMP_FORWARD_IF_TRUE ||
+        next_opcode == POP_JUMP_BACKWARD_IF_TRUE) {
+        mask <<= 1;
+    }
+    if (next_opcode == POP_JUMP_BACKWARD_IF_TRUE ||
+        next_opcode == POP_JUMP_BACKWARD_IF_FALSE) {
+        mask <<= 2;
+    }
+    cache->mask = mask;
+    if (Py_IsNone(value)) {
+        _Py_SET_OPCODE(*instr, UNARY_NOT_NONE);
+        goto success;
+    }
+    if (PyBool_Check(value)) {
+        _Py_SET_OPCODE(*instr, UNARY_NOT_BOOL);
+        goto success;
+    }
+    if (PyLong_CheckExact(value) ||
         PyList_CheckExact(value) ||
         PyTuple_CheckExact(value))
     {
@@ -2027,6 +2070,7 @@ _Py_Specialize_UnaryNot(PyObject *value, _Py_CODEUNIT *instr)
         goto success;
     }
     SPECIALIZATION_FAIL(UNARY_NOT, SPEC_FAIL_OTHER);
+failure:
     STAT_INC(UNARY_NOT, failure);
     cache->counter = adaptive_counter_backoff(cache->counter);
     return;

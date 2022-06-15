@@ -41,7 +41,7 @@ static const uint32_t _PyOpcode_Jump[8] = {
 };
 
 const uint8_t _PyOpcode_Caches[256] = {
-    [UNARY_NOT] = 1,
+    [UNARY_NOT] = 2,
     [BINARY_SUBSCR] = 4,
     [STORE_SUBSCR] = 1,
     [UNPACK_SEQUENCE] = 1,
@@ -227,6 +227,8 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [UNARY_NEGATIVE] = UNARY_NEGATIVE,
     [UNARY_NOT] = UNARY_NOT,
     [UNARY_NOT_ADAPTIVE] = UNARY_NOT,
+    [UNARY_NOT_BOOL] = UNARY_NOT,
+    [UNARY_NOT_NONE] = UNARY_NOT,
     [UNARY_NOT_SIZE] = UNARY_NOT,
     [UNARY_POSITIVE] = UNARY_POSITIVE,
     [UNPACK_EX] = UNPACK_EX,
@@ -412,6 +414,8 @@ const uint8_t _PyOpcode_Original[256] = {
     [UNARY_NEGATIVE] = UNARY_NEGATIVE,
     [UNARY_NOT] = UNARY_NOT,
     [UNARY_NOT_ADAPTIVE] = UNARY_NOT,
+    [UNARY_NOT_BOOL] = UNARY_NOT,
+    [UNARY_NOT_NONE] = UNARY_NOT,
     [UNARY_NOT_SIZE] = UNARY_NOT,
     [UNARY_POSITIVE] = UNARY_POSITIVE,
     [UNPACK_EX] = UNPACK_EX,
@@ -604,13 +608,13 @@ static const char *const _PyOpcode_OpName[256] = {
     [POP_JUMP_BACKWARD_IF_NONE] = "POP_JUMP_BACKWARD_IF_NONE",
     [POP_JUMP_BACKWARD_IF_FALSE] = "POP_JUMP_BACKWARD_IF_FALSE",
     [POP_JUMP_BACKWARD_IF_TRUE] = "POP_JUMP_BACKWARD_IF_TRUE",
+    [UNARY_NOT_BOOL] = "UNARY_NOT_BOOL",
+    [UNARY_NOT_NONE] = "UNARY_NOT_NONE",
     [UNARY_NOT_SIZE] = "UNARY_NOT_SIZE",
     [UNPACK_SEQUENCE_ADAPTIVE] = "UNPACK_SEQUENCE_ADAPTIVE",
     [UNPACK_SEQUENCE_LIST] = "UNPACK_SEQUENCE_LIST",
     [UNPACK_SEQUENCE_TUPLE] = "UNPACK_SEQUENCE_TUPLE",
     [UNPACK_SEQUENCE_TWO_TUPLE] = "UNPACK_SEQUENCE_TWO_TUPLE",
-    [182] = "<182>",
-    [183] = "<183>",
     [184] = "<184>",
     [185] = "<185>",
     [186] = "<186>",
@@ -687,8 +691,6 @@ static const char *const _PyOpcode_OpName[256] = {
 #endif
 
 #define EXTRA_CASES \
-    case 182: \
-    case 183: \
     case 184: \
     case 185: \
     case 186: \

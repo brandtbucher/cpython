@@ -87,6 +87,7 @@ typedef struct {
 
 typedef struct {
     _Py_CODEUNIT counter;
+    _Py_CODEUNIT mask;
 } _PyUnaryNotCache;
 
 #define INLINE_CACHE_ENTRIES_UNARY_NOT CACHE_ENTRIES(_PyUnaryNotCache)

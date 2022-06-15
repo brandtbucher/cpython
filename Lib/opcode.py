@@ -331,6 +331,8 @@ _specializations = {
     ],
     "UNARY_NOT": [
         "UNARY_NOT_ADAPTIVE",
+        "UNARY_NOT_BOOL",
+        "UNARY_NOT_NONE",
         "UNARY_NOT_SIZE",
     ],
     "UNPACK_SEQUENCE": [
@@ -400,6 +402,7 @@ _cache_format = {
     },
     "UNARY_NOT": {
         "counter": 1,
+        "mask": 1,
     },
 }
 
