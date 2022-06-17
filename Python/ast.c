@@ -22,25 +22,72 @@ static int validate_stmt(struct validator *, stmt_ty);
 static int validate_expr(struct validator *, expr_ty, expr_context_ty);
 static int validate_pattern(struct validator *, pattern_ty, int);
 
-#define VALIDATE_POSITIONS(node) \
-    if (node->lineno > node->end_lineno) { \
-        PyErr_Format(PyExc_ValueError, \
-                     "AST node line range (%d, %d) is not valid", \
-                     node->lineno, node->end_lineno); \
-        return 0; \
-    } \
-    if ((node->lineno < 0 && node->end_lineno != node->lineno) || \
-        (node->col_offset < 0 && node->col_offset != node->end_col_offset)) { \
-        PyErr_Format(PyExc_ValueError, \
-                     "AST node column range (%d, %d) for line range (%d, %d) is not valid", \
-                     node->col_offset, node->end_col_offset, node->lineno, node->end_lineno); \
-        return 0; \
-    } \
-    if (node->lineno == node->end_lineno && node->col_offset > node->end_col_offset) { \
-        PyErr_Format(PyExc_ValueError, \
-                     "line %d, column %d-%d is not a valid range", \
-                     node->lineno, node->col_offset, node->end_col_offset); \
-        return 0; \
+// Check that the provided source positions are valid. If not, raise *exc_type*.
+int
+_PyAST_ValidatePositions(PyObject *exc_type, int lineno, int end_lineno, 
+                         int col_offset, int end_col_offset)
+{
+    char *e = NULL;
+    if (lineno == -1) {
+        if (end_lineno == -1 && col_offset == -1 && end_col_offset == -1) {
+            // Valid case A: no location info, totally artificial.
+            return 0;
+        }
+        e = "missing lineno (%d:%d/%d:%d)";
+    }
+    // TODO: This really should be "lineno < 1"...
+    else if (lineno < 0) {
+        e = "invalid lineno (%d:%d/%d:%d)";
+    }
+    else if (end_lineno == -1) {
+        if (col_offset == -1 && end_col_offset == -1) {
+            // Valid case B: just a lineno, for tracing.
+            return 0;
+        }
+        e = "missing end_lineno (%d:%d/%d:%d)";
+    }
+    // TODO: This really should be "end_lineno < 1"...
+    else if (end_lineno < 0) {
+        e = "invalid end_lineno (%d:%d/%d:%d)";
+    }
+    else if (col_offset == -1) {
+        e = "missing col_offset (%d:%d/%d:%d)";
+    }
+    else if (col_offset < 0) {
+        e = "invalid col_offset (%d:%d/%d:%d)";
+    }
+    else if (end_col_offset == -1) {
+        e = "missing end_col_offset (%d:%d/%d:%d)";
+    }
+    else if (end_col_offset < 0) {
+        e = "invalid end_col_offset (%d:%d/%d:%d)";
+    }
+    else if (end_lineno < lineno) {
+        e = "end_lineno is less than lineno (%d:%d/%d:%d)";
+    }
+    // TODO: This really should be "end_col_offset <= col_offset"...
+    else if (end_col_offset < col_offset) {
+        if (lineno != end_lineno) {
+            // Valid case C: full position info, spanning more than one line.
+            return 0;
+        }
+        e = "end_col_offset is less than col_offset for the same line (%d:%d/%d:%d)";
+    }
+    else {
+        // Valid case D: full position info, spanning one line.
+        return 0;
+    }
+    assert(e);
+    PyErr_Format(exc_type, e, lineno, col_offset, end_lineno, end_col_offset);
+    return -1;
+}
+
+#define VALIDATE_POSITIONS(node)                                          \
+    if (_PyAST_ValidatePositions(PyExc_ValueError,                        \
+                                 node->lineno, node->end_lineno,          \
+                                 node->col_offset, node->end_col_offset)) \
+    {                                                                     \
+        return 0;                                                         \
     }
 
 static int

@@ -396,7 +396,7 @@ class CodeTest(unittest.TestCase):
 
             positions = f.__code__.co_positions()
             for line, end_line, column, end_column in positions:
-                assert line == end_line
+                assert end_line is None
                 assert column is None
                 assert end_column is None
             """)
@@ -410,7 +410,7 @@ class CodeTest(unittest.TestCase):
 
             positions = f.__code__.co_positions()
             for line, end_line, column, end_column in positions:
-                assert line == end_line
+                assert end_line is None
                 assert column is None
                 assert end_column is None
             """)
@@ -553,10 +553,10 @@ def parse_location_table(code):
             else:
                 end_col -= 1
             yield (code, length, line, end_line, col, end_col)
-        elif code == 13: # No column
+        elif code == 13: # Only lineno
             line_delta = read_signed_varint(it)
             line += line_delta
-            yield (code, length, line, line, None, None)
+            yield (code, length, line, None, None, None)
         elif code in (10, 11, 12): # new line
             line_delta = code - 10
             line += line_delta

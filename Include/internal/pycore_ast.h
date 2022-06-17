@@ -860,6 +860,10 @@ extern PyObject* _PyAST_ExprAsUnicode(expr_ty);
    Doesn't set exception. */
 extern PyObject* _PyAST_GetDocString(asdl_stmt_seq *);
 
+extern int _PyAST_ValidatePositions(PyObject *exc_type,
+                                    int lineno, int end_lineno, 
+                                    int col_offset, int end_col_offset);
+
 #ifdef __cplusplus
 }
 #endif

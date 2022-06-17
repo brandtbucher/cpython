@@ -160,7 +160,7 @@ struct location {
 #define LOCATION(LNO, END_LNO, COL, END_COL) \
     ((const struct location){(LNO), (END_LNO), (COL), (END_COL)})
 
-static struct location NO_LOCATION = {-1, -1, -1, -1};
+static struct location NO_LOCATION = LOCATION(-1, -1, -1, -1);
 
 struct instr {
     int i_opcode;
@@ -1727,7 +1727,7 @@ compiler_enter_scope(struct compiler *c, identifier name,
     u->u_blocks = NULL;
     u->u_nfblocks = 0;
     u->u_firstlineno = lineno;
-    u->u_loc = LOCATION(lineno, lineno, 0, 0);
+    u->u_loc = LOCATION(lineno, -1, -1, -1);
     u->u_consts = PyDict_New();
     if (!u->u_consts) {
         compiler_unit_free(u);
@@ -5717,6 +5717,15 @@ compiler_with(struct compiler *c, stmt_ty s, int pos)
     return 1;
 }
 
+static struct location
+location_from_end_lineno(struct location loc)
+{
+    if (loc.end_lineno == -1 || loc.lineno == loc.end_lineno) {
+        return loc;
+    }
+    return LOCATION(loc.end_lineno, -1, -1, -1);
+}
+
 static int
 compiler_visit_expr1(struct compiler *c, expr_ty e)
 {
@@ -5810,20 +5819,22 @@ compiler_visit_expr1(struct compiler *c, expr_ty e)
         switch (e->v.Attribute.ctx) {
         case Load:
         {
-            int old_lineno = c->u->u_loc.lineno;
-            c->u->u_loc.lineno = e->end_lineno;
+            struct location old_loc = c->u->u_loc;
+            struct location new_loc = location_from_end_lineno(old_loc);
+            SET_LOC(c, &new_loc);
             ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
-            c->u->u_loc.lineno = old_lineno;
+            SET_LOC(c, &old_loc);
             break;
         }
         case Store:
             if (forbidden_name(c, e->v.Attribute.attr, e->v.Attribute.ctx)) {
                 return 0;
             }
-            int old_lineno = c->u->u_loc.lineno;
-            c->u->u_loc.lineno = e->end_lineno;
+            struct location old_loc = c->u->u_loc;
+            struct location new_loc = location_from_end_lineno(old_loc);
+            SET_LOC(c, &new_loc);
             ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
-            c->u->u_loc.lineno = old_lineno;
+            SET_LOC(c, &old_loc);
             break;
         case Del:
             ADDOP_NAME(c, DELETE_ATTR, e->v.Attribute.attr, names);
@@ -5880,10 +5891,11 @@ compiler_augassign(struct compiler *c, stmt_ty s)
     case Attribute_kind:
         VISIT(c, expr, e->v.Attribute.value);
         ADDOP_I(c, COPY, 1);
-        int old_lineno = c->u->u_loc.lineno;
-        c->u->u_loc.lineno = e->end_lineno;
+        struct location old_loc = c->u->u_loc;
+        struct location new_loc = location_from_end_lineno(old_loc);
+        SET_LOC(c, &new_loc);
         ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
-        c->u->u_loc.lineno = old_lineno;
+        SET_LOC(c, &old_loc);
         break;
     case Subscript_kind:
         VISIT(c, expr, e->v.Subscript.value);
@@ -7639,9 +7651,9 @@ write_location_info_none(struct assembler* a, int length)
 }
 
 static void
-write_location_info_no_column(struct assembler* a, int length, int line_delta)
+write_location_info_only_lineno(struct assembler* a, int length, int line_delta)
 {
-    write_location_first_byte(a, PY_CODE_LOCATION_INFO_NO_COLUMNS, length);
+    write_location_first_byte(a, PY_CODE_LOCATION_INFO_ONLY_LINENO, length);
     write_location_signed_varint(a, line_delta);
 }
 
@@ -7650,6 +7662,15 @@ write_location_info_no_column(struct assembler* a, int length, int line_delta)
 static int
 write_location_info_entry(struct assembler* a, struct instr* i, int isize)
 {
+    int line = i->i_loc.lineno;
+    int end_line = i->i_loc.end_lineno;
+    int column = i->i_loc.col_offset;
+    int end_column = i->i_loc.end_col_offset;
+    if (_PyAST_ValidatePositions(PyExc_SystemError,
+                                 line, end_line, column, end_column))
+    {
+        return 0;
+    }
     Py_ssize_t len = PyBytes_GET_SIZE(a->a_linetable);
     if (a->a_location_off + THEORETICAL_MAX_ENTRY_SIZE >= len) {
         assert(len > THEORETICAL_MAX_ENTRY_SIZE);
@@ -7657,35 +7678,29 @@ write_location_info_entry(struct assembler* a, struct instr* i, int isize)
             return 0;
         }
     }
-    if (i->i_loc.lineno < 0) {
+    if (line < 0) {
         write_location_info_none(a, isize);
         return 1;
     }
-    int line_delta = i->i_loc.lineno - a->a_lineno;
-    int column = i->i_loc.col_offset;
-    int end_column = i->i_loc.end_col_offset;
-    assert(column >= -1);
-    assert(end_column >= -1);
-    if (column < 0 || end_column < 0) {
-        if (i->i_loc.end_lineno == i->i_loc.lineno || i->i_loc.end_lineno == -1) {
-            write_location_info_no_column(a, isize, line_delta);
-            a->a_lineno = i->i_loc.lineno;
-            return 1;
-        }
+    int line_delta = line - a->a_lineno;
+    if (end_line < 0) {
+        write_location_info_only_lineno(a, isize, line_delta);
+        a->a_lineno = line;
+        return 1;
     }
-    else if (i->i_loc.end_lineno == i->i_loc.lineno) {
-        if (line_delta == 0 && column < 80 && end_column - column < 16 && end_column >= column) {
+    else if (end_line == line) {
+        if (line_delta == 0 && column < 80 && end_column - column < 16) {
             write_location_info_short_form(a, isize, column, end_column);
             return 1;
         }
         if (line_delta >= 0 && line_delta < 3 && column < 128 && end_column < 128) {
             write_location_info_oneline_form(a, isize, line_delta, column, end_column);
-            a->a_lineno = i->i_loc.lineno;
+            a->a_lineno = line;
             return 1;
         }
     }
     write_location_info_long_form(a, i, isize);
-    a->a_lineno = i->i_loc.lineno;
+    a->a_lineno = line;
     return 1;
 }
 
@@ -8208,27 +8223,29 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
 static void
 dump_instr(struct instr *i)
 {
-    const char *jrel = (is_relative_jump(i)) ? "jrel " : "";
-    const char *jabs = (is_jump(i) && !is_relative_jump(i))? "jabs " : "";
+    const char *jrel = (is_relative_jump(i)) ? ", jrel" : "";
+    const char *jabs = (is_jump(i) && !is_relative_jump(i))? ", jabs" : "";
 
     char arg[128];
 
     *arg = '\0';
     if (HAS_ARG(i->i_opcode)) {
-        sprintf(arg, "arg: %d ", i->i_oparg);
+        sprintf(arg, ", arg: %d", i->i_oparg);
     }
     if (is_jump(i)) {
-        sprintf(arg, "target: %p ", i->i_target);
+        sprintf(arg, ", target: %p", i->i_target);
     }
     if (is_block_push(i)) {
-        sprintf(arg, "except_target: %p ", i->i_target);
+        sprintf(arg, ", except_target: %p", i->i_target);
     }
-    fprintf(stderr, "line: %d, opcode: %d %s%s%s\n",
-                    i->i_loc.lineno, i->i_opcode, arg, jabs, jrel);
+    fprintf(stderr, "position: %d:%d/%d:%d, opcode: %d (%s)%s%s%s\n",
+            i->i_loc.lineno, i->i_loc.col_offset,
+            i->i_loc.end_lineno, i->i_loc.end_col_offset,
+            i->i_opcode, _PyOpcode_OpName[i->i_opcode], arg, jabs, jrel);
 }
 
 static void
-dump_basicblock(const basicblock *b)
+dump_basicblock(basicblock *b)
 {
     const char *b_return = basicblock_returns(b) ? "return " : "";
     fprintf(stderr, "[%d %d %d %p] used: %d, depth: %d, offset: %d %s\n",
@@ -8317,7 +8334,7 @@ insert_prefix_instructions(struct compiler *c, basicblock *entryblock,
         struct instr make_gen = {
             .i_opcode = RETURN_GENERATOR,
             .i_oparg = 0,
-            .i_loc = LOCATION(c->u->u_firstlineno, c->u->u_firstlineno, -1, -1),
+            .i_loc = LOCATION(c->u->u_firstlineno, -1, -1, -1),
             .i_target = NULL,
         };
         if (insert_instruction(entryblock, 0, &make_gen) < 0) {
@@ -9379,26 +9396,26 @@ propagate_line_numbers(struct assembler *a) {
             continue;
         }
 
-        struct location prev_location = NO_LOCATION;
+        int prev_lineno = -1;
         for (int i = 0; i < b->b_iused; i++) {
             if (b->b_instr[i].i_loc.lineno < 0) {
-                b->b_instr[i].i_loc = prev_location;
+                b->b_instr[i].i_loc.lineno = prev_lineno;
             }
             else {
-                prev_location = b->b_instr[i].i_loc;
+                prev_lineno = b->b_instr[i].i_loc.lineno;
             }
         }
         if (BB_HAS_FALLTHROUGH(b) && b->b_next->b_predecessors == 1) {
             assert(b->b_next->b_iused);
             if (b->b_next->b_instr[0].i_loc.lineno < 0) {
-                b->b_next->b_instr[0].i_loc = prev_location;
+                b->b_next->b_instr[0].i_loc.lineno = prev_lineno;
             }
         }
         if (is_jump(&b->b_instr[b->b_iused-1])) {
             basicblock *target = b->b_instr[b->b_iused-1].i_target;
             if (target->b_predecessors == 1) {
                 if (target->b_instr[0].i_loc.lineno < 0) {
-                    target->b_instr[0].i_loc = prev_location;
+                    target->b_instr[0].i_loc.lineno = prev_lineno;
                 }
             }
         }
@@ -9508,7 +9525,7 @@ duplicate_exits_without_lineno(struct compiler *c)
                 if (new_target == NULL) {
                     return -1;
                 }
-                new_target->b_instr[0].i_loc = b->b_instr[b->b_iused-1].i_loc;
+                new_target->b_instr[0].i_loc.lineno = b->b_instr[b->b_iused-1].i_loc.lineno;
                 b->b_instr[b->b_iused-1].i_target = new_target;
                 target->b_predecessors--;
                 new_target->b_predecessors = 1;
@@ -9529,7 +9546,7 @@ duplicate_exits_without_lineno(struct compiler *c)
         if (BB_HAS_FALLTHROUGH(b) && b->b_next && b->b_iused > 0) {
             if (is_exit_without_lineno(b->b_next)) {
                 assert(b->b_next->b_iused > 0);
-                b->b_next->b_instr[0].i_loc = b->b_instr[b->b_iused-1].i_loc;
+                b->b_next->b_instr[0].i_loc.lineno = b->b_instr[b->b_iused-1].i_loc.lineno;
             }
         }
     }

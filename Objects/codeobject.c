@@ -380,7 +380,7 @@ get_line_delta(const uint8_t *ptr)
     switch (code) {
         case PY_CODE_LOCATION_INFO_NONE:
             return 0;
-        case PY_CODE_LOCATION_INFO_NO_COLUMNS:
+        case PY_CODE_LOCATION_INFO_ONLY_LINENO:
         case PY_CODE_LOCATION_INFO_LONG:
             return scan_signed_varint(ptr+1);
         case PY_CODE_LOCATION_INFO_ONE_LINE0:
@@ -421,7 +421,7 @@ remove_column_info(PyObject *locations)
         else {
             int blength = (data[offset] & 7)+1;
             output += write_location_entry_start(
-                output, PY_CODE_LOCATION_INFO_NO_COLUMNS, blength);
+                output, PY_CODE_LOCATION_INFO_ONLY_LINENO, blength);
             int ldelta = get_line_delta(&data[offset]);
             output += write_signed_varint(output, ldelta);
         }
@@ -876,12 +876,12 @@ advance_with_locations(PyCodeAddressRange *bounds, int *endline, int *column, in
             *endcolumn = read_varint(bounds)-1;
             break;
         }
-        case PY_CODE_LOCATION_INFO_NO_COLUMNS:
+        case PY_CODE_LOCATION_INFO_ONLY_LINENO:
         {
             /* No column */
             bounds->opaque.computed_line += read_signed_varint(bounds);
-            *endline = bounds->ar_line = bounds->opaque.computed_line;
-            *column = *endcolumn = -1;
+            bounds->ar_line = bounds->opaque.computed_line;
+            *endline = *column = *endcolumn = -1;
             break;
         }
         case PY_CODE_LOCATION_INFO_ONE_LINE0:
@@ -969,7 +969,7 @@ _PyLineTable_StartsLine(PyCodeAddressRange *range)
     switch(code) {
         case PY_CODE_LOCATION_INFO_LONG:
             return 0;
-        case PY_CODE_LOCATION_INFO_NO_COLUMNS:
+        case PY_CODE_LOCATION_INFO_ONLY_LINENO:
         case PY_CODE_LOCATION_INFO_NONE:
             return ptr[1] != 0;
         case PY_CODE_LOCATION_INFO_ONE_LINE0:

@@ -1725,9 +1725,9 @@ class InstructionTests(InstructionTestCase):
             (2, 2, 5, 6),
             (2, 2, 8, 9),
             (1, 3, 0, 1),
-            (1, 3, 0, 1),
-            (1, 3, 0, 1),
-            (1, 3, 0, 1)
+            (1, None, None, None),
+            (1, None, None, None),
+            (1, None, None, None)
         ]
         self.assertEqual(positions, expected)
 
