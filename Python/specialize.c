@@ -2041,9 +2041,6 @@ success:
 int
  _PySpecialization_ClassifyIterator(PyObject *iter)
 {
-    if (PyGen_CheckExact(iter)) {
-        return SPEC_FAIL_FOR_ITER_GENERATOR;
-    }
     if (PyCoro_CheckExact(iter)) {
         return SPEC_FAIL_FOR_ITER_COROUTINE;
     }
@@ -2122,6 +2119,10 @@ _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr)
     }
     else if (tp == &PyRangeIter_Type && next_op == STORE_FAST) {
         _Py_SET_OPCODE(*instr, FOR_ITER_RANGE);
+        goto success;
+    }
+    else if (PyGen_CheckExact(iter)) {
+        _Py_SET_OPCODE(*instr, FOR_ITER_GENERATOR);
         goto success;
     }
     else {

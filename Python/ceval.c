@@ -2628,13 +2628,17 @@ handle_eval_breaker:
 
         TARGET(YIELD_VALUE) {
             assert(oparg == STACK_LEVEL());
-            assert(frame->is_entry);
             PyObject *retval = POP();
             _PyFrame_GetGenerator(frame)->gi_frame_state = FRAME_SUSPENDED;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             TRACE_FUNCTION_EXIT();
             DTRACE_FUNCTION_EXIT();
             _Py_LeaveRecursiveCallTstate(tstate);
+            if (!frame->is_entry) {
+                frame = cframe.current_frame = frame->previous;
+                _PyFrame_StackPush(frame, retval);
+                goto resume_frame;
+            }
             /* Restore previous cframe and return. */
             tstate->cframe = cframe.previous;
             tstate->cframe->use_tracing = cframe.use_tracing;
@@ -4506,6 +4510,25 @@ handle_eval_breaker:
             // The STORE_FAST is already done.
             JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
             NOTRACE_DISPATCH();
+        }
+
+        TARGET(FOR_ITER_GENERATOR) {
+            assert(cframe.use_tracing == 0);
+            PyGenObject *g = (PyGenObject *)TOP();
+            DEOPT_IF(PyGen_CheckExact(g), FOR_ITER);
+            DEOPT_IF(g->gi_frame_state >= FRAME_EXECUTING, FOR_ITER);
+            STAT_INC(FOR_ITER, hit);
+            _PyInterpreterFrame *iframe = (_PyInterpreterFrame *)g->gi_iframe;
+            assert(iframe);
+            assert(0 <= iframe->stacktop);
+            _PyFrame_StackPush(iframe, Py_NewRef(Py_None));
+            g->gi_exc_state.previous_item = tstate->exc_info;
+            tstate->exc_info = &g->gi_exc_state;
+            g->gi_frame_state = FRAME_EXECUTING;
+            iframe->previous = frame;
+            cframe.current_frame = frame = iframe;
+            assert(!frame->is_entry);
+            goto resume_frame;
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
