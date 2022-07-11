@@ -536,7 +536,7 @@ Expressions
 .. class:: Attribute(value, attr, ctx)
 
    Attribute access, e.g. ``d.keys``. ``value`` is a node, typically a
-   :class:`Name`. ``attr`` is a bare string giving the name of the attribute,
+   :class:`Name`. ``attr`` is a :class:`Name` giving the name of the attribute,
    and ``ctx`` is :class:`Load`, :class:`Store` or :class:`Del` according to how
    the attribute is acted on.
 
@@ -546,7 +546,7 @@ Expressions
         Expression(
             body=Attribute(
                 value=Name(id='snake', ctx=Load()),
-                attr='colour',
+                attr=Name(id='colour', ctx=Load()),
                 ctx=Load()))
 
 
@@ -812,7 +812,7 @@ Statements
                 AnnAssign(
                     target=Attribute(
                         value=Name(id='a', ctx=Load()),
-                        attr='b',
+                        attr=Name(id='b', ctx=Store()),
                         ctx=Store()),
                     annotation=Name(id='int', ctx=Load()),
                     simple=0)],

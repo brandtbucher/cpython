@@ -1190,7 +1190,7 @@ f(
             ast.Call(
                 ast.Attribute(
                     ast.Name("spam", ast.Load()),
-                    "eggs",
+                    ast.Name("eggs", ast.Load()),
                     ast.Load(),
                 ),
                 [],

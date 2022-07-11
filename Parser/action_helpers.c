@@ -341,7 +341,7 @@ _set_subscript_context(Parser *p, expr_ty e, expr_context_ty ctx)
 static expr_ty
 _set_attribute_context(Parser *p, expr_ty e, expr_context_ty ctx)
 {
-    return _PyAST_Attribute(e->v.Attribute.value, e->v.Attribute.attr,
+    return _PyAST_Attribute(e->v.Attribute.value, _set_name_context(p, e->v.Attribute.attr, ctx),
                             ctx, EXTRA_EXPR(e, e));
 }
 

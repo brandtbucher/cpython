@@ -4629,7 +4629,14 @@ class DSLParser:
                     a = []
                     n = expr
                     while isinstance(n, ast.Attribute):
-                        a.append(n.attr)
+                        if isinstance(n.attr, ast.Name):
+                            # Python 3.12:
+                            attr = n.attr.id
+                        else:
+                            # Python 3.11:
+                            attr = n.attr
+                        assert isinstance(attr, str)
+                        a.append(attr)
                         n = n.value
                     if not isinstance(n, ast.Name):
                         fail("Unsupported default value " + repr(default) + " (looked like a Python constant)")

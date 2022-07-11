@@ -450,7 +450,7 @@ struct _expr {
 
         struct {
             expr_ty value;
-            identifier attr;
+            expr_ty attr;
             expr_context_ty ctx;
         } Attribute;
 
@@ -774,8 +774,8 @@ expr_ty _PyAST_JoinedStr(asdl_expr_seq * values, int lineno, int col_offset,
 expr_ty _PyAST_Constant(constant value, string kind, int lineno, int
                         col_offset, int end_lineno, int end_col_offset, PyArena
                         *arena);
-expr_ty _PyAST_Attribute(expr_ty value, identifier attr, expr_context_ty ctx,
-                         int lineno, int col_offset, int end_lineno, int
+expr_ty _PyAST_Attribute(expr_ty value, expr_ty attr, expr_context_ty ctx, int
+                         lineno, int col_offset, int end_lineno, int
                          end_col_offset, PyArena *arena);
 expr_ty _PyAST_Subscript(expr_ty value, expr_ty slice, expr_context_ty ctx, int
                          lineno, int col_offset, int end_lineno, int

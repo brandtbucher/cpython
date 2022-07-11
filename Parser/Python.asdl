@@ -80,7 +80,7 @@ module Python
          | Constant(constant value, string? kind)
 
          -- the following expression can appear in assignment context
-         | Attribute(expr value, identifier attr, expr_context ctx)
+         | Attribute(expr value, expr attr, expr_context ctx)
          | Subscript(expr value, expr slice, expr_context ctx)
          | Starred(expr value, expr_context ctx)
          | Name(identifier id, expr_context ctx)

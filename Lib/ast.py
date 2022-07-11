@@ -1459,7 +1459,7 @@ class _Unparser(NodeVisitor):
         if isinstance(node.value, Constant) and isinstance(node.value.value, int):
             self.write(" ")
         self.write(".")
-        self.write(node.attr)
+        self.traverse(node.attr)
 
     def visit_Call(self, node):
         self.set_precedence(_Precedence.ATOM, node.func)

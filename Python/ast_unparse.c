@@ -758,8 +758,9 @@ append_ast_attribute(_PyUnicodeWriter *writer, expr_ty e)
         period = ".";
     }
     APPEND_STR(period);
+    APPEND_EXPR(e->v.Attribute.attr, PR_ATOM);
 
-    return _PyUnicodeWriter_WriteStr(writer, e->v.Attribute.attr);
+    return 0;
 }
 
 static int

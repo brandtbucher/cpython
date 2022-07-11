@@ -4731,23 +4731,6 @@ is_import_originated(struct compiler *c, expr_ty e)
     return flags & DEF_IMPORT;
 }
 
-static void
-update_location_to_match_attr(struct compiler *c, expr_ty meth)
-{
-    if (meth->lineno != meth->end_lineno) {
-        // Make start location match attribute
-        c->u->u_loc.lineno = c->u->u_loc.end_lineno = meth->end_lineno;
-        int len = (int)PyUnicode_GET_LENGTH(meth->v.Attribute.attr);
-        if (len <= meth->end_col_offset) {
-            c->u->u_loc.col_offset = meth->end_col_offset - len;
-        }
-        else {
-            // GH-94694: Somebody's compiling weird ASTs. Just drop the columns:
-            c->u->u_loc.col_offset = c->u->u_loc.end_col_offset = -1;
-        }
-    }
-}
-
 // Return 1 if the method call was optimized, -1 if not, and 0 on error.
 static int
 maybe_optimize_method_call(struct compiler *c, expr_ty e)
@@ -4758,12 +4741,12 @@ maybe_optimize_method_call(struct compiler *c, expr_ty e)
     asdl_keyword_seq *kwds = e->v.Call.keywords;
 
     /* Check that the call node is an attribute access */
-    if (meth->kind != Attribute_kind || meth->v.Attribute.ctx != Load) {
+    if (meth->kind != Attribute_kind || meth->v.Attribute.ctx != Load) {  // XXX
         return -1;
     }
 
     /* Check that the base object is not something that is imported */
-    if (is_import_originated(c, meth->v.Attribute.value)) {
+    if (is_import_originated(c, meth->v.Attribute.value)) {  // XXX
         return -1;
     }
 
@@ -4789,9 +4772,8 @@ maybe_optimize_method_call(struct compiler *c, expr_ty e)
     }
     /* Alright, we can optimize the code. */
     VISIT(c, expr, meth->v.Attribute.value);
-    SET_LOC(c, meth);
-    update_location_to_match_attr(c, meth);
-    ADDOP_NAME(c, LOAD_METHOD, meth->v.Attribute.attr, names);
+    SET_LOC(c, meth->v.Attribute.attr);  // XXX
+    ADDOP_NAME(c, LOAD_METHOD, meth->v.Attribute.attr->v.Name.id, names);  // XXX
     VISIT_SEQ(c, expr, e->v.Call.args);
 
     if (kwdsl) {
@@ -4800,8 +4782,12 @@ maybe_optimize_method_call(struct compiler *c, expr_ty e)
             return 0;
         };
     }
-    SET_LOC(c, e);
-    update_location_to_match_attr(c, meth);
+    if (meth->lineno == meth->end_lineno) {  // XXX
+        SET_LOC(c, e);  // XXX
+    }
+    else {
+        SET_LOC(c, meth->v.Attribute.attr);  // XXX
+    }
     ADDOP_I(c, CALL, argsl + kwdsl);
     return 1;
 }
@@ -5813,26 +5799,26 @@ compiler_visit_expr1(struct compiler *c, expr_ty e)
     /* The following exprs can be assignment targets. */
     case Attribute_kind:
         VISIT(c, expr, e->v.Attribute.value);
-        switch (e->v.Attribute.ctx) {
+        switch (e->v.Attribute.ctx) {  // XXX
         case Load:
         {
             int old_lineno = c->u->u_loc.lineno;
             c->u->u_loc.lineno = e->end_lineno;
-            ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr->v.Name.id, names);  // XXX
             c->u->u_loc.lineno = old_lineno;
             break;
         }
         case Store:
-            if (forbidden_name(c, e->v.Attribute.attr, e->v.Attribute.ctx)) {
+            if (forbidden_name(c, e->v.Attribute.attr->v.Name.id, e->v.Attribute.ctx)) {  // XXX
                 return 0;
             }
             int old_lineno = c->u->u_loc.lineno;
             c->u->u_loc.lineno = e->end_lineno;
-            ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr->v.Name.id, names);  // XXX
             c->u->u_loc.lineno = old_lineno;
             break;
         case Del:
-            ADDOP_NAME(c, DELETE_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, DELETE_ATTR, e->v.Attribute.attr->v.Name.id, names);  // XXX
             break;
         }
         break;
@@ -5902,7 +5888,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
         ADDOP_I(c, COPY, 1);
         int old_lineno = c->u->u_loc.lineno;
         c->u->u_loc.lineno = e->end_lineno;
-        ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
+        ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr->v.Name.id, names);  // XXX
         c->u->u_loc.lineno = old_lineno;
         break;
     case Subscript_kind:
@@ -5945,7 +5931,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
     case Attribute_kind:
         c->u->u_loc.lineno = e->end_lineno;
         ADDOP_I(c, SWAP, 2);
-        ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
+        ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr->v.Name.id, names);  // XXX
         break;
     case Subscript_kind:
         if (is_two_element_slice(e->v.Subscript.slice)) {
@@ -6059,7 +6045,7 @@ compiler_annassign(struct compiler *c, stmt_ty s)
         }
         break;
     case Attribute_kind:
-        if (forbidden_name(c, targ->v.Attribute.attr, Store))
+        if (forbidden_name(c, targ->v.Attribute.attr->v.Name.id, Store))  // XXX
             return 0;
         if (!s->v.AnnAssign.value &&
             !check_ann_expr(c, targ->v.Attribute.value)) {

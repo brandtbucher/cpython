@@ -218,7 +218,7 @@ validate_expr(struct validator *state, expr_ty exp, expr_context_ty ctx)
     /* First check expression context. */
     switch (exp->kind) {
     case Attribute_kind:
-        actual_ctx = exp->v.Attribute.ctx;
+        actual_ctx = exp->v.Attribute.ctx;  // XXX
         break;
     case Subscript_kind:
         actual_ctx = exp->v.Subscript.ctx;
@@ -354,7 +354,7 @@ validate_expr(struct validator *state, expr_ty exp, expr_context_ty ctx)
         ret = 1;
         break;
     case Attribute_kind:
-        ret = validate_expr(state, exp->v.Attribute.value, Load);
+        ret = validate_expr(state, exp->v.Attribute.value, Load);  // XXX
         break;
     case Subscript_kind:
         ret = validate_expr(state, exp->v.Subscript.slice, Load) &&
@@ -601,7 +601,7 @@ validate_pattern(struct validator *state, pattern_ty p, int star_ok)
                     break;
                 }
                 else if (cls->kind == Attribute_kind) {
-                    cls = cls->v.Attribute.value;
+                    cls = cls->v.Attribute.value;  // XXX
                     continue;
                 }
                 else {

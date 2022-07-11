@@ -1328,7 +1328,7 @@ init_types(struct ast_state *state)
         "     | FormattedValue(expr value, int conversion, expr? format_spec)\n"
         "     | JoinedStr(expr* values)\n"
         "     | Constant(constant value, string? kind)\n"
-        "     | Attribute(expr value, identifier attr, expr_context ctx)\n"
+        "     | Attribute(expr value, expr attr, expr_context ctx)\n"
         "     | Subscript(expr value, expr slice, expr_context ctx)\n"
         "     | Starred(expr value, expr_context ctx)\n"
         "     | Name(identifier id, expr_context ctx)\n"
@@ -1432,7 +1432,7 @@ init_types(struct ast_state *state)
         return 0;
     state->Attribute_type = make_type(state, "Attribute", state->expr_type,
                                       Attribute_fields, 3,
-        "Attribute(expr value, identifier attr, expr_context ctx)");
+        "Attribute(expr value, expr attr, expr_context ctx)");
     if (!state->Attribute_type) return 0;
     state->Subscript_type = make_type(state, "Subscript", state->expr_type,
                                       Subscript_fields, 3,
@@ -3064,9 +3064,9 @@ _PyAST_Constant(constant value, string kind, int lineno, int col_offset, int
 }
 
 expr_ty
-_PyAST_Attribute(expr_ty value, identifier attr, expr_context_ty ctx, int
-                 lineno, int col_offset, int end_lineno, int end_col_offset,
-                 PyArena *arena)
+_PyAST_Attribute(expr_ty value, expr_ty attr, expr_context_ty ctx, int lineno,
+                 int col_offset, int end_lineno, int end_col_offset, PyArena
+                 *arena)
 {
     expr_ty p;
     if (!value) {
@@ -4569,7 +4569,7 @@ ast2obj_expr(struct ast_state *state, void* _o)
         if (PyObject_SetAttr(result, state->value, value) == -1)
             goto failed;
         Py_DECREF(value);
-        value = ast2obj_identifier(state, o->v.Attribute.attr);
+        value = ast2obj_expr(state, o->v.Attribute.attr);
         if (!value) goto failed;
         if (PyObject_SetAttr(result, state->attr, value) == -1)
             goto failed;
@@ -9389,7 +9389,7 @@ obj2ast_expr(struct ast_state *state, PyObject* obj, expr_ty* out, PyArena*
     }
     if (isinstance) {
         expr_ty value;
-        identifier attr;
+        expr_ty attr;
         expr_context_ty ctx;
 
         if (_PyObject_LookupAttr(obj, state->value, &tmp) < 0) {
@@ -9421,7 +9421,7 @@ obj2ast_expr(struct ast_state *state, PyObject* obj, expr_ty* out, PyArena*
             if (_Py_EnterRecursiveCall(" while traversing 'Attribute' node")) {
                 goto failed;
             }
-            res = obj2ast_identifier(state, tmp, &attr, arena);
+            res = obj2ast_expr(state, tmp, &attr, arena);
             _Py_LeaveRecursiveCall();
             if (res != 0) goto failed;
             Py_CLEAR(tmp);

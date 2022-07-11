@@ -2232,7 +2232,7 @@ def _signature_fromstr(cls, obj, s, skip_bound_arg=True):
             a = []
             n = node
             while isinstance(n, ast.Attribute):
-                a.append(n.attr)
+                a.append(n.attr.id)
                 n = n.value
             if not isinstance(n, ast.Name):
                 raise RuntimeError()
