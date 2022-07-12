@@ -1358,6 +1358,15 @@ eval_frame_handle_pending(PyThreadState *tstate)
         DISPATCH_GOTO(); \
     }
 
+#define DISPATCH_SAME_OPARG() \
+    { \
+        opcode = _Py_OPCODE(*next_instr); \
+        PRE_DISPATCH_GOTO(); \
+        assert(cframe.use_tracing == 0 || cframe.use_tracing == 255); \
+        opcode |= cframe.use_tracing OR_DTRACE_LINE; \
+        DISPATCH_GOTO(); \
+    }
+
 #define CHECK_EVAL_BREAKER() \
     _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY(); \
     if (_Py_atomic_load_relaxed_int32(eval_breaker)) { \
@@ -1386,9 +1395,9 @@ eval_frame_handle_pending(PyThreadState *tstate)
 #define JUMPBY(x)       (next_instr += (x))
 
 /* Get opcode and oparg from original instructions, not quickened form. */
-#define TRACING_NEXTOPARG() do { \
-        NEXTOPARG(); \
-        opcode = _PyOpcode_Deopt[opcode]; \
+#define TRACING_NEXTOPCODE() do { \
+        /* Don't mess with oparg. It hasn't changed, and reloading it could... */\
+        opcode = _PyOpcode_Deopt[_Py_OPCODE(*next_instr)]; \
     } while (0)
 
 /* OpCode prediction macros
@@ -5631,16 +5640,7 @@ handle_eval_breaker:
             assert(oparg);
             oparg <<= 8;
             oparg |= _Py_OPARG(*next_instr);
-            opcode = _PyOpcode_Deopt[_Py_OPCODE(*next_instr)];
-            PRE_DISPATCH_GOTO();
-            DISPATCH_GOTO();
-        }
-
-        TARGET(EXTENDED_ARG_QUICK) {
-            assert(oparg);
-            oparg <<= 8;
-            oparg |= _Py_OPARG(*next_instr);
-            NOTRACE_DISPATCH_SAME_OPARG();
+            DISPATCH_SAME_OPARG();
         }
 
         TARGET(CACHE) {
@@ -5658,7 +5658,7 @@ handle_eval_breaker:
         ) {
             int instr_prev = _PyInterpreterFrame_LASTI(frame);
             frame->prev_instr = next_instr;
-            TRACING_NEXTOPARG();
+            TRACING_NEXTOPCODE();
             if (opcode == RESUME) {
                 if (oparg < 2) {
                     CHECK_EVAL_BREAKER();
@@ -5699,13 +5699,18 @@ handle_eval_breaker:
                         next_instr++;
                         goto error;
                     }
-                    // Reload next_instr. Don't increment it, though, since
-                    // we're going to re-dispatch to the "true" instruction now:
-                    next_instr = frame->prev_instr;
+                    if (next_instr != frame->prev_instr) {
+                        // next_instr changed, so reload it. Don't increment it,
+                        // though, since we're going to re-dispatch to the
+                        // "true" instruction now:
+                        next_instr = frame->prev_instr;
+                        // Reload the oparg, too:
+                        oparg = _Py_OPARG(*next_instr);
+                    }
                 }
             }
         }
-        TRACING_NEXTOPARG();
+        TRACING_NEXTOPCODE();
         PRE_DISPATCH_GOTO();
         DISPATCH_GOTO();
     }
