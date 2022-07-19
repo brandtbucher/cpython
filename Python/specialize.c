@@ -945,22 +945,39 @@ specialize_class_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
                              PyObject *name)
 {
     _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
-    if (!PyType_CheckExact(owner) || _PyType_Lookup(Py_TYPE(owner), name)) {
-        SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE);
-        return -1;
-    }
     PyObject *descr = NULL;
     DescriptorClassification kind = 0;
     kind = analyze_descriptor((PyTypeObject *)owner, name, &descr, 0);
     switch (kind) {
         case METHOD:
         case NON_DESCRIPTOR:
+            if (Py_TYPE(owner)->tp_getattro != PyType_Type.tp_getattro) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_OVERRIDDEN);
+                return -1;
+            }
+            if (_PyType_Lookup(Py_TYPE(owner), name)) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE);
+                return -1;
+            }
             write_u32(cache->type_version, ((PyTypeObject *)owner)->tp_version_tag);
             write_obj(cache->descr, descr);
-            _Py_SET_OPCODE(*instr, LOAD_ATTR_CLASS);
+            if (PyType_CheckExact(owner)) {
+                _Py_SET_OPCODE(*instr, LOAD_ATTR_CLASS);
+                return 0;
+            }
+            write_u32(cache->keys_version, Py_TYPE(owner)->tp_version_tag);
+            _Py_SET_OPCODE(*instr, LOAD_ATTR_METACLASS);
             return 0;
 #ifdef Py_STATS
         case ABSENT:
+            if (Py_TYPE(owner)->tp_getattro != PyType_Type.tp_getattro) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_OVERRIDDEN);
+                return -1;
+            }
+            if (_PyType_Lookup(Py_TYPE(owner), name)) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE);
+                return -1;
+            }
             SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_EXPECTED_ERROR);
             return -1;
 #endif

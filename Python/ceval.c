@@ -3662,7 +3662,17 @@ handle_eval_breaker:
             NOTRACE_DISPATCH();
         }
 
+        TARGET(LOAD_ATTR_METACLASS) {
+            assert(cframe.use_tracing == 0);
+            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
+            uint32_t meta_version = read_u32(cache->keys_version);
+            DEOPT_IF(Py_TYPE(TOP())->tp_version_tag != meta_version, LOAD_ATTR);
+            assert(meta_version != 0);
+            JUMP_TO_INSTRUCTION(LOAD_ATTR_CLASS);
+        }
+
         TARGET(LOAD_ATTR_CLASS) {
+            PREDICTED(LOAD_ATTR_CLASS);
             assert(cframe.use_tracing == 0);
             _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
 
