@@ -9366,9 +9366,6 @@ mark_reachable(basicblock *entryblock) {
             if (is_jump(instr) || is_block_push(instr)) {
                 target = instr->i_target;
                 if (!target->b_visited) {
-                    if (!(target->b_predecessors == 0 || target == b->b_next)) {
-                        printf("%s\n", _PyOpcode_OpName[instr->i_opcode]);
-                    }
                     assert(target->b_predecessors == 0 || target == b->b_next);
                     *sp++ = target;
                 }
