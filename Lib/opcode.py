@@ -120,7 +120,7 @@ def_op('LIST_TO_TUPLE', 82)
 def_op('RETURN_VALUE', 83)
 def_op('IMPORT_STAR', 84)
 def_op('SETUP_ANNOTATIONS', 85)
-
+def_op('UNWRAP_STOPITERATION', 86)
 def_op('ASYNC_GEN_WRAP', 87)
 def_op('PREP_RERAISE_STAR', 88)
 def_op('POP_EXCEPT', 89)
@@ -201,8 +201,7 @@ def_op('COPY_FREE_VARS', 149)
 def_op('YIELD_VALUE', 150)
 def_op('RESUME', 151)   # This must be kept in sync with deepfreeze.py
 def_op('MATCH_CLASS', 152)
-jrel_op('THROW_FORWARD', 153)
-jrel_op('THROW_BACKWARD', 154)
+
 def_op('FORMAT_VALUE', 155)
 def_op('BUILD_CONST_KEY_MAP', 156)
 def_op('BUILD_STRING', 157)
@@ -240,7 +239,6 @@ pseudo_op('POP_JUMP_IF_TRUE', 263, ['POP_JUMP_FORWARD_IF_TRUE', 'POP_JUMP_BACKWA
 pseudo_op('POP_JUMP_IF_NONE', 264, ['POP_JUMP_FORWARD_IF_NONE', 'POP_JUMP_BACKWARD_IF_NONE'])
 pseudo_op('POP_JUMP_IF_NOT_NONE', 265, ['POP_JUMP_FORWARD_IF_NOT_NONE', 'POP_JUMP_BACKWARD_IF_NOT_NONE'])
 pseudo_op('LOAD_METHOD', 266, ['LOAD_ATTR'])
-pseudo_op('THROW', 267, ['THROW_FORWARD', 'THROW_BACKWARD'])
 
 MAX_PSEUDO_OPCODE = MIN_PSEUDO_OPCODE + len(_pseudo_ops) - 1
 

@@ -44,6 +44,7 @@ extern "C" {
 #define RETURN_VALUE                            83
 #define IMPORT_STAR                             84
 #define SETUP_ANNOTATIONS                       85
+#define UNWRAP_STOPITERATION                    86
 #define ASYNC_GEN_WRAP                          87
 #define PREP_RERAISE_STAR                       88
 #define POP_EXCEPT                              89
@@ -107,8 +108,6 @@ extern "C" {
 #define YIELD_VALUE                            150
 #define RESUME                                 151
 #define MATCH_CLASS                            152
-#define THROW_FORWARD                          153
-#define THROW_BACKWARD                         154
 #define FORMAT_VALUE                           155
 #define BUILD_CONST_KEY_MAP                    156
 #define BUILD_STRING                           157
@@ -134,8 +133,7 @@ extern "C" {
 #define POP_JUMP_IF_NONE                       264
 #define POP_JUMP_IF_NOT_NONE                   265
 #define LOAD_METHOD                            266
-#define THROW                                  267
-#define MAX_PSEUDO_OPCODE                      267
+#define MAX_PSEUDO_OPCODE                      266
 #define BINARY_OP_ADAPTIVE                       3
 #define BINARY_OP_ADD_FLOAT                      4
 #define BINARY_OP_ADD_INT                        5
@@ -186,28 +184,28 @@ extern "C" {
 #define LOAD_ATTR_WITH_HINT                     79
 #define LOAD_ATTR_METHOD_LAZY_DICT              80
 #define LOAD_ATTR_METHOD_NO_DICT                81
-#define LOAD_ATTR_METHOD_WITH_DICT              86
-#define LOAD_ATTR_METHOD_WITH_VALUES           113
-#define LOAD_CONST__LOAD_FAST                  121
-#define LOAD_FAST__LOAD_CONST                  141
-#define LOAD_FAST__LOAD_FAST                   143
-#define LOAD_GLOBAL_ADAPTIVE                   158
-#define LOAD_GLOBAL_BUILTIN                    159
-#define LOAD_GLOBAL_MODULE                     160
-#define RESUME_QUICK                           161
-#define STORE_ATTR_ADAPTIVE                    166
-#define STORE_ATTR_INSTANCE_VALUE              167
-#define STORE_ATTR_SLOT                        168
-#define STORE_ATTR_WITH_HINT                   169
-#define STORE_FAST__LOAD_FAST                  170
-#define STORE_FAST__STORE_FAST                 177
-#define STORE_SUBSCR_ADAPTIVE                  178
-#define STORE_SUBSCR_DICT                      179
-#define STORE_SUBSCR_LIST_INT                  180
-#define UNPACK_SEQUENCE_ADAPTIVE               181
-#define UNPACK_SEQUENCE_LIST                   182
-#define UNPACK_SEQUENCE_TUPLE                  183
-#define UNPACK_SEQUENCE_TWO_TUPLE              184
+#define LOAD_ATTR_METHOD_WITH_DICT             113
+#define LOAD_ATTR_METHOD_WITH_VALUES           121
+#define LOAD_CONST__LOAD_FAST                  141
+#define LOAD_FAST__LOAD_CONST                  143
+#define LOAD_FAST__LOAD_FAST                   153
+#define LOAD_GLOBAL_ADAPTIVE                   154
+#define LOAD_GLOBAL_BUILTIN                    158
+#define LOAD_GLOBAL_MODULE                     159
+#define RESUME_QUICK                           160
+#define STORE_ATTR_ADAPTIVE                    161
+#define STORE_ATTR_INSTANCE_VALUE              166
+#define STORE_ATTR_SLOT                        167
+#define STORE_ATTR_WITH_HINT                   168
+#define STORE_FAST__LOAD_FAST                  169
+#define STORE_FAST__STORE_FAST                 170
+#define STORE_SUBSCR_ADAPTIVE                  177
+#define STORE_SUBSCR_DICT                      178
+#define STORE_SUBSCR_LIST_INT                  179
+#define UNPACK_SEQUENCE_ADAPTIVE               180
+#define UNPACK_SEQUENCE_LIST                   181
+#define UNPACK_SEQUENCE_TUPLE                  182
+#define UNPACK_SEQUENCE_TWO_TUPLE              183
 #define DO_TRACING                             255
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
@@ -218,7 +216,6 @@ extern "C" {
     || ((op) == POP_JUMP_IF_NONE) \
     || ((op) == POP_JUMP_IF_NOT_NONE) \
     || ((op) == LOAD_METHOD) \
-    || ((op) == THROW) \
     )
 
 #define HAS_CONST(op) (false\

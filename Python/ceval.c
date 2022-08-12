@@ -2655,59 +2655,19 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(THROW_FORWARD) {
-            PREDICTED(THROW_FORWARD);
-            assert(frame->is_entry);
-            assert(throwflag);
-            PyObject *exc_value = POP();
-            PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
-            PyObject *exc_traceback = PyException_GetTraceback(exc_value);
-            PyErr_NormalizeException(&exc_type, &exc_value, &exc_traceback);
-            PyObject *last_send = POP();
-            Py_DECREF(last_send);
-            PyObject *yieldfrom = TOP();
-            PyObject *throw;
-            int found = _PyObject_LookupAttr(yieldfrom, &_Py_ID(throw), &throw);
-            if (found < 0) {
-                if (PyErr_GivenExceptionMatches(exc_value, PyExc_GeneratorExit))
-                {
-                    PyErr_Clear();
-                    _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
-                }
-                goto error;
-            }
-            if (found == 0) {
-                _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
-                goto error;
-            }
-            PyObject *retval = PyObject_CallFunctionObjArgs(
-                throw, exc_type, exc_value, exc_traceback, NULL);
-            Py_DECREF(throw);
-            Py_DECREF(exc_type);
-            Py_DECREF(exc_value);
-            Py_XDECREF(exc_traceback);
-            if (retval) {
-                PUSH(retval);
+        TARGET(UNWRAP_STOPITERATION) {
+            PyObject *exc_value = TOP();
+            assert(PyExceptionInstance_Check(exc_value));
+            if (PyErr_GivenExceptionMatches(exc_value, PyExc_StopIteration)) {
+                PyObject *value = ((PyStopIterationObject *)exc_value)->value;
+                Py_SETREF(TOP(), Py_NewRef(value));
                 DISPATCH();
             }
-            if (tstate->c_tracefunc && 
-                _PyErr_ExceptionMatches(tstate, PyExc_StopIteration))
-            {
-                call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate,
-                               frame);
-            }
-            if (_PyGen_FetchStopIterationValue(&TOP())) {
-                goto error;
-            }
-            Py_DECREF(yieldfrom);
-            JUMPBY(oparg);
-            DISPATCH();
-        }
-
-        TARGET(THROW_BACKWARD) {
-            // No interrupts!
-            oparg = -oparg;
-            JUMP_TO_INSTRUCTION(THROW_FORWARD);
+            Py_INCREF(exc_value);
+            PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
+            PyObject *exc_traceback = PyException_GetTraceback(exc_value);
+            _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
+            goto exception_unwind;
         }
 
         TARGET(ASYNC_GEN_WRAP) {
@@ -2724,7 +2684,7 @@ handle_eval_breaker:
 
         TARGET(YIELD_VALUE) {
             // NOTE: It's important that YIELD_VALUE never raises an exception!
-            // The compiler treats *anything* raised here as a throw() call.
+            // *Anything* raised here is treated as a failed throw() call.
             assert(oparg == STACK_LEVEL());
             assert(frame->is_entry);
             PyObject *retval = POP();

@@ -101,9 +101,7 @@
          (opcode) == POP_JUMP_FORWARD_IF_TRUE || \
          (opcode) == POP_JUMP_BACKWARD_IF_TRUE || \
          (opcode) == POP_JUMP_FORWARD_IF_FALSE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_FALSE || \
-         (opcode) == THROW_FORWARD || \
-         (opcode) == THROW_BACKWARD)
+         (opcode) == POP_JUMP_BACKWARD_IF_FALSE)
 
 #define IS_BACKWARDS_JUMP_OPCODE(opcode) \
         ((opcode) == JUMP_BACKWARD || \
@@ -111,8 +109,7 @@
          (opcode) == POP_JUMP_BACKWARD_IF_NONE || \
          (opcode) == POP_JUMP_BACKWARD_IF_NOT_NONE || \
          (opcode) == POP_JUMP_BACKWARD_IF_TRUE || \
-         (opcode) == POP_JUMP_BACKWARD_IF_FALSE || \
-         (opcode) == THROW_BACKWARD)
+         (opcode) == POP_JUMP_BACKWARD_IF_FALSE)
 
 #define IS_UNCONDITIONAL_JUMP_OPCODE(opcode) \
         ((opcode) == JUMP || \
@@ -1084,10 +1081,8 @@ stack_effect(int opcode, int oparg, int jump)
             return jump > 0 ? -1 : 1;
         case SEND:
             return jump > 0 ? -1 : 0;
-        case THROW:
-        case THROW_FORWARD:
-        case THROW_BACKWARD:
-            return jump > 0 ? -2 : -1;
+        case UNWRAP_STOPITERATION:
+            return 0;
         case STORE_ATTR:
             return -2;
         case DELETE_ATTR:
@@ -1966,26 +1961,27 @@ compiler_add_yield_from(struct compiler *c, int await)
 {
     NEW_JUMP_TARGET_LABEL(c, send);
     NEW_JUMP_TARGET_LABEL(c, yield);
-    NEW_JUMP_TARGET_LABEL(c, thrown);
+    NEW_JUMP_TARGET_LABEL(c, cleanup);
     NEW_JUMP_TARGET_LABEL(c, stop);
 
     USE_LABEL(c, send);
     ADDOP_JUMP(c, SEND, stop);
 
     USE_LABEL(c, yield);
-    ADDOP_JUMP(c, SETUP_FINALLY, thrown);
+    ADDOP_JUMP(c, SETUP_FINALLY, cleanup);
     RETURN_IF_FALSE(compiler_push_fblock(c, TRY_EXCEPT, yield, NO_LABEL, NULL));
-    // The only way YIELD_VALUE can raise is if throw() is called:
+    // The only way YIELD_VALUE can raise is if a close() or throw() call fails:
     ADDOP_I(c, YIELD_VALUE, 0);
     compiler_pop_fblock(c, TRY_EXCEPT, yield);
     ADDOP_NOLINE(c, POP_BLOCK);
     ADDOP_I(c, RESUME, await ? 3 : 2);
     ADDOP_JUMP(c, JUMP_NO_INTERRUPT, send);
 
-    USE_LABEL(c, thrown);
-    ADDOP_JUMP(c, THROW, stop);
-    ADDOP_I(c, RESUME, await ? 3 : 2);
-    ADDOP_JUMP(c, JUMP_NO_INTERRUPT, yield);
+    USE_LABEL(c, cleanup);
+    ADDOP(c, UNWRAP_STOPITERATION);
+    ADDOP_I(c, SWAP, 3);
+    ADDOP(c, POP_TOP);
+    ADDOP(c, POP_TOP);
 
     USE_LABEL(c, stop);
     return 1;
@@ -7793,6 +7789,7 @@ normalize_jumps(basicblock *entryblock)
                     last->i_opcode = is_forward ?
                         POP_JUMP_FORWARD_IF_TRUE : POP_JUMP_BACKWARD_IF_TRUE;
                     break;
+                case SEND:
                 case JUMP_IF_TRUE_OR_POP:
                 case JUMP_IF_FALSE_OR_POP:
                     if (!is_forward) {
@@ -7804,12 +7801,8 @@ normalize_jumps(basicblock *entryblock)
                          */
                         PyErr_Format(PyExc_SystemError,
                             "unexpected %s jumping backwards",
-                            last->i_opcode == JUMP_IF_TRUE_OR_POP ?
-                                "JUMP_IF_TRUE_OR_POP" : "JUMP_IF_FALSE_OR_POP");
+                            _PyOpcode_OpName[last->i_opcode]);
                     }
-                    break;
-                case THROW:
-                    last->i_opcode = is_forward ? THROW_FORWARD : THROW_BACKWARD;
                     break;
             }
         }
