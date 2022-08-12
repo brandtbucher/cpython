@@ -1124,35 +1124,6 @@ fail:
     return NULL;
 }
 
-static PyObject *
-throw(PyThreadState *tstate, PyObject *exc_value, PyObject *receiver)
-{
-    PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
-    PyObject *exc_traceback = PyException_GetTraceback(exc_value);
-    PyErr_NormalizeException(&exc_type, &exc_value, &exc_traceback);
-    PyObject *throw;
-    int found = _PyObject_LookupAttr(receiver, &_Py_ID(throw), &throw);
-    if (found < 0) {
-        if (PyErr_GivenExceptionMatches(exc_value, PyExc_GeneratorExit))
-        {
-            PyErr_Clear();
-            _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
-        }
-        return NULL;
-    }
-    if (found == 0) {
-        _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
-        return NULL;
-    }
-    PyObject *retval = PyObject_CallFunctionObjArgs(throw, exc_type, exc_value,
-                                                    exc_traceback, NULL);
-    Py_DECREF(throw);
-    Py_DECREF(exc_type);
-    Py_DECREF(exc_value);
-    Py_XDECREF(exc_traceback);
-    return retval;
-}
-
 
 static int do_raise(PyThreadState *tstate, PyObject *exc, PyObject *cause);
 static int exception_group_match(
@@ -2685,13 +2656,36 @@ handle_eval_breaker:
         }
 
         TARGET(THROW_FORWARD) {
+            PREDICTED(THROW_FORWARD);
             assert(frame->is_entry);
             assert(throwflag);
             PyObject *exc_value = POP();
+            PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
+            PyObject *exc_traceback = PyException_GetTraceback(exc_value);
+            PyErr_NormalizeException(&exc_type, &exc_value, &exc_traceback);
             PyObject *last_send = POP();
             Py_DECREF(last_send);
-            PyObject *receiver = TOP();
-            PyObject *retval = throw(tstate, exc_value, receiver);
+            PyObject *yieldfrom = TOP();
+            PyObject *throw;
+            int found = _PyObject_LookupAttr(yieldfrom, &_Py_ID(throw), &throw);
+            if (found < 0) {
+                if (PyErr_GivenExceptionMatches(exc_value, PyExc_GeneratorExit))
+                {
+                    PyErr_Clear();
+                    _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
+                }
+                goto error;
+            }
+            if (found == 0) {
+                _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
+                goto error;
+            }
+            PyObject *retval = PyObject_CallFunctionObjArgs(
+                throw, exc_type, exc_value, exc_traceback, NULL);
+            Py_DECREF(throw);
+            Py_DECREF(exc_type);
+            Py_DECREF(exc_value);
+            Py_XDECREF(exc_traceback);
             if (retval) {
                 PUSH(retval);
                 DISPATCH();
@@ -2705,35 +2699,15 @@ handle_eval_breaker:
             if (_PyGen_FetchStopIterationValue(&TOP())) {
                 goto error;
             }
-            Py_DECREF(receiver);
+            Py_DECREF(yieldfrom);
             JUMPBY(oparg);
             DISPATCH();
         }
 
         TARGET(THROW_BACKWARD) {
-            assert(frame->is_entry);
-            assert(throwflag);
-            PyObject *exc_value = POP();
-            PyObject *last_send = POP();
-            Py_DECREF(last_send);
-            PyObject *receiver = TOP();
-            PyObject *retval = throw(tstate, exc_value, receiver);
-            if (retval) {
-                PUSH(retval);
-                DISPATCH();
-            }
-            if (tstate->c_tracefunc && 
-                _PyErr_ExceptionMatches(tstate, PyExc_StopIteration))
-            {
-                call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate,
-                               frame);
-            }
-            if (_PyGen_FetchStopIterationValue(&TOP())) {
-                goto error;
-            }
-            Py_DECREF(receiver);
-            JUMPBY(-oparg);
-            DISPATCH();
+            // No interrupts!
+            oparg = -oparg;
+            JUMP_TO_INSTRUCTION(THROW_FORWARD);
         }
 
         TARGET(ASYNC_GEN_WRAP) {
