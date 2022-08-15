@@ -2674,11 +2674,11 @@ handle_eval_breaker:
                     PyErr_Clear();
                     _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
                 }
-                goto error;
+                goto exception_unwind;
             }
             if (found == 0) {
                 _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
-                goto error;
+                goto exception_unwind;
             }
             PyObject *retval = PyObject_CallFunctionObjArgs(
                 throw, exc_type, exc_value, exc_traceback, NULL);
@@ -2697,7 +2697,7 @@ handle_eval_breaker:
                                frame);
             }
             if (_PyGen_FetchStopIterationValue(&TOP())) {
-                goto error;
+                goto exception_unwind;
             }
             Py_DECREF(yieldfrom);
             JUMPBY(oparg);
