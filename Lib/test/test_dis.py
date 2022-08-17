@@ -508,29 +508,26 @@ dis_asyncwith = """\
            RETURN_VALUE
 
 %3d     >> THROW_BACKWARD          23 (to 114)
-           RESUME                   3
-           JUMP_BACKWARD_NO_INTERRUPT    28 (to 16)
-        >> THROW_BACKWARD           9 (to 92)
-           RESUME                   3
-           JUMP_BACKWARD_NO_INTERRUPT    14 (to 50)
+           JUMP_BACKWARD_NO_INTERRUPT    27 (to 16)
+        >> THROW_BACKWARD           8 (to 88)
+           JUMP_BACKWARD_NO_INTERRUPT    12 (to 50)
         >> PUSH_EXC_INFO
            WITH_EXCEPT_START
            GET_AWAITABLE            2
            LOAD_CONST               0 (None)
-        >> SEND                     6 (to 100)
+        >> SEND                     5 (to 94)
         >> YIELD_VALUE              6
            RESUME                   3
-        >> JUMP_BACKWARD_NO_INTERRUPT     4 (to 86)
-        >> THROW_FORWARD            2 (to 100)
-           RESUME                   3
-           JUMP_BACKWARD_NO_INTERRUPT     6 (to 88)
-        >> POP_JUMP_FORWARD_IF_TRUE     1 (to 104)
+        >> JUMP_BACKWARD_NO_INTERRUPT     4 (to 82)
+        >> THROW_FORWARD            1 (to 94)
+           JUMP_BACKWARD_NO_INTERRUPT     5 (to 84)
+        >> POP_JUMP_FORWARD_IF_TRUE     1 (to 98)
            RERAISE                  2
         >> POP_TOP
            POP_EXCEPT
            POP_TOP
            POP_TOP
-           JUMP_BACKWARD           28 (to 58)
+           JUMP_BACKWARD           25 (to 58)
         >> COPY                     3
            POP_EXCEPT
            RERAISE                  1

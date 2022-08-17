@@ -1984,7 +1984,6 @@ compiler_add_yield_from(struct compiler *c, int await)
 
     USE_LABEL(c, thrown);
     ADDOP_JUMP(c, THROW, stop);
-    ADDOP_I(c, RESUME, await ? 3 : 2);
     ADDOP_JUMP(c, JUMP_NO_INTERRUPT, yield);
 
     USE_LABEL(c, stop);

@@ -2671,7 +2671,7 @@ handle_eval_breaker:
             if (found < 0) {
                 if (PyErr_GivenExceptionMatches(exc_value, PyExc_GeneratorExit))
                 {
-                    PyErr_Clear();
+                    _PyErr_Clear(tstate);
                     _PyErr_Restore(tstate, exc_type, exc_value, exc_traceback);
                 }
                 goto exception_unwind;
