@@ -1376,13 +1376,13 @@ eval_frame_handle_pending(PyThreadState *tstate)
 /* Code access macros */
 
 /* The integer overflow is checked by an assertion below. */
-#define INSTR_OFFSET() ((int)(next_instr - first_instr))
+#define INSTR_OFFSET() ((int)(next_instr - cframe.first_instr))
 #define NEXTOPARG()  do { \
         _Py_CODEUNIT word = *next_instr; \
         cframe.opcode = _Py_OPCODE(word); \
         cframe.oparg = _Py_OPARG(word); \
     } while (0)
-#define JUMPTO(x)       (next_instr = first_instr + (x))
+#define JUMPTO(x)       (next_instr = cframe.first_instr + (x))
 #define JUMPBY(x)       (next_instr += (x))
 
 /* Get opcode and oparg from original instructions, not quickened form. */
@@ -1678,7 +1678,6 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         goto resume_with_error;
     }
 
-    _Py_CODEUNIT *first_instr;  // XXX
     _Py_CODEUNIT *next_instr;  // XXX
     PyObject **stack_pointer;  // XXX
 
@@ -1688,7 +1687,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         PyCodeObject *co = cframe.current_frame->f_code; \
         cframe.names = co->co_names; \
         cframe.consts = co->co_consts; \
-        first_instr = _PyCode_CODE(co); \
+        cframe.first_instr = _PyCode_CODE(co); \
     } \
     assert(_PyInterpreterFrame_LASTI(cframe.current_frame) >= -1); \
     /* Jump back to the last instruction executed... */ \
@@ -2686,7 +2685,7 @@ handle_eval_breaker:
             if (cframe.oparg) {
                 PyObject *lasti = PEEK(cframe.oparg + 1);
                 if (PyLong_Check(lasti)) {
-                    cframe.current_frame->prev_instr = first_instr + PyLong_AsLong(lasti);
+                    cframe.current_frame->prev_instr = cframe.first_instr + PyLong_AsLong(lasti);
                     assert(!_PyErr_Occurred(tstate));
                 }
                 else {

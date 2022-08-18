@@ -57,6 +57,7 @@ typedef struct _PyCFrame {
      * These are cached values from the frame and code object.  */
     PyObject *names;
     PyObject *consts;
+    _Py_CODEUNIT *first_instr;
     struct _PyCFrame *previous;
 } _PyCFrame;
 
