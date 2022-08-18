@@ -53,6 +53,9 @@ typedef struct _PyCFrame {
     // for the big switch below (in combination with the EXTRA_CASES macro).
     uint8_t opcode;        /* Current opcode */
     int oparg;         /* Current opcode argument, if any */
+    /* Local "register" variables.
+     * These are cached values from the frame and code object.  */
+    PyObject *names;
     struct _PyCFrame *previous;
 } _PyCFrame;
 

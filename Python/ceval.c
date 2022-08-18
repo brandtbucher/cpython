@@ -1678,10 +1678,6 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         goto resume_with_error;
     }
 
-    /* Local "register" variables.
-     * These are cached values from the frame and code object.  */
-
-    PyObject *names;  // XXX
     PyObject *consts;  // XXX
     _Py_CODEUNIT *first_instr;  // XXX
     _Py_CODEUNIT *next_instr;  // XXX
@@ -1691,7 +1687,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
 #define SET_LOCALS_FROM_FRAME() \
     { \
         PyCodeObject *co = cframe.current_frame->f_code; \
-        names = co->co_names; \
+        cframe.names = co->co_names; \
         consts = co->co_consts; \
         first_instr = _PyCode_CODE(co); \
     } \
@@ -2776,7 +2772,7 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_NAME) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *v = POP();
             PyObject *ns = LOCALS();
             int err;
@@ -2797,7 +2793,7 @@ handle_eval_breaker:
         }
 
         TARGET(DELETE_NAME) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *ns = LOCALS();
             int err;
             if (ns == NULL) {
@@ -2902,7 +2898,7 @@ handle_eval_breaker:
 
         TARGET(STORE_ATTR) {
             PREDICTED(STORE_ATTR);
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *owner = TOP();
             PyObject *v = SECOND();
             int err;
@@ -2918,7 +2914,7 @@ handle_eval_breaker:
         }
 
         TARGET(DELETE_ATTR) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *owner = POP();
             int err;
             err = PyObject_SetAttr(owner, name, (PyObject *)NULL);
@@ -2929,7 +2925,7 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_GLOBAL) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *v = POP();
             int err;
             err = PyDict_SetItem(GLOBALS(), name, v);
@@ -2940,7 +2936,7 @@ handle_eval_breaker:
         }
 
         TARGET(DELETE_GLOBAL) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             int err;
             err = PyDict_DelItem(GLOBALS(), name);
             if (err != 0) {
@@ -2954,7 +2950,7 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_NAME) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *locals = LOCALS();
             PyObject *v;
             if (locals == NULL) {
@@ -3021,7 +3017,7 @@ handle_eval_breaker:
             PREDICTED(LOAD_GLOBAL);
             int push_null = cframe.oparg & 1;
             PEEK(0) = NULL;
-            PyObject *name = GETITEM(names, cframe.oparg>>1);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg>>1);
             PyObject *v;
             if (PyDict_CheckExact(GLOBALS())
                 && PyDict_CheckExact(BUILTINS()))
@@ -3074,7 +3070,7 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
-                PyObject *name = GETITEM(names, cframe.oparg>>1);
+                PyObject *name = GETITEM(cframe.names, cframe.oparg>>1);
                 next_instr--;
                 if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name) < 0) {
                     goto error;
@@ -3482,7 +3478,7 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR) {
             PREDICTED(LOAD_ATTR);
-            PyObject *name = GETITEM(names, cframe.oparg >> 1);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg >> 1);
             PyObject *owner = TOP();
             if (cframe.oparg & 1) {
                 /* Designed to work in tandem with CALL. */
@@ -3534,7 +3530,7 @@ handle_eval_breaker:
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, cframe.oparg>>1);
+                PyObject *name = GETITEM(cframe.names, cframe.oparg>>1);
                 next_instr--;
                 if (_Py_Specialize_LoadAttr(owner, next_instr, name) < 0) {
                     goto error;
@@ -3613,7 +3609,7 @@ handle_eval_breaker:
             PyDictObject *dict = (PyDictObject *)_PyDictOrValues_GetDict(dorv);
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, cframe.oparg>>1);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg>>1);
             uint16_t hint = cache->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             if (DK_IS_UNICODE(dict->ma_keys)) {
@@ -3737,7 +3733,7 @@ handle_eval_breaker:
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), CALL);
             STAT_INC(LOAD_ATTR, hit);
 
-            PyObject *name = GETITEM(names, cframe.oparg >> 1);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg >> 1);
             Py_INCREF(f);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f);
             SET_TOP(NULL);
@@ -3763,7 +3759,7 @@ handle_eval_breaker:
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 PyObject *owner = TOP();
-                PyObject *name = GETITEM(names, cframe.oparg);
+                PyObject *name = GETITEM(cframe.names, cframe.oparg);
                 next_instr--;
                 if (_Py_Specialize_StoreAttr(owner, next_instr, name) < 0) {
                     goto error;
@@ -3820,7 +3816,7 @@ handle_eval_breaker:
             PyDictObject *dict = (PyDictObject *)_PyDictOrValues_GetDict(dorv);
             DEOPT_IF(dict == NULL, STORE_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             uint16_t hint = cache->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, STORE_ATTR);
             PyObject *value, *old_value;
@@ -4121,7 +4117,7 @@ handle_eval_breaker:
         }
 
         TARGET(IMPORT_NAME) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *fromlist = POP();
             PyObject *level = TOP();
             PyObject *res;
@@ -4158,7 +4154,7 @@ handle_eval_breaker:
         }
 
         TARGET(IMPORT_FROM) {
-            PyObject *name = GETITEM(names, cframe.oparg);
+            PyObject *name = GETITEM(cframe.names, cframe.oparg);
             PyObject *from = TOP();
             PyObject *res;
             res = import_from(tstate, from, name);
