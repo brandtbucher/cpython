@@ -58,6 +58,7 @@ typedef struct _PyCFrame {
     PyObject *names;
     PyObject *consts;
     _Py_CODEUNIT *first_instr;
+    _Py_CODEUNIT *next_instr;
     struct _PyCFrame *previous;
 } _PyCFrame;
 
