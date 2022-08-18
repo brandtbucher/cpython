@@ -1782,6 +1782,7 @@ handle_eval_breaker:
         TARGET(RESUME_QUICK) {
             PREDICTED(RESUME_QUICK);
             assert(tstate->cframe == &cframe);
+            assert(el.frame == cframe.current_frame);
             if (_Py_atomic_load_relaxed_int32(eval_breaker) && el.oparg < 2) {
                 goto handle_eval_breaker;
             }
@@ -2297,7 +2298,7 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             el.frame->prev_instr = el.next_instr - 1;
             new_frame->previous = el.frame;
-            cframe.current_frame = el.frame = new_frame;
+            el.frame = cframe.current_frame = new_frame;
             CALL_STAT_INC(inlined_py_calls);
             goto start_frame;
         }
@@ -2465,7 +2466,7 @@ handle_eval_breaker:
             DTRACE_FUNCTION_EXIT();
             _Py_LeaveRecursiveCallTstate(tstate);
             if (!el.frame->is_entry) {
-                cframe.current_frame = el.frame = pop_frame(tstate, el.frame);
+                el.frame = cframe.current_frame = pop_frame(tstate, el.frame);
                 _PyFrame_StackPush(el.frame, retval);
                 goto resume_frame;
             }
@@ -3721,7 +3722,7 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
             el.frame->prev_instr = el.next_instr - 1;
             new_frame->previous = el.frame;
-            cframe.current_frame = el.frame = new_frame;
+            el.frame = cframe.current_frame = new_frame;
             CALL_STAT_INC(inlined_py_calls);
             goto start_frame;
         }
@@ -3759,7 +3760,7 @@ handle_eval_breaker:
             JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
             el.frame->prev_instr = el.next_instr - 1;
             new_frame->previous = el.frame;
-            cframe.current_frame = el.frame = new_frame;
+            el.frame = cframe.current_frame = new_frame;
             CALL_STAT_INC(inlined_py_calls);
             goto start_frame;
         }
@@ -5526,7 +5527,7 @@ handle_eval_breaker:
             if (!el.frame->is_entry) {
                 _PyInterpreterFrame *prev = el.frame->previous;
                 _PyThreadState_PopFrame(tstate, el.frame);
-                cframe.current_frame = el.frame = prev;
+                el.frame = cframe.current_frame = prev;
                 _PyFrame_StackPush(el.frame, (PyObject *)gen);
                 goto resume_frame;
             }
@@ -5681,7 +5682,7 @@ handle_eval_breaker:
             el.opcode = _PyOpcode_Deopt[_Py_OPCODE(*el.next_instr)];
             PRE_DISPATCH_GOTO();
             // CPython hasn't traced the following instruction historically
-            // (DO_TRACING would clobber our extended el.oparg anyways), so just
+            // (DO_TRACING would clobber our extended oparg anyways), so just
             // skip our usual cframe.use_tracing check before dispatch. Also,
             // make sure the next instruction isn't a RESUME, since that needs
             // to trace properly (and shouldn't have an extended arg anyways):
