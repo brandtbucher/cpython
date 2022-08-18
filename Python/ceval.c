@@ -1678,7 +1678,6 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
         goto resume_with_error;
     }
 
-    PyObject *consts;  // XXX
     _Py_CODEUNIT *first_instr;  // XXX
     _Py_CODEUNIT *next_instr;  // XXX
     PyObject **stack_pointer;  // XXX
@@ -1688,7 +1687,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     { \
         PyCodeObject *co = cframe.current_frame->f_code; \
         cframe.names = co->co_names; \
-        consts = co->co_consts; \
+        cframe.consts = co->co_consts; \
         first_instr = _PyCode_CODE(co); \
     } \
     assert(_PyInterpreterFrame_LASTI(cframe.current_frame) >= -1); \
@@ -1809,7 +1808,7 @@ handle_eval_breaker:
 
         TARGET(LOAD_CONST) {
             PREDICTED(LOAD_CONST);
-            PyObject *value = GETITEM(consts, cframe.oparg);
+            PyObject *value = GETITEM(cframe.consts, cframe.oparg);
             Py_INCREF(value);
             PUSH(value);
             DISPATCH();
@@ -1842,7 +1841,7 @@ handle_eval_breaker:
             next_instr++;
             Py_INCREF(value);
             PUSH(value);
-            value = GETITEM(consts, cframe.oparg);
+            value = GETITEM(cframe.consts, cframe.oparg);
             Py_INCREF(value);
             PUSH(value);
             NOTRACE_DISPATCH();
@@ -1871,7 +1870,7 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_CONST__LOAD_FAST) {
-            PyObject *value = GETITEM(consts, cframe.oparg);
+            PyObject *value = GETITEM(cframe.consts, cframe.oparg);
             NEXTOPARG();
             next_instr++;
             Py_INCREF(value);
@@ -4818,8 +4817,8 @@ handle_eval_breaker:
 
         TARGET(KW_NAMES) {
             assert(call_shape.kwnames == NULL);
-            assert(cframe.oparg < PyTuple_GET_SIZE(consts));
-            call_shape.kwnames = GETITEM(consts, cframe.oparg);
+            assert(cframe.oparg < PyTuple_GET_SIZE(cframe.consts));
+            call_shape.kwnames = GETITEM(cframe.consts, cframe.oparg);
             DISPATCH();
         }
 

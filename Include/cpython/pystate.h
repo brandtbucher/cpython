@@ -56,6 +56,7 @@ typedef struct _PyCFrame {
     /* Local "register" variables.
      * These are cached values from the frame and code object.  */
     PyObject *names;
+    PyObject *consts;
     struct _PyCFrame *previous;
 } _PyCFrame;
 
