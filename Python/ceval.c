@@ -1689,13 +1689,13 @@ typedef enum {
         Py_UNREACHABLE();                              \
     } while (0)                                        \
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_nop(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_fast_check(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETLOCAL(vm->oparg);
@@ -1707,7 +1707,7 @@ opcode_load_fast_check(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_closure(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETLOCAL(vm->oparg);
@@ -1719,7 +1719,7 @@ opcode_load_closure(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETLOCAL(vm->oparg);
@@ -1729,7 +1729,7 @@ opcode_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_const(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETITEM(vm->consts, vm->oparg);
@@ -1738,7 +1738,7 @@ opcode_load_const(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -1746,7 +1746,7 @@ opcode_store_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_fast_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETLOCAL(vm->oparg);
@@ -1762,7 +1762,7 @@ opcode_load_fast_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     return result_notrace_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_fast_load_const(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETLOCAL(vm->oparg);
@@ -1777,7 +1777,7 @@ opcode_load_fast_load_const(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     return result_notrace_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_fast_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -1791,7 +1791,7 @@ opcode_store_fast_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     return result_notrace_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_fast_store_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -1803,7 +1803,7 @@ opcode_store_fast_store_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state 
     return result_notrace_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_const_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = GETITEM(vm->consts, vm->oparg);
@@ -1818,7 +1818,7 @@ opcode_load_const_load_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     return result_notrace_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_top(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -1826,7 +1826,7 @@ opcode_pop_top(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_push_null(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* Use BASIC_PUSH as NULL is not a valid object pointer */
@@ -1834,7 +1834,7 @@ opcode_push_null(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unary_positive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -1846,7 +1846,7 @@ opcode_unary_positive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unary_negative(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -1858,7 +1858,7 @@ opcode_unary_negative(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unary_not(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -1878,7 +1878,7 @@ opcode_unary_not(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_goto_error;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unary_invert(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -1890,7 +1890,7 @@ opcode_unary_invert(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_multiply_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -1913,7 +1913,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_multiply_float(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -1938,7 +1938,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_subtract_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -1961,7 +1961,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_subtract_float(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -1985,7 +1985,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_add_unicode(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2008,7 +2008,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_inplace_add_unicode(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2048,7 +2048,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_add_float(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2073,7 +2073,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_add_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2096,7 +2096,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *sub = POP();
@@ -2111,7 +2111,7 @@ opcode_binary_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *stop = POP();
@@ -2132,7 +2132,7 @@ opcode_binary_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *stop = POP();
@@ -2155,7 +2155,7 @@ opcode_store_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)vm->next_instr;
@@ -2175,7 +2175,7 @@ opcode_binary_subscr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr_list_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2204,7 +2204,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr_tuple_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2233,7 +2233,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr_dict(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2256,7 +2256,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_subscr_getitem(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *sub = TOP();
@@ -2294,7 +2294,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_list_append(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *v = POP();
@@ -2305,7 +2305,7 @@ opcode_list_append(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_set_add(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *v = POP();
@@ -2319,7 +2319,7 @@ opcode_set_add(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *sub = TOP();
@@ -2339,7 +2339,7 @@ opcode_store_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_subscr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)vm->next_instr;
@@ -2359,7 +2359,7 @@ opcode_store_subscr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state 
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_subscr_list_int(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2389,7 +2389,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_subscr_dict(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2410,7 +2410,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *sub = TOP();
@@ -2426,7 +2426,7 @@ opcode_delete_subscr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_print_expr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -2446,7 +2446,7 @@ opcode_print_expr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_raise_varargs(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cause = NULL, *exc = NULL;
@@ -2470,7 +2470,7 @@ opcode_raise_varargs(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_goto_error;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_aiter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     unaryfunc getter = NULL;
@@ -2516,7 +2516,7 @@ opcode_get_aiter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_anext(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     unaryfunc getter = NULL;
@@ -2569,7 +2569,7 @@ opcode_get_anext(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_awaitable(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // PREDICTED(GET_AWAITABLE);  // XXX
@@ -2606,7 +2606,7 @@ opcode_get_awaitable(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_send(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->frame->is_entry);
@@ -2657,7 +2657,7 @@ opcode_send(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_async_gen_wrap(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *v = TOP();
@@ -2671,7 +2671,7 @@ opcode_async_gen_wrap(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_except(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     _PyErr_StackItem *exc_info = tstate->exc_info;
@@ -2681,7 +2681,7 @@ opcode_pop_except(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_reraise(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     if (vm->oparg) {
@@ -2704,7 +2704,7 @@ opcode_reraise(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_goto_exception_unwind;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_prep_reraise_star(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *excs = POP();
@@ -2723,7 +2723,7 @@ opcode_prep_reraise_star(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_end_async_for(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *val = POP();
@@ -2741,7 +2741,7 @@ opcode_end_async_for(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     }
 }
 
- static inline result
+ static Py_ALWAYS_INLINE result
 opcode_load_assertion_error(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = PyExc_AssertionError;
@@ -2750,7 +2750,7 @@ opcode_load_assertion_error(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_build_class(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *bc;
@@ -2779,7 +2779,7 @@ opcode_load_build_class(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2802,7 +2802,7 @@ opcode_store_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2823,7 +2823,7 @@ opcode_delete_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_sequence(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *seq = POP();
@@ -2838,7 +2838,7 @@ opcode_unpack_sequence(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_sequence_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -2856,7 +2856,7 @@ opcode_unpack_sequence_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_sta
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_sequence_two_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *seq = TOP();
@@ -2872,7 +2872,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_sequence_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *seq = TOP();
@@ -2891,7 +2891,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_sequence_list(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *seq = TOP();
@@ -2910,7 +2910,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_unpack_ex(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     int totalargs = 1 + (vm->oparg & 0xFF) + (vm->oparg >> 8);
@@ -2925,7 +2925,7 @@ opcode_unpack_ex(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2943,7 +2943,7 @@ opcode_store_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2956,7 +2956,7 @@ opcode_delete_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2969,7 +2969,7 @@ opcode_store_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -2985,7 +2985,7 @@ opcode_delete_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -3051,7 +3051,7 @@ opcode_load_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     int push_null = vm->oparg & 1;
@@ -3105,7 +3105,7 @@ opcode_load_global(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_global_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3125,7 +3125,7 @@ opcode_load_global_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_global_module(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3150,7 +3150,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_global_builtin(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3179,7 +3179,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *v = GETLOCAL(vm->oparg);
@@ -3190,7 +3190,7 @@ opcode_delete_fast(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_goto_unbound_local_error;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_make_cell(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // "initial" is probably NULL but not if it's an arg (or set
@@ -3204,7 +3204,7 @@ opcode_make_cell(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_delete_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cell = GETLOCAL(vm->oparg);
@@ -3218,7 +3218,7 @@ opcode_delete_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_goto_error;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_classderef(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name, *value, *locals = LOCALS();
@@ -3256,7 +3256,7 @@ opcode_load_classderef(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cell = GETLOCAL(vm->oparg);
@@ -3270,7 +3270,7 @@ opcode_load_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *v = POP();
@@ -3281,7 +3281,7 @@ opcode_store_deref(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_copy_free_vars(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* Copy closure variables to free variables */
@@ -3297,7 +3297,7 @@ opcode_copy_free_vars(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_string(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *str;
@@ -3313,7 +3313,7 @@ opcode_build_string(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *tup = PyTuple_New(vm->oparg);
@@ -3327,7 +3327,7 @@ opcode_build_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_list(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *list =  PyList_New(vm->oparg);
@@ -3341,7 +3341,7 @@ opcode_build_list(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_list_to_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *list = POP();
@@ -3354,7 +3354,7 @@ opcode_list_to_tuple(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_list_extend(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *iterable = POP();
@@ -3377,7 +3377,7 @@ opcode_list_extend(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_set_update(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *iterable = POP();
@@ -3390,7 +3390,7 @@ opcode_set_update(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_set(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *set = PySet_New(NULL);
@@ -3413,7 +3413,7 @@ opcode_build_set(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_map(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *map = _PyDict_FromItems(
@@ -3431,7 +3431,7 @@ opcode_build_map(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_setup_annotations(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     int err;
@@ -3488,7 +3488,7 @@ opcode_setup_annotations(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_const_key_map(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *map;
@@ -3514,7 +3514,7 @@ opcode_build_const_key_map(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_dict_update(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *update = POP();
@@ -3532,7 +3532,7 @@ opcode_dict_update(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_dict_merge(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *update = POP();
@@ -3548,7 +3548,7 @@ opcode_dict_merge(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_map_add(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -3565,7 +3565,7 @@ opcode_map_add(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg >> 1);
@@ -3615,7 +3615,7 @@ opcode_load_attr(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3636,7 +3636,7 @@ opcode_load_attr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_instance_value(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3665,7 +3665,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_module(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3694,7 +3694,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_with_hint(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3737,7 +3737,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_slot(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3763,7 +3763,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_class(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3790,7 +3790,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_property(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3832,7 +3832,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_getattribute_overridden(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3874,7 +3874,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_attr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3895,7 +3895,7 @@ opcode_store_attr_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_attr_instance_value(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3928,7 +3928,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_attr_with_hint(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -3981,7 +3981,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_store_attr_slot(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4005,7 +4005,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_compare_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->oparg <= Py_GE);
@@ -4022,7 +4022,7 @@ opcode_compare_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_compare_op_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4041,7 +4041,7 @@ opcode_compare_op_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_is_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *right = POP();
@@ -4055,7 +4055,7 @@ opcode_is_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_contains_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *right = POP();
@@ -4072,7 +4072,7 @@ opcode_contains_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_check_eg_match(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *match_type = POP();
@@ -4115,7 +4115,7 @@ opcode_check_eg_match(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_check_exc_match(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *right = POP();
@@ -4132,7 +4132,7 @@ opcode_check_exc_match(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_import_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -4148,7 +4148,7 @@ opcode_import_name(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_import_star(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *from = POP(), *locals;
@@ -4173,7 +4173,7 @@ opcode_import_star(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_import_from(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *name = GETITEM(vm->names, vm->oparg);
@@ -4186,14 +4186,14 @@ opcode_import_from(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_jump_forward(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     JUMPBY(vm->oparg);
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_jump_forward_if_false(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // PREDICTED(POP_JUMP_FORWARD_IF_FALSE);  // XXX
@@ -4219,7 +4219,7 @@ opcode_pop_jump_forward_if_false(PyThreadState *tstate, _PyCFrame *cframe, vm_st
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_jump_forward_if_true(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cond = POP();
@@ -4244,7 +4244,7 @@ opcode_pop_jump_forward_if_true(PyThreadState *tstate, _PyCFrame *cframe, vm_sta
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_jump_forward_if_not_none(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -4255,7 +4255,7 @@ opcode_pop_jump_forward_if_not_none(PyThreadState *tstate, _PyCFrame *cframe, vm
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_pop_jump_forward_if_none(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = POP();
@@ -4269,7 +4269,7 @@ opcode_pop_jump_forward_if_none(PyThreadState *tstate, _PyCFrame *cframe, vm_sta
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_jump_if_false_or_pop(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cond = TOP();
@@ -4295,7 +4295,7 @@ opcode_jump_if_false_or_pop(PyThreadState *tstate, _PyCFrame *cframe, vm_state *
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_jump_if_true_or_pop(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *cond = TOP();
@@ -4322,7 +4322,7 @@ opcode_jump_if_true_or_pop(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_jump_backward_no_interrupt(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* This bytecode is used in the `yield from` or `await` loop.
@@ -4334,7 +4334,7 @@ opcode_jump_backward_no_interrupt(PyThreadState *tstate, _PyCFrame *cframe, vm_s
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_len(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // PUSH(len(TOS))
@@ -4350,7 +4350,7 @@ opcode_get_len(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_match_class(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // Pop TOS and TOS1. Set TOS to a tuple of attributes on success, or
@@ -4380,7 +4380,7 @@ opcode_match_class(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_match_mapping(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *subject = TOP();
@@ -4393,7 +4393,7 @@ opcode_match_mapping(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_match_sequence(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *subject = TOP();
@@ -4406,7 +4406,7 @@ opcode_match_sequence(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_match_keys(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     // On successful match, PUSH(values). Otherwise, PUSH(None).
@@ -4420,7 +4420,7 @@ opcode_match_keys(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_iter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* before: [obj]; after [getiter(obj)] */
@@ -4433,7 +4433,7 @@ opcode_get_iter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_get_yield_from_iter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* before: [obj]; after [getiter(obj)] */
@@ -4464,7 +4464,7 @@ opcode_get_yield_from_iter(PyThreadState *tstate, _PyCFrame *cframe, vm_state *v
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_before_async_with(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *mgr = TOP();
@@ -4502,7 +4502,7 @@ opcode_before_async_with(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_before_with(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *mgr = TOP();
@@ -4540,7 +4540,7 @@ opcode_before_with(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_with_except_start(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* At the top of the stack are 4 values:
@@ -4571,7 +4571,7 @@ opcode_with_except_start(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_push_exc_info(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *value = TOP();
@@ -4593,7 +4593,7 @@ opcode_push_exc_info(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_method_with_values(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* Cached method object */
@@ -4623,7 +4623,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_method_with_dict(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* Can be either a managed dict, or a tp_dictoffset offset.*/
@@ -4655,7 +4655,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_method_no_dict(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4678,7 +4678,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_load_attr_method_lazy_dict(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4705,7 +4705,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_kw_names(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->call_shape.kwnames == NULL);
@@ -4714,7 +4714,7 @@ opcode_kw_names(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_call_py_with_defaults(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->call_shape.kwnames == NULL);
@@ -4758,7 +4758,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_call_no_kw_type_1(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->call_shape.kwnames == NULL);
@@ -4780,7 +4780,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_call_no_kw_len(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4814,7 +4814,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_call_no_kw_isinstance(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4851,7 +4851,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_call_no_kw_list_append(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -4878,7 +4878,7 @@ miss:  // XXX
     return result_goto_miss;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_make_function(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *codeobj = POP();
@@ -4911,7 +4911,7 @@ opcode_make_function(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_build_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *start, *stop, *step, *slice;
@@ -4931,7 +4931,7 @@ opcode_build_slice(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_format_value(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     /* Handles f-string value formatting. */
@@ -4993,7 +4993,7 @@ opcode_format_value(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_copy(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->oparg != 0);
@@ -5003,7 +5003,7 @@ opcode_copy(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     PyObject *rhs = POP();
@@ -5022,7 +5022,7 @@ opcode_binary_op(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_binary_op_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(cframe->use_tracing == 0);
@@ -5041,7 +5041,7 @@ opcode_binary_op_adaptive(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm
     }
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_swap(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->oparg != 0);
@@ -5051,7 +5051,7 @@ opcode_swap(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
     return result_dispatch;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_extended_arg_quick(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     assert(vm->oparg);
@@ -5060,7 +5060,7 @@ opcode_extended_arg_quick(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm
     return result_notrace_dispatch_same_oparg;
 }
 
-static inline result
+static Py_ALWAYS_INLINE result
 opcode_cache(PyThreadState *tstate, _PyCFrame *cframe, vm_state *vm)
 {
     Py_UNREACHABLE();
