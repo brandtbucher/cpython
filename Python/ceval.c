@@ -679,10 +679,10 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 #endif
 
 #if USE_COMPUTED_GOTOS
-#define TARGET(op) TARGET_##op: INSTRUCTION_START(op);
+#define TARGET(op) TARGET_##op:
 #define DISPATCH_GOTO() goto *opcode_targets[opcode]
 #else
-#define TARGET(op) case op: INSTRUCTION_START(op);
+#define TARGET(op) case op:
 #define DISPATCH_GOTO() goto dispatch_opcode
 #endif
 
@@ -990,6 +990,111 @@ typedef struct {
 #define KWNAMES_LEN() \
     (call_shape.kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(call_shape.kwnames)))
 
+// uops go here! ///////////////////////////////////////////////////////////////
+
+#define UOP_CHECK_EVAL_BREAKER() uop_check_eval_breaker()
+#define UOP_CHECK_TRACING() uop_check_tracing(cframe, &opcode)
+#define UOP_DISPATCH() uop_dispatch()
+#define UOP_EXTEND_OPARG() uop_extend_oparg(&oparg, next_instr)
+#define UOP_INCREF() uop_incref(stack_pointer)
+#define UOP_JUMP(BY) uop_jump(&next_instr, (BY))
+#define UOP_LLTRACE() uop_lltrace()
+#define UOP_LOAD_CONST(I) uop_load_const(stack_pointer, consts, (I))
+#define UOP_NEXT_OPARG() uop_next_oparg(next_instr, &oparg)
+#define UOP_NEXT_OPCODE() uop_next_opcode(next_instr, &opcode)
+#define UOP_STACK_GROW() uop_stack_grow(&stack_pointer)
+#define UOP_UNREACHABLE() uop_unreachable()
+#define UOP_UPDATE_STATS() uop_update_stats()
+#define UOP_WARMUP() uop_warmup(frame)
+#define UOP_WRITE_PREV_INSTR() uop_write_prev_instr(frame, next_instr)
+
+#define uop_check_eval_breaker() CHECK_EVAL_BREAKER()
+
+static inline Py_ALWAYS_INLINE void
+uop_check_tracing(_PyCFrame cframe, uint8_t *opcode_p)
+{
+    assert(cframe.use_tracing == 0 || cframe.use_tracing == 255);
+    *opcode_p |= cframe.use_tracing OR_DTRACE_LINE;
+}
+
+#define uop_dispatch() DISPATCH_GOTO()
+
+static inline Py_ALWAYS_INLINE void
+uop_extend_oparg(int *oparg_p, _Py_CODEUNIT *next_instr)
+{
+    *oparg_p <<= 8;
+    *oparg_p |= _Py_OPARG(*next_instr);
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_incref(PyObject **stack_pointer)
+{
+    Py_INCREF(stack_pointer[-1]);
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_jump(_Py_CODEUNIT **next_instr_p, int by)
+{
+    *next_instr_p += by;
+}
+
+#define uop_lltrace() PRE_DISPATCH_GOTO()
+
+static inline Py_ALWAYS_INLINE void
+uop_load_const(PyObject **stack_pointer, PyObject *consts, int i)
+{
+    SET_TOP(GETITEM(consts, i));
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_next_oparg(_Py_CODEUNIT *next_instr, int *oparg_p)
+{
+    *oparg_p = _Py_OPARG(*next_instr);
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_next_opcode(_Py_CODEUNIT *next_instr, uint8_t *opcode_p)
+{
+    *opcode_p = _Py_OPCODE(*next_instr);
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_stack_grow(PyObject ***stack_pointer_p)
+{
+    (*stack_pointer_p)++;
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_unreachable()
+{
+    Py_UNREACHABLE();
+}
+
+#ifdef Py_STATS
+#define uop_update_stats() \
+    do { \
+        OPCODE_EXE_INC(op); \
+        if (_py_stats) _py_stats->opcode_stats[lastopcode].pair_count[op]++; \
+        lastopcode = op; \
+    } while (0)
+#else
+#define uop_update_stats()
+#endif
+
+static inline Py_ALWAYS_INLINE void
+uop_warmup(_PyInterpreterFrame *frame)
+{
+    _PyCode_Warmup(frame->f_code);
+}
+
+static inline Py_ALWAYS_INLINE void
+uop_write_prev_instr(_PyInterpreterFrame *frame, _Py_CODEUNIT *next_instr)
+{
+    frame->prev_instr = next_instr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 PyObject* _Py_HOT_FUNCTION
 _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int throwflag)
 {
@@ -1129,190 +1234,336 @@ handle_eval_breaker:
            and that all operation that succeed call DISPATCH() ! */
 
         TARGET(NOP) {
-            DISPATCH();
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(RESUME) {
-            _PyCode_Warmup(frame->f_code);
-            JUMP_TO_INSTRUCTION(RESUME_QUICK);
+        TARGET(RESUME) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            UOP_WARMUP();
+            JUMP_TO_INSTRUCTION(RESUME_QUICK);  // TODO
         }
 
-        TARGET(RESUME_QUICK) {
-            PREDICTED(RESUME_QUICK);
+        TARGET(RESUME_QUICK) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(RESUME_QUICK);  // TODO
             assert(tstate->cframe == &cframe);
             assert(frame == cframe.current_frame);
             if (_Py_atomic_load_relaxed_int32(eval_breaker) && oparg < 2) {
                 goto handle_eval_breaker;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_CLOSURE) {
+        TARGET(LOAD_CLOSURE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* We keep LOAD_CLOSURE so that the bytecode stays more readable. */
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST_CHECK) {
+        TARGET(LOAD_FAST_CHECK) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST) {
+        TARGET(LOAD_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = GETLOCAL(oparg);
             assert(value != NULL);
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_CONST) {
-            PREDICTED(LOAD_CONST);
-            PyObject *value = GETITEM(consts, oparg);
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+        TARGET(LOAD_CONST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(LOAD_CONST);  // TODO
+            UOP_STACK_GROW();
+            UOP_LOAD_CONST(oparg);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST) {
+        TARGET(STORE_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             SETLOCAL(oparg, value);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_FAST) {
+        TARGET(LOAD_FAST__LOAD_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = GETLOCAL(oparg);
             assert(value != NULL);
-            NEXTOPARG();
-            next_instr++;
-            Py_INCREF(value);
-            PUSH(value);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_JUMP(1);
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
             value = GETLOCAL(oparg);
             assert(value != NULL);
-            Py_INCREF(value);
-            PUSH(value);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_CONST) {
+        TARGET(LOAD_FAST__LOAD_CONST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = GETLOCAL(oparg);
             assert(value != NULL);
-            NEXTOPARG();
-            next_instr++;
-            Py_INCREF(value);
-            PUSH(value);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_JUMP(1);
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
             value = GETITEM(consts, oparg);
-            Py_INCREF(value);
-            PUSH(value);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST__LOAD_FAST) {
+        TARGET(STORE_FAST__LOAD_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             SETLOCAL(oparg, value);
-            NEXTOPARG();
-            next_instr++;
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_JUMP(1);
             value = GETLOCAL(oparg);
             assert(value != NULL);
-            Py_INCREF(value);
-            PUSH(value);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST__STORE_FAST) {
+        TARGET(STORE_FAST__STORE_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             SETLOCAL(oparg, value);
-            NEXTOPARG();
-            next_instr++;
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_JUMP(1);
             value = POP();
             SETLOCAL(oparg, value);
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_CONST__LOAD_FAST) {
+        TARGET(LOAD_CONST__LOAD_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = GETITEM(consts, oparg);
-            NEXTOPARG();
-            next_instr++;
-            Py_INCREF(value);
-            PUSH(value);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_JUMP(1);
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
             value = GETLOCAL(oparg);
             assert(value != NULL);
-            Py_INCREF(value);
-            PUSH(value);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_TOP) {
+        TARGET(POP_TOP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             Py_DECREF(value);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(PUSH_NULL) {
+        TARGET(PUSH_NULL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* Use BASIC_PUSH as NULL is not a valid object pointer */
             BASIC_PUSH(NULL);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNARY_POSITIVE) {
+        TARGET(UNARY_POSITIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
             PyObject *res = PyNumber_Positive(value);
             Py_DECREF(value);
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNARY_NEGATIVE) {
+        TARGET(UNARY_NEGATIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
             PyObject *res = PyNumber_Negative(value);
             Py_DECREF(value);
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNARY_NOT) {
+        TARGET(UNARY_NOT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
             int err = PyObject_IsTrue(value);
             Py_DECREF(value);
             if (err == 0) {
                 Py_INCREF(Py_True);
                 SET_TOP(Py_True);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else if (err > 0) {
                 Py_INCREF(Py_False);
                 SET_TOP(Py_False);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             STACK_SHRINK(1);
             goto error;
         }
 
-        TARGET(UNARY_INVERT) {
+        TARGET(UNARY_INVERT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
             PyObject *res = PyNumber_Invert(value);
             Py_DECREF(value);
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_INT) {
+        TARGET(BINARY_OP_MULTIPLY_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1327,11 +1578,17 @@ handle_eval_breaker:
             if (prod == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_FLOAT) {
+        TARGET(BINARY_OP_MULTIPLY_FLOAT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1348,11 +1605,17 @@ handle_eval_breaker:
             if (prod == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_SUBTRACT_INT) {
+        TARGET(BINARY_OP_SUBTRACT_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1367,11 +1630,17 @@ handle_eval_breaker:
             if (sub == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_SUBTRACT_FLOAT) {
+        TARGET(BINARY_OP_SUBTRACT_FLOAT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1387,11 +1656,17 @@ handle_eval_breaker:
             if (sub == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_UNICODE) {
+        TARGET(BINARY_OP_ADD_UNICODE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1406,11 +1681,17 @@ handle_eval_breaker:
             if (TOP() == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_INPLACE_ADD_UNICODE) {
+        TARGET(BINARY_OP_INPLACE_ADD_UNICODE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1442,11 +1723,17 @@ handle_eval_breaker:
                 goto error;
             }
             // The STORE_FAST is already done.
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_FLOAT) {
+        TARGET(BINARY_OP_ADD_FLOAT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1463,11 +1750,17 @@ handle_eval_breaker:
             if (sum == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_INT) {
+        TARGET(BINARY_OP_ADD_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *left = SECOND();
             PyObject *right = TOP();
@@ -1482,12 +1775,18 @@ handle_eval_breaker:
             if (sum == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR) {
-            PREDICTED(BINARY_SUBSCR);
+        TARGET(BINARY_SUBSCR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(BINARY_SUBSCR);  // TODO
             PyObject *sub = POP();
             PyObject *container = TOP();
             PyObject *res = PyObject_GetItem(container, sub);
@@ -1496,11 +1795,18 @@ handle_eval_breaker:
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SLICE) {
+        TARGET(BINARY_SLICE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *stop = POP();
             PyObject *start = POP();
             PyObject *container = TOP();
@@ -1516,10 +1822,17 @@ handle_eval_breaker:
             }
             SET_TOP(res);
             Py_DECREF(container);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_SLICE) {
+        TARGET(STORE_SLICE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *stop = POP();
             PyObject *start = POP();
             PyObject *container = TOP();
@@ -1537,10 +1850,17 @@ handle_eval_breaker:
             STACK_SHRINK(2);
             Py_DECREF(v);
             Py_DECREF(container);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_ADAPTIVE) {
+        TARGET(BINARY_SUBSCR_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 PyObject *sub = TOP();
@@ -1549,16 +1869,22 @@ handle_eval_breaker:
                 if (_Py_Specialize_BinarySubscr(container, sub, next_instr) < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(BINARY_SUBSCR, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(BINARY_SUBSCR);
+                JUMP_TO_INSTRUCTION(BINARY_SUBSCR);  // TODO
             }
         }
 
-        TARGET(BINARY_SUBSCR_LIST_INT) {
+        TARGET(BINARY_SUBSCR_LIST_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *sub = TOP();
             PyObject *list = SECOND();
@@ -1579,11 +1905,17 @@ handle_eval_breaker:
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             SET_TOP(res);
             Py_DECREF(list);
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_TUPLE_INT) {
+        TARGET(BINARY_SUBSCR_TUPLE_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *sub = TOP();
             PyObject *tuple = SECOND();
@@ -1604,11 +1936,17 @@ handle_eval_breaker:
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             SET_TOP(res);
             Py_DECREF(tuple);
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_DICT) {
+        TARGET(BINARY_SUBSCR_DICT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *dict = SECOND();
             DEOPT_IF(!PyDict_CheckExact(SECOND()), BINARY_SUBSCR);
@@ -1623,11 +1961,18 @@ handle_eval_breaker:
             Py_DECREF(sub);
             SET_TOP(res);
             Py_DECREF(dict);
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_GETITEM) {
+        TARGET(BINARY_SUBSCR_GETITEM) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *sub = TOP();
             PyObject *container = SECOND();
             _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
@@ -1653,7 +1998,7 @@ handle_eval_breaker:
                 new_frame->localsplus[i] = NULL;
             }
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
             frame = cframe.current_frame = new_frame;
@@ -1661,16 +2006,26 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(LIST_APPEND) {
+        TARGET(LIST_APPEND) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *v = POP();
             PyObject *list = PEEK(oparg);
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0)
                 goto error;
-            PREDICT(JUMP_BACKWARD_QUICK);
-            DISPATCH();
+            PREDICT(JUMP_BACKWARD_QUICK);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(SET_ADD) {
+        TARGET(SET_ADD) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *v = POP();
             PyObject *set = PEEK(oparg);
             int err;
@@ -1678,12 +2033,19 @@ handle_eval_breaker:
             Py_DECREF(v);
             if (err != 0)
                 goto error;
-            PREDICT(JUMP_BACKWARD_QUICK);
-            DISPATCH();
+            PREDICT(JUMP_BACKWARD_QUICK);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR) {
-            PREDICTED(STORE_SUBSCR);
+        TARGET(STORE_SUBSCR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(STORE_SUBSCR);  // TODO
             PyObject *sub = TOP();
             PyObject *container = SECOND();
             PyObject *v = THIRD();
@@ -1697,11 +2059,18 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_ADAPTIVE) {
+        TARGET(STORE_SUBSCR_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 PyObject *sub = TOP();
@@ -1710,16 +2079,22 @@ handle_eval_breaker:
                 if (_Py_Specialize_StoreSubscr(container, sub, next_instr) < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(STORE_SUBSCR, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(STORE_SUBSCR);
+                JUMP_TO_INSTRUCTION(STORE_SUBSCR);  // TODO
             }
         }
 
-        TARGET(STORE_SUBSCR_LIST_INT) {
+        TARGET(STORE_SUBSCR_LIST_INT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *sub = TOP();
             PyObject *list = SECOND();
@@ -1741,11 +2116,17 @@ handle_eval_breaker:
             Py_DECREF(old_value);
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_DICT) {
+        TARGET(STORE_SUBSCR_DICT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *sub = TOP();
             PyObject *dict = SECOND();
@@ -1758,11 +2139,18 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_SUBSCR) {
+        TARGET(DELETE_SUBSCR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *sub = TOP();
             PyObject *container = SECOND();
             int err;
@@ -1773,10 +2161,17 @@ handle_eval_breaker:
             Py_DECREF(sub);
             if (err != 0)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(PRINT_EXPR) {
+        TARGET(PRINT_EXPR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             PyObject *hook = _PySys_GetAttr(tstate, &_Py_ID(displayhook));
             PyObject *res;
@@ -1791,10 +2186,17 @@ handle_eval_breaker:
             if (res == NULL)
                 goto error;
             Py_DECREF(res);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(RAISE_VARARGS) {
+        TARGET(RAISE_VARARGS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cause = NULL, *exc = NULL;
             switch (oparg) {
             case 2:
@@ -1816,7 +2218,10 @@ handle_eval_breaker:
             goto error;
         }
 
-        TARGET(RETURN_VALUE) {
+        TARGET(RETURN_VALUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *retval = POP();
             assert(EMPTY());
             _PyFrame_SetStackPointer(frame, stack_pointer);
@@ -1836,7 +2241,10 @@ handle_eval_breaker:
             return retval;
         }
 
-        TARGET(GET_AITER) {
+        TARGET(GET_AITER) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             unaryfunc getter = NULL;
             PyObject *iter = NULL;
             PyObject *obj = TOP();
@@ -1877,10 +2285,17 @@ handle_eval_breaker:
             }
 
             SET_TOP(iter);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(GET_ANEXT) {
+        TARGET(GET_ANEXT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             unaryfunc getter = NULL;
             PyObject *next_iter = NULL;
             PyObject *awaitable = NULL;
@@ -1926,13 +2341,21 @@ handle_eval_breaker:
                 }
             }
 
-            PUSH(awaitable);
-            PREDICT(LOAD_CONST);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(awaitable);
+            PREDICT(LOAD_CONST);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(GET_AWAITABLE) {
-            PREDICTED(GET_AWAITABLE);
+        TARGET(GET_AWAITABLE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(GET_AWAITABLE);  // TODO
             PyObject *iterable = TOP();
             PyObject *iter = _PyCoro_GetAwaitableIter(iterable);
 
@@ -1962,11 +2385,18 @@ handle_eval_breaker:
                 goto error;
             }
 
-            PREDICT(LOAD_CONST);
-            DISPATCH();
+            PREDICT(LOAD_CONST);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(SEND) {
+        TARGET(SEND) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(frame->is_entry);
             assert(STACK_LEVEL() >= 2);
             PyObject *v = POP();
@@ -2006,16 +2436,28 @@ handle_eval_breaker:
                 assert(retval != NULL);
                 Py_DECREF(receiver);
                 SET_TOP(retval);
-                JUMPBY(oparg);
-                DISPATCH();
+                UOP_JUMP(oparg);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             assert(gen_status == PYGEN_NEXT);
             assert(retval != NULL);
-            PUSH(retval);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(retval);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(ASYNC_GEN_WRAP) {
+        TARGET(ASYNC_GEN_WRAP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *v = TOP();
             assert(frame->f_code->co_flags & CO_ASYNC_GENERATOR);
             PyObject *w = _PyAsyncGenValueWrapperNew(v);
@@ -2024,10 +2466,17 @@ handle_eval_breaker:
             }
             SET_TOP(w);
             Py_DECREF(v);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(YIELD_VALUE) {
+        TARGET(YIELD_VALUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             // NOTE: It's important that YIELD_VALUE never raises an exception!
             // The compiler treats any exception raised here as a failed close()
             // or throw() call.
@@ -2047,15 +2496,25 @@ handle_eval_breaker:
             return retval;
         }
 
-        TARGET(POP_EXCEPT) {
+        TARGET(POP_EXCEPT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             _PyErr_StackItem *exc_info = tstate->exc_info;
             PyObject *value = exc_info->exc_value;
             exc_info->exc_value = POP();
             Py_XDECREF(value);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(RERAISE) {
+        TARGET(RERAISE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             if (oparg) {
                 PyObject *lasti = PEEK(oparg + 1);
                 if (PyLong_Check(lasti)) {
@@ -2076,7 +2535,10 @@ handle_eval_breaker:
             goto exception_unwind;
         }
 
-        TARGET(PREP_RERAISE_STAR) {
+        TARGET(PREP_RERAISE_STAR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *excs = POP();
             assert(PyList_Check(excs));
             PyObject *orig = POP();
@@ -2089,17 +2551,29 @@ handle_eval_breaker:
                 goto error;
             }
 
-            PUSH(val);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(val);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(END_ASYNC_FOR) {
+        TARGET(END_ASYNC_FOR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *val = POP();
             assert(val && PyExceptionInstance_Check(val));
             if (PyErr_GivenExceptionMatches(val, PyExc_StopAsyncIteration)) {
                 Py_DECREF(val);
                 Py_DECREF(POP());
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 PyObject *exc = Py_NewRef(PyExceptionInstance_Class(val));
@@ -2109,7 +2583,10 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(CLEANUP_THROW) {
+        TARGET(CLEANUP_THROW) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(throwflag);
             PyObject *exc_value = TOP();
             assert(exc_value && PyExceptionInstance_Check(exc_value));
@@ -2119,8 +2596,13 @@ handle_eval_breaker:
                 Py_DECREF(POP());  // The StopIteration.
                 Py_DECREF(POP());  // The last sent value.
                 Py_DECREF(POP());  // The delegated sub-iterator.
-                PUSH(value);
-                DISPATCH();
+                UOP_STACK_GROW();
+            SET_TOP(value);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             Py_INCREF(exc_value);
             PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
@@ -2129,14 +2611,25 @@ handle_eval_breaker:
             goto exception_unwind;
         }
 
-        TARGET(LOAD_ASSERTION_ERROR) {
+        TARGET(LOAD_ASSERTION_ERROR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = PyExc_AssertionError;
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_BUILD_CLASS) {
+        TARGET(LOAD_BUILD_CLASS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *bc;
             if (PyDict_CheckExact(BUILTINS())) {
                 bc = _PyDict_GetItemWithError(BUILTINS(),
@@ -2159,11 +2652,19 @@ handle_eval_breaker:
                     goto error;
                 }
             }
-            PUSH(bc);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(bc);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_NAME) {
+        TARGET(STORE_NAME) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *v = POP();
             PyObject *ns = LOCALS();
@@ -2181,10 +2682,17 @@ handle_eval_breaker:
             Py_DECREF(v);
             if (err != 0)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_NAME) {
+        TARGET(DELETE_NAME) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *ns = LOCALS();
             int err;
@@ -2200,11 +2708,18 @@ handle_eval_breaker:
                                      name);
                 goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE) {
-            PREDICTED(UNPACK_SEQUENCE);
+        TARGET(UNPACK_SEQUENCE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(UNPACK_SEQUENCE);  // TODO
             PyObject *seq = POP();
             PyObject **top = stack_pointer + oparg;
             if (!unpack_iterable(tstate, seq, oparg, -1, top)) {
@@ -2213,39 +2728,59 @@ handle_eval_breaker:
             }
             STACK_GROW(oparg);
             Py_DECREF(seq);
-            JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_ADAPTIVE) {
+        TARGET(UNPACK_SEQUENCE_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyUnpackSequenceCache *cache = (_PyUnpackSequenceCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 PyObject *seq = TOP();
                 next_instr--;
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(UNPACK_SEQUENCE, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(UNPACK_SEQUENCE);
+                JUMP_TO_INSTRUCTION(UNPACK_SEQUENCE);  // TODO
             }
         }
 
-        TARGET(UNPACK_SEQUENCE_TWO_TUPLE) {
+        TARGET(UNPACK_SEQUENCE_TWO_TUPLE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *seq = TOP();
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyTuple_GET_SIZE(seq) != 2, UNPACK_SEQUENCE);
             STAT_INC(UNPACK_SEQUENCE, hit);
             SET_TOP(Py_NewRef(PyTuple_GET_ITEM(seq, 1)));
-            PUSH(Py_NewRef(PyTuple_GET_ITEM(seq, 0)));
+            UOP_STACK_GROW();
+            SET_TOP(Py_NewRef(PyTuple_GET_ITEM(seq, 0)));
             Py_DECREF(seq);
-            JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_TUPLE) {
+        TARGET(UNPACK_SEQUENCE_TUPLE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *seq = TOP();
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyTuple_GET_SIZE(seq) != oparg, UNPACK_SEQUENCE);
@@ -2253,14 +2788,21 @@ handle_eval_breaker:
             STACK_SHRINK(1);
             PyObject **items = _PyTuple_ITEMS(seq);
             while (oparg--) {
-                PUSH(Py_NewRef(items[oparg]));
+                UOP_STACK_GROW();
+            SET_TOP(Py_NewRef(items[oparg]));
             }
             Py_DECREF(seq);
-            JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_LIST) {
+        TARGET(UNPACK_SEQUENCE_LIST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *seq = TOP();
             DEOPT_IF(!PyList_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyList_GET_SIZE(seq) != oparg, UNPACK_SEQUENCE);
@@ -2268,14 +2810,21 @@ handle_eval_breaker:
             STACK_SHRINK(1);
             PyObject **items = _PyList_ITEMS(seq);
             while (oparg--) {
-                PUSH(Py_NewRef(items[oparg]));
+                UOP_STACK_GROW();
+            SET_TOP(Py_NewRef(items[oparg]));
             }
             Py_DECREF(seq);
-            JUMPBY(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_EX) {
+        TARGET(UNPACK_EX) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             int totalargs = 1 + (oparg & 0xFF) + (oparg >> 8);
             PyObject *seq = POP();
             PyObject **top = stack_pointer + totalargs;
@@ -2285,11 +2834,18 @@ handle_eval_breaker:
             }
             STACK_GROW(totalargs);
             Py_DECREF(seq);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR) {
-            PREDICTED(STORE_ATTR);
+        TARGET(STORE_ATTR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(STORE_ATTR);  // TODO
             PyObject *name = GETITEM(names, oparg);
             PyObject *owner = TOP();
             PyObject *v = SECOND();
@@ -2301,11 +2857,18 @@ handle_eval_breaker:
             if (err != 0) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_ATTR) {
+        TARGET(DELETE_ATTR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *owner = POP();
             int err;
@@ -2313,10 +2876,17 @@ handle_eval_breaker:
             Py_DECREF(owner);
             if (err != 0)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_GLOBAL) {
+        TARGET(STORE_GLOBAL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *v = POP();
             int err;
@@ -2324,10 +2894,17 @@ handle_eval_breaker:
             Py_DECREF(v);
             if (err != 0)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_GLOBAL) {
+        TARGET(DELETE_GLOBAL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             int err;
             err = PyDict_DelItem(GLOBALS(), name);
@@ -2338,10 +2915,17 @@ handle_eval_breaker:
                 }
                 goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_NAME) {
+        TARGET(LOAD_NAME) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *locals = LOCALS();
             PyObject *v;
@@ -2401,12 +2985,20 @@ handle_eval_breaker:
                     }
                 }
             }
-            PUSH(v);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(v);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL) {
-            PREDICTED(LOAD_GLOBAL);
+        TARGET(LOAD_GLOBAL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(LOAD_GLOBAL);  // TODO
             int push_null = oparg & 1;
             PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
@@ -2452,13 +3044,21 @@ handle_eval_breaker:
                 }
             }
             /* Skip over inline cache */
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             STACK_GROW(push_null);
-            PUSH(v);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(v);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL_ADAPTIVE) {
+        TARGET(LOAD_GLOBAL_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
@@ -2467,16 +3067,22 @@ handle_eval_breaker:
                 if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name) < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(LOAD_GLOBAL, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(LOAD_GLOBAL);
+                JUMP_TO_INSTRUCTION(LOAD_GLOBAL);  // TODO
             }
         }
 
-        TARGET(LOAD_GLOBAL_MODULE) {
+        TARGET(LOAD_GLOBAL_MODULE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyDict_CheckExact(GLOBALS()), LOAD_GLOBAL);
             PyDictObject *dict = (PyDictObject *)GLOBALS();
@@ -2489,15 +3095,21 @@ handle_eval_breaker:
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
             int push_null = oparg & 1;
             PEEK(0) = NULL;
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             STAT_INC(LOAD_GLOBAL, hit);
             STACK_GROW(push_null+1);
             Py_INCREF(res);
             SET_TOP(res);
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL_BUILTIN) {
+        TARGET(LOAD_GLOBAL_BUILTIN) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyDict_CheckExact(GLOBALS()), LOAD_GLOBAL);
             DEOPT_IF(!PyDict_CheckExact(BUILTINS()), LOAD_GLOBAL);
@@ -2514,24 +3126,37 @@ handle_eval_breaker:
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
             int push_null = oparg & 1;
             PEEK(0) = NULL;
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             STAT_INC(LOAD_GLOBAL, hit);
             STACK_GROW(push_null+1);
             Py_INCREF(res);
             SET_TOP(res);
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_FAST) {
+        TARGET(DELETE_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *v = GETLOCAL(oparg);
             if (v != NULL) {
                 SETLOCAL(oparg, NULL);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             goto unbound_local_error;
         }
 
-        TARGET(MAKE_CELL) {
+        TARGET(MAKE_CELL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             // "initial" is probably NULL but not if it's an arg (or set
             // via PyFrame_LocalsToFast() before MAKE_CELL has run).
             PyObject *initial = GETLOCAL(oparg);
@@ -2540,22 +3165,36 @@ handle_eval_breaker:
                 goto resume_with_error;
             }
             SETLOCAL(oparg, cell);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DELETE_DEREF) {
+        TARGET(DELETE_DEREF) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cell = GETLOCAL(oparg);
             PyObject *oldobj = PyCell_GET(cell);
             if (oldobj != NULL) {
                 PyCell_SET(cell, NULL);
                 Py_DECREF(oldobj);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             format_exc_unbound(tstate, frame->f_code, oparg);
             goto error;
         }
 
-        TARGET(LOAD_CLASSDEREF) {
+        TARGET(LOAD_CLASSDEREF) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name, *value, *locals = LOCALS();
             assert(locals);
             assert(oparg >= 0 && oparg < frame->f_code->co_nlocalsplus);
@@ -2587,32 +3226,55 @@ handle_eval_breaker:
                 }
                 Py_INCREF(value);
             }
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_DEREF) {
+        TARGET(LOAD_DEREF) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cell = GETLOCAL(oparg);
             PyObject *value = PyCell_GET(cell);
             if (value == NULL) {
                 format_exc_unbound(tstate, frame->f_code, oparg);
                 goto error;
             }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_DEREF) {
+        TARGET(STORE_DEREF) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *v = POP();
             PyObject *cell = GETLOCAL(oparg);
             PyObject *oldobj = PyCell_GET(cell);
             PyCell_SET(cell, v);
             Py_XDECREF(oldobj);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(COPY_FREE_VARS) {
+        TARGET(COPY_FREE_VARS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* Copy closure variables to free variables */
             PyCodeObject *co = frame->f_code;
             PyObject *closure = frame->f_func->func_closure;
@@ -2623,10 +3285,17 @@ handle_eval_breaker:
                 Py_INCREF(o);
                 frame->localsplus[offset + i] = o;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_STRING) {
+        TARGET(BUILD_STRING) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *str;
             str = _PyUnicode_JoinArray(&_Py_STR(empty),
                                        stack_pointer - oparg, oparg);
@@ -2636,11 +3305,19 @@ handle_eval_breaker:
                 PyObject *item = POP();
                 Py_DECREF(item);
             }
-            PUSH(str);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(str);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_TUPLE) {
+        TARGET(BUILD_TUPLE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *tup = PyTuple_New(oparg);
             if (tup == NULL)
                 goto error;
@@ -2648,11 +3325,19 @@ handle_eval_breaker:
                 PyObject *item = POP();
                 PyTuple_SET_ITEM(tup, oparg, item);
             }
-            PUSH(tup);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(tup);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_LIST) {
+        TARGET(BUILD_LIST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *list =  PyList_New(oparg);
             if (list == NULL)
                 goto error;
@@ -2660,22 +3345,38 @@ handle_eval_breaker:
                 PyObject *item = POP();
                 PyList_SET_ITEM(list, oparg, item);
             }
-            PUSH(list);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(list);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LIST_TO_TUPLE) {
+        TARGET(LIST_TO_TUPLE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *list = POP();
             PyObject *tuple = PyList_AsTuple(list);
             Py_DECREF(list);
             if (tuple == NULL) {
                 goto error;
             }
-            PUSH(tuple);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(tuple);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LIST_EXTEND) {
+        TARGET(LIST_EXTEND) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *iterable = POP();
             PyObject *list = PEEK(oparg);
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
@@ -2693,10 +3394,17 @@ handle_eval_breaker:
             }
             Py_DECREF(none_val);
             Py_DECREF(iterable);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(SET_UPDATE) {
+        TARGET(SET_UPDATE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *iterable = POP();
             PyObject *set = PEEK(oparg);
             int err = _PySet_Update(set, iterable);
@@ -2704,10 +3412,17 @@ handle_eval_breaker:
             if (err < 0) {
                 goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_SET) {
+        TARGET(BUILD_SET) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *set = PySet_New(NULL);
             int err = 0;
             int i;
@@ -2724,11 +3439,19 @@ handle_eval_breaker:
                 Py_DECREF(set);
                 goto error;
             }
-            PUSH(set);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(set);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_MAP) {
+        TARGET(BUILD_MAP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *map = _PyDict_FromItems(
                     &PEEK(2*oparg), 2,
                     &PEEK(2*oparg - 1), 2,
@@ -2740,11 +3463,19 @@ handle_eval_breaker:
                 Py_DECREF(POP());
                 Py_DECREF(POP());
             }
-            PUSH(map);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(map);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(SETUP_ANNOTATIONS) {
+        TARGET(SETUP_ANNOTATIONS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             int err;
             PyObject *ann_dict;
             if (LOCALS() == NULL) {
@@ -2796,10 +3527,17 @@ handle_eval_breaker:
                     Py_DECREF(ann_dict);
                 }
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BUILD_CONST_KEY_MAP) {
+        TARGET(BUILD_CONST_KEY_MAP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *map;
             PyObject *keys = TOP();
             if (!PyTuple_CheckExact(keys) ||
@@ -2819,11 +3557,19 @@ handle_eval_breaker:
             while (oparg--) {
                 Py_DECREF(POP());
             }
-            PUSH(map);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(map);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DICT_UPDATE) {
+        TARGET(DICT_UPDATE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *update = POP();
             PyObject *dict = PEEK(oparg);
             if (PyDict_Update(dict, update) < 0) {
@@ -2836,10 +3582,17 @@ handle_eval_breaker:
                 goto error;
             }
             Py_DECREF(update);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(DICT_MERGE) {
+        TARGET(DICT_MERGE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *update = POP();
             PyObject *dict = PEEK(oparg);
 
@@ -2849,11 +3602,18 @@ handle_eval_breaker:
                 goto error;
             }
             Py_DECREF(update);
-            PREDICT(CALL_FUNCTION_EX);
-            DISPATCH();
+            PREDICT(CALL_FUNCTION_EX);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MAP_ADD) {
+        TARGET(MAP_ADD) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
             PyObject *key = SECOND();
             PyObject *map;
@@ -2864,12 +3624,19 @@ handle_eval_breaker:
             if (_PyDict_SetItem_Take2((PyDictObject *)map, key, value) != 0) {
                 goto error;
             }
-            PREDICT(JUMP_BACKWARD_QUICK);
-            DISPATCH();
+            PREDICT(JUMP_BACKWARD_QUICK);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR) {
-            PREDICTED(LOAD_ATTR);
+        TARGET(LOAD_ATTR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(LOAD_ATTR);  // TODO
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *owner = TOP();
             if (oparg & 1) {
@@ -2902,10 +3669,15 @@ handle_eval_breaker:
                     */
                     SET_TOP(NULL);
                     Py_DECREF(owner);
-                    PUSH(meth);
+                    UOP_STACK_GROW();
+            SET_TOP(meth);
                 }
-                JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-                DISPATCH();
+                UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             PyObject *res = PyObject_GetAttr(owner, name);
             if (res == NULL) {
@@ -2913,11 +3685,18 @@ handle_eval_breaker:
             }
             Py_DECREF(owner);
             SET_TOP(res);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_ADAPTIVE) {
+        TARGET(LOAD_ATTR_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
@@ -2927,16 +3706,22 @@ handle_eval_breaker:
                 if (_Py_Specialize_LoadAttr(owner, next_instr, name) < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(LOAD_ATTR, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(LOAD_ATTR);
+                JUMP_TO_INSTRUCTION(LOAD_ATTR);  // TODO
             }
         }
 
-        TARGET(LOAD_ATTR_INSTANCE_VALUE) {
+        TARGET(LOAD_ATTR_INSTANCE_VALUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyObject *res;
@@ -2957,11 +3742,17 @@ handle_eval_breaker:
             STACK_GROW((oparg & 1));
             SET_TOP(res);
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_MODULE) {
+        TARGET(LOAD_ATTR_MODULE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyObject *res;
@@ -2982,11 +3773,17 @@ handle_eval_breaker:
             STACK_GROW((oparg & 1));
             SET_TOP(res);
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_WITH_HINT) {
+        TARGET(LOAD_ATTR_WITH_HINT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyObject *res;
@@ -3021,11 +3818,17 @@ handle_eval_breaker:
             STACK_GROW((oparg & 1));
             SET_TOP(res);
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_SLOT) {
+        TARGET(LOAD_ATTR_SLOT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyObject *res;
@@ -3043,11 +3846,17 @@ handle_eval_breaker:
             STACK_GROW((oparg & 1));
             SET_TOP(res);
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_CLASS) {
+        TARGET(LOAD_ATTR_CLASS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
 
@@ -3066,11 +3875,17 @@ handle_eval_breaker:
             STACK_GROW((oparg & 1));
             SET_TOP(res);
             Py_DECREF(cls);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_PROPERTY) {
+        TARGET(LOAD_ATTR_PROPERTY) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
@@ -3100,7 +3915,7 @@ handle_eval_breaker:
                 new_frame->localsplus[i] = NULL;
             }
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
             frame = cframe.current_frame = new_frame;
@@ -3108,7 +3923,10 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
+        TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
@@ -3138,7 +3956,7 @@ handle_eval_breaker:
                 new_frame->localsplus[i] = NULL;
             }
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
             frame = cframe.current_frame = new_frame;
@@ -3146,7 +3964,10 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(STORE_ATTR_ADAPTIVE) {
+        TARGET(STORE_ATTR_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
@@ -3156,16 +3977,22 @@ handle_eval_breaker:
                 if (_Py_Specialize_StoreAttr(owner, next_instr, name) < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(STORE_ATTR, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(STORE_ATTR);
+                JUMP_TO_INSTRUCTION(STORE_ATTR);  // TODO
             }
         }
 
-        TARGET(STORE_ATTR_INSTANCE_VALUE) {
+        TARGET(STORE_ATTR_INSTANCE_VALUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyTypeObject *tp = Py_TYPE(owner);
@@ -3190,11 +4017,17 @@ handle_eval_breaker:
                 Py_DECREF(old_value);
             }
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR_WITH_HINT) {
+        TARGET(STORE_ATTR_WITH_HINT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyTypeObject *tp = Py_TYPE(owner);
@@ -3239,11 +4072,17 @@ handle_eval_breaker:
             /* PEP 509 */
             dict->ma_version_tag = DICT_NEXT_VERSION();
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR_SLOT) {
+        TARGET(STORE_ATTR_SLOT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *owner = TOP();
             PyTypeObject *tp = Py_TYPE(owner);
@@ -3259,12 +4098,18 @@ handle_eval_breaker:
             *(PyObject **)addr = value;
             Py_XDECREF(old_value);
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_STORE_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP) {
-            PREDICTED(COMPARE_OP);
+        TARGET(COMPARE_OP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(COMPARE_OP);  // TODO
             assert(oparg <= Py_GE);
             PyObject *right = POP();
             PyObject *left = TOP();
@@ -3275,11 +4120,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_ADAPTIVE) {
+        TARGET(COMPARE_OP_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
@@ -3287,16 +4139,22 @@ handle_eval_breaker:
                 PyObject *left = SECOND();
                 next_instr--;
                 _Py_Specialize_CompareOp(left, right, next_instr, oparg);
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(COMPARE_OP, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(COMPARE_OP);
+                JUMP_TO_INSTRUCTION(COMPARE_OP);  // TODO
             }
         }
 
-        TARGET(COMPARE_OP_FLOAT_JUMP) {
+        TARGET(COMPARE_OP_FLOAT_JUMP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             // Combined: COMPARE_OP (float ? float) + POP_JUMP_(direction)_IF_(true/false)
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
@@ -3311,8 +4169,9 @@ handle_eval_breaker:
             DEOPT_IF(isnan(dleft), COMPARE_OP);
             DEOPT_IF(isnan(dright), COMPARE_OP);
             STAT_INC(COMPARE_OP, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
-            NEXTOPARG();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
             STACK_SHRINK(2);
             _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
             _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
@@ -3322,23 +4181,29 @@ handle_eval_breaker:
                    opcode == POP_JUMP_BACKWARD_IF_TRUE);
             int jump = (9 << (sign + 1)) & when_to_jump_mask;
             if (!jump) {
-                next_instr++;
+                UOP_JUMP(1);
             }
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                JUMPBY(1 - oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(1 - oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                JUMPBY(1 + oparg);
+                UOP_JUMP(1 + oparg);
             }
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_INT_JUMP) {
+        TARGET(COMPARE_OP_INT_JUMP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             // Combined: COMPARE_OP (int ? int) + POP_JUMP_(direction)_IF_(true/false)
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
@@ -3354,8 +4219,9 @@ handle_eval_breaker:
             Py_ssize_t ileft = Py_SIZE(left) * ((PyLongObject *)left)->ob_digit[0];
             Py_ssize_t iright = Py_SIZE(right) * ((PyLongObject *)right)->ob_digit[0];
             int sign = (ileft > iright) - (ileft < iright);
-            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
-            NEXTOPARG();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
             STACK_SHRINK(2);
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
@@ -3365,23 +4231,29 @@ handle_eval_breaker:
                    opcode == POP_JUMP_BACKWARD_IF_TRUE);
             int jump = (9 << (sign + 1)) & when_to_jump_mask;
             if (!jump) {
-                next_instr++;
+                UOP_JUMP(1);
             }
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                JUMPBY(1 - oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(1 - oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                JUMPBY(1 + oparg);
+                UOP_JUMP(1 + oparg);
             }
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_STR_JUMP) {
+        TARGET(COMPARE_OP_STR_JUMP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             // Combined: COMPARE_OP (str == str or str != str) + POP_JUMP_(direction)_IF_(true/false)
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
@@ -3396,8 +4268,9 @@ handle_eval_breaker:
                 goto error;
             }
             assert(oparg == Py_EQ || oparg == Py_NE);
-            JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
-            NEXTOPARG();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
             assert(opcode == POP_JUMP_FORWARD_IF_FALSE ||
                    opcode == POP_JUMP_BACKWARD_IF_FALSE ||
                    opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -3409,23 +4282,29 @@ handle_eval_breaker:
             int sign = 1 - res;
             int jump = (9 << (sign + 1)) & when_to_jump_mask;
             if (!jump) {
-                next_instr++;
+                UOP_JUMP(1);
             }
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                JUMPBY(1 - oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(1 - oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                JUMPBY(1 + oparg);
+                UOP_JUMP(1 + oparg);
             }
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(IS_OP) {
+        TARGET(IS_OP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *right = POP();
             PyObject *left = TOP();
             int res = Py_Is(left, right) ^ oparg;
@@ -3434,10 +4313,17 @@ handle_eval_breaker:
             SET_TOP(b);
             Py_DECREF(left);
             Py_DECREF(right);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CONTAINS_OP) {
+        TARGET(CONTAINS_OP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *right = POP();
             PyObject *left = POP();
             int res = PySequence_Contains(right, left);
@@ -3447,12 +4333,20 @@ handle_eval_breaker:
                 goto error;
             }
             PyObject *b = (res^oparg) ? Py_True : Py_False;
-            Py_INCREF(b);
-            PUSH(b);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(b);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CHECK_EG_MATCH) {
+        TARGET(CHECK_EG_MATCH) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *match_type = POP();
             if (check_except_star_type_valid(tstate, match_type) < 0) {
                 Py_DECREF(match_type);
@@ -3474,7 +4368,8 @@ handle_eval_breaker:
                 goto error;
             }
             if (Py_IsNone(match)) {
-                PUSH(match);
+                UOP_STACK_GROW();
+                SET_TOP(match);
                 Py_XDECREF(rest);
             }
             else {
@@ -3486,14 +4381,22 @@ handle_eval_breaker:
                  */
 
                 SET_TOP(rest);
-                PUSH(match);
+                UOP_STACK_GROW();
+                SET_TOP(match);
                 PyErr_SetExcInfo(NULL, Py_NewRef(match), NULL);
                 Py_DECREF(exc_value);
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CHECK_EXC_MATCH) {
+        TARGET(CHECK_EXC_MATCH) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *right = POP();
             PyObject *left = TOP();
             assert(PyExceptionInstance_Check(left));
@@ -3504,11 +4407,19 @@ handle_eval_breaker:
 
             int res = PyErr_GivenExceptionMatches(left, right);
             Py_DECREF(right);
-            PUSH(Py_NewRef(res ? Py_True : Py_False));
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(Py_NewRef(res ? Py_True : Py_False));
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_NAME) {
+        TARGET(IMPORT_NAME) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *fromlist = POP();
             PyObject *level = TOP();
@@ -3519,10 +4430,17 @@ handle_eval_breaker:
             SET_TOP(res);
             if (res == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_STAR) {
+        TARGET(IMPORT_STAR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *from = POP(), *locals;
             int err;
             if (_PyFrame_FastToLocalsWithError(frame) < 0) {
@@ -3542,65 +4460,105 @@ handle_eval_breaker:
             Py_DECREF(from);
             if (err != 0)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_FROM) {
+        TARGET(IMPORT_FROM) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *name = GETITEM(names, oparg);
             PyObject *from = TOP();
             PyObject *res;
             res = import_from(tstate, from, name);
-            PUSH(res);
+            UOP_STACK_GROW();
+            SET_TOP(res);
             if (res == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
         TARGET(JUMP_FORWARD) {
-            JUMPBY(oparg);
-            DISPATCH();
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            UOP_JUMP(oparg);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(JUMP_BACKWARD) {
-            _PyCode_Warmup(frame->f_code);
-            JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);
+        TARGET(JUMP_BACKWARD) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            UOP_WARMUP();
+            JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);  // TODO
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_FALSE) {
-            PREDICTED(POP_JUMP_BACKWARD_IF_FALSE);
+        TARGET(POP_JUMP_BACKWARD_IF_FALSE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(POP_JUMP_BACKWARD_IF_FALSE);  // TODO
             PyObject *cond = POP();
             if (Py_IsTrue(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             if (Py_IsFalse(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
-                DISPATCH();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             int err = PyObject_IsTrue(cond);
             Py_DECREF(cond);
             if (err > 0)
                 ;
             else if (err == 0) {
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_FALSE) {
-            PREDICTED(POP_JUMP_FORWARD_IF_FALSE);
+        TARGET(POP_JUMP_FORWARD_IF_FALSE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(POP_JUMP_FORWARD_IF_FALSE);  // TODO
             PyObject *cond = POP();
             if (Py_IsTrue(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
             }
             else if (Py_IsFalse(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             }
             else {
                 int err = PyObject_IsTrue(cond);
@@ -3608,119 +4566,188 @@ handle_eval_breaker:
                 if (err > 0)
                     ;
                 else if (err == 0) {
-                    JUMPBY(oparg);
+                    UOP_JUMP(oparg);
                 }
                 else
                     goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_TRUE) {
+        TARGET(POP_JUMP_BACKWARD_IF_TRUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cond = POP();
             if (Py_IsFalse(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             if (Py_IsTrue(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
-                DISPATCH();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             int err = PyObject_IsTrue(cond);
             Py_DECREF(cond);
             if (err > 0) {
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else if (err == 0)
                 ;
             else
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_TRUE) {
+        TARGET(POP_JUMP_FORWARD_IF_TRUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cond = POP();
             if (Py_IsFalse(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
             }
             else if (Py_IsTrue(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             }
             else {
                 int err = PyObject_IsTrue(cond);
                 Py_DECREF(cond);
                 if (err > 0) {
-                    JUMPBY(oparg);
+                    UOP_JUMP(oparg);
                 }
                 else if (err == 0)
                     ;
                 else
                     goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_NOT_NONE) {
+        TARGET(POP_JUMP_BACKWARD_IF_NOT_NONE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             if (!Py_IsNone(value)) {
                 Py_DECREF(value);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
-                DISPATCH();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             _Py_DECREF_NO_DEALLOC(value);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_NOT_NONE) {
+        TARGET(POP_JUMP_FORWARD_IF_NOT_NONE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             if (!Py_IsNone(value)) {
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             }
             Py_DECREF(value);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_NONE) {
+        TARGET(POP_JUMP_BACKWARD_IF_NONE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             if (Py_IsNone(value)) {
                 _Py_DECREF_NO_DEALLOC(value);
-                JUMPBY(-oparg);
-                CHECK_EVAL_BREAKER();
+                UOP_JUMP(-oparg);
+                UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 Py_DECREF(value);
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_NONE) {
+        TARGET(POP_JUMP_FORWARD_IF_NONE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = POP();
             if (Py_IsNone(value)) {
                 _Py_DECREF_NO_DEALLOC(value);
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             }
             else {
                 Py_DECREF(value);
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(JUMP_IF_FALSE_OR_POP) {
+        TARGET(JUMP_IF_FALSE_OR_POP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cond = TOP();
             int err;
             if (Py_IsTrue(cond)) {
                 STACK_SHRINK(1);
                 _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             if (Py_IsFalse(cond)) {
-                JUMPBY(oparg);
-                DISPATCH();
+                UOP_JUMP(oparg);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             err = PyObject_IsTrue(cond);
             if (err > 0) {
@@ -3728,27 +4755,42 @@ handle_eval_breaker:
                 Py_DECREF(cond);
             }
             else if (err == 0)
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             else
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(JUMP_IF_TRUE_OR_POP) {
+        TARGET(JUMP_IF_TRUE_OR_POP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *cond = TOP();
             int err;
             if (Py_IsFalse(cond)) {
                 STACK_SHRINK(1);
                 _Py_DECREF_NO_DEALLOC(cond);
-                DISPATCH();
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             if (Py_IsTrue(cond)) {
-                JUMPBY(oparg);
-                DISPATCH();
+                UOP_JUMP(oparg);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             err = PyObject_IsTrue(cond);
             if (err > 0) {
-                JUMPBY(oparg);
+                UOP_JUMP(oparg);
             }
             else if (err == 0) {
                 STACK_SHRINK(1);
@@ -3756,28 +4798,49 @@ handle_eval_breaker:
             }
             else
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(JUMP_BACKWARD_NO_INTERRUPT) {
+        TARGET(JUMP_BACKWARD_NO_INTERRUPT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* This bytecode is used in the `yield from` or `await` loop.
              * If there is an interrupt, we want it handled in the innermost
              * generator or coroutine, so we deliberately do not check it here.
              * (see bpo-30039).
              */
-            JUMPBY(-oparg);
-            DISPATCH();
+            UOP_JUMP(-oparg);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(JUMP_BACKWARD_QUICK) {
-            PREDICTED(JUMP_BACKWARD_QUICK);
+        TARGET(JUMP_BACKWARD_QUICK) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(JUMP_BACKWARD_QUICK);  // TODO
             assert(oparg < INSTR_OFFSET());
-            JUMPBY(-oparg);
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_JUMP(-oparg);
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(GET_LEN) {
+        TARGET(GET_LEN) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             // PUSH(len(TOS))
             Py_ssize_t len_i = PyObject_Length(TOP());
             if (len_i < 0) {
@@ -3787,11 +4850,19 @@ handle_eval_breaker:
             if (len_o == NULL) {
                 goto error;
             }
-            PUSH(len_o);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(len_o);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MATCH_CLASS) {
+        TARGET(MATCH_CLASS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             // Pop TOS and TOS1. Set TOS to a tuple of attributes on success, or
             // None on failure.
             PyObject *names = POP();
@@ -3816,32 +4887,55 @@ handle_eval_breaker:
                 SET_TOP(Py_None);
             }
             Py_DECREF(subject);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MATCH_MAPPING) {
+        TARGET(MATCH_MAPPING) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *subject = TOP();
             int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_MAPPING;
             PyObject *res = match ? Py_True : Py_False;
-            Py_INCREF(res);
-            PUSH(res);
-            PREDICT(POP_JUMP_FORWARD_IF_FALSE);
-            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(res);
+            UOP_INCREF();
+            PREDICT(POP_JUMP_FORWARD_IF_FALSE);  // TODO
+            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MATCH_SEQUENCE) {
+        TARGET(MATCH_SEQUENCE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *subject = TOP();
             int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_SEQUENCE;
             PyObject *res = match ? Py_True : Py_False;
-            Py_INCREF(res);
-            PUSH(res);
-            PREDICT(POP_JUMP_FORWARD_IF_FALSE);
-            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(res);
+            UOP_INCREF();
+            PREDICT(POP_JUMP_FORWARD_IF_FALSE);  // TODO
+            PREDICT(POP_JUMP_BACKWARD_IF_FALSE);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MATCH_KEYS) {
+        TARGET(MATCH_KEYS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             // On successful match, PUSH(values). Otherwise, PUSH(None).
             PyObject *keys = TOP();
             PyObject *subject = SECOND();
@@ -3849,11 +4943,19 @@ handle_eval_breaker:
             if (values_or_none == NULL) {
                 goto error;
             }
-            PUSH(values_or_none);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(values_or_none);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(GET_ITER) {
+        TARGET(GET_ITER) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* before: [obj]; after [getiter(obj)] */
             PyObject *iterable = TOP();
             PyObject *iter = PyObject_GetIter(iterable);
@@ -3861,10 +4963,17 @@ handle_eval_breaker:
             SET_TOP(iter);
             if (iter == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(GET_YIELD_FROM_ITER) {
+        TARGET(GET_YIELD_FROM_ITER) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* before: [obj]; after [getiter(obj)] */
             PyObject *iterable = TOP();
             PyObject *iter;
@@ -3889,19 +4998,31 @@ handle_eval_breaker:
                 if (iter == NULL)
                     goto error;
             }
-            PREDICT(LOAD_CONST);
-            DISPATCH();
+            PREDICT(LOAD_CONST);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(FOR_ITER) {
-            PREDICTED(FOR_ITER);
+        TARGET(FOR_ITER) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(FOR_ITER);  // TODO
             /* before: [iter]; after: [iter, iter()] *or* [] */
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
             if (next != NULL) {
-                PUSH(next);
-                JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER);
-                DISPATCH();
+                UOP_STACK_GROW();
+                SET_TOP(next);
+                UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             if (_PyErr_Occurred(tstate)) {
                 if (!_PyErr_ExceptionMatches(tstate, PyExc_StopIteration)) {
@@ -3916,26 +5037,39 @@ handle_eval_breaker:
             /* iterator ended normally */
             assert(!_PyErr_Occurred(tstate));
             Py_DECREF(POP());
-            JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(FOR_ITER_ADAPTIVE) {
+        TARGET(FOR_ITER_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyForIterCache *cache = (_PyForIterCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 next_instr--;
                 _Py_Specialize_ForIter(TOP(), next_instr);
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(FOR_ITER, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(FOR_ITER);
+                JUMP_TO_INSTRUCTION(FOR_ITER);  // TODO
             }
         }
 
-        TARGET(FOR_ITER_LIST) {
+        TARGET(FOR_ITER_LIST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyListIterObject *it = (_PyListIterObject *)TOP();
             DEOPT_IF(Py_TYPE(it) != &PyListIter_Type, FOR_ITER);
@@ -3947,16 +5081,23 @@ handle_eval_breaker:
             if (it->it_index < PyList_GET_SIZE(seq)) {
                 PyObject *next = PyList_GET_ITEM(seq, it->it_index++);
                 Py_INCREF(next);
-                PUSH(next);
-                JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER);
-                NOTRACE_DISPATCH();
+                UOP_STACK_GROW();
+                SET_TOP(next);
+                UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER);
+                UOP_NEXT_OPCODE();
+                UOP_NEXT_OPARG();
+                UOP_LLTRACE();
+                UOP_DISPATCH();
             }
             it->it_seq = NULL;
             Py_DECREF(seq);
             goto iterator_exhausted_no_error;
         }
 
-        TARGET(FOR_ITER_RANGE) {
+        TARGET(FOR_ITER_RANGE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyRangeIterObject *r = (_PyRangeIterObject *)TOP();
             DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, FOR_ITER);
@@ -3972,11 +5113,17 @@ handle_eval_breaker:
                 goto error;
             }
             // The STORE_FAST is already done.
-            JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
-            NOTRACE_DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(BEFORE_ASYNC_WITH) {
+        TARGET(BEFORE_ASYNC_WITH) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *mgr = TOP();
             PyObject *res;
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__aenter__));
@@ -4007,12 +5154,20 @@ handle_eval_breaker:
             Py_DECREF(enter);
             if (res == NULL)
                 goto error;
-            PUSH(res);
-            PREDICT(GET_AWAITABLE);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(res);
+            PREDICT(GET_AWAITABLE);  // TODO
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BEFORE_WITH) {
+        TARGET(BEFORE_WITH) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *mgr = TOP();
             PyObject *res;
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__enter__));
@@ -4044,11 +5199,19 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            PUSH(res);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(res);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(WITH_EXCEPT_START) {
+        TARGET(WITH_EXCEPT_START) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* At the top of the stack are 4 values:
                - TOP = exc_info()
                - SECOND = previous exception
@@ -4073,11 +5236,19 @@ handle_eval_breaker:
             if (res == NULL)
                 goto error;
 
-            PUSH(res);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(res);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(PUSH_EXC_INFO) {
+        TARGET(PUSH_EXC_INFO) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *value = TOP();
 
             _PyErr_StackItem *exc_info = tstate->exc_info;
@@ -4089,15 +5260,23 @@ handle_eval_breaker:
                 SET_TOP(Py_None);
             }
 
-            Py_INCREF(value);
-            PUSH(value);
+            UOP_STACK_GROW();
+            SET_TOP(value);
+            UOP_INCREF();
             assert(PyExceptionInstance_Check(value));
             exc_info->exc_value = value;
 
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_WITH_VALUES) {
+        TARGET(LOAD_ATTR_METHOD_WITH_VALUES) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* Cached method object */
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
@@ -4118,12 +5297,19 @@ handle_eval_breaker:
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
             SET_TOP(res);
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(self);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_WITH_DICT) {
+        TARGET(LOAD_ATTR_METHOD_WITH_DICT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* Can be either a managed dict, or a tp_dictoffset offset.*/
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
@@ -4146,12 +5332,19 @@ handle_eval_breaker:
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
             SET_TOP(res);
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(self);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_NO_DICT) {
+        TARGET(LOAD_ATTR_METHOD_NO_DICT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
@@ -4165,12 +5358,19 @@ handle_eval_breaker:
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
             SET_TOP(res);
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(self);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_LAZY_DICT) {
+        TARGET(LOAD_ATTR_METHOD_LAZY_DICT) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
@@ -4188,12 +5388,19 @@ handle_eval_breaker:
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
             SET_TOP(res);
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
-            NOTRACE_DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(self);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_BOUND_METHOD_EXACT_ARGS) {
+        TARGET(CALL_BOUND_METHOD_EXACT_ARGS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             DEOPT_IF(is_method(stack_pointer, oparg), CALL);
             PyObject *function = PEEK(oparg + 1);
             DEOPT_IF(Py_TYPE(function) != &PyMethod_Type, CALL);
@@ -4208,14 +5415,24 @@ handle_eval_breaker:
             goto call_exact_args;
         }
 
-        TARGET(KW_NAMES) {
+        TARGET(KW_NAMES) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(oparg < PyTuple_GET_SIZE(consts));
             call_shape.kwnames = GETITEM(consts, oparg);
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL) {
+        TARGET(CALL) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             int total_args, is_meth;
         call_function:
             is_meth = is_method(stack_pointer, oparg);
@@ -4250,7 +5467,7 @@ handle_eval_breaker:
                     goto error;
                 }
                 _PyFrame_SetStackPointer(frame, stack_pointer);
-                JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+                UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
                 frame->prev_instr = next_instr - 1;
                 new_frame->previous = frame;
                 cframe.current_frame = frame = new_frame;
@@ -4279,16 +5496,24 @@ handle_eval_breaker:
                 Py_DECREF(stack_pointer[i]);
             }
             STACK_SHRINK(2-is_meth);
-            PUSH(res);
+            UOP_STACK_GROW();
+            SET_TOP(res);
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_ADAPTIVE) {
+        TARGET(CALL_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 next_instr--;
@@ -4300,7 +5525,10 @@ handle_eval_breaker:
                 if (err < 0) {
                     goto error;
                 }
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(CALL, deferred);
@@ -4309,7 +5537,10 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(CALL_PY_EXACT_ARGS) {
+        TARGET(CALL_PY_EXACT_ARGS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
         call_exact_args:
             assert(call_shape.kwnames == NULL);
             DEOPT_IF(tstate->interp->eval_frame, CALL);
@@ -4335,14 +5566,17 @@ handle_eval_breaker:
             }
             STACK_SHRINK(2-is_meth);
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
             frame = cframe.current_frame = new_frame;
             goto start_frame;
         }
 
-        TARGET(CALL_PY_WITH_DEFAULTS) {
+        TARGET(CALL_PY_WITH_DEFAULTS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             DEOPT_IF(tstate->interp->eval_frame, CALL);
             _PyCallCache *cache = (_PyCallCache *)next_instr;
@@ -4375,14 +5609,17 @@ handle_eval_breaker:
             }
             STACK_SHRINK(2-is_meth);
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             frame->prev_instr = next_instr - 1;
             new_frame->previous = frame;
             frame = cframe.current_frame = new_frame;
             goto start_frame;
         }
 
-        TARGET(CALL_NO_KW_TYPE_1) {
+        TARGET(CALL_NO_KW_TYPE_1) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(cframe.use_tracing == 0);
             assert(oparg == 1);
@@ -4391,16 +5628,22 @@ handle_eval_breaker:
             PyObject *callable = SECOND();
             DEOPT_IF(callable != (PyObject *)&PyType_Type, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyObject *res = Py_NewRef(Py_TYPE(obj));
             Py_DECREF(callable);
             Py_DECREF(obj);
             STACK_SHRINK(2);
             SET_TOP(res);
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_STR_1) {
+        TARGET(CALL_NO_KW_STR_1) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(cframe.use_tracing == 0);
             assert(oparg == 1);
@@ -4408,7 +5651,7 @@ handle_eval_breaker:
             PyObject *callable = PEEK(2);
             DEOPT_IF(callable != (PyObject *)&PyUnicode_Type, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             PyObject *res = PyObject_Str(arg);
             Py_DECREF(arg);
@@ -4418,18 +5661,25 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_TUPLE_1) {
+        TARGET(CALL_NO_KW_TUPLE_1) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(oparg == 1);
             DEOPT_IF(is_method(stack_pointer, 1), CALL);
             PyObject *callable = PEEK(2);
             DEOPT_IF(callable != (PyObject *)&PyTuple_Type, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             PyObject *res = PySequence_Tuple(arg);
             Py_DECREF(arg);
@@ -4439,11 +5689,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_BUILTIN_CLASS) {
+        TARGET(CALL_BUILTIN_CLASS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
             int kwnames_len = KWNAMES_LEN();
@@ -4452,7 +5709,7 @@ handle_eval_breaker:
             PyTypeObject *tp = (PyTypeObject *)callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             STACK_SHRINK(total_args);
             PyObject *res = tp->tp_vectorcall((PyObject *)tp, stack_pointer,
                                               total_args-kwnames_len, call_shape.kwnames);
@@ -4467,11 +5724,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_BUILTIN_O) {
+        TARGET(CALL_NO_KW_BUILTIN_O) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             /* Builtin METH_O functions */
             assert(call_shape.kwnames == NULL);
@@ -4482,7 +5746,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_O, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
@@ -4501,11 +5765,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_BUILTIN_FAST) {
+        TARGET(CALL_NO_KW_BUILTIN_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             /* Builtin METH_FASTCALL functions, without keywords */
             assert(call_shape.kwnames == NULL);
@@ -4516,7 +5787,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_FASTCALL,
                 CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
             STACK_SHRINK(total_args);
             /* res = func(self, args, nargs) */
@@ -4531,7 +5802,8 @@ handle_eval_breaker:
                 Py_DECREF(stack_pointer[i]);
             }
             STACK_SHRINK(2-is_meth);
-            PUSH(res);
+            UOP_STACK_GROW();
+            SET_TOP(res);
             Py_DECREF(callable);
             if (res == NULL) {
                 /* Not deopting because this doesn't mean our optimization was
@@ -4541,11 +5813,18 @@ handle_eval_breaker:
                 */
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_BUILTIN_FAST_WITH_KEYWORDS) {
+        TARGET(CALL_BUILTIN_FAST_WITH_KEYWORDS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             /* Builtin METH_FASTCALL | METH_KEYWORDS functions */
             int is_meth = is_method(stack_pointer, oparg);
@@ -4555,7 +5834,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             STACK_SHRINK(total_args);
             /* res = func(self, args, nargs, kwnames) */
             _PyCFunctionFastWithKeywords cfunc =
@@ -4575,16 +5854,24 @@ handle_eval_breaker:
                 Py_DECREF(stack_pointer[i]);
             }
             STACK_SHRINK(2-is_meth);
-            PUSH(res);
+            UOP_STACK_GROW();
+            SET_TOP(res);
             Py_DECREF(callable);
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_LEN) {
+        TARGET(CALL_NO_KW_LEN) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             assert(call_shape.kwnames == NULL);
             /* len(o) */
@@ -4595,7 +5882,7 @@ handle_eval_breaker:
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.len, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             Py_ssize_t len_i = PyObject_Length(arg);
             if (len_i < 0) {
@@ -4611,10 +5898,17 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_ISINSTANCE) {
+        TARGET(CALL_NO_KW_ISINSTANCE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             assert(call_shape.kwnames == NULL);
             /* isinstance(o, o2) */
@@ -4625,7 +5919,7 @@ handle_eval_breaker:
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.isinstance, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyObject *cls = POP();
             PyObject *inst = TOP();
             int retval = PyObject_IsInstance(inst, cls);
@@ -4644,10 +5938,17 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_LIST_APPEND) {
+        TARGET(CALL_NO_KW_LIST_APPEND) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             assert(call_shape.kwnames == NULL);
             assert(oparg == 1);
@@ -4658,7 +5959,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyList_Check(list), CALL);
             STAT_INC(CALL, hit);
             // CALL + POP_TOP
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL + 1);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL + 1);
             assert(_Py_OPCODE(next_instr[-1]) == POP_TOP);
             PyObject *arg = POP();
             if (_PyList_AppendTakeRef((PyListObject *)list, arg) < 0) {
@@ -4667,10 +5968,16 @@ handle_eval_breaker:
             STACK_SHRINK(2);
             Py_DECREF(list);
             Py_DECREF(callable);
-            NOTRACE_DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_O) {
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_O) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
@@ -4684,7 +5991,7 @@ handle_eval_breaker:
             PyObject *self = SECOND();
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = meth->ml_meth;
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
@@ -4702,11 +6009,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS) {
+        TARGET(CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
             PyMethodDescrObject *callable =
@@ -4718,7 +6032,7 @@ handle_eval_breaker:
             PyObject *self = PEEK(total_args);
             DEOPT_IF(!Py_IS_TYPE(self, d_type), CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             int nargs = total_args-1;
             STACK_SHRINK(nargs);
             _PyCFunctionFastWithKeywords cfunc =
@@ -4739,11 +6053,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS) {
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(oparg == 0 || oparg == 1);
             int is_meth = is_method(stack_pointer, oparg);
@@ -4756,7 +6077,7 @@ handle_eval_breaker:
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             DEOPT_IF(meth->ml_flags != METH_NOARGS, CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = meth->ml_meth;
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
@@ -4773,11 +6094,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_FAST) {
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_FAST) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
@@ -4790,7 +6118,7 @@ handle_eval_breaker:
             PyObject *self = PEEK(total_args);
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
-            JUMPBY(INLINE_CACHE_ENTRIES_CALL);
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             _PyCFunctionFast cfunc =
                 (_PyCFunctionFast)(void(*)(void))meth->ml_meth;
             int nargs = total_args-1;
@@ -4808,12 +6136,19 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(CALL_FUNCTION_EX) {
-            PREDICTED(CALL_FUNCTION_EX);
+        TARGET(CALL_FUNCTION_EX) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(CALL_FUNCTION_EX);  // TODO
             PyObject *func, *callargs, *kwargs = NULL, *result;
             if (oparg & 0x01) {
                 kwargs = POP();
@@ -4857,11 +6192,18 @@ handle_eval_breaker:
             if (result == NULL) {
                 goto error;
             }
-            CHECK_EVAL_BREAKER();
-            DISPATCH();
+            UOP_CHECK_EVAL_BREAKER();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(MAKE_FUNCTION) {
+        TARGET(MAKE_FUNCTION) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *codeobj = POP();
             PyFunctionObject *func = (PyFunctionObject *)
                 PyFunction_New(codeobj, GLOBALS());
@@ -4888,11 +6230,19 @@ handle_eval_breaker:
                 func->func_defaults = POP();
             }
 
-            PUSH((PyObject *)func);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP((PyObject *)func);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(RETURN_GENERATOR) {
+        TARGET(RETURN_GENERATOR) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyGenObject *gen = (PyGenObject *)_Py_MakeCoro(frame->f_func);
             if (gen == NULL) {
                 goto error;
@@ -4925,7 +6275,10 @@ handle_eval_breaker:
             return (PyObject *)gen;
         }
 
-        TARGET(BUILD_SLICE) {
+        TARGET(BUILD_SLICE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             PyObject *start, *stop, *step, *slice;
             if (oparg == 3)
                 step = POP();
@@ -4940,10 +6293,17 @@ handle_eval_breaker:
             SET_TOP(slice);
             if (slice == NULL)
                 goto error;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(FORMAT_VALUE) {
+        TARGET(FORMAT_VALUE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             /* Handles f-string value formatting. */
             PyObject *result;
             PyObject *fmt_spec;
@@ -4999,20 +6359,36 @@ handle_eval_breaker:
                 }
             }
 
-            PUSH(result);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(result);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(COPY) {
+        TARGET(COPY) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(oparg != 0);
             PyObject *peek = PEEK(oparg);
-            Py_INCREF(peek);
-            PUSH(peek);
-            DISPATCH();
+            UOP_STACK_GROW();
+            SET_TOP(peek);
+            UOP_INCREF();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP) {
-            PREDICTED(BINARY_OP);
+        TARGET(BINARY_OP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
+            PREDICTED(BINARY_OP);  // TODO
             PyObject *rhs = POP();
             PyObject *lhs = TOP();
             assert(0 <= oparg);
@@ -5025,11 +6401,18 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADAPTIVE) {
+        TARGET(BINARY_OP_ADAPTIVE) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
@@ -5037,49 +6420,66 @@ handle_eval_breaker:
                 PyObject *rhs = TOP();
                 next_instr--;
                 _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, &GETLOCAL(0));
-                NOTRACE_DISPATCH_SAME_OPARG();
+                UOP_NEXT_OPCODE();
+                UOP_LLTRACE();
+                UOP_CHECK_TRACING();
+                UOP_DISPATCH();
             }
             else {
                 STAT_INC(BINARY_OP, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(BINARY_OP);
+                JUMP_TO_INSTRUCTION(BINARY_OP);  // TODO
             }
         }
 
-        TARGET(SWAP) {
+        TARGET(SWAP) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(oparg != 0);
             PyObject *top = TOP();
             SET_TOP(PEEK(oparg));
             PEEK(oparg) = top;
-            DISPATCH();
+            UOP_NEXT_OPCODE();
+            UOP_NEXT_OPARG();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
-        TARGET(EXTENDED_ARG) {
+        TARGET(EXTENDED_ARG) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(oparg);
-            oparg <<= 8;
-            oparg |= _Py_OPARG(*next_instr);
+            UOP_EXTEND_OPARG();
             // We might be tracing. To avoid breaking tracing guarantees in
             // quickened instructions, always deoptimize the next opcode:
             opcode = _PyOpcode_Deopt[_Py_OPCODE(*next_instr)];
-            PRE_DISPATCH_GOTO();
+            UOP_LLTRACE();
             // CPython hasn't traced the following instruction historically
             // (DO_TRACING would clobber our extended oparg anyways), so just
             // skip our usual cframe.use_tracing check before dispatch. Also,
             // make sure the next instruction isn't a RESUME, since that needs
             // to trace properly (and shouldn't have an extended arg anyways):
             assert(opcode != RESUME);
-            DISPATCH_GOTO();
+            UOP_DISPATCH();
         }
 
-        TARGET(EXTENDED_ARG_QUICK) {
+        TARGET(EXTENDED_ARG_QUICK) {  // TODO
+            UOP_WRITE_PREV_INSTR();
+            UOP_JUMP(1);
+            UOP_UPDATE_STATS();
             assert(oparg);
-            oparg <<= 8;
-            oparg |= _Py_OPARG(*next_instr);
-            NOTRACE_DISPATCH_SAME_OPARG();
+            UOP_EXTEND_OPARG();
+            UOP_NEXT_OPCODE();
+            UOP_LLTRACE();
+            UOP_CHECK_TRACING();
+            UOP_DISPATCH();
         }
 
         TARGET(CACHE) {
-            Py_UNREACHABLE();
+            UOP_UNREACHABLE();
         }
 
 #if USE_COMPUTED_GOTOS
