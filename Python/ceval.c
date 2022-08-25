@@ -1166,11 +1166,12 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_CLOSURE) {  // TODO
+            PyObject *value;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
             /* We keep LOAD_CLOSURE so that the bytecode stays more readable. */
-            PyObject *value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
@@ -1185,10 +1186,11 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_FAST_CHECK) {  // TODO
+            PyObject *value;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             if (value == NULL) {
                 goto unbound_local_error;
             }
@@ -1202,11 +1204,12 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST) {  // TODO
+        TARGET(LOAD_FAST) {
+            PyObject *value;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
@@ -1236,11 +1239,14 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST) {  // TODO
+            PyObject *tmp;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
             PyObject *value = POP();
-            SETLOCAL(oparg, value);
+            UOP_LOAD_FAST(tmp, oparg);
+            UOP_STORE_FAST(oparg, value);
+            Py_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1248,11 +1254,12 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_FAST) {  // TODO
+        TARGET(LOAD_FAST__LOAD_FAST) {
+            PyObject *value;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -1260,7 +1267,7 @@ handle_eval_breaker:
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF();
-            value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
@@ -1271,11 +1278,12 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_CONST) {  // TODO
+        TARGET(LOAD_FAST__LOAD_CONST) {
+            PyObject *value;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -1283,7 +1291,7 @@ handle_eval_breaker:
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF();
-            value = GETITEM(consts, oparg);
+            UOP_LOAD_CONST(value, oparg);
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF();
@@ -1294,15 +1302,18 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__LOAD_FAST) {  // TODO
+            PyObject *tmp;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
             PyObject *value = POP();
-            SETLOCAL(oparg, value);
+            UOP_LOAD_FAST(tmp, oparg);
+            UOP_STORE_FAST(oparg, value);
+            Py_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
-            value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
@@ -1314,16 +1325,21 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__STORE_FAST) {  // TODO
+            PyObject *tmp;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
             PyObject *value = POP();
-            SETLOCAL(oparg, value);
+            UOP_LOAD_FAST(tmp, oparg);
+            UOP_STORE_FAST(oparg, value);
+            Py_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
             value = POP();
-            SETLOCAL(oparg, value);
+            UOP_LOAD_FAST(tmp, oparg);
+            UOP_STORE_FAST(oparg, value);
+            Py_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1342,7 +1358,7 @@ handle_eval_breaker:
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF();
-            value = GETLOCAL(oparg);
+            UOP_LOAD_FAST(value, oparg);
             assert(value != NULL);
             UOP_STACK_GROW(1);
             UOP_STACK_SET(1, value);
@@ -3037,12 +3053,14 @@ handle_eval_breaker:
         }
 
         TARGET(DELETE_FAST) {  // TODO
+            PyObject *v;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *v = GETLOCAL(oparg);
+            UOP_LOAD_FAST(v, oparg);
             if (v != NULL) {
-                SETLOCAL(oparg, NULL);
+                UOP_STORE_FAST(oparg, NULL);
+                Py_DECREF(v);
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
                 UOP_LLTRACE();
@@ -3053,6 +3071,7 @@ handle_eval_breaker:
         }
 
         TARGET(MAKE_CELL) {  // TODO
+            PyObject *tmp;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
@@ -3063,7 +3082,9 @@ handle_eval_breaker:
             if (cell == NULL) {
                 goto resume_with_error;
             }
-            SETLOCAL(oparg, cell);
+            UOP_LOAD_FAST(tmp, oparg);
+            UOP_STORE_FAST(oparg, cell);
+            Py_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -3072,10 +3093,11 @@ handle_eval_breaker:
         }
 
         TARGET(DELETE_DEREF) {  // TODO
+            PyObject *cell;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
-            PyObject *cell = GETLOCAL(oparg);
+            UOP_LOAD_FAST(cell, oparg);
             PyObject *oldobj = PyCell_GET(cell);
             if (oldobj != NULL) {
                 PyCell_SET(cell, NULL);
@@ -3091,6 +3113,7 @@ handle_eval_breaker:
         }
 
         TARGET(LOAD_CLASSDEREF) {  // TODO
+            PyObject *cell;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
@@ -3117,7 +3140,7 @@ handle_eval_breaker:
                 }
             }
             if (!value) {
-                PyObject *cell = GETLOCAL(oparg);
+                UOP_LOAD_FAST(cell, oparg);
                 value = PyCell_GET(cell);
                 if (value == NULL) {
                     format_exc_unbound(tstate, frame->f_code, oparg);
@@ -3155,11 +3178,12 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_DEREF) {  // TODO
+            PyObject *cell;
             UOP_WRITE_PREV_INSTR();
             UOP_JUMP(1);
             UOP_UPDATE_STATS();
             PyObject *v = POP();
-            PyObject *cell = GETLOCAL(oparg);
+            UOP_LOAD_FAST(cell, oparg);
             PyObject *oldobj = PyCell_GET(cell);
             PyCell_SET(cell, v);
             Py_XDECREF(oldobj);

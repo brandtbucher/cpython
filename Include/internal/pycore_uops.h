@@ -18,10 +18,12 @@ extern "C" {
 #define UOP_JUMP(I)              _uop_jump(&next_instr, (I))
 #define UOP_LLTRACE()            _uop_lltrace()
 #define UOP_LOAD_CONST(O, I)     _uop_load_const(&(O), consts, (I))
+#define UOP_LOAD_FAST(O, I)      _uop_load_fast(&(O), frame, (I))
 #define UOP_NEXT_OPARG()         _uop_next_oparg(next_instr, &oparg)
 #define UOP_NEXT_OPCODE()        _uop_next_opcode(next_instr, &opcode)
 #define UOP_STACK_GROW(I)        _uop_stack_grow(&stack_pointer, (I))
 #define UOP_STACK_SET(I, O)      _uop_stack_set(stack_pointer, (I), (O))
+#define UOP_STORE_FAST(I, O)     _uop_store_fast(frame, (I), (O))
 #define UOP_UNREACHABLE()        _uop_unreachable()
 #define UOP_UPDATE_STATS()       _uop_update_stats()
 #define UOP_WARMUP()             _uop_warmup(frame)
@@ -71,6 +73,12 @@ _uop_load_const(PyObject **o_p, PyObject *consts, int i)
 }
 
 static inline Py_ALWAYS_INLINE void
+_uop_load_fast(PyObject **o_p, _PyInterpreterFrame *frame, int i)
+{
+    *o_p = frame->localsplus[i];
+}
+
+static inline Py_ALWAYS_INLINE void
 _uop_next_oparg(_Py_CODEUNIT *next_instr, int *oparg_p)
 {
     *oparg_p = _Py_OPARG(*next_instr);
@@ -92,6 +100,12 @@ static inline Py_ALWAYS_INLINE void
 _uop_stack_set(PyObject **stack_pointer, int i, PyObject *o)
 {
     stack_pointer[-i] = o;
+}
+
+static inline Py_ALWAYS_INLINE void
+_uop_store_fast(_PyInterpreterFrame *frame, int i, PyObject *o)
+{
+    frame->localsplus[i] = o;
 }
 
 static inline Py_ALWAYS_INLINE void
