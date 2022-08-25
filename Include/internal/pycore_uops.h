@@ -21,7 +21,8 @@ extern "C" {
 #define UOP_LOAD_FAST(O, I)      _uop_load_fast(&(O), frame, (I))
 #define UOP_NEXT_OPARG()         _uop_next_oparg(next_instr, &oparg)
 #define UOP_NEXT_OPCODE()        _uop_next_opcode(next_instr, &opcode)
-#define UOP_STACK_GROW(I)        _uop_stack_grow(&stack_pointer, (I))
+#define UOP_STACK_ADJUST(I)      _uop_stack_adjust(&stack_pointer, (I))
+#define UOP_STACK_GET(O, I)      _uop_stack_get(&(O), stack_pointer, (I))
 #define UOP_STACK_SET(I, O)      _uop_stack_set(stack_pointer, (I), (O))
 #define UOP_STORE_FAST(I, O)     _uop_store_fast(frame, (I), (O))
 #define UOP_UNREACHABLE()        _uop_unreachable()
@@ -91,9 +92,15 @@ _uop_next_opcode(_Py_CODEUNIT *next_instr, uint8_t *opcode_p)
 }
 
 static inline Py_ALWAYS_INLINE void
-_uop_stack_grow(PyObject ***stack_pointer_p, int i)
+_uop_stack_adjust(PyObject ***stack_pointer_p, int i)
 {
     *stack_pointer_p += i;
+}
+
+static inline Py_ALWAYS_INLINE void
+_uop_stack_get(PyObject **o_p, PyObject **stack_pointer, int i)
+{
+    *o_p = stack_pointer[-i];
 }
 
 static inline Py_ALWAYS_INLINE void
