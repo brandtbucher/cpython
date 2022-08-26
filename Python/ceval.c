@@ -1131,7 +1131,7 @@ handle_eval_breaker:
 
         TARGET(NOP) {
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -1207,7 +1207,7 @@ handle_eval_breaker:
         TARGET(LOAD_FAST) {
             PyObject *value;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
@@ -1224,7 +1224,7 @@ handle_eval_breaker:
         TARGET(LOAD_CONST) {
             PyObject *value;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PREDICTED(LOAD_CONST);  // TODO
             UOP_GET_CONST(value, oparg);
@@ -1260,19 +1260,21 @@ handle_eval_breaker:
         TARGET(LOAD_FAST__LOAD_FAST) {
             PyObject *value;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
-            UOP_NEXT_OPCODE();
+            // UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
-            UOP_STACK_ADJUST(1);
-            UOP_STACK_SET(1, value);
+            // UOP_STACK_ADJUST(1);
+            UOP_STACK_ADJUST(2); //
+            // UOP_STACK_SET(1, value);
+            UOP_STACK_SET(2, value); //
             UOP_INCREF(value);
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
-            UOP_STACK_ADJUST(1);
+            // UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF(value);
             UOP_NEXT_OPCODE();
@@ -1284,18 +1286,19 @@ handle_eval_breaker:
         TARGET(LOAD_FAST__LOAD_CONST) {
             PyObject *value;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
-            UOP_NEXT_OPCODE();
+            // UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
-            UOP_STACK_ADJUST(1);
-            UOP_STACK_SET(1, value);
+            // UOP_STACK_ADJUST(1);
+            UOP_STACK_ADJUST(2); //
+            UOP_STACK_SET(2, value);
             UOP_INCREF(value);
             UOP_GET_CONST(value, oparg);
-            UOP_STACK_ADJUST(1);
+            // UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF(value);
             UOP_NEXT_OPCODE();
@@ -1310,20 +1313,23 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_STACK_GET(value, 1);
-            UOP_STACK_ADJUST(-1);
+            // UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
-            UOP_NEXT_OPCODE();
+            // if (tmp) {
+            //     UOP_DECREF(tmp);
+            // }
+            // UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
-            UOP_STACK_ADJUST(1);
+            // UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF(value);
+            if (tmp) {  //
+                UOP_DECREF(tmp);  //
+            } //
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1336,17 +1342,19 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_STACK_GET(value, 1);
-            UOP_STACK_ADJUST(-1);
+            // UOP_STACK_ADJUST(-1);
+            UOP_STACK_ADJUST(-2); //
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
             if (tmp) {
                 UOP_DECREF(tmp);
             }
-            UOP_NEXT_OPCODE();
+            // UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
-            UOP_STACK_GET(value, 1);
-            UOP_STACK_ADJUST(-1);
+            // UOP_STACK_GET(value, 1);
+            UOP_STACK_GET(value, 0);  //
+            // UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
             if (tmp) {
@@ -1361,18 +1369,20 @@ handle_eval_breaker:
         TARGET(LOAD_CONST__LOAD_FAST) {
             PyObject *value;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_GET_CONST(value, oparg);
-            UOP_NEXT_OPCODE();
+            // UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
-            UOP_STACK_ADJUST(1);
-            UOP_STACK_SET(1, value);
+            // UOP_STACK_ADJUST(1);
+            UOP_STACK_ADJUST(2);  //
+            // UOP_STACK_SET(1, value);
+            UOP_STACK_SET(2, value);  //
             UOP_INCREF(value);
             UOP_GET_FAST(value, oparg);
             assert(value != NULL);
-            UOP_STACK_ADJUST(1);
+            // UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, value);
             UOP_INCREF(value);
             UOP_NEXT_OPCODE();
@@ -1398,7 +1408,7 @@ handle_eval_breaker:
 
         TARGET(PUSH_NULL) {
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, NULL);
@@ -6540,7 +6550,7 @@ handle_eval_breaker:
         TARGET(COPY) {
             PyObject *peek;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             assert(oparg != 0);
             UOP_STACK_GET(peek, oparg);
@@ -6608,7 +6618,7 @@ handle_eval_breaker:
         TARGET(SWAP) {
             PyObject *top, *peek;
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             assert(oparg != 0);
             UOP_STACK_GET(top, 1);
@@ -6624,7 +6634,7 @@ handle_eval_breaker:
 
         TARGET(EXTENDED_ARG) {  // TODO
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             assert(oparg);
             UOP_EXTEND_OPARG();
@@ -6643,7 +6653,7 @@ handle_eval_breaker:
 
         TARGET(EXTENDED_ARG_QUICK) {
             UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
+            // UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             assert(oparg);
             UOP_EXTEND_OPARG();
@@ -6654,9 +6664,9 @@ handle_eval_breaker:
         }
 
         TARGET(CACHE) {
-            UOP_JUMP(1);
-            UOP_WRITE_PREV_INSTR();
-            UOP_UPDATE_STATS();
+            // UOP_JUMP(1);
+            // UOP_WRITE_PREV_INSTR();
+            // UOP_UPDATE_STATS();
             UOP_UNREACHABLE();
         }
 
