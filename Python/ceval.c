@@ -1616,7 +1616,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF_UNICODE(left);
             UOP_DECREF_UNICODE(right);
-            if (TOP() == NULL) {
+            if (res == NULL) {
                 goto error;
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
@@ -1662,7 +1662,7 @@ handle_eval_breaker:
                 goto error;
             }
             // The STORE_FAST is already done.
-            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP + 1);  // XXX
+            UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2493,7 +2493,7 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             if (oparg) {
-                UOP_STACK_GET(lasti, oparg + 1);  // XXX
+                UOP_STACK_GET(lasti, oparg + 1);
                 if (PyLong_Check(lasti)) {
                     frame->prev_instr = first_instr + PyLong_AsLong(lasti);
                     assert(!_PyErr_Occurred(tstate));
@@ -2606,14 +2606,13 @@ handle_eval_breaker:
             goto exception_unwind;
         }
 
-        TARGET(LOAD_ASSERTION_ERROR) {  // TODO
+        TARGET(LOAD_ASSERTION_ERROR) {
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *value = PyExc_AssertionError;
             UOP_STACK_ADJUST(1);
-            UOP_STACK_SET(1, value);
-            UOP_INCREF(value);
+            UOP_STACK_SET(1, PyExc_AssertionError);  // TODO
+            UOP_INCREF(PyExc_AssertionError);  // TODO
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -3111,7 +3110,7 @@ handle_eval_breaker:
             UOP_STACK_SET(0, NULL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             UOP_STAT_HIT(LOAD_GLOBAL);
-            UOP_STACK_ADJUST(push_null+1);  // XXX
+            UOP_STACK_ADJUST(push_null + 1);
             UOP_INCREF(res);
             UOP_STACK_SET(1, res);
             UOP_NEXT_OPCODE();
@@ -3142,7 +3141,7 @@ handle_eval_breaker:
             UOP_STACK_SET(0, NULL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
             UOP_STAT_HIT(LOAD_GLOBAL);
-            UOP_STACK_ADJUST(push_null+1);  // XXX
+            UOP_STACK_ADJUST(push_null + 1);
             UOP_INCREF(res);
             UOP_STACK_SET(1, res);
             UOP_NEXT_OPCODE();
@@ -3475,7 +3474,7 @@ handle_eval_breaker:
                     err = PySet_Add(set, item);
                 UOP_DECREF(item);
             }
-            UOP_STACK_ADJUST(-oparg);  // XXX
+            UOP_STACK_ADJUST(-oparg);
             if (err != 0) {
                 UOP_DECREF(set);
                 goto error;
@@ -3798,7 +3797,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(LOAD_ATTR);
             UOP_INCREF(res);
             UOP_STACK_SET(1, NULL);
-            UOP_STACK_ADJUST(oparg & 1);  // XXX
+            UOP_STACK_ADJUST(oparg & 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(owner);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
@@ -3830,7 +3829,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(LOAD_ATTR);
             UOP_INCREF(res);
             UOP_STACK_SET(1, NULL);
-            UOP_STACK_ADJUST(oparg & 1);  // XXX
+            UOP_STACK_ADJUST(oparg & 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(owner);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
@@ -3876,7 +3875,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(LOAD_ATTR);
             UOP_INCREF(res);
             UOP_STACK_SET(1, NULL);
-            UOP_STACK_ADJUST(oparg & 1);  // XXX
+            UOP_STACK_ADJUST(oparg & 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(owner);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
@@ -3905,7 +3904,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(LOAD_ATTR);
             UOP_INCREF(res);
             UOP_STACK_SET(1, NULL);
-            UOP_STACK_ADJUST(oparg & 1);  // XXX
+            UOP_STACK_ADJUST(oparg & 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(owner);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
@@ -3935,7 +3934,7 @@ handle_eval_breaker:
             assert(res != NULL);
             UOP_INCREF(res);
             UOP_STACK_SET(1, NULL);
-            UOP_STACK_ADJUST(oparg & 1);  // XXX
+            UOP_STACK_ADJUST(oparg & 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(cls);
             UOP_JUMP(INLINE_CACHE_ENTRIES_LOAD_ATTR);
@@ -3973,7 +3972,7 @@ handle_eval_breaker:
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f);
             UOP_STACK_SET(1, NULL);
             int shrink_stack = !(oparg & 1);
-            UOP_STACK_ADJUST(-shrink_stack);  // XXX
+            UOP_STACK_ADJUST(-shrink_stack);
             new_frame->localsplus[0] = owner;
             for (int i = 1; i < code->co_nlocalsplus; i++) {
                 new_frame->localsplus[i] = NULL;
@@ -4012,7 +4011,7 @@ handle_eval_breaker:
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f);
             UOP_STACK_SET(1, NULL);
             int shrink_stack = !(oparg & 1);
-            UOP_STACK_ADJUST(-shrink_stack);  // XXX
+            UOP_STACK_ADJUST(-shrink_stack);
             UOP_INCREF(name);
             new_frame->localsplus[0] = owner;
             new_frame->localsplus[1] = name;
@@ -4263,13 +4262,13 @@ handle_eval_breaker:
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                UOP_JUMP(1 - oparg);  // XXX
+                UOP_JUMP(1 - oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                UOP_JUMP(1 + oparg);  // XXX
+                UOP_JUMP(1 + oparg);
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -4314,13 +4313,13 @@ handle_eval_breaker:
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                UOP_JUMP(1 - oparg);  // XXX
+                UOP_JUMP(1 - oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                UOP_JUMP(1 + oparg);  // XXX
+                UOP_JUMP(1 + oparg);
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -4366,13 +4365,13 @@ handle_eval_breaker:
             else if (jump >= 8) {
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
-                UOP_JUMP(1 - oparg);  // XXX
+                UOP_JUMP(1 - oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
                        opcode == POP_JUMP_FORWARD_IF_FALSE);
-                UOP_JUMP(1 + oparg);  // XXX
+                UOP_JUMP(1 + oparg);
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -4618,7 +4617,7 @@ handle_eval_breaker:
             }
             if (Py_IsFalse(cond)) {
                 UOP_DECREF_IMMORTAL(cond);
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
@@ -4631,7 +4630,7 @@ handle_eval_breaker:
             if (err > 0)
                 ;
             else if (err == 0) {
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else
@@ -4693,7 +4692,7 @@ handle_eval_breaker:
             }
             if (Py_IsTrue(cond)) {
                 UOP_DECREF_IMMORTAL(cond);
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
@@ -4704,7 +4703,7 @@ handle_eval_breaker:
             int err = PyObject_IsTrue(cond);
             UOP_DECREF(cond);
             if (err > 0) {
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else if (err == 0)
@@ -4759,7 +4758,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             if (!Py_IsNone(value)) {
                 UOP_DECREF(value);
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
@@ -4802,7 +4801,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             if (Py_IsNone(value)) {
                 UOP_DECREF_IMMORTAL(value);
-                UOP_JUMP(-oparg);  // XXX
+                UOP_JUMP(-oparg);
                 UOP_CHECK_EVAL_BREAKER();
             }
             else {
@@ -4926,7 +4925,7 @@ handle_eval_breaker:
              * generator or coroutine, so we deliberately do not check it here.
              * (see bpo-30039).
              */
-            UOP_JUMP(-oparg);  // XXX
+            UOP_JUMP(-oparg);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4940,7 +4939,7 @@ handle_eval_breaker:
             UOP_UPDATE_STATS();
             PREDICTED(JUMP_BACKWARD_QUICK);  // TODO
             assert(oparg < INSTR_OFFSET());
-            UOP_JUMP(-oparg);  // XXX
+            UOP_JUMP(-oparg);
             UOP_CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -5160,7 +5159,7 @@ handle_eval_breaker:
             UOP_STACK_GET(tmp, 1);
             UOP_STACK_ADJUST(-1);
             UOP_DECREF(tmp);
-            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);  // XXX
+            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5236,7 +5235,7 @@ handle_eval_breaker:
                 goto error;
             }
             // The STORE_FAST is already done.
-            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + 1);  // XXX
+            UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5535,15 +5534,15 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             DEOPT_IF(is_method(stack_pointer, oparg), CALL);
-            UOP_STACK_GET(function, oparg + 1);  // XXX
+            UOP_STACK_GET(function, oparg + 1);
             DEOPT_IF(Py_TYPE(function) != &PyMethod_Type, CALL);
             UOP_STAT_HIT(CALL);
             PyObject *meth = ((PyMethodObject *)function)->im_func;
             PyObject *self = ((PyMethodObject *)function)->im_self;
             UOP_INCREF(meth);
             UOP_INCREF(self);
-            UOP_STACK_SET(oparg + 1, self);  // XXX
-            UOP_STACK_SET(oparg + 2, meth);  // XXX
+            UOP_STACK_SET(oparg + 1, self);
+            UOP_STACK_SET(oparg + 2, meth);
             UOP_DECREF(function);
             goto call_exact_args;
         }
@@ -5563,38 +5562,38 @@ handle_eval_breaker:
         }
 
         TARGET(CALL) {  // TODO
-            PyObject *function;
+            PyObject *function, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             int total_args, is_meth;
         call_function:
             is_meth = is_method(stack_pointer, oparg);
-            UOP_STACK_GET(function, oparg + 1);  // XXX
+            UOP_STACK_GET(function, oparg + 1);
             if (!is_meth && Py_TYPE(function) == &PyMethod_Type) {
                 PyObject *meth = ((PyMethodObject *)function)->im_func;
                 PyObject *self = ((PyMethodObject *)function)->im_self;
                 UOP_INCREF(meth);
                 UOP_INCREF(self);
-                UOP_STACK_SET(oparg + 1, self);  // XXX
-                UOP_STACK_SET(oparg + 2, meth);  // XXX
+                UOP_STACK_SET(oparg + 1, self);
+                UOP_STACK_SET(oparg + 2, meth);
                 UOP_DECREF(function);
                 is_meth = 1;
             }
             total_args = oparg + is_meth;
-            UOP_STACK_GET(function, total_args + 1);  // XXX
+            UOP_STACK_GET(function, total_args + 1);
             int positional_args = total_args - KWNAMES_LEN();
             // Check if the call can be inlined or not
             if (Py_TYPE(function) == &PyFunction_Type && tstate->interp->eval_frame == NULL) {
                 int code_flags = ((PyCodeObject*)PyFunction_GET_CODE(function))->co_flags;
                 PyObject *locals = code_flags & CO_OPTIMIZED ? NULL : Py_NewRef(PyFunction_GET_GLOBALS(function));
-                UOP_STACK_ADJUST(-total_args);  // XXX
+                UOP_STACK_ADJUST(-total_args);
                 _PyInterpreterFrame *new_frame = _PyEvalFramePushAndInit(
                     tstate, (PyFunctionObject *)function, locals,
                     stack_pointer, positional_args, call_shape.kwnames
                 );
                 call_shape.kwnames = NULL;
-                UOP_STACK_ADJUST(is_meth - 2);  // XXX
+                UOP_STACK_ADJUST(is_meth - 2);
                 // The frame has stolen all the arguments from the stack,
                 // so there is no need to clean them up.
                 if (new_frame == NULL) {
@@ -5624,11 +5623,12 @@ handle_eval_breaker:
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             UOP_DECREF(function);
             /* Clear the stack */
-            UOP_STACK_ADJUST(-total_args);  // XXX
+            UOP_STACK_ADJUST(-total_args);
             for (int i = 0; i < total_args; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
@@ -5653,7 +5653,7 @@ handle_eval_breaker:
                 UOP_JUMP(-1);
                 int is_meth = is_method(stack_pointer, oparg);
                 int nargs = oparg + is_meth;
-                UOP_STACK_GET(callable, nargs + 1);  // XXX
+                UOP_STACK_GET(callable, nargs + 1);
                 int err = _Py_Specialize_Call(callable, next_instr, nargs,
                                               call_shape.kwnames);
                 if (err < 0) {
@@ -5682,7 +5682,7 @@ handle_eval_breaker:
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             int is_meth = is_method(stack_pointer, oparg);
             int argcount = oparg + is_meth;
-            UOP_STACK_GET(callable, argcount + 1);  // XXX
+            UOP_STACK_GET(callable, argcount + 1);
             DEOPT_IF(!PyFunction_Check(callable), CALL);
             PyFunctionObject *func = (PyFunctionObject *)callable;
             DEOPT_IF(func->func_version != read_u32(cache->func_version), CALL);
@@ -5692,14 +5692,14 @@ handle_eval_breaker:
             UOP_STAT_HIT(CALL);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, func);
             CALL_STAT_INC(inlined_py_calls);
-            UOP_STACK_ADJUST(-argcount);  // XXX
+            UOP_STACK_ADJUST(-argcount);
             for (int i = 0; i < argcount; i++) {
                 new_frame->localsplus[i] = stack_pointer[i];
             }
             for (int i = argcount; i < code->co_nlocalsplus; i++) {
                 new_frame->localsplus[i] = NULL;
             }
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_WRITE_STACK_TOP();
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             UOP_WRITE_PREV_INSTR();
@@ -5717,7 +5717,7 @@ handle_eval_breaker:
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             int is_meth = is_method(stack_pointer, oparg);
             int argcount = oparg + is_meth;
-            UOP_STACK_GET(callable, argcount + 1);  // XXX
+            UOP_STACK_GET(callable, argcount + 1);
             DEOPT_IF(!PyFunction_Check(callable), CALL);
             PyFunctionObject *func = (PyFunctionObject *)callable;
             DEOPT_IF(func->func_version != read_u32(cache->func_version), CALL);
@@ -5729,7 +5729,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(CALL);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, func);
             CALL_STAT_INC(inlined_py_calls);
-            UOP_STACK_ADJUST(-argcount);  // XXX
+            UOP_STACK_ADJUST(-argcount);
             for (int i = 0; i < argcount; i++) {
                 new_frame->localsplus[i] = stack_pointer[i];
             }
@@ -5742,7 +5742,7 @@ handle_eval_breaker:
             for (int i = code->co_argcount; i < code->co_nlocalsplus; i++) {
                 new_frame->localsplus[i] = NULL;
             }
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_WRITE_STACK_TOP();
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             UOP_WRITE_PREV_INSTR();
@@ -5791,7 +5791,7 @@ handle_eval_breaker:
             UOP_STACK_GET(arg, 1);
             PyObject *res = PyObject_Str(arg);
             UOP_DECREF(arg);
-            UOP_DECREF(&PyUnicode_Type);  // XXX
+            UOP_DECREF(callable);
             UOP_STACK_ADJUST(-2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
@@ -5820,7 +5820,7 @@ handle_eval_breaker:
             UOP_STACK_GET(arg, 1);
             PyObject *res = PySequence_Tuple(arg);
             UOP_DECREF(arg);
-            UOP_DECREF(&PyTuple_Type);  // XXX
+            UOP_DECREF(callable);
             UOP_STACK_ADJUST(-2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
@@ -5835,29 +5835,30 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_BUILTIN_CLASS) {  // TODO
-            PyObject *callable;
+            PyObject *tmp, *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
             int kwnames_len = KWNAMES_LEN();
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             DEOPT_IF(!PyType_Check(callable), CALL);
             PyTypeObject *tp = (PyTypeObject *)callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             UOP_STAT_HIT(CALL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
-            UOP_STACK_ADJUST(-total_args);  // XXX
+            UOP_STACK_ADJUST(-total_args);
             PyObject *res = tp->tp_vectorcall((PyObject *)tp, stack_pointer,
                                               total_args-kwnames_len, call_shape.kwnames);
             call_shape.kwnames = NULL;
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
             UOP_DECREF(tp);
-            UOP_STACK_ADJUST(is_meth - 1);  // XXX
+            UOP_STACK_ADJUST(is_meth - 1);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
                 goto error;
@@ -5882,7 +5883,7 @@ handle_eval_breaker:
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
             DEOPT_IF(total_args != 1, CALL);
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_O, CALL);
             UOP_STAT_HIT(CALL);
@@ -5900,7 +5901,7 @@ handle_eval_breaker:
 
             UOP_DECREF(arg);
             UOP_DECREF(callable);
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
                 goto error;
@@ -5914,7 +5915,7 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_NO_KW_BUILTIN_FAST) {  // TODO
-            PyObject *callable;
+            PyObject *callable, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5923,14 +5924,14 @@ handle_eval_breaker:
             assert(call_shape.kwnames == NULL);
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_FASTCALL,
                 CALL);
             UOP_STAT_HIT(CALL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
-            UOP_STACK_ADJUST(-total_args);  // XXX
+            UOP_STACK_ADJUST(-total_args);
             /* res = func(self, args, nargs) */
             PyObject *res = ((_PyCFunctionFast)(void(*)(void))cfunc)(
                 PyCFunction_GET_SELF(callable),
@@ -5940,9 +5941,10 @@ handle_eval_breaker:
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
@@ -5963,7 +5965,7 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_BUILTIN_FAST_WITH_KEYWORDS) {  // TODO
-            PyObject *callable;
+            PyObject *callable, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5971,13 +5973,13 @@ handle_eval_breaker:
             /* Builtin METH_FASTCALL | METH_KEYWORDS functions */
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             UOP_STAT_HIT(CALL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
-            UOP_STACK_ADJUST(-total_args);  // XXX
+            UOP_STACK_ADJUST(-total_args);
             /* res = func(self, args, nargs, kwnames) */
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))
@@ -5993,9 +5995,10 @@ handle_eval_breaker:
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
@@ -6021,7 +6024,7 @@ handle_eval_breaker:
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
             DEOPT_IF(total_args != 1, CALL);
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.len, CALL);
             UOP_STAT_HIT(CALL);
@@ -6034,7 +6037,7 @@ handle_eval_breaker:
             PyObject *res = PyLong_FromSsize_t(len_i);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
 
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             UOP_DECREF(arg);
@@ -6058,7 +6061,7 @@ handle_eval_breaker:
             /* isinstance(o, o2) */
             int is_meth = is_method(stack_pointer, oparg);
             int total_args = oparg + is_meth;
-            UOP_STACK_GET(callable, total_args + 1);  // XXX
+            UOP_STACK_GET(callable, total_args + 1);
             DEOPT_IF(total_args != 2, CALL);
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.isinstance, CALL);
@@ -6075,7 +6078,7 @@ handle_eval_breaker:
             PyObject *res = PyBool_FromLong(retval);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
 
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             UOP_DECREF(inst);
             UOP_DECREF(cls);
@@ -6105,7 +6108,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyList_Check(list), CALL);
             UOP_STAT_HIT(CALL);
             // CALL + POP_TOP
-            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL + 1);  // XXX
+            UOP_JUMP(INLINE_CACHE_ENTRIES_CALL + 1);
             assert(_Py_OPCODE(next_instr[-1]) == POP_TOP);
             UOP_STACK_GET(arg, 1);
             UOP_STACK_ADJUST(-1);
@@ -6151,7 +6154,7 @@ handle_eval_breaker:
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             UOP_DECREF(self);
             UOP_DECREF(arg);
-            UOP_STACK_ADJUST(-oparg - 1);  // XXX
+            UOP_STACK_ADJUST(-oparg - 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
@@ -6166,7 +6169,7 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS) {  // TODO
-            PyObject *self;
+            PyObject *self, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -6183,7 +6186,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(CALL);
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             int nargs = total_args-1;
-            UOP_STACK_ADJUST(-nargs);  // XXX
+            UOP_STACK_ADJUST(-nargs);
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))meth->ml_meth;
             PyObject *res = cfunc(self, stack_pointer, nargs - KWNAMES_LEN(),
@@ -6193,10 +6196,11 @@ handle_eval_breaker:
 
             /* Free the arguments. */
             for (int i = 0; i < nargs; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
             UOP_DECREF(self);
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
@@ -6238,7 +6242,7 @@ handle_eval_breaker:
             _Py_LeaveRecursiveCallTstate(tstate);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             UOP_DECREF(self);
-            UOP_STACK_ADJUST(-oparg - 1);  // XXX
+            UOP_STACK_ADJUST(-oparg - 1);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
@@ -6253,7 +6257,7 @@ handle_eval_breaker:
         }
 
         TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_FAST) {  // TODO
-            PyObject *self;
+            PyObject *self, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -6273,15 +6277,16 @@ handle_eval_breaker:
             _PyCFunctionFast cfunc =
                 (_PyCFunctionFast)(void(*)(void))meth->ml_meth;
             int nargs = total_args-1;
-            UOP_STACK_ADJUST(-nargs);  // XXX
+            UOP_STACK_ADJUST(-nargs);
             PyObject *res = cfunc(self, stack_pointer, nargs);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             /* Clear the stack of the arguments. */
             for (int i = 0; i < nargs; i++) {
-                UOP_DECREF(stack_pointer[i]);  // XXX
+                UOP_STACK_GET(tmp, -i);
+                UOP_DECREF(tmp);
             }
             UOP_DECREF(self);
-            UOP_STACK_ADJUST(is_meth - 2);  // XXX
+            UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
@@ -6600,7 +6605,7 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(SWAP) {  // TODO
+        TARGET(SWAP) {
             PyObject *top, *peek;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6636,7 +6641,7 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(EXTENDED_ARG_QUICK) {  // TODO
+        TARGET(EXTENDED_ARG_QUICK) {
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
