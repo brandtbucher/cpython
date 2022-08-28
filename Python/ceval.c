@@ -1190,6 +1190,14 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST) {
+            PyObject *tmp = GETLOCAL(oparg);
+            GETLOCAL(oparg) = POP();
+            assert(tmp != NULL);
+            Py_DECREF(tmp);
+            DISPATCH();
+        }
+
+        TARGET(STORE_FAST_CHECK) {
             PyObject *value = POP();
             SETLOCAL(oparg, value);
             DISPATCH();
@@ -1223,11 +1231,13 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__LOAD_FAST) {
-            PyObject *value = POP();
-            SETLOCAL(oparg, value);
+            PyObject *tmp = GETLOCAL(oparg);
+            GETLOCAL(oparg) = POP();
+            assert(tmp != NULL);
+            Py_DECREF(tmp);
             NEXTOPARG();
             next_instr++;
-            value = GETLOCAL(oparg);
+            PyObject *value = GETLOCAL(oparg);
             assert(value != NULL);
             Py_INCREF(value);
             PUSH(value);
@@ -1235,12 +1245,16 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__STORE_FAST) {
-            PyObject *value = POP();
-            SETLOCAL(oparg, value);
+            PyObject *tmp = GETLOCAL(oparg);
+            GETLOCAL(oparg) = POP();
+            assert(tmp != NULL);
+            Py_DECREF(tmp);
             NEXTOPARG();
             next_instr++;
-            value = POP();
-            SETLOCAL(oparg, value);
+            tmp = GETLOCAL(oparg);
+            GETLOCAL(oparg) = POP();
+            assert(tmp != NULL);
+            Py_DECREF(tmp);
             NOTRACE_DISPATCH();
         }
 
@@ -1423,7 +1437,9 @@ handle_eval_breaker:
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
             assert(_Py_OPCODE(true_next) == STORE_FAST ||
-                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
+                   _Py_OPCODE(true_next) == STORE_FAST_CHECK ||
+                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST ||
+                   _Py_OPCODE(true_next) == STORE_FAST__STORE_FAST);
             PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
             DEOPT_IF(*target_local != left, BINARY_OP);
             STAT_INC(BINARY_OP, hit);
@@ -3968,7 +3984,10 @@ handle_eval_breaker:
             DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, FOR_ITER);
             STAT_INC(FOR_ITER, hit);
             _Py_CODEUNIT next = next_instr[INLINE_CACHE_ENTRIES_FOR_ITER];
-            assert(_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST);
+            assert(_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST ||
+                   _PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST_CHECK ||
+                   _PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST__LOAD_FAST ||
+                   _PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST__STORE_FAST);
             if (r->index >= r->len) {
                 goto iterator_exhausted_no_error;
             }

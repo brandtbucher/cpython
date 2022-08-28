@@ -1193,6 +1193,7 @@ stack_effect(int opcode, int oparg, int jump)
         case LOAD_FAST_CHECK:
             return 1;
         case STORE_FAST:
+        case STORE_FAST_CHECK:
             return -1;
         case DELETE_FAST:
             return 0;
@@ -7902,6 +7903,9 @@ scan_block_for_local(int target, basicblock *b, bool unsafe_to_start,
                 unsafe = false;
                 break;
             case STORE_FAST:
+                if (unsafe) {
+                    instr->i_opcode = STORE_FAST_CHECK;
+                }
                 unsafe = false;
                 break;
             case DELETE_FAST:

@@ -650,9 +650,11 @@ add_load_fast_null_checks(PyCodeObject *co)
                 changed = 1;
                 _Py_SET_OPCODE(instructions[i], LOAD_CONST);
                 break;
+            case STORE_FAST:
+            case STORE_FAST__STORE_FAST:
             case STORE_FAST__LOAD_FAST:
                 changed = 1;
-                _Py_SET_OPCODE(instructions[i], STORE_FAST);
+                _Py_SET_OPCODE(instructions[i], STORE_FAST_CHECK);
                 break;
         }
         i += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]];

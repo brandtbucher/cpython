@@ -1112,6 +1112,14 @@ iterations of the loop.
 
    Stores TOS into the local ``co_varnames[var_num]``.
 
+   .. versionchanged:: 3.12
+      This opcode is now only used in situations where the local variable is
+      guaranteed to be initialized.
+
+.. opcode:: STORE_FAST_CHECK (var_num)
+
+   Stores TOS into the local ``co_varnames[var_num]``.
+
 
 .. opcode:: DELETE_FAST (var_num)
 
