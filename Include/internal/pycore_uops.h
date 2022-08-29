@@ -10,9 +10,6 @@ extern "C" {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// XXX: UOP_CHECK_EVAL_BREAKER hides a goto.
-
-#define UOP_CHECK_EVAL_BREAKER() _uop_check_eval_breaker()
 #define UOP_CHECK_TRACING()      _uop_check_tracing(cframe, &opcode)
 #define UOP_DECREF(O)            _uop_decref(_PyObject_CAST((O)))
 #define UOP_DECREF_FLOAT(O)      _uop_decref_float(_PyObject_CAST((O)))
@@ -42,8 +39,6 @@ extern "C" {
 #define UOP_WRITE_STACK_TOP()    _uop_write_stack_top(frame, stack_pointer)
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define _uop_check_eval_breaker() CHECK_EVAL_BREAKER()
 
 static inline Py_ALWAYS_INLINE void
 _uop_check_tracing(_PyCFrame cframe, uint8_t *opcode_p)

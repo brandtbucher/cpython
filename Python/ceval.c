@@ -400,7 +400,7 @@ match_keys(PyThreadState *tstate, PyObject *map, PyObject *keys)
             Py_DECREF(value);
             Py_DECREF(values);
             // Return None:
-            UOP_INCREF(Py_None);
+            Py_INCREF(Py_None);
             values = Py_None;
             goto done;
         }
@@ -4269,7 +4269,7 @@ handle_eval_breaker:
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
                 UOP_JUMP(1 - oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -4320,7 +4320,7 @@ handle_eval_breaker:
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
                 UOP_JUMP(1 - oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -4372,7 +4372,7 @@ handle_eval_breaker:
                 assert(opcode == POP_JUMP_BACKWARD_IF_TRUE ||
                        opcode == POP_JUMP_BACKWARD_IF_FALSE);
                 UOP_JUMP(1 - oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else {
                 assert(opcode == POP_JUMP_FORWARD_IF_TRUE ||
@@ -4624,7 +4624,7 @@ handle_eval_breaker:
             if (Py_IsFalse(cond)) {
                 UOP_DECREF_IMMORTAL(cond);
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
                 UOP_LLTRACE();
@@ -4637,7 +4637,7 @@ handle_eval_breaker:
                 ;
             else if (err == 0) {
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else
                 goto error;
@@ -4699,7 +4699,7 @@ handle_eval_breaker:
             if (Py_IsTrue(cond)) {
                 UOP_DECREF_IMMORTAL(cond);
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
                 UOP_LLTRACE();
@@ -4710,7 +4710,7 @@ handle_eval_breaker:
             UOP_DECREF(cond);
             if (err > 0) {
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else if (err == 0)
                 ;
@@ -4765,7 +4765,7 @@ handle_eval_breaker:
             if (!Py_IsNone(value)) {
                 UOP_DECREF(value);
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
                 UOP_NEXT_OPCODE();
                 UOP_NEXT_OPARG();
                 UOP_LLTRACE();
@@ -4808,7 +4808,7 @@ handle_eval_breaker:
             if (Py_IsNone(value)) {
                 UOP_DECREF_IMMORTAL(value);
                 UOP_JUMP(-oparg);
-                UOP_CHECK_EVAL_BREAKER();
+                CHECK_EVAL_BREAKER();
             }
             else {
                 UOP_DECREF(value);
@@ -4946,7 +4946,7 @@ handle_eval_breaker:
             PREDICTED(JUMP_BACKWARD_QUICK);  // TODO
             assert(oparg < INSTR_OFFSET());
             UOP_JUMP(-oparg);
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5641,7 +5641,7 @@ handle_eval_breaker:
                 goto error;
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5803,7 +5803,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5832,7 +5832,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5869,7 +5869,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5912,7 +5912,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5962,7 +5962,7 @@ handle_eval_breaker:
                 */
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6011,7 +6011,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6166,7 +6166,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6212,7 +6212,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6254,7 +6254,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6298,7 +6298,7 @@ handle_eval_breaker:
             if (res == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6358,7 +6358,7 @@ handle_eval_breaker:
             if (result == NULL) {
                 goto error;
             }
-            UOP_CHECK_EVAL_BREAKER();
+            CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
