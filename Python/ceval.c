@@ -1247,7 +1247,6 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST) {
-            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1314,7 +1313,6 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__LOAD_FAST) {
-            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1341,7 +1339,6 @@ handle_eval_breaker:
         }
 
         TARGET(STORE_FAST__STORE_FAST) {
-            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1430,8 +1427,9 @@ handle_eval_breaker:
             PyObject *res = PyNumber_Positive(value);
             UOP_DECREF(value);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1449,8 +1447,9 @@ handle_eval_breaker:
             PyObject *res = PyNumber_Negative(value);
             UOP_DECREF(value);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1486,7 +1485,7 @@ handle_eval_breaker:
                 UOP_DISPATCH();
             }
             UOP_STACK_ADJUST(-1);
-            goto error;
+            UOP_ERROR();
         }
 
         TARGET(UNARY_INVERT) {
@@ -1499,8 +1498,9 @@ handle_eval_breaker:
             PyObject *res = PyNumber_Invert(value);
             UOP_DECREF(value);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1526,7 +1526,7 @@ handle_eval_breaker:
             UOP_DECREF_LONG(left);
             UOP_STACK_ADJUST(-1);
             if (prod == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1555,7 +1555,7 @@ handle_eval_breaker:
             UOP_DECREF_FLOAT(left);
             UOP_STACK_ADJUST(-1);
             if (prod == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1582,7 +1582,7 @@ handle_eval_breaker:
             UOP_DECREF_LONG(left);
             UOP_STACK_ADJUST(-1);
             if (sub == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1610,7 +1610,7 @@ handle_eval_breaker:
             UOP_DECREF_FLOAT(left);
             UOP_STACK_ADJUST(-1);
             if (sub == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1637,7 +1637,7 @@ handle_eval_breaker:
             UOP_DECREF_UNICODE(left);
             UOP_DECREF_UNICODE(right);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1680,7 +1680,7 @@ handle_eval_breaker:
             PyUnicode_Append(target_local, right);
             UOP_DECREF_UNICODE(right);
             if (*target_local == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             // The STORE_FAST is already done.
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
@@ -1710,7 +1710,7 @@ handle_eval_breaker:
             UOP_DECREF_FLOAT(left);
             UOP_STACK_ADJUST(-1);
             if (sum == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1737,7 +1737,7 @@ handle_eval_breaker:
             UOP_DECREF_LONG(left);
             UOP_STACK_ADJUST(-1);
             if (sum == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();
@@ -1760,8 +1760,9 @@ handle_eval_breaker:
             UOP_DECREF(container);
             UOP_DECREF(sub);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -1784,12 +1785,12 @@ handle_eval_breaker:
 
             PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
             if (slice == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *res = PyObject_GetItem(container, slice);
             UOP_DECREF(slice);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_SET(1, res);
             UOP_DECREF(container);
@@ -1815,12 +1816,12 @@ handle_eval_breaker:
 
             PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
             if (slice == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             int err = PyObject_SetItem(container, slice, v);
             UOP_DECREF(slice);
             if (err) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(-2);
             UOP_DECREF(v);
@@ -1844,7 +1845,7 @@ handle_eval_breaker:
                 UOP_STACK_GET(container, 2);
                 UOP_JUMP(-1);
                 if (_Py_Specialize_BinarySubscr(container, sub, next_instr) < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -1999,8 +2000,9 @@ handle_eval_breaker:
             UOP_STACK_GET(v, 1);
             UOP_STACK_ADJUST(-1);
             UOP_STACK_GET(list, oparg);
-            if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0)
-                goto error;
+            if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) {
+                UOP_ERROR();
+            }
             PREDICT(JUMP_BACKWARD_QUICK);  // TODO
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -2021,8 +2023,9 @@ handle_eval_breaker:
             int err;
             err = PySet_Add(set, v);
             UOP_DECREF(v);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             PREDICT(JUMP_BACKWARD_QUICK);  // TODO
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -2049,7 +2052,7 @@ handle_eval_breaker:
             UOP_DECREF(container);
             UOP_DECREF(sub);
             if (err != 0) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
             UOP_NEXT_OPCODE();
@@ -2071,7 +2074,7 @@ handle_eval_breaker:
                 UOP_STACK_GET(container, 2);
                 UOP_JUMP(-1);
                 if (_Py_Specialize_StoreSubscr(container, sub, next_instr) < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -2135,7 +2138,7 @@ handle_eval_breaker:
             int err = _PyDict_SetItem_Take2((PyDictObject *)dict, sub, value);
             UOP_DECREF(dict);
             if (err != 0) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_SUBSCR);
             UOP_NEXT_OPCODE();
@@ -2159,8 +2162,9 @@ handle_eval_breaker:
             err = PyObject_DelItem(container, sub);
             UOP_DECREF(container);
             UOP_DECREF(sub);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2182,12 +2186,13 @@ handle_eval_breaker:
                 _PyErr_SetString(tstate, PyExc_RuntimeError,
                                  "lost sys.displayhook");
                 UOP_DECREF(value);
-                goto error;
+                UOP_ERROR();
             }
             res = PyObject_CallOneArg(hook, value);
             UOP_DECREF(value);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_DECREF(res);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -2219,7 +2224,7 @@ handle_eval_breaker:
                                  "bad RAISE_VARARGS oparg");
                 break;
             }
-            goto error;
+            UOP_ERROR();
         }
 
         TARGET(RETURN_VALUE) {
@@ -2268,7 +2273,7 @@ handle_eval_breaker:
                 UOP_DECREF(obj);
                 if (iter == NULL) {
                     UOP_STACK_SET(1, NULL);
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             else {
@@ -2278,7 +2283,7 @@ handle_eval_breaker:
                               "__aiter__ method, got %.100s",
                               type->tp_name);
                 UOP_DECREF(obj);
-                goto error;
+                UOP_ERROR();
             }
 
             if (Py_TYPE(iter)->tp_as_async == NULL ||
@@ -2290,7 +2295,7 @@ handle_eval_breaker:
                               "that does not implement __anext__: %.100s",
                               Py_TYPE(iter)->tp_name);
                 UOP_DECREF(iter);
-                goto error;
+                UOP_ERROR();
             }
 
             UOP_STACK_SET(1, iter);
@@ -2316,7 +2321,7 @@ handle_eval_breaker:
             if (PyAsyncGen_CheckExact(aiter)) {
                 awaitable = type->tp_as_async->am_anext(aiter);
                 if (awaitable == NULL) {
-                    goto error;
+                    UOP_ERROR();
                 }
             } else {
                 if (type->tp_as_async != NULL){
@@ -2326,7 +2331,7 @@ handle_eval_breaker:
                 if (getter != NULL) {
                     next_iter = (*getter)(aiter);
                     if (next_iter == NULL) {
-                        goto error;
+                        UOP_ERROR();
                     }
                 }
                 else {
@@ -2334,7 +2339,7 @@ handle_eval_breaker:
                                   "'async for' requires an iterator with "
                                   "__anext__ method, got %.100s",
                                   type->tp_name);
-                    goto error;
+                    UOP_ERROR();
                 }
 
                 awaitable = _PyCoro_GetAwaitableIter(next_iter);
@@ -2346,7 +2351,7 @@ handle_eval_breaker:
                         Py_TYPE(next_iter)->tp_name);
 
                     UOP_DECREF(next_iter);
-                    goto error;
+                    UOP_ERROR();
                 } else {
                     UOP_DECREF(next_iter);
                 }
@@ -2395,7 +2400,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, iter); /* Even if it's NULL */
 
             if (iter == NULL) {
-                goto error;
+                UOP_ERROR();
             }
 
             PREDICT(LOAD_CONST);  // TODO
@@ -2446,7 +2451,7 @@ handle_eval_breaker:
             UOP_DECREF(v);
             if (gen_status == PYGEN_ERROR) {
                 assert(retval == NULL);
-                goto error;
+                UOP_ERROR();
             }
             if (gen_status == PYGEN_RETURN) {
                 assert(retval != NULL);
@@ -2480,7 +2485,7 @@ handle_eval_breaker:
             assert(frame->f_code->co_flags & CO_ASYNC_GENERATOR);
             PyObject *w = _PyAsyncGenValueWrapperNew(v);
             if (w == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_SET(1, w);
             UOP_DECREF(v);
@@ -2550,7 +2555,7 @@ handle_eval_breaker:
                 else {
                     assert(PyLong_Check(lasti));
                     _PyErr_SetString(tstate, PyExc_SystemError, "lasti is not an int");
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             UOP_STACK_GET(val, 1);
@@ -2579,7 +2584,7 @@ handle_eval_breaker:
             UOP_DECREF(orig);
 
             if (val == NULL) {
-                goto error;
+                UOP_ERROR();
             }
 
             UOP_STACK_ADJUST(1);
@@ -2686,7 +2691,7 @@ handle_eval_breaker:
                         _PyErr_SetString(tstate, PyExc_NameError,
                                          "__build_class__ not found");
                     }
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_INCREF(bc);
             }
@@ -2696,7 +2701,7 @@ handle_eval_breaker:
                     if (_PyErr_ExceptionMatches(tstate, PyExc_KeyError))
                         _PyErr_SetString(tstate, PyExc_NameError,
                                          "__build_class__ not found");
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             UOP_STACK_ADJUST(1);
@@ -2710,11 +2715,11 @@ handle_eval_breaker:
 
         TARGET(STORE_NAME) {
             // TODO
-            PyObject *v;
+            PyObject *name, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(v, 1);
             UOP_STACK_ADJUST(-1);
             PyObject *ns = LOCALS();
@@ -2723,15 +2728,16 @@ handle_eval_breaker:
                 _PyErr_Format(tstate, PyExc_SystemError,
                               "no locals found when storing %R", name);
                 UOP_DECREF(v);
-                goto error;
+                UOP_ERROR();
             }
             if (PyDict_CheckExact(ns))
                 err = PyDict_SetItem(ns, name, v);
             else
                 err = PyObject_SetItem(ns, name, v);
             UOP_DECREF(v);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2741,23 +2747,24 @@ handle_eval_breaker:
 
         TARGET(DELETE_NAME) {
             // TODO
+            PyObject *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             PyObject *ns = LOCALS();
             int err;
             if (ns == NULL) {
                 _PyErr_Format(tstate, PyExc_SystemError,
                               "no locals when deleting %R", name);
-                goto error;
+                UOP_ERROR();
             }
             err = PyObject_DelItem(ns, name);
             if (err != 0) {
                 format_exc_check_arg(tstate, PyExc_NameError,
                                      NAME_ERROR_MSG,
                                      name);
-                goto error;
+                UOP_ERROR();
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -2778,7 +2785,7 @@ handle_eval_breaker:
             PyObject **top = stack_pointer + oparg;
             if (!unpack_iterable(tstate, seq, oparg, -1, top)) {
                 UOP_DECREF(seq);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(oparg);
             UOP_DECREF(seq);
@@ -2899,7 +2906,7 @@ handle_eval_breaker:
             PyObject **top = stack_pointer + totalargs;
             if (!unpack_iterable(tstate, seq, oparg & 0xFF, oparg >> 8, top)) {
                 UOP_DECREF(seq);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(totalargs);
             UOP_DECREF(seq);
@@ -2912,12 +2919,12 @@ handle_eval_breaker:
 
         TARGET(STORE_ATTR) {
             // TODO
-            PyObject *owner, *v;
+            PyObject *name, *owner, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PREDICTED(STORE_ATTR);  // TODO
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(owner, 1);
             UOP_STACK_GET(v, 2);
             int err;
@@ -2926,7 +2933,7 @@ handle_eval_breaker:
             UOP_DECREF(v);
             UOP_DECREF(owner);
             if (err != 0) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
             UOP_NEXT_OPCODE();
@@ -2938,18 +2945,19 @@ handle_eval_breaker:
 
         TARGET(DELETE_ATTR) {
             // TODO
-            PyObject *owner;
+            PyObject *name, *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(owner, 1);
             UOP_STACK_ADJUST(-1);
             int err;
             err = PyObject_SetAttr(owner, name, (PyObject *)NULL);
             UOP_DECREF(owner);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2959,18 +2967,19 @@ handle_eval_breaker:
 
         TARGET(STORE_GLOBAL) {
             // TODO
-            PyObject *v;
+            PyObject *name, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(v, 1);
             UOP_STACK_ADJUST(-1);
             int err;
             err = PyDict_SetItem(GLOBALS(), name, v);
             UOP_DECREF(v);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2980,10 +2989,11 @@ handle_eval_breaker:
 
         TARGET(DELETE_GLOBAL) {
             // TODO
+            PyObject *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             int err;
             err = PyDict_DelItem(GLOBALS(), name);
             if (err != 0) {
@@ -2991,7 +3001,7 @@ handle_eval_breaker:
                     format_exc_check_arg(tstate, PyExc_NameError,
                                          NAME_ERROR_MSG, name);
                 }
-                goto error;
+                UOP_ERROR();
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -3002,16 +3012,17 @@ handle_eval_breaker:
 
         TARGET(LOAD_NAME) {
             // TODO
+            PyObject *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             PyObject *locals = LOCALS();
             PyObject *v;
             if (locals == NULL) {
                 _PyErr_Format(tstate, PyExc_SystemError,
                               "no locals when loading %R", name);
-                goto error;
+                UOP_ERROR();
             }
             if (PyDict_CheckExact(locals)) {
                 v = PyDict_GetItemWithError(locals, name);
@@ -3019,14 +3030,15 @@ handle_eval_breaker:
                     UOP_INCREF(v);
                 }
                 else if (_PyErr_Occurred(tstate)) {
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             else {
                 v = PyObject_GetItem(locals, name);
                 if (v == NULL) {
-                    if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError))
-                        goto error;
+                    if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError)) {
+                        UOP_ERROR();
+                    }
                     _PyErr_Clear(tstate);
                 }
             }
@@ -3036,7 +3048,7 @@ handle_eval_breaker:
                     UOP_INCREF(v);
                 }
                 else if (_PyErr_Occurred(tstate)) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 else {
                     if (PyDict_CheckExact(BUILTINS())) {
@@ -3047,7 +3059,7 @@ handle_eval_breaker:
                                         tstate, PyExc_NameError,
                                         NAME_ERROR_MSG, name);
                             }
-                            goto error;
+                            UOP_ERROR();
                         }
                         UOP_INCREF(v);
                     }
@@ -3059,7 +3071,7 @@ handle_eval_breaker:
                                             tstate, PyExc_NameError,
                                             NAME_ERROR_MSG, name);
                             }
-                            goto error;
+                            UOP_ERROR();
                         }
                     }
                 }
@@ -3075,13 +3087,14 @@ handle_eval_breaker:
 
         TARGET(LOAD_GLOBAL) {
             // TODO
+            PyObject *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PREDICTED(LOAD_GLOBAL);  // TODO
             int push_null = oparg & 1;
             UOP_STACK_SET(0, NULL);
-            PyObject *name = GETITEM(names, oparg>>1);
+            UOP_GET_NAME(name, oparg >> 1);
             PyObject *v;
             if (PyDict_CheckExact(GLOBALS())
                 && PyDict_CheckExact(BUILTINS()))
@@ -3096,7 +3109,7 @@ handle_eval_breaker:
                         format_exc_check_arg(tstate, PyExc_NameError,
                                              NAME_ERROR_MSG, name);
                     }
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_INCREF(v);
             }
@@ -3107,7 +3120,7 @@ handle_eval_breaker:
                 v = PyObject_GetItem(GLOBALS(), name);
                 if (v == NULL) {
                     if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError)) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     _PyErr_Clear(tstate);
 
@@ -3119,7 +3132,7 @@ handle_eval_breaker:
                                         tstate, PyExc_NameError,
                                         NAME_ERROR_MSG, name);
                         }
-                        goto error;
+                        UOP_ERROR();
                     }
                 }
             }
@@ -3137,16 +3150,17 @@ handle_eval_breaker:
 
         TARGET(LOAD_GLOBAL_ADAPTIVE) {
             // TODO
+            PyObject *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             assert(cframe.use_tracing == 0);
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
-                PyObject *name = GETITEM(names, oparg>>1);
+                UOP_GET_NAME(name, oparg >> 1);
                 UOP_JUMP(-1);
                 if (_Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name) < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -3282,7 +3296,7 @@ handle_eval_breaker:
                 UOP_DISPATCH();
             }
             format_exc_unbound(tstate, frame->f_code, oparg);
-            goto error;
+            UOP_ERROR();
         }
 
         TARGET(LOAD_CLASSDEREF) {
@@ -3301,14 +3315,14 @@ handle_eval_breaker:
                     UOP_INCREF(value);
                 }
                 else if (_PyErr_Occurred(tstate)) {
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             else {
                 value = PyObject_GetItem(locals, name);
                 if (value == NULL) {
                     if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError)) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     _PyErr_Clear(tstate);
                 }
@@ -3318,7 +3332,7 @@ handle_eval_breaker:
                 value = PyCell_GET(cell);
                 if (value == NULL) {
                     format_exc_unbound(tstate, frame->f_code, oparg);
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_INCREF(value);
             }
@@ -3341,7 +3355,7 @@ handle_eval_breaker:
             PyObject *value = PyCell_GET(cell);
             if (value == NULL) {
                 format_exc_unbound(tstate, frame->f_code, oparg);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, value);
@@ -3406,8 +3420,9 @@ handle_eval_breaker:
             PyObject *str;
             str = _PyUnicode_JoinArray(&_Py_STR(empty),
                                        stack_pointer - oparg, oparg);
-            if (str == NULL)
-                goto error;
+            if (str == NULL) {
+                UOP_ERROR();
+            }
             while (--oparg >= 0) {
                 UOP_STACK_GET(item, 1);
                 UOP_STACK_ADJUST(-1);
@@ -3429,8 +3444,9 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PyObject *tup = PyTuple_New(oparg);
-            if (tup == NULL)
-                goto error;
+            if (tup == NULL) {
+                UOP_ERROR();
+            }
             while (--oparg >= 0) {
                 UOP_STACK_GET(item, 1);
                 UOP_STACK_ADJUST(-1);
@@ -3452,8 +3468,9 @@ handle_eval_breaker:
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PyObject *list =  PyList_New(oparg);
-            if (list == NULL)
-                goto error;
+            if (list == NULL) {
+                UOP_ERROR();
+            }
             while (--oparg >= 0) {
                 UOP_STACK_GET(item, 1);
                 UOP_STACK_ADJUST(-1);
@@ -3479,7 +3496,7 @@ handle_eval_breaker:
             PyObject *tuple = PyList_AsTuple(list);
             UOP_DECREF(list);
             if (tuple == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, tuple);
@@ -3510,7 +3527,7 @@ handle_eval_breaker:
                           Py_TYPE(iterable)->tp_name);
                 }
                 UOP_DECREF(iterable);
-                goto error;
+                UOP_ERROR();
             }
             UOP_DECREF(none_val);
             UOP_DECREF(iterable);
@@ -3533,7 +3550,7 @@ handle_eval_breaker:
             int err = _PySet_Update(set, iterable);
             UOP_DECREF(iterable);
             if (err < 0) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -3551,8 +3568,9 @@ handle_eval_breaker:
             PyObject *set = PySet_New(NULL);
             int err = 0;
             int i;
-            if (set == NULL)
-                goto error;
+            if (set == NULL) {
+                UOP_ERROR();
+            }
             for (i = oparg; i > 0; i--) {
                 UOP_STACK_GET(item, i);
                 if (err == 0)
@@ -3562,7 +3580,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-oparg);
             if (err != 0) {
                 UOP_DECREF(set);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, set);
@@ -3583,8 +3601,9 @@ handle_eval_breaker:
                     &PEEK(2*oparg), 2,
                     &PEEK(2*oparg - 1), 2,
                     oparg);
-            if (map == NULL)
-                goto error;
+            if (map == NULL) {
+                UOP_ERROR();
+            }
 
             while (oparg--) {
                 UOP_STACK_GET(tmp, 1);
@@ -3613,7 +3632,7 @@ handle_eval_breaker:
             if (LOCALS() == NULL) {
                 _PyErr_Format(tstate, PyExc_SystemError,
                               "no locals found when setting up annotations");
-                goto error;
+                UOP_ERROR();
             }
             /* check if __annotations__ in locals()... */
             if (PyDict_CheckExact(LOCALS())) {
@@ -3621,18 +3640,18 @@ handle_eval_breaker:
                                                     &_Py_ID(__annotations__));
                 if (ann_dict == NULL) {
                     if (_PyErr_Occurred(tstate)) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     /* ...if not, create a new one */
                     ann_dict = PyDict_New();
                     if (ann_dict == NULL) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     err = PyDict_SetItem(LOCALS(), &_Py_ID(__annotations__),
                                          ann_dict);
                     UOP_DECREF(ann_dict);
                     if (err != 0) {
-                        goto error;
+                        UOP_ERROR();
                     }
                 }
             }
@@ -3641,18 +3660,18 @@ handle_eval_breaker:
                 ann_dict = PyObject_GetItem(LOCALS(), &_Py_ID(__annotations__));
                 if (ann_dict == NULL) {
                     if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError)) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     _PyErr_Clear(tstate);
                     ann_dict = PyDict_New();
                     if (ann_dict == NULL) {
-                        goto error;
+                        UOP_ERROR();
                     }
                     err = PyObject_SetItem(LOCALS(), &_Py_ID(__annotations__),
                                            ann_dict);
                     UOP_DECREF(ann_dict);
                     if (err != 0) {
-                        goto error;
+                        UOP_ERROR();
                     }
                 }
                 else {
@@ -3678,13 +3697,13 @@ handle_eval_breaker:
                 PyTuple_GET_SIZE(keys) != (Py_ssize_t)oparg) {
                 _PyErr_SetString(tstate, PyExc_SystemError,
                                  "bad BUILD_CONST_KEY_MAP keys argument");
-                goto error;
+                UOP_ERROR();
             }
             map = _PyDict_FromItems(
                     &PyTuple_GET_ITEM(keys, 0), 1,
                     &PEEK(oparg + 1), 1, oparg);
             if (map == NULL) {
-                goto error;
+                UOP_ERROR();
             }
 
             UOP_STACK_GET(tmp, 1);
@@ -3720,7 +3739,7 @@ handle_eval_breaker:
                                     Py_TYPE(update)->tp_name);
                 }
                 UOP_DECREF(update);
-                goto error;
+                UOP_ERROR();
             }
             UOP_DECREF(update);
             UOP_NEXT_OPCODE();
@@ -3743,7 +3762,7 @@ handle_eval_breaker:
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 format_kwargs_error(tstate, PEEK(2 + oparg), update);
                 UOP_DECREF(update);
-                goto error;
+                UOP_ERROR();
             }
             UOP_DECREF(update);
             PREDICT(CALL_FUNCTION_EX);  // TODO
@@ -3767,7 +3786,7 @@ handle_eval_breaker:
             assert(PyDict_CheckExact(map));
             /* map[key] = value */
             if (_PyDict_SetItem_Take2((PyDictObject *)map, key, value) != 0) {
-                goto error;
+                UOP_ERROR();
             }
             PREDICT(JUMP_BACKWARD_QUICK);  // TODO
             UOP_NEXT_OPCODE();
@@ -3779,12 +3798,12 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR) {
             // TODO
-            PyObject *owner;
+            PyObject *name, *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
             PREDICTED(LOAD_ATTR);  // TODO
-            PyObject *name = GETITEM(names, oparg >> 1);
+            UOP_GET_NAME(name, oparg >> 1);
             UOP_STACK_GET(owner, 1);
             if (oparg & 1) {
                 /* Designed to work in tandem with CALL. */
@@ -3794,7 +3813,7 @@ handle_eval_breaker:
 
                 if (meth == NULL) {
                     /* Most likely attribute wasn't found. */
-                    goto error;
+                    UOP_ERROR();
                 }
 
                 if (meth_found) {
@@ -3829,7 +3848,7 @@ handle_eval_breaker:
             }
             PyObject *res = PyObject_GetAttr(owner, name);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_DECREF(owner);
             UOP_STACK_SET(1, res);
@@ -3843,7 +3862,7 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_ADAPTIVE) {
             // TODO
-            PyObject *owner;
+            PyObject *owner, *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3851,10 +3870,10 @@ handle_eval_breaker:
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 UOP_STACK_GET(owner, 1);
-                PyObject *name = GETITEM(names, oparg>>1);
+                UOP_GET_NAME(name, oparg >> 1);
                 UOP_JUMP(-1);
                 if (_Py_Specialize_LoadAttr(owner, next_instr, name) < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -3936,7 +3955,7 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_WITH_HINT) {
             // TODO
-            PyObject *owner;
+            PyObject *owner, *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3954,7 +3973,7 @@ handle_eval_breaker:
             PyDictObject *dict = (PyDictObject *)_PyDictOrValues_GetDict(dorv);
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, oparg>>1);
+            UOP_GET_NAME(name, oparg >> 1);
             uint16_t hint = cache->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             if (DK_IS_UNICODE(dict->ma_keys)) {
@@ -4086,7 +4105,7 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
             // TODO
-            PyObject *owner;
+            PyObject *owner, *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -4105,8 +4124,7 @@ handle_eval_breaker:
             DEOPT_IF(((PyCodeObject *)f->func_code)->co_argcount != 2, LOAD_ATTR);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), CALL);
             UOP_STAT_HIT(LOAD_ATTR);
-
-            PyObject *name = GETITEM(names, oparg >> 1);
+            UOP_GET_NAME(name, oparg >> 1);
             UOP_INCREF(f);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f);
             UOP_STACK_SET(1, NULL);
@@ -4128,7 +4146,7 @@ handle_eval_breaker:
 
         TARGET(STORE_ATTR_ADAPTIVE) {
             // TODO
-            PyObject *owner;
+            PyObject *owner, *name;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -4136,10 +4154,10 @@ handle_eval_breaker:
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 UOP_STACK_GET(owner, 1);
-                PyObject *name = GETITEM(names, oparg);
+                UOP_GET_NAME(name, oparg);
                 UOP_JUMP(-1);
                 if (_Py_Specialize_StoreAttr(owner, next_instr, name) < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -4193,7 +4211,7 @@ handle_eval_breaker:
 
         TARGET(STORE_ATTR_WITH_HINT) {
             // TODO
-            PyObject *owner, *value;
+            PyObject *owner, *name, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -4210,7 +4228,7 @@ handle_eval_breaker:
             PyDictObject *dict = (PyDictObject *)_PyDictOrValues_GetDict(dorv);
             DEOPT_IF(dict == NULL, STORE_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             uint16_t hint = cache->index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, STORE_ATTR);
             PyObject *old_value;
@@ -4297,7 +4315,7 @@ handle_eval_breaker:
             UOP_DECREF(left);
             UOP_DECREF(right);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
             UOP_NEXT_OPCODE();
@@ -4452,7 +4470,7 @@ handle_eval_breaker:
             UOP_STAT_HIT(COMPARE_OP);
             int res = _PyUnicode_Equal(left, right);
             if (res < 0) {
-                goto error;
+                UOP_ERROR();
             }
             assert(oparg == Py_EQ || oparg == Py_NE);
             UOP_JUMP(INLINE_CACHE_ENTRIES_COMPARE_OP);
@@ -4524,7 +4542,7 @@ handle_eval_breaker:
             UOP_DECREF(left);
             UOP_DECREF(right);
             if (res < 0) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *b = (res^oparg) ? Py_True : Py_False;
             UOP_STACK_ADJUST(1);
@@ -4547,7 +4565,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             if (check_except_star_type_valid(tstate, match_type) < 0) {
                 UOP_DECREF(match_type);
-                goto error;
+                UOP_ERROR();
             }
 
             UOP_STACK_GET(exc_value, 1);
@@ -4556,13 +4574,13 @@ handle_eval_breaker:
                                             &match, &rest);
             UOP_DECREF(match_type);
             if (res < 0) {
-                goto error;
+                UOP_ERROR();
             }
 
             if (match == NULL || rest == NULL) {
                 assert(match == NULL);
                 assert(rest == NULL);
-                goto error;
+                UOP_ERROR();
             }
             if (Py_IsNone(match)) {
                 UOP_STACK_ADJUST(1);
@@ -4602,7 +4620,7 @@ handle_eval_breaker:
             assert(PyExceptionInstance_Check(left));
             if (check_except_type_valid(tstate, right) < 0) {
                  UOP_DECREF(right);
-                 goto error;
+                 UOP_ERROR();
             }
 
             int res = PyErr_GivenExceptionMatches(left, right);
@@ -4618,11 +4636,11 @@ handle_eval_breaker:
 
         TARGET(IMPORT_NAME) {
             // TODO
-            PyObject *fromlist, *level;
+            PyObject *name, *fromlist, *level;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(fromlist, 1);
             UOP_STACK_ADJUST(-1);
             UOP_STACK_GET(level, 1);
@@ -4631,8 +4649,9 @@ handle_eval_breaker:
             UOP_DECREF(level);
             UOP_DECREF(fromlist);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4652,7 +4671,7 @@ handle_eval_breaker:
             int err;
             if (_PyFrame_FastToLocalsWithError(frame) < 0) {
                 UOP_DECREF(from);
-                goto error;
+                UOP_ERROR();
             }
 
             locals = LOCALS();
@@ -4660,13 +4679,14 @@ handle_eval_breaker:
                 _PyErr_SetString(tstate, PyExc_SystemError,
                                  "no locals found during 'import *'");
                 UOP_DECREF(from);
-                goto error;
+                UOP_ERROR();
             }
             err = import_all_from(tstate, locals, from);
             _PyFrame_LocalsToFast(frame, 0);
             UOP_DECREF(from);
-            if (err != 0)
-                goto error;
+            if (err != 0) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4676,18 +4696,19 @@ handle_eval_breaker:
 
         TARGET(IMPORT_FROM) {
             // TODO
-            PyObject *from;
+            PyObject *name, *from;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
-            PyObject *name = GETITEM(names, oparg);
+            UOP_GET_NAME(name, oparg);
             UOP_STACK_GET(from, 1);
             PyObject *res;
             res = import_from(tstate, from, name);
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4744,14 +4765,15 @@ handle_eval_breaker:
             }
             int err = PyObject_IsTrue(cond);
             UOP_DECREF(cond);
-            if (err > 0)
-                ;
+            if (err > 0) {
+            }
             else if (err == 0) {
                 UOP_JUMP(-oparg);
                 CHECK_EVAL_BREAKER();
             }
-            else
-                goto error;
+            else {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4778,13 +4800,14 @@ handle_eval_breaker:
             else {
                 int err = PyObject_IsTrue(cond);
                 UOP_DECREF(cond);
-                if (err > 0)
-                    ;
+                if (err > 0) {
+                }
                 else if (err == 0) {
                     UOP_JUMP(oparg);
                 }
-                else
-                    goto error;
+                else {
+                    UOP_ERROR();
+                }
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -4825,10 +4848,11 @@ handle_eval_breaker:
                 UOP_JUMP(-oparg);
                 CHECK_EVAL_BREAKER();
             }
-            else if (err == 0)
-                ;
-            else
-                goto error;
+            else if (err == 0) {
+            }
+            else {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4857,10 +4881,11 @@ handle_eval_breaker:
                 if (err > 0) {
                     UOP_JUMP(oparg);
                 }
-                else if (err == 0)
-                    ;
-                else
-                    goto error;
+                else if (err == 0) {
+                }
+                else {
+                    UOP_ERROR();
+                }
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -4989,10 +5014,12 @@ handle_eval_breaker:
                 UOP_STACK_ADJUST(-1);
                 UOP_DECREF(cond);
             }
-            else if (err == 0)
+            else if (err == 0) {
                 UOP_JUMP(oparg);
-            else
-                goto error;
+            }
+            else {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5034,7 +5061,7 @@ handle_eval_breaker:
                 UOP_DECREF(cond);
             }
             else
-                goto error;
+                UOP_ERROR();
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5060,6 +5087,7 @@ handle_eval_breaker:
         }
 
         TARGET(JUMP_BACKWARD_QUICK) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5082,11 +5110,11 @@ handle_eval_breaker:
             // PUSH(len(TOS))
             Py_ssize_t len_i = PyObject_Length(TOP());
             if (len_i < 0) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *len_o = PyLong_FromSsize_t(len_i);
             if (len_o == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, len_o);
@@ -5121,7 +5149,7 @@ handle_eval_breaker:
             }
             else if (_PyErr_Occurred(tstate)) {
                 // Error!
-                goto error;
+                UOP_ERROR();
             }
             else {
                 // Failure!
@@ -5189,7 +5217,7 @@ handle_eval_breaker:
             UOP_STACK_GET(subject, 2);
             PyObject *values_or_none = match_keys(tstate, subject, keys);
             if (values_or_none == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, values_or_none);
@@ -5211,8 +5239,9 @@ handle_eval_breaker:
             PyObject *iter = PyObject_GetIter(iterable);
             UOP_DECREF(iterable);
             UOP_STACK_SET(1, iter);
-            if (iter == NULL)
-                goto error;
+            if (iter == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5239,7 +5268,7 @@ handle_eval_breaker:
                     _PyErr_SetString(tstate, PyExc_TypeError,
                                      "cannot 'yield from' a coroutine object "
                                      "in a non-coroutine generator");
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             else if (!PyGen_CheckExact(iterable)) {
@@ -5247,8 +5276,9 @@ handle_eval_breaker:
                 iter = PyObject_GetIter(iterable);
                 UOP_DECREF(iterable);
                 UOP_STACK_SET(1, iter);
-                if (iter == NULL)
-                    goto error;
+                if (iter == NULL) {
+                    UOP_ERROR();
+                }
             }
             PREDICT(LOAD_CONST);  // TODO
             UOP_NEXT_OPCODE();
@@ -5280,7 +5310,7 @@ handle_eval_breaker:
             }
             if (_PyErr_Occurred(tstate)) {
                 if (!_PyErr_ExceptionMatches(tstate, PyExc_StopIteration)) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 else if (tstate->c_tracefunc != NULL) {
                     call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate, frame);
@@ -5369,7 +5399,7 @@ handle_eval_breaker:
             long value = (long)(r->start +
                                 (unsigned long)(r->index++) * r->step);
             if (_PyLong_AssignValue(&GETLOCAL(_Py_OPARG(next)), value) < 0) {
-                goto error;
+                UOP_ERROR();
             }
             // The STORE_FAST is already done.
             UOP_JUMP(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
@@ -5395,7 +5425,7 @@ handle_eval_breaker:
                                   "asynchronous context manager protocol",
                                   Py_TYPE(mgr)->tp_name);
                 }
-                goto error;
+                UOP_ERROR();
             }
             PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__aexit__));
             if (exit == NULL) {
@@ -5407,14 +5437,15 @@ handle_eval_breaker:
                                   Py_TYPE(mgr)->tp_name);
                 }
                 UOP_DECREF(enter);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_SET(1, exit);
             UOP_DECREF(mgr);
             res = _PyObject_CallNoArgs(enter);
             UOP_DECREF(enter);
-            if (res == NULL)
-                goto error;
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             PREDICT(GET_AWAITABLE);  // TODO
@@ -5441,7 +5472,7 @@ handle_eval_breaker:
                                   "context manager protocol",
                                   Py_TYPE(mgr)->tp_name);
                 }
-                goto error;
+                UOP_ERROR();
             }
             PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__exit__));
             if (exit == NULL) {
@@ -5453,14 +5484,14 @@ handle_eval_breaker:
                                   Py_TYPE(mgr)->tp_name);
                 }
                 UOP_DECREF(enter);
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_SET(1, exit);
             UOP_DECREF(mgr);
             res = _PyObject_CallNoArgs(enter);
             UOP_DECREF(enter);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
@@ -5499,9 +5530,9 @@ handle_eval_breaker:
             PyObject *stack[4] = {NULL, exc, val, tb};
             res = PyObject_Vectorcall(exit_func, stack + 1,
                     3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
-            if (res == NULL)
-                goto error;
-
+            if (res == NULL) {
+                UOP_ERROR();
+            }
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             UOP_NEXT_OPCODE();
@@ -5700,7 +5731,7 @@ handle_eval_breaker:
             UOP_UPDATE_STATS();
             assert(call_shape.kwnames == NULL);
             assert(oparg < PyTuple_GET_SIZE(consts));
-            call_shape.kwnames = GETITEM(consts, oparg);
+            UOP_GET_CONST(call_shape.kwnames, oparg);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -5745,7 +5776,7 @@ handle_eval_breaker:
                 // The frame has stolen all the arguments from the stack,
                 // so there is no need to clean them up.
                 if (new_frame == NULL) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_WRITE_STACK_TOP();
                 UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
@@ -5780,7 +5811,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(1);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_CALL);
             CHECK_EVAL_BREAKER();
@@ -5806,7 +5837,7 @@ handle_eval_breaker:
                 int err = _Py_Specialize_Call(callable, next_instr, nargs,
                                               call_shape.kwnames);
                 if (err < 0) {
-                    goto error;
+                    UOP_ERROR();
                 }
                 UOP_NEXT_OPCODE();
                 UOP_LLTRACE();
@@ -5948,7 +5979,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -5978,7 +6009,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6016,7 +6047,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(is_meth - 1);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6048,7 +6079,7 @@ handle_eval_breaker:
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
             if (_Py_EnterRecursiveCallTstate(tstate, " while calling a Python object")) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_GET(arg, 1);
             PyObject *res = cfunc(PyCFunction_GET_SELF(callable), arg);
@@ -6060,7 +6091,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(is_meth - 2);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6111,7 +6142,7 @@ handle_eval_breaker:
                    'invalid'). In those cases an exception is set, so we must
                    handle it.
                 */
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6161,7 +6192,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6191,7 +6222,7 @@ handle_eval_breaker:
             UOP_STACK_GET(arg, 1);
             Py_ssize_t len_i = PyObject_Length(arg);
             if (len_i < 0) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *res = PyLong_FromSsize_t(len_i);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
@@ -6201,7 +6232,7 @@ handle_eval_breaker:
             UOP_DECREF(callable);
             UOP_DECREF(arg);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -6233,7 +6264,7 @@ handle_eval_breaker:
             int retval = PyObject_IsInstance(inst, cls);
             if (retval < 0) {
                 UOP_DECREF(cls);
-                goto error;
+                UOP_ERROR();
             }
             PyObject *res = PyBool_FromLong(retval);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
@@ -6244,7 +6275,7 @@ handle_eval_breaker:
             UOP_DECREF(cls);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
@@ -6274,7 +6305,7 @@ handle_eval_breaker:
             UOP_STACK_GET(arg, 1);
             UOP_STACK_ADJUST(-1);
             if (_PyList_AppendTakeRef((PyListObject *)list, arg) < 0) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_STACK_ADJUST(-2);
             UOP_DECREF(list);
@@ -6309,7 +6340,7 @@ handle_eval_breaker:
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
             if (_Py_EnterRecursiveCallTstate(tstate, " while calling a Python object")) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *res = cfunc(self, arg);
             _Py_LeaveRecursiveCallTstate(tstate);
@@ -6320,7 +6351,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6367,7 +6398,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6400,7 +6431,7 @@ handle_eval_breaker:
             // This is slower but CPython promises to check all non-vectorcall
             // function calls.
             if (_Py_EnterRecursiveCallTstate(tstate, " while calling a Python object")) {
-                goto error;
+                UOP_ERROR();
             }
             PyObject *res = cfunc(self, NULL);
             _Py_LeaveRecursiveCallTstate(tstate);
@@ -6410,7 +6441,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6455,7 +6486,7 @@ handle_eval_breaker:
             UOP_STACK_SET(1, res);
             UOP_DECREF(callable);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6477,13 +6508,14 @@ handle_eval_breaker:
                 kwargs = POP();
                 if (!PyDict_CheckExact(kwargs)) {
                     PyObject *d = PyDict_New();
-                    if (d == NULL)
-                        goto error;
+                    if (d == NULL) {
+                        UOP_ERROR();
+                    }
                     if (_PyDict_MergeEx(d, kwargs, 2) < 0) {
                         UOP_DECREF(d);
                         format_kwargs_error(tstate, SECOND(), kwargs);
                         UOP_DECREF(kwargs);
-                        goto error;
+                        UOP_ERROR();
                     }
                     UOP_DECREF(kwargs);
                     kwargs = d;
@@ -6496,11 +6528,11 @@ handle_eval_breaker:
             if (!PyTuple_CheckExact(callargs)) {
                 if (check_args_iterable(tstate, func, callargs) < 0) {
                     UOP_DECREF(callargs);
-                    goto error;
+                    UOP_ERROR();
                 }
                 Py_SETREF(callargs, PySequence_Tuple(callargs));
                 if (callargs == NULL) {
-                    goto error;
+                    UOP_ERROR();
                 }
             }
             assert(PyTuple_CheckExact(callargs));
@@ -6516,7 +6548,7 @@ handle_eval_breaker:
             assert(TOP() == NULL);
             UOP_STACK_SET(1, result);
             if (result == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             CHECK_EVAL_BREAKER();
             UOP_NEXT_OPCODE();
@@ -6539,7 +6571,7 @@ handle_eval_breaker:
 
             UOP_DECREF(codeobj);
             if (func == NULL) {
-                goto error;
+                UOP_ERROR();
             }
 
             if (oparg & 0x08) {
@@ -6577,7 +6609,7 @@ handle_eval_breaker:
             PyFunctionObject *func = (PyFunctionObject *)frame->f_funcobj;
             PyGenObject *gen = (PyGenObject *)_Py_MakeCoro(func);
             if (gen == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             assert(EMPTY());
             UOP_WRITE_STACK_TOP();
@@ -6628,8 +6660,9 @@ handle_eval_breaker:
                 UOP_DECREF(step);
             }
             UOP_STACK_SET(1, slice);
-            if (slice == NULL)
-                goto error;
+            if (slice == NULL) {
+                UOP_ERROR();
+            }
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -6664,7 +6697,7 @@ handle_eval_breaker:
                 _PyErr_Format(tstate, PyExc_SystemError,
                               "unexpected conversion flag %d",
                               which_conversion);
-                goto error;
+                UOP_ERROR();
             }
 
             /* If there's a conversion function, call it and replace
@@ -6677,7 +6710,7 @@ handle_eval_breaker:
                     if (fmt_spec) {
                         UOP_DECREF(fmt_spec);
                     }
-                    goto error;
+                    UOP_ERROR();
                 }
                 value = result;
             }
@@ -6696,7 +6729,7 @@ handle_eval_breaker:
                 UOP_DECREF(value);
                 Py_XDECREF(fmt_spec);
                 if (result == NULL) {
-                    goto error;
+                    UOP_ERROR();
                 }
             }
 
@@ -6744,7 +6777,7 @@ handle_eval_breaker:
             UOP_DECREF(rhs);
             UOP_STACK_SET(1, res);
             if (res == NULL) {
-                goto error;
+                UOP_ERROR();
             }
             UOP_JUMP(INLINE_CACHE_ENTRIES_BINARY_OP);
             UOP_NEXT_OPCODE();

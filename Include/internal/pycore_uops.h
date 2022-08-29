@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 #ifndef Py_BUILD_CORE
-#  error "this header requires Py_BUILD_CORE define"
+    #error "this header requires Py_BUILD_CORE"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -17,9 +17,11 @@ extern "C" {
 #define UOP_DECREF_LONG(O)      _uop_decref_long(_PyObject_CAST((O)))
 #define UOP_DECREF_UNICODE(O)   _uop_decref_unicode(_PyObject_CAST((O)))
 #define UOP_DISPATCH()          _uop_dispatch()
+#define UOP_ERROR()             _uop_error()
 #define UOP_EXTEND_OPARG()      _uop_extend_oparg(&oparg, next_instr)
 #define UOP_GET_CONST(O, I)     _uop_get_const(&(O), consts, (I))
 #define UOP_GET_FAST(O, I)      _uop_get_fast(&(O), frame, (I))
+#define UOP_GET_NAME(O, I)      _uop_get_name(&(O), names, (I))
 #define UOP_INCREF(O)           _uop_incref(_PyObject_CAST((O)))
 #define UOP_JUMP(I)             _uop_jump(&next_instr, (I))
 #define UOP_LINK_FRAME(F)       _uop_link_frame((F), &frame, &cframe)
@@ -81,6 +83,8 @@ _uop_decref_unicode(PyObject *o)
 }
 
 #define _uop_dispatch() DISPATCH_GOTO()
+
+#define _uop_error() goto error
 
 static inline Py_ALWAYS_INLINE void
 _uop_extend_oparg(int *oparg_p, _Py_CODEUNIT *next_instr)
