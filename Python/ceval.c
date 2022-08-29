@@ -1153,7 +1153,8 @@ handle_eval_breaker:
             JUMP_TO_INSTRUCTION(RESUME_QUICK);  // TODO
         }
 
-        TARGET(RESUME_QUICK) {  // TODO
+        TARGET(RESUME_QUICK) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -1170,7 +1171,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_CLOSURE) {  // TODO
+        TARGET(LOAD_CLOSURE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1190,7 +1192,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_FAST_CHECK) {  // TODO
+        TARGET(LOAD_FAST_CHECK) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1243,7 +1246,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST) {  // TODO
+        TARGET(STORE_FAST) {
+            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1309,7 +1313,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST__LOAD_FAST) {  // TODO
+        TARGET(STORE_FAST__LOAD_FAST) {
+            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1335,7 +1340,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_FAST__STORE_FAST) {  // TODO
+        TARGET(STORE_FAST__STORE_FAST) {
+            // TODO
             PyObject *value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1414,7 +1420,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNARY_POSITIVE) {  // TODO
+        TARGET(UNARY_POSITIVE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1432,7 +1439,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNARY_NEGATIVE) {  // TODO
+        TARGET(UNARY_NEGATIVE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1450,7 +1458,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNARY_NOT) {  // TODO
+        TARGET(UNARY_NOT) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1480,7 +1489,8 @@ handle_eval_breaker:
             goto error;
         }
 
-        TARGET(UNARY_INVERT) {  // TODO
+        TARGET(UNARY_INVERT) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1498,7 +1508,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_INT) {  // TODO
+        TARGET(BINARY_OP_MULTIPLY_INT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1524,7 +1535,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_FLOAT) {  // TODO
+        TARGET(BINARY_OP_MULTIPLY_FLOAT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1552,7 +1564,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_SUBTRACT_INT) {  // TODO
+        TARGET(BINARY_OP_SUBTRACT_INT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1578,7 +1591,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_SUBTRACT_FLOAT) {  // TODO
+        TARGET(BINARY_OP_SUBTRACT_FLOAT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1605,7 +1619,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_UNICODE) {  // TODO
+        TARGET(BINARY_OP_ADD_UNICODE) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1631,7 +1646,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_INPLACE_ADD_UNICODE) {  // TODO
+        TARGET(BINARY_OP_INPLACE_ADD_UNICODE) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1674,7 +1690,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_FLOAT) {  // TODO
+        TARGET(BINARY_OP_ADD_FLOAT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1702,7 +1719,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADD_INT) {  // TODO
+        TARGET(BINARY_OP_ADD_INT) {
+            // TODO
             PyObject *left, *right;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1728,7 +1746,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR) {  // TODO
+        TARGET(BINARY_SUBSCR) {
+            // TODO
             PyObject *sub, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1751,7 +1770,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SLICE) {  // TODO
+        TARGET(BINARY_SLICE) {
+            // TODO
             PyObject *stop, *start, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1780,7 +1800,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_SLICE) {  // TODO
+        TARGET(STORE_SLICE) {
+            // TODO
             PyObject *stop, *start, *container, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1811,7 +1832,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_ADAPTIVE) {  // TODO
+        TARGET(BINARY_SUBSCR_ADAPTIVE) {
+            // TODO
             PyObject *sub, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1836,7 +1858,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(BINARY_SUBSCR_LIST_INT) {  // TODO
+        TARGET(BINARY_SUBSCR_LIST_INT) {
+            // TODO
             PyObject *sub, *list;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1868,7 +1891,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_TUPLE_INT) {  // TODO
+        TARGET(BINARY_SUBSCR_TUPLE_INT) {
+            // TODO
             PyObject *sub, *tuple;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1900,7 +1924,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_DICT) {  // TODO
+        TARGET(BINARY_SUBSCR_DICT) {
+            // TODO
             PyObject *sub, *dict;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1927,7 +1952,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_SUBSCR_GETITEM) {  // TODO
+        TARGET(BINARY_SUBSCR_GETITEM) {
+            // TODO
             PyObject *sub, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1964,7 +1990,8 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(LIST_APPEND) {  // TODO
+        TARGET(LIST_APPEND) {
+            // TODO
             PyObject *v, *list;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -1982,7 +2009,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(SET_ADD) {  // TODO
+        TARGET(SET_ADD) {
+            // TODO
             PyObject *v, *set;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2003,7 +2031,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR) {  // TODO
+        TARGET(STORE_SUBSCR) {
+            // TODO
             PyObject *sub, *container, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2030,7 +2059,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_ADAPTIVE) {  // TODO
+        TARGET(STORE_SUBSCR_ADAPTIVE) {
+            // TODO
             PyObject *sub, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2055,7 +2085,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(STORE_SUBSCR_LIST_INT) {  // TODO
+        TARGET(STORE_SUBSCR_LIST_INT) {
+            // TODO
             PyObject *sub, *list, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2088,7 +2119,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_SUBSCR_DICT) {  // TODO
+        TARGET(STORE_SUBSCR_DICT) {
+            // TODO
             PyObject *sub, *dict, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2113,7 +2145,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_SUBSCR) {  // TODO
+        TARGET(DELETE_SUBSCR) {
+            // TODO
             PyObject *sub, *container;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2135,7 +2168,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(PRINT_EXPR) {  // TODO
+        TARGET(PRINT_EXPR) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2162,7 +2196,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(RAISE_VARARGS) {  // TODO
+        TARGET(RAISE_VARARGS) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -2187,7 +2222,8 @@ handle_eval_breaker:
             goto error;
         }
 
-        TARGET(RETURN_VALUE) {  // TODO
+        TARGET(RETURN_VALUE) {
+            // TODO
             PyObject *retval;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2212,7 +2248,8 @@ handle_eval_breaker:
             return retval;
         }
 
-        TARGET(GET_AITER) {  // TODO
+        TARGET(GET_AITER) {
+            // TODO
             PyObject *obj;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2264,7 +2301,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(GET_ANEXT) {  // TODO
+        TARGET(GET_ANEXT) {
+            // TODO
             PyObject *aiter;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2324,7 +2362,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(GET_AWAITABLE) {  // TODO
+        TARGET(GET_AWAITABLE) {
+            // TODO
             PyObject *iterable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2367,7 +2406,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(SEND) {  // TODO
+        TARGET(SEND) {
+            // TODO
             PyObject *v, *receiver;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2430,7 +2470,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(ASYNC_GEN_WRAP) {  // TODO
+        TARGET(ASYNC_GEN_WRAP) {
+            // TODO
             PyObject *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2450,7 +2491,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(YIELD_VALUE) {  // TODO
+        TARGET(YIELD_VALUE) {
+            // TODO
             PyObject *retval;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2475,7 +2517,8 @@ handle_eval_breaker:
             return retval;
         }
 
-        TARGET(POP_EXCEPT) {  // TODO
+        TARGET(POP_EXCEPT) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -2492,7 +2535,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(RERAISE) {  // TODO
+        TARGET(RERAISE) {
+            // TODO
             PyObject *lasti, *val;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2518,7 +2562,8 @@ handle_eval_breaker:
             goto exception_unwind;
         }
 
-        TARGET(PREP_RERAISE_STAR) {  // TODO
+        TARGET(PREP_RERAISE_STAR) {
+            // TODO
             PyObject *excs, *orig;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2546,7 +2591,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(END_ASYNC_FOR) {  // TODO
+        TARGET(END_ASYNC_FOR) {
+            // TODO
             PyObject *val, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2573,7 +2619,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(CLEANUP_THROW) {  // TODO
+        TARGET(CLEANUP_THROW) {
+            // TODO
             PyObject *exc_value, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2625,7 +2672,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_BUILD_CLASS) {  // TODO
+        TARGET(LOAD_BUILD_CLASS) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -2660,7 +2708,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_NAME) {  // TODO
+        TARGET(STORE_NAME) {
+            // TODO
             PyObject *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2690,7 +2739,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_NAME) {  // TODO
+        TARGET(DELETE_NAME) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -2716,7 +2766,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE) {  // TODO
+        TARGET(UNPACK_SEQUENCE) {
+            // TODO
             PyObject *seq;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2739,7 +2790,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_ADAPTIVE) {  // TODO
+        TARGET(UNPACK_SEQUENCE_ADAPTIVE) {
+            // TODO
             PyObject *seq;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2762,7 +2814,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(UNPACK_SEQUENCE_TWO_TUPLE) {  // TODO
+        TARGET(UNPACK_SEQUENCE_TWO_TUPLE) {
+            // TODO
             PyObject *seq, *item;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2786,7 +2839,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_TUPLE) {  // TODO
+        TARGET(UNPACK_SEQUENCE_TUPLE) {
+            // TODO
             PyObject *seq;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2809,7 +2863,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_SEQUENCE_LIST) {  // TODO
+        TARGET(UNPACK_SEQUENCE_LIST) {
+            // TODO
             PyObject *seq;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2832,7 +2887,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(UNPACK_EX) {  // TODO
+        TARGET(UNPACK_EX) {
+            // TODO
             PyObject *seq;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2854,7 +2910,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR) {  // TODO
+        TARGET(STORE_ATTR) {
+            // TODO
             PyObject *owner, *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2879,7 +2936,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_ATTR) {  // TODO
+        TARGET(DELETE_ATTR) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2899,7 +2957,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_GLOBAL) {  // TODO
+        TARGET(STORE_GLOBAL) {
+            // TODO
             PyObject *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -2919,7 +2978,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_GLOBAL) {  // TODO
+        TARGET(DELETE_GLOBAL) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -2940,7 +3000,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_NAME) {  // TODO
+        TARGET(LOAD_NAME) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3012,7 +3073,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL) {  // TODO
+        TARGET(LOAD_GLOBAL) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3073,7 +3135,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL_ADAPTIVE) {  // TODO
+        TARGET(LOAD_GLOBAL_ADAPTIVE) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3097,7 +3160,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(LOAD_GLOBAL_MODULE) {  // TODO
+        TARGET(LOAD_GLOBAL_MODULE) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3124,7 +3188,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_GLOBAL_BUILTIN) {  // TODO
+        TARGET(LOAD_GLOBAL_BUILTIN) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3155,7 +3220,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_FAST) {  // TODO
+        TARGET(DELETE_FAST) {
+            // TODO
             PyObject *v;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3173,7 +3239,8 @@ handle_eval_breaker:
             goto unbound_local_error;
         }
 
-        TARGET(MAKE_CELL) {  // TODO
+        TARGET(MAKE_CELL) {
+            // TODO
             PyObject *initial, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3197,7 +3264,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DELETE_DEREF) {  // TODO
+        TARGET(DELETE_DEREF) {
+            // TODO
             PyObject *cell;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3217,7 +3285,8 @@ handle_eval_breaker:
             goto error;
         }
 
-        TARGET(LOAD_CLASSDEREF) {  // TODO
+        TARGET(LOAD_CLASSDEREF) {
+            // TODO
             PyObject *cell;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3262,7 +3331,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_DEREF) {  // TODO
+        TARGET(LOAD_DEREF) {
+            // TODO
             PyObject *cell;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3283,7 +3353,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_DEREF) {  // TODO
+        TARGET(STORE_DEREF) {
+            // TODO
             PyObject *v, *cell;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3303,7 +3374,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(COPY_FREE_VARS) {  // TODO
+        TARGET(COPY_FREE_VARS) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3325,7 +3397,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_STRING) {  // TODO
+        TARGET(BUILD_STRING) {
+            // TODO
             PyObject *item;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3349,7 +3422,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_TUPLE) {  // TODO
+        TARGET(BUILD_TUPLE) {
+            // TODO
             PyObject *item;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3371,7 +3445,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_LIST) {  // TODO
+        TARGET(BUILD_LIST) {
+            // TODO
             PyObject *item;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3393,7 +3468,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LIST_TO_TUPLE) {  // TODO
+        TARGET(LIST_TO_TUPLE) {
+            // TODO
             PyObject *list;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3414,7 +3490,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LIST_EXTEND) {  // TODO
+        TARGET(LIST_EXTEND) {
+            // TODO
             PyObject *iterable, *list;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3444,7 +3521,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(SET_UPDATE) {  // TODO
+        TARGET(SET_UPDATE) {
+            // TODO
             PyObject *iterable, *set;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3464,7 +3542,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_SET) {  // TODO
+        TARGET(BUILD_SET) {
+            // TODO
             PyObject *item;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3494,7 +3573,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_MAP) {  // TODO
+        TARGET(BUILD_MAP) {
+            // TODO
             PyObject *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3523,7 +3603,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(SETUP_ANNOTATIONS) {  // TODO
+        TARGET(SETUP_ANNOTATIONS) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -3585,7 +3666,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BUILD_CONST_KEY_MAP) {  // TODO
+        TARGET(BUILD_CONST_KEY_MAP) {
+            // TODO
             PyObject *keys, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3622,7 +3704,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DICT_UPDATE) {  // TODO
+        TARGET(DICT_UPDATE) {
+            // TODO
             PyObject *update, *dict;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3647,7 +3730,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(DICT_MERGE) {  // TODO
+        TARGET(DICT_MERGE) {
+            // TODO
             PyObject *update, *dict;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3670,7 +3754,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MAP_ADD) {  // TODO
+        TARGET(MAP_ADD) {
+            // TODO
             PyObject *value, *key, *map;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3692,7 +3777,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR) {  // TODO
+        TARGET(LOAD_ATTR) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3755,7 +3841,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_ADAPTIVE) {  // TODO
+        TARGET(LOAD_ATTR_ADAPTIVE) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3781,7 +3868,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(LOAD_ATTR_INSTANCE_VALUE) {  // TODO
+        TARGET(LOAD_ATTR_INSTANCE_VALUE) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3813,7 +3901,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_MODULE) {  // TODO
+        TARGET(LOAD_ATTR_MODULE) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3845,7 +3934,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_WITH_HINT) {  // TODO
+        TARGET(LOAD_ATTR_WITH_HINT) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3891,7 +3981,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_SLOT) {  // TODO
+        TARGET(LOAD_ATTR_SLOT) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3920,7 +4011,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_CLASS) {  // TODO
+        TARGET(LOAD_ATTR_CLASS) {
+            // TODO
             PyObject *cls;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3950,7 +4042,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_PROPERTY) {  // TODO
+        TARGET(LOAD_ATTR_PROPERTY) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -3991,7 +4084,8 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {  // TODO
+        TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4032,7 +4126,8 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(STORE_ATTR_ADAPTIVE) {  // TODO
+        TARGET(STORE_ATTR_ADAPTIVE) {
+            // TODO
             PyObject *owner;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4058,7 +4153,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(STORE_ATTR_INSTANCE_VALUE) {  // TODO
+        TARGET(STORE_ATTR_INSTANCE_VALUE) {
+            // TODO
             PyObject *owner, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4095,7 +4191,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR_WITH_HINT) {  // TODO
+        TARGET(STORE_ATTR_WITH_HINT) {
+            // TODO
             PyObject *owner, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4153,7 +4250,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(STORE_ATTR_SLOT) {  // TODO
+        TARGET(STORE_ATTR_SLOT) {
+            // TODO
             PyObject *owner, *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4183,7 +4281,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP) {  // TODO
+        TARGET(COMPARE_OP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4208,7 +4307,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_ADAPTIVE) {  // TODO
+        TARGET(COMPARE_OP_ADAPTIVE) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4232,7 +4332,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(COMPARE_OP_FLOAT_JUMP) {  // TODO
+        TARGET(COMPARE_OP_FLOAT_JUMP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4282,7 +4383,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_INT_JUMP) {  // TODO
+        TARGET(COMPARE_OP_INT_JUMP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4333,7 +4435,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(COMPARE_OP_STR_JUMP) {  // TODO
+        TARGET(COMPARE_OP_STR_JUMP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4385,7 +4488,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(IS_OP) {  // TODO
+        TARGET(IS_OP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4406,7 +4510,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CONTAINS_OP) {  // TODO
+        TARGET(CONTAINS_OP) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4432,7 +4537,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CHECK_EG_MATCH) {  // TODO
+        TARGET(CHECK_EG_MATCH) {
+            // TODO
             PyObject *match_type, *exc_value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4484,7 +4590,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CHECK_EXC_MATCH) {  // TODO
+        TARGET(CHECK_EXC_MATCH) {
+            // TODO
             PyObject *right, *left;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4509,7 +4616,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_NAME) {  // TODO
+        TARGET(IMPORT_NAME) {
+            // TODO
             PyObject *fromlist, *level;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4532,7 +4640,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_STAR) {  // TODO
+        TARGET(IMPORT_STAR) {
+            // TODO
             PyObject *from;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4565,7 +4674,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(IMPORT_FROM) {  // TODO
+        TARGET(IMPORT_FROM) {
+            // TODO
             PyObject *from;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4605,7 +4715,8 @@ handle_eval_breaker:
             JUMP_TO_INSTRUCTION(JUMP_BACKWARD_QUICK);  // TODO
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_FALSE) {  // TODO
+        TARGET(POP_JUMP_BACKWARD_IF_FALSE) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4648,7 +4759,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_FALSE) {  // TODO
+        TARGET(POP_JUMP_FORWARD_IF_FALSE) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4681,7 +4793,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_TRUE) {  // TODO
+        TARGET(POP_JUMP_BACKWARD_IF_TRUE) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4723,7 +4836,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_TRUE) {  // TODO
+        TARGET(POP_JUMP_FORWARD_IF_TRUE) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4755,7 +4869,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_NOT_NONE) {  // TODO
+        TARGET(POP_JUMP_BACKWARD_IF_NOT_NONE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4780,7 +4895,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_NOT_NONE) {  // TODO
+        TARGET(POP_JUMP_FORWARD_IF_NOT_NONE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4798,7 +4914,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_BACKWARD_IF_NONE) {  // TODO
+        TARGET(POP_JUMP_BACKWARD_IF_NONE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4820,7 +4937,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(POP_JUMP_FORWARD_IF_NONE) {  // TODO
+        TARGET(POP_JUMP_FORWARD_IF_NONE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4841,7 +4959,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(JUMP_IF_FALSE_OR_POP) {  // TODO
+        TARGET(JUMP_IF_FALSE_OR_POP) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4881,7 +5000,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(JUMP_IF_TRUE_OR_POP) {  // TODO
+        TARGET(JUMP_IF_TRUE_OR_POP) {
+            // TODO
             PyObject *cond;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -4954,7 +5074,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(GET_LEN) {  // TODO
+        TARGET(GET_LEN) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -4976,7 +5097,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MATCH_CLASS) {  // TODO
+        TARGET(MATCH_CLASS) {
+            // TODO
             PyObject *names, *type, *subject;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5014,7 +5136,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MATCH_MAPPING) {  // TODO
+        TARGET(MATCH_MAPPING) {
+            // TODO
             PyObject *subject;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5034,7 +5157,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MATCH_SEQUENCE) {  // TODO
+        TARGET(MATCH_SEQUENCE) {
+            // TODO
             PyObject *subject;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5054,7 +5178,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MATCH_KEYS) {  // TODO
+        TARGET(MATCH_KEYS) {
+            // TODO
             PyObject *keys, *subject;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5075,7 +5200,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(GET_ITER) {  // TODO
+        TARGET(GET_ITER) {
+            // TODO
             PyObject *iterable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5094,7 +5220,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(GET_YIELD_FROM_ITER) {  // TODO
+        TARGET(GET_YIELD_FROM_ITER) {
+            // TODO
             PyObject *iterable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5131,7 +5258,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(FOR_ITER) {  // TODO
+        TARGET(FOR_ITER) {
+            // TODO
             PyObject *iter, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5173,7 +5301,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(FOR_ITER_ADAPTIVE) {  // TODO
+        TARGET(FOR_ITER_ADAPTIVE) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5194,7 +5323,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(FOR_ITER_LIST) {  // TODO
+        TARGET(FOR_ITER_LIST) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5222,7 +5352,8 @@ handle_eval_breaker:
             goto iterator_exhausted_no_error;
         }
 
-        TARGET(FOR_ITER_RANGE) {  // TODO
+        TARGET(FOR_ITER_RANGE) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5248,7 +5379,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BEFORE_ASYNC_WITH) {  // TODO
+        TARGET(BEFORE_ASYNC_WITH) {
+            // TODO
             PyObject *mgr;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5293,7 +5425,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BEFORE_WITH) {  // TODO
+        TARGET(BEFORE_WITH) {
+            // TODO
             PyObject *mgr;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5338,7 +5471,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(WITH_EXCEPT_START) {  // TODO
+        TARGET(WITH_EXCEPT_START) {
+            // TODO
             PyObject *val, *exit_func;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5377,7 +5511,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(PUSH_EXC_INFO) {  // TODO
+        TARGET(PUSH_EXC_INFO) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5406,7 +5541,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_WITH_VALUES) {  // TODO
+        TARGET(LOAD_ATTR_METHOD_WITH_VALUES) {
+            // TODO
             PyObject *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5440,7 +5576,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_WITH_DICT) {  // TODO
+        TARGET(LOAD_ATTR_METHOD_WITH_DICT) {
+            // TODO
             PyObject *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5476,7 +5613,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_NO_DICT) {  // TODO
+        TARGET(LOAD_ATTR_METHOD_NO_DICT) {
+            // TODO
             PyObject *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5503,7 +5641,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(LOAD_ATTR_METHOD_LAZY_DICT) {  // TODO
+        TARGET(LOAD_ATTR_METHOD_LAZY_DICT) {
+            // TODO
             PyObject *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5534,7 +5673,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_BOUND_METHOD_EXACT_ARGS) {  // TODO
+        TARGET(CALL_BOUND_METHOD_EXACT_ARGS) {
+            // TODO
             PyObject *function;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5553,7 +5693,8 @@ handle_eval_breaker:
             goto call_exact_args;
         }
 
-        TARGET(KW_NAMES) {  // TODO
+        TARGET(KW_NAMES) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -5567,7 +5708,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL) {  // TODO
+        TARGET(CALL) {
+            // TODO
             PyObject *function, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5649,7 +5791,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_ADAPTIVE) {  // TODO
+        TARGET(CALL_ADAPTIVE) {
+            // TODO
             PyObject *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5677,7 +5820,8 @@ handle_eval_breaker:
             }
         }
 
-        TARGET(CALL_PY_EXACT_ARGS) {  // TODO
+        TARGET(CALL_PY_EXACT_ARGS) {
+            // TODO
             PyObject *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5713,7 +5857,8 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(CALL_PY_WITH_DEFAULTS) {  // TODO
+        TARGET(CALL_PY_WITH_DEFAULTS) {
+            // TODO
             PyObject *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5756,7 +5901,8 @@ handle_eval_breaker:
             goto start_frame;
         }
 
-        TARGET(CALL_NO_KW_TYPE_1) {  // TODO
+        TARGET(CALL_NO_KW_TYPE_1) {
+            // TODO
             PyObject *obj, *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5781,7 +5927,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_STR_1) {  // TODO
+        TARGET(CALL_NO_KW_STR_1) {
+            // TODO
             PyObject *callable, *arg;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5811,7 +5958,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_TUPLE_1) {  // TODO
+        TARGET(CALL_NO_KW_TUPLE_1) {
+            // TODO
             PyObject *callable, *arg;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5840,7 +5988,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_BUILTIN_CLASS) {  // TODO
+        TARGET(CALL_BUILTIN_CLASS) {
+            // TODO
             PyObject *tmp, *callable;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5877,7 +6026,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_BUILTIN_O) {  // TODO
+        TARGET(CALL_NO_KW_BUILTIN_O) {
+            // TODO
             PyObject *callable;
             PyObject *arg;
             UOP_JUMP(1);
@@ -5920,7 +6070,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_BUILTIN_FAST) {  // TODO
+        TARGET(CALL_NO_KW_BUILTIN_FAST) {
+            // TODO
             PyObject *callable, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -5970,7 +6121,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_BUILTIN_FAST_WITH_KEYWORDS) {  // TODO
+        TARGET(CALL_BUILTIN_FAST_WITH_KEYWORDS) {
+            // TODO
             PyObject *callable, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6019,7 +6171,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_LEN) {  // TODO
+        TARGET(CALL_NO_KW_LEN) {
+            // TODO
             PyObject *callable, *arg;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6057,7 +6210,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_ISINSTANCE) {  // TODO
+        TARGET(CALL_NO_KW_ISINSTANCE) {
+            // TODO
             PyObject *callable, *cls, *inst;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6099,7 +6253,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_LIST_APPEND) {  // TODO
+        TARGET(CALL_NO_KW_LIST_APPEND) {
+            // TODO
             PyObject *callable, *arg, *list;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6130,7 +6285,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_O) {  // TODO
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_O) {
+            // TODO
             PyObject *arg, *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6174,7 +6330,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS) {  // TODO
+        TARGET(CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS) {
+            // TODO
             PyObject *self, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6220,7 +6377,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS) {  // TODO
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS) {
+            // TODO
             PyObject *self;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6262,7 +6420,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_FAST) {  // TODO
+        TARGET(CALL_NO_KW_METHOD_DESCRIPTOR_FAST) {
+            // TODO
             PyObject *self, *tmp;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6306,7 +6465,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(CALL_FUNCTION_EX) {  // TODO
+        TARGET(CALL_FUNCTION_EX) {
+            // TODO
             PyObject *callargs, *func;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6366,7 +6526,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(MAKE_FUNCTION) {  // TODO
+        TARGET(MAKE_FUNCTION) {
+            // TODO
             PyObject *codeobj;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6407,7 +6568,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(RETURN_GENERATOR) {  // TODO
+        TARGET(RETURN_GENERATOR) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
@@ -6445,7 +6607,8 @@ handle_eval_breaker:
             return (PyObject *)gen;
         }
 
-        TARGET(BUILD_SLICE) {  // TODO
+        TARGET(BUILD_SLICE) {
+            // TODO
             PyObject *stop, *start;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6474,7 +6637,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(FORMAT_VALUE) {  // TODO
+        TARGET(FORMAT_VALUE) {
+            // TODO
             PyObject *value;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6562,7 +6726,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP) {  // TODO
+        TARGET(BINARY_OP) {
+            // TODO
             PyObject *rhs, *lhs;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6589,7 +6754,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(BINARY_OP_ADAPTIVE) {  // TODO
+        TARGET(BINARY_OP_ADAPTIVE) {
+            // TODO
             PyObject *lhs, *rhs;
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
@@ -6630,7 +6796,8 @@ handle_eval_breaker:
             UOP_DISPATCH();
         }
 
-        TARGET(EXTENDED_ARG) {  // TODO
+        TARGET(EXTENDED_ARG) {
+            // TODO
             UOP_JUMP(1);
             UOP_WRITE_PREV_INSTR();
             UOP_UPDATE_STATS();
