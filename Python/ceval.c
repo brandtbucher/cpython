@@ -1509,8 +1509,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
+            UOP_GUARD_LONG(left);
+            UOP_GUARD_LONG(right);
             UOP_STAT_HIT(BINARY_OP);
             PyObject *prod = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
             UOP_STACK_SET(2, prod);
@@ -1536,8 +1536,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
+            UOP_GUARD_FLOAT(left);
+            UOP_GUARD_FLOAT(right);
             UOP_STAT_HIT(BINARY_OP);
             double dprod = ((PyFloatObject *)left)->ob_fval *
                 ((PyFloatObject *)right)->ob_fval;
@@ -1565,8 +1565,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
+            UOP_GUARD_LONG(left);
+            UOP_GUARD_LONG(right);
             UOP_STAT_HIT(BINARY_OP);
             PyObject *sub = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
             UOP_STACK_SET(2, sub);
@@ -1592,8 +1592,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
+            UOP_GUARD_FLOAT(left);
+            UOP_GUARD_FLOAT(right);
             UOP_STAT_HIT(BINARY_OP);
             double dsub = ((PyFloatObject *)left)->ob_fval - ((PyFloatObject *)right)->ob_fval;
             PyObject *sub = PyFloat_FromDouble(dsub);
@@ -1620,8 +1620,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            UOP_GUARD_UNICODE(left);
+            UOP_GUARD_UNICODE(right);
             UOP_STAT_HIT(BINARY_OP);
             PyObject *res = PyUnicode_Concat(left, right);
             UOP_STACK_ADJUST(-1);
@@ -1647,8 +1647,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            UOP_GUARD_UNICODE(left);
+            UOP_GUARD_UNICODE(right);
             _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
             assert(_Py_OPCODE(true_next) == STORE_FAST ||
                    _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
@@ -1691,8 +1691,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            UOP_GUARD_FLOAT(left);
+            UOP_GUARD_FLOAT(right);
             UOP_STAT_HIT(BINARY_OP);
             double dsum = ((PyFloatObject *)left)->ob_fval +
                 ((PyFloatObject *)right)->ob_fval;
@@ -1720,8 +1720,8 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(left, 2);
             UOP_STACK_GET(right, 1);
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
+            UOP_GUARD_LONG(left);
+            UOP_GUARD_LONG(right);
             UOP_STAT_HIT(BINARY_OP);
             PyObject *sum = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
             UOP_STACK_SET(2, sum);
@@ -1860,7 +1860,7 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(sub, 1);
             UOP_STACK_GET(list, 2);
-            DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);
+            UOP_GUARD_LONG(sub);
             DEOPT_IF(!PyList_CheckExact(list), BINARY_SUBSCR);
 
             // Deopt unless 0 <= sub < PyList_Size(list)
@@ -1893,7 +1893,7 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             UOP_STACK_GET(sub, 1);
             UOP_STACK_GET(tuple, 2);
-            DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);
+            UOP_GUARD_LONG(sub);
             DEOPT_IF(!PyTuple_CheckExact(tuple), BINARY_SUBSCR);
 
             // Deopt unless 0 <= sub < PyTuple_Size(list)
@@ -2090,7 +2090,7 @@ handle_eval_breaker:
             UOP_STACK_GET(sub, 1);
             UOP_STACK_GET(list, 2);
             UOP_STACK_GET(value, 3);
-            DEOPT_IF(!PyLong_CheckExact(sub), STORE_SUBSCR);
+            UOP_GUARD_LONG(sub);
             DEOPT_IF(!PyList_CheckExact(list), STORE_SUBSCR);
 
             // Ensure nonnegative, zero-or-one-digit ints.
@@ -4346,8 +4346,8 @@ handle_eval_breaker:
             int when_to_jump_mask = cache->mask;
             UOP_STACK_GET(right, 1);
             UOP_STACK_GET(left, 2);
-            DEOPT_IF(!PyFloat_CheckExact(left), COMPARE_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), COMPARE_OP);
+            UOP_GUARD_FLOAT(left);
+            UOP_GUARD_FLOAT(right);
             double dleft = PyFloat_AS_DOUBLE(left);
             double dright = PyFloat_AS_DOUBLE(right);
             int sign = (dleft > dright) - (dleft < dright);
@@ -4397,8 +4397,8 @@ handle_eval_breaker:
             int when_to_jump_mask = cache->mask;
             UOP_STACK_GET(right, 1);
             UOP_STACK_GET(left, 2);
-            DEOPT_IF(!PyLong_CheckExact(left), COMPARE_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), COMPARE_OP);
+            UOP_GUARD_LONG(left);
+            UOP_GUARD_LONG(right);
             DEOPT_IF((size_t)(Py_SIZE(left) + 1) > 2, COMPARE_OP);
             DEOPT_IF((size_t)(Py_SIZE(right) + 1) > 2, COMPARE_OP);
             UOP_STAT_HIT(COMPARE_OP);
@@ -4449,8 +4449,8 @@ handle_eval_breaker:
             int when_to_jump_mask = cache->mask;
             UOP_STACK_GET(right, 1);
             UOP_STACK_GET(left, 2);
-            DEOPT_IF(!PyUnicode_CheckExact(left), COMPARE_OP);
-            DEOPT_IF(!PyUnicode_CheckExact(right), COMPARE_OP);
+            UOP_GUARD_UNICODE(left);
+            UOP_GUARD_UNICODE(right);
             UOP_STAT_HIT(COMPARE_OP);
             int res = _PyUnicode_Equal(left, right);
             if (res < 0) {

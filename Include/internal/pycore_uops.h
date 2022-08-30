@@ -22,6 +22,9 @@ extern "C" {
 #define UOP_GET_CONST(O, I)     _uop_get_const(&(O), consts, (I))
 #define UOP_GET_FAST(O, I)      _uop_get_fast(&(O), frame, (I))
 #define UOP_GET_NAME(O, I)      _uop_get_name(&(O), names, (I))
+#define UOP_GUARD_FLOAT(O)      _uop_guard_float(_PyObject_CAST((O)))
+#define UOP_GUARD_LONG(O)       _uop_guard_long(_PyObject_CAST((O)))
+#define UOP_GUARD_UNICODE(O)    _uop_guard_unicode(_PyObject_CAST((O)))
 #define UOP_INCREF(O)           _uop_incref(_PyObject_CAST((O)))
 #define UOP_JUMP(I)             _uop_jump(&next_instr, (I))
 #define UOP_LINK_FRAME(F)       _uop_link_frame((F), &frame, &cframe)
@@ -111,6 +114,27 @@ _uop_get_name(PyObject **o_p, PyObject *names, int i)
 {
     *o_p = PyTuple_GET_ITEM(names, i);
 }
+
+#define _uop_guard_float(O)           \
+    do {                              \
+        if (!PyFloat_CheckExact(O)) { \
+            goto miss;                \
+        }                             \
+    } while (0);
+
+#define _uop_guard_long(O)           \
+    do {                             \
+        if (!PyLong_CheckExact(O)) { \
+            goto miss;               \
+        }                            \
+    } while (0);
+
+#define _uop_guard_unicode(O)           \
+    do {                                \
+        if (!PyUnicode_CheckExact(O)) { \
+            goto miss;                  \
+        }                               \
+    } while (0);
 
 static inline Py_ALWAYS_INLINE void
 _uop_incref(PyObject *o)
