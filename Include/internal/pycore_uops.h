@@ -39,6 +39,7 @@ extern "C" {
 #define UOP_WARMUP()            _uop_warmup(frame)
 #define UOP_WRITE_PREV_INSTR()  _uop_write_prev_instr(frame, next_instr)
 #define UOP_WRITE_STACK_TOP()   _uop_write_stack_top(frame, stack_pointer)
+#define UOP_XDECREF(O)          _uop_xdecref(_PyObject_CAST((O)))
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -207,6 +208,12 @@ static inline Py_ALWAYS_INLINE void
 _uop_write_stack_top(_PyInterpreterFrame *frame, PyObject **stack_pointer)
 {
     _PyFrame_SetStackPointer(frame, stack_pointer);
+}
+
+static inline Py_ALWAYS_INLINE void
+_uop_xdecref(PyObject *o)
+{
+    Py_XDECREF(o);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

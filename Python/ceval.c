@@ -1255,9 +1255,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
+            UOP_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -1321,9 +1319,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
+            UOP_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
@@ -1347,9 +1343,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
+            UOP_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_JUMP(1);
@@ -1357,9 +1351,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, value);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
+            UOP_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -2530,9 +2522,7 @@ handle_eval_breaker:
             _PyErr_StackItem *exc_info = tstate->exc_info;
             PyObject *value = exc_info->exc_value;
             exc_info->exc_value = POP();
-            if (value) {
-                UOP_DECREF(value);
-            }
+            UOP_XDECREF(value);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -3268,9 +3258,7 @@ handle_eval_breaker:
             }
             UOP_GET_FAST(tmp, oparg);
             UOP_STORE_FAST(oparg, cell);
-            if (tmp) {
-                UOP_DECREF(tmp);
-            }
+            UOP_XDECREF(tmp);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -3378,9 +3366,7 @@ handle_eval_breaker:
             UOP_GET_FAST(cell, oparg);
             PyObject *oldobj = PyCell_GET(cell);
             PyCell_SET(cell, v);
-            if (oldobj) {
-                UOP_DECREF(oldobj);
-            }
+            UOP_XDECREF(oldobj);
             UOP_NEXT_OPCODE();
             UOP_NEXT_OPARG();
             UOP_LLTRACE();
@@ -4288,9 +4274,7 @@ handle_eval_breaker:
             UOP_STACK_ADJUST(-1);
             PyObject *old_value = *(PyObject **)addr;
             *(PyObject **)addr = value;
-            if (old_value) {
-                UOP_DECREF(old_value);
-            }
+            UOP_XDECREF(old_value);
             UOP_DECREF(owner);
             UOP_JUMP(INLINE_CACHE_ENTRIES_STORE_ATTR);
             UOP_NEXT_OPCODE();
@@ -5522,9 +5506,7 @@ handle_eval_breaker:
             assert(val && PyExceptionInstance_Check(val));
             exc = PyExceptionInstance_Class(val);
             tb = PyException_GetTraceback(val);
-            if (tb) {
-                UOP_DECREF(tb);
-            }
+            UOP_XDECREF(tb);
             assert(PyLong_Check(PEEK(3)));
             UOP_STACK_GET(exit_func, 4);
             PyObject *stack[4] = {NULL, exc, val, tb};
@@ -6540,9 +6522,7 @@ handle_eval_breaker:
             result = do_call_core(tstate, func, callargs, kwargs, cframe.use_tracing);
             UOP_DECREF(func);
             UOP_DECREF(callargs);
-            if (kwargs) {
-                UOP_DECREF(kwargs);
-            }
+            UOP_XDECREF(kwargs);
 
             UOP_STACK_ADJUST(-1);
             assert(TOP() == NULL);
@@ -6656,9 +6636,7 @@ handle_eval_breaker:
             slice = PySlice_New(start, stop, step);
             UOP_DECREF(start);
             UOP_DECREF(stop);
-            if (step) {
-                UOP_DECREF(step);
-            }
+            UOP_XDECREF(step);
             UOP_STACK_SET(1, slice);
             if (slice == NULL) {
                 UOP_ERROR();
@@ -6707,9 +6685,7 @@ handle_eval_breaker:
                 result = conv_fn(value);
                 UOP_DECREF(value);
                 if (result == NULL) {
-                    if (fmt_spec) {
-                        UOP_DECREF(fmt_spec);
-                    }
+                    UOP_XDECREF(fmt_spec);
                     UOP_ERROR();
                 }
                 value = result;
