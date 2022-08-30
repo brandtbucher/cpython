@@ -1152,17 +1152,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(LOAD_CLOSURE) {
-            /* We keep LOAD_CLOSURE so that the bytecode stays more readable. */
-            PyObject *value = GETLOCAL(oparg);
-            if (value == NULL) {
-                goto unbound_local_error;
-            }
-            Py_INCREF(value);
-            PUSH(value);
-            DISPATCH();
-        }
-
         TARGET(LOAD_FAST_CHECK) {
             PyObject *value = GETLOCAL(oparg);
             if (value == NULL) {

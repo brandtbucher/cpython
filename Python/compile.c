@@ -8453,8 +8453,10 @@ fix_cell_offsets(struct compiler *c, basicblock *entryblock, int *fixedmap)
             assert(inst->i_opcode != EXTENDED_ARG_QUICK);
             int oldoffset = inst->i_oparg;
             switch(inst->i_opcode) {
-                case MAKE_CELL:
                 case LOAD_CLOSURE:
+                    inst->i_opcode = LOAD_FAST;
+                    // Fall through...
+                case MAKE_CELL:
                 case LOAD_DEREF:
                 case STORE_DEREF:
                 case DELETE_DEREF:
