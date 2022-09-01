@@ -113,7 +113,7 @@ class UopCompiler:
     def prologue(self) -> None:
         peachpy.x86_64.LOAD.ARGUMENT(self.frame, self.function.arguments[0])
         peachpy.x86_64.MOV(self.next_instr, [self.frame + OFFSETOF_PREV_INSTR])
-        peachpy.x86_64.ADD(self.next_instr, 1)
+        peachpy.x86_64.ADD(self.next_instr, SIZEOF__PY_CODEUNIT)
 
     def epilogue(self) -> None:
         peachpy.x86_64.RETURN(1)
