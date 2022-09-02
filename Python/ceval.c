@@ -12,6 +12,7 @@
 #include "pycore_call.h"          // _PyObject_FastCallDictTstate()
 #include "pycore_ceval.h"         // _PyEval_SignalAsyncExc()
 #include "pycore_code.h"
+#include "pycore_descrobject.h"
 #include "pycore_function.h"
 #include "pycore_long.h"          // _PyLong_GetZero()
 #include "pycore_object.h"        // _PyObject_GC_TRACK()
@@ -3058,18 +3059,13 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_CLASS) {
             assert(cframe.use_tracing == 0);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-
+            // Look ma, no caches!
             PyObject *cls = TOP();
             DEOPT_IF(!PyType_Check(cls), LOAD_ATTR);
-            uint32_t type_version = read_u32(cache->type_version);
-            DEOPT_IF(((PyTypeObject *)cls)->tp_version_tag != type_version,
-                LOAD_ATTR);
-            assert(type_version != 0);
-
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)cls, name);
+            DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
-            assert(res != NULL);
             Py_INCREF(res);
             SET_TOP(NULL);
             STACK_GROW((oparg & 1));
@@ -3089,8 +3085,13 @@ handle_eval_breaker:
             uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
-            PyObject *fget = read_obj(cache->descr);
-            assert(Py_IS_TYPE(fget, &PyFunction_Type));
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *descr = _PyType_Lookup((PyTypeObject *)cls, name);
+            assert(descr != NULL);
+            assert(Py_IS_TYPE(descr, &PyProperty_Type));
+            PyObject *fget = ((_PyPropertyObject *)descr)->prop_get;
+            assert(fget != NULL);  // XXX: How can we assert this?
+            assert(Py_IS_TYPE(fget, &PyFunction_Type));  // XXX: Ditto...
             PyFunctionObject *f = (PyFunctionObject *)fget;
             uint32_t func_version = read_u32(cache->keys_version);
             assert(func_version != 0);
@@ -3126,7 +3127,8 @@ handle_eval_breaker:
             uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
-            PyObject *getattribute = read_obj(cache->descr);
+            PyObject *getattribute = _PyType_Lookup((PyTypeObject *)cls, &_Py_ID(__getattribute__));
+            assert(getattribute != NULL);
             assert(Py_IS_TYPE(getattribute, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)getattribute;
             PyCodeObject *code = (PyCodeObject *)f->func_code;
@@ -4011,7 +4013,8 @@ handle_eval_breaker:
             DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
                      read_u32(cache->keys_version), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4039,7 +4042,8 @@ handle_eval_breaker:
             DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->keys_version),
                      LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4058,7 +4062,8 @@ handle_eval_breaker:
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(self_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);
@@ -4081,7 +4086,8 @@ handle_eval_breaker:
             /* This object has a __dict__, just not yet created */
             DEOPT_IF(dict != NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
+            PyObject *name = GETITEM(names, oparg >> 1);
+            PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
             Py_INCREF(res);

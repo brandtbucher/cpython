@@ -366,7 +366,7 @@ dis_traceback = """\
 
 %3d        LOAD_GLOBAL              0 (Exception)
            CHECK_EXC_MATCH
-           POP_JUMP_IF_FALSE       22 (to 80)
+           POP_JUMP_IF_FALSE       18 (to 72)
            STORE_FAST               0 (e)
 
 %3d        LOAD_FAST                0 (e)
@@ -376,7 +376,7 @@ dis_traceback = """\
            LOAD_CONST               0 (None)
            STORE_FAST               0 (e)
            DELETE_FAST              0 (e)
-           JUMP_BACKWARD           29 (to 14)
+           JUMP_BACKWARD           25 (to 14)
         >> LOAD_CONST               0 (None)
            STORE_FAST               0 (e)
            DELETE_FAST              0 (e)
@@ -1118,7 +1118,7 @@ class DisTests(DisTestBase):
 
   1           2 LOAD_CONST               0 ('a')
               4 LOAD_ATTR_SLOT           0 (__class__)
-             24 RETURN_VALUE
+             16 RETURN_VALUE
 """
         co = compile("'a'.__class__", "", "eval")
         self.code_quicken(lambda: exec(co, {}, {}))
@@ -1181,8 +1181,8 @@ class DisTests(DisTestBase):
                     caches = list(self.get_cached_values(quickened, adaptive))
                     for cache in caches:
                         self.assertRegex(cache, pattern)
-                    total_caches = 23
-                    empty_caches = 8 if adaptive and quickened else total_caches
+                    total_caches = 19
+                    empty_caches = 5 if adaptive and quickened else total_caches
                     self.assertEqual(caches.count(""), empty_caches)
                     self.assertEqual(len(caches), total_caches)
 

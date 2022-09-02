@@ -783,8 +783,6 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             write_u32(lm_cache->keys_version, version);
             assert(type->tp_version_tag != 0);
             write_u32(lm_cache->type_version, type->tp_version_tag);
-            /* borrowed */
-            write_obj(lm_cache->descr, fget);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_PROPERTY);
             goto success;
         }
@@ -836,8 +834,6 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             if (func_version == 0) {
                 goto fail;
             }
-            /* borrowed */
-            write_obj(lm_cache->descr, descr);
             write_u32(lm_cache->type_version, type->tp_version_tag);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN);
             goto success;
@@ -995,7 +991,6 @@ static int
 specialize_class_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
                              PyObject *name)
 {
-    _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
     if (!PyType_CheckExact(owner) || _PyType_Lookup(Py_TYPE(owner), name)) {
         SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE);
         return -1;
@@ -1006,8 +1001,6 @@ specialize_class_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
     switch (kind) {
         case METHOD:
         case NON_DESCRIPTOR:
-            write_u32(cache->type_version, ((PyTypeObject *)owner)->tp_version_tag);
-            write_obj(cache->descr, descr);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_CLASS);
             return 0;
 #ifdef Py_STATS
@@ -1107,22 +1100,7 @@ PyObject *descr, DescriptorClassification kind)
             _Py_SET_OPCODE(*instr, LOAD_ATTR_METHOD_LAZY_DICT);
             break;
     }
-    /* `descr` is borrowed. This is safe for methods (even inherited ones from
-    *  super classes!) as long as tp_version_tag is validated for two main reasons:
-    *
-    *  1. The class will always hold a reference to the method so it will
-    *  usually not be GC-ed. Should it be deleted in Python, e.g.
-    *  `del obj.meth`, tp_version_tag will be invalidated, because of reason 2.
-    *
-    *  2. The pre-existing type method cache (MCACHE) uses the same principles
-    *  of caching a borrowed descriptor. The MCACHE infrastructure does all the
-    *  heavy lifting for us. E.g. it invalidates tp_version_tag on any MRO
-    *  modification, on any type object change along said MRO, etc. (see
-    *  PyType_Modified usages in typeobject.c). The MCACHE has been
-    *  working since Python 2.6 and it's battle-tested.
-    */
     write_u32(cache->type_version, owner_cls->tp_version_tag);
-    write_obj(cache->descr, descr);
     // Fall through.
     return 1;
 fail:
