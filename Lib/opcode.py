@@ -421,7 +421,7 @@ _cache_format = {
     "LOAD_ATTR": {
         "counter": 1,
         "version": 2,
-        "keys_version": 2,
+        "index": 1,
     },
     "STORE_ATTR": {
         "counter": 1,

@@ -58,15 +58,7 @@ typedef struct {
     _Py_CODEUNIT index;
 } _PyAttrCache;
 
-typedef struct {
-    _Py_CODEUNIT counter;
-    _Py_CODEUNIT type_version[2];
-    _Py_CODEUNIT keys_version[2];
-} _PyLoadMethodCache;
-
-
-// MUST be the max(_PyAttrCache, _PyLoadMethodCache)
-#define INLINE_CACHE_ENTRIES_LOAD_ATTR CACHE_ENTRIES(_PyLoadMethodCache)
+#define INLINE_CACHE_ENTRIES_LOAD_ATTR CACHE_ENTRIES(_PyAttrCache)
 
 #define INLINE_CACHE_ENTRIES_STORE_ATTR CACHE_ENTRIES(_PyAttrCache)
 

@@ -764,7 +764,7 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         }
         case PROPERTY:
         {
-            _PyLoadMethodCache *lm_cache = (_PyLoadMethodCache *)(instr + 1);
+            _PyAttrCache *lm_cache = (_PyAttrCache *)(instr + 1);
             assert(Py_TYPE(descr) == &PyProperty_Type);
             PyObject *fget = ((_PyPropertyObject *)descr)->prop_get;
             if (fget == NULL) {
@@ -780,9 +780,7 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             if (version == 0) {
                 goto fail;
             }
-            write_u32(lm_cache->keys_version, version);
-            assert(type->tp_version_tag != 0);
-            write_u32(lm_cache->type_version, type->tp_version_tag);
+            write_u32(lm_cache->version, version);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_PROPERTY);
             goto success;
         }
@@ -828,13 +826,13 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         {
             assert(type->tp_getattro == _Py_slot_tp_getattro);
             assert(Py_IS_TYPE(descr, &PyFunction_Type));
-            _PyLoadMethodCache *lm_cache = (_PyLoadMethodCache *)(instr + 1);
+            _PyAttrCache *lm_cache = (_PyAttrCache *)(instr + 1);
             uint32_t func_version = function_check_args(descr, 2, LOAD_ATTR) &&
                 function_get_version(descr, LOAD_ATTR);
             if (func_version == 0) {
                 goto fail;
             }
-            write_u32(lm_cache->type_version, type->tp_version_tag);
+            write_u32(lm_cache->version, type->tp_version_tag);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN);
             goto success;
         }
@@ -1029,7 +1027,7 @@ static int
 specialize_attr_loadmethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name,
 PyObject *descr, DescriptorClassification kind)
 {
-    _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
+    _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     PyTypeObject *owner_cls = Py_TYPE(owner);
 
     assert(kind == METHOD && descr != NULL);
@@ -1079,7 +1077,7 @@ PyObject *descr, DescriptorClassification kind)
             SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_OUT_OF_VERSIONS);
             goto fail;
         }
-        write_u32(cache->keys_version, keys_version);
+        write_u32(cache->version, keys_version);
     }
     switch(dictkind) {
         case NO_DICT:
@@ -1092,15 +1090,14 @@ PyObject *descr, DescriptorClassification kind)
             SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_HAS_MANAGED_DICT);
             goto fail;
         case OFFSET_DICT:
-            assert(owner_cls->tp_dictoffset > 0 && owner_cls->tp_dictoffset <= INT16_MAX);
+            assert(owner_cls->tp_dictoffset > 0);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_METHOD_WITH_DICT);
             break;
         case LAZY_DICT:
-            assert(owner_cls->tp_dictoffset > 0 && owner_cls->tp_dictoffset <= INT16_MAX);
+            assert(owner_cls->tp_dictoffset > 0);
             _Py_SET_OPCODE(*instr, LOAD_ATTR_METHOD_LAZY_DICT);
             break;
     }
-    write_u32(cache->type_version, owner_cls->tp_version_tag);
     // Fall through.
     return 1;
 fail:

@@ -3078,22 +3078,19 @@ handle_eval_breaker:
         TARGET(LOAD_ATTR_PROPERTY) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
 
             PyObject *owner = TOP();
             PyTypeObject *cls = Py_TYPE(owner);
-            uint32_t type_version = read_u32(cache->type_version);
-            DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(type_version != 0);
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *descr = _PyType_Lookup((PyTypeObject *)cls, name);
-            assert(descr != NULL);
-            assert(Py_IS_TYPE(descr, &PyProperty_Type));
+            DEOPT_IF(descr == NULL, LOAD_ATTR);
+            DEOPT_IF(!Py_IS_TYPE(descr, &PyProperty_Type), LOAD_ATTR);
             PyObject *fget = ((_PyPropertyObject *)descr)->prop_get;
-            assert(fget != NULL);  // XXX: How can we assert this?
-            assert(Py_IS_TYPE(fget, &PyFunction_Type));  // XXX: Ditto...
+            DEOPT_IF(fget == NULL, LOAD_ATTR);
+            DEOPT_IF(!Py_IS_TYPE(fget, &PyFunction_Type), LOAD_ATTR);
             PyFunctionObject *f = (PyFunctionObject *)fget;
-            uint32_t func_version = read_u32(cache->keys_version);
+            uint32_t func_version = read_u32(cache->version);
             assert(func_version != 0);
             DEOPT_IF(f->func_version != func_version, LOAD_ATTR);
             PyCodeObject *code = (PyCodeObject *)f->func_code;
@@ -3121,10 +3118,10 @@ handle_eval_breaker:
         TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             PyObject *owner = TOP();
             PyTypeObject *cls = Py_TYPE(owner);
-            uint32_t type_version = read_u32(cache->type_version);
+            uint32_t type_version = read_u32(cache->version);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
             PyObject *getattribute = _PyType_Lookup((PyTypeObject *)cls, &_Py_ID(__getattribute__));
@@ -4002,21 +3999,18 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
-            assert(type_version != 0);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT);
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
+            DEOPT_IF(!(self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT), LOAD_ATTR);
             PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(self);
             DEOPT_IF(!_PyDictOrValues_IsValues(dorv), LOAD_ATTR);
             PyHeapTypeObject *self_heap_type = (PyHeapTypeObject *)self_cls;
             DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
-                     read_u32(cache->keys_version), LOAD_ATTR);
-            STAT_INC(LOAD_ATTR, hit);
+                     read_u32(cache->version), LOAD_ATTR);
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            DEOPT_IF(res == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
+            STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
             SET_TOP(res);
             PUSH(self);
@@ -4029,23 +4023,20 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-
-            DEOPT_IF(self_cls->tp_version_tag != read_u32(cache->type_version),
-                     LOAD_ATTR);
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             /* Treat index as a signed 16 bit value */
             Py_ssize_t dictoffset = self_cls->tp_dictoffset;
-            assert(dictoffset > 0);
+            DEOPT_IF(dictoffset <= 0, LOAD_ATTR);
             PyDictObject **dictptr = (PyDictObject**)(((char *)self)+dictoffset);
             PyDictObject *dict = *dictptr;
             DEOPT_IF(dict == NULL, LOAD_ATTR);
-            DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->keys_version),
+            DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->version),
                      LOAD_ATTR);
-            STAT_INC(LOAD_ATTR, hit);
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            DEOPT_IF(res == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
+            STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
             SET_TOP(res);
             PUSH(self);
@@ -4055,17 +4046,15 @@ handle_eval_breaker:
 
         TARGET(LOAD_ATTR_METHOD_NO_DICT) {
             assert(cframe.use_tracing == 0);
+            // Look ma, no caches!
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(self_cls->tp_dictoffset == 0);
-            STAT_INC(LOAD_ATTR, hit);
+            DEOPT_IF(self_cls->tp_dictoffset != 0, LOAD_ATTR);
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            DEOPT_IF(res == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
+            STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
             SET_TOP(res);
             PUSH(self);
@@ -4077,19 +4066,16 @@ handle_eval_breaker:
             assert(cframe.use_tracing == 0);
             PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             Py_ssize_t dictoffset = self_cls->tp_dictoffset;
-            assert(dictoffset > 0);
+            DEOPT_IF(dictoffset <= 0, LOAD_ATTR);
             PyObject *dict = *(PyObject **)((char *)self + dictoffset);
             /* This object has a __dict__, just not yet created */
             DEOPT_IF(dict != NULL, LOAD_ATTR);
-            STAT_INC(LOAD_ATTR, hit);
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *res = _PyType_Lookup((PyTypeObject *)self_cls, name);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            DEOPT_IF(res == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
+            STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
             SET_TOP(res);
             PUSH(self);
