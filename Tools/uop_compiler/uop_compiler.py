@@ -19,7 +19,7 @@ have at least three locals, all bound! It will return one of three values:
 
 *  1: Success!
 *  0: Fail, if a guard fails without error.
-* -1: Error... but the ctypes wrapper will justraise instead of returning.
+* -1: Error... but the ctypes wrapper will just raise instead of returning.
 
 Example:
 
