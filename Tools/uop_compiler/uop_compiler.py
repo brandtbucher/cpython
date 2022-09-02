@@ -10,18 +10,19 @@ To view the generated assembly:
 
     $ python
     >>> from Tools.uop_compiler import uop_compiler
-    >>>
     >>> trace = uop_compiler.compile_trace_a()
     <a bunch of assembly gets printed here>
-    >>>
-    >>> # Call trace(uop_compiler.get_interpreter_frame()) from within a
-    >>> # function to run that compiled trace in the current frame. Just make
-    >>> # sure you have at least three locals, all bound! It will return one of
-    >>> # three success codes:
-    >>> #      1: Success!
-    >>> #      0: Fail, if a guard fails without error.
-    >>> #     -1: Error... but the ctypes wrapper will just raise instead.
-    >>>
+
+You can then call `trace(uop_compiler.get_interpreter_frame())` from within a
+function to run that compiled trace in the current frame. Just make sure you
+have at least three locals, all bound! It will return one of three values:
+
+*  1: Success!
+*  0: Fail, if a guard fails without error.
+* -1: Error... but the ctypes wrapper will justraise instead of returning.
+
+Example:
+
     >>> def f():
     ...     foo = 42
     ...     bar = 404
@@ -70,7 +71,7 @@ IMM32 = int
 
 
 def get_api(f: str) -> int:
-    """Helper function to get the address of a Python C-API function *f*."""
+    """Helper function to get the address of a Python C-API function `f`."""
     api_pointer = ctypes.cast(getattr(ctypes.pythonapi, f), ctypes.c_void_p)
     api_address = api_pointer.value
     assert api_address is not None
@@ -144,11 +145,11 @@ class UopCompiler:
             peachpy.x86_64.MOV(dest, source)
         peachpy.x86_64.MOV(where, get_api(api))
         peachpy.x86_64.CALL(where)
-        if result is not None:
-            peachpy.x86_64.MOV(result, peachpy.x86_64.rax)
         peachpy.x86_64.POP(self.frame)
         peachpy.x86_64.MOV(self.next_instr, [self.frame + OFFSETOF_PREV_INSTR])
-        peachpy.x86_64.ADD(self.next_instr, 1)
+        peachpy.x86_64.ADD(self.next_instr, SIZEOF__PY_CODEUNIT)
+        if result is not None:
+            peachpy.x86_64.MOV(result, peachpy.x86_64.rax)
 
     def UOP_BINARY_OP(
         self, o0: R64 | M64, i: int, o1: R64 | M64, o2: R64 | M64
@@ -173,11 +174,11 @@ class UopCompiler:
         peachpy.x86_64.JE(self.error)
 
     def UOP_GUARD_UNICODE(self, o: R64 | M64) -> None:
-        cls = peachpy.x86_64.GeneralPurposeRegister64()
+        obj = peachpy.x86_64.GeneralPurposeRegister64()
         unicode = peachpy.x86_64.GeneralPurposeRegister64()
-        peachpy.x86_64.MOV(cls, o)
+        peachpy.x86_64.MOV(obj, o)
         peachpy.x86_64.MOV(unicode, id(str))
-        peachpy.x86_64.CMP([cls + OFFSETOF_OB_TYPE], unicode)
+        peachpy.x86_64.CMP([obj + OFFSETOF_OB_TYPE], unicode)
         peachpy.x86_64.JNE(self.deopt)
 
     def UOP_GET_FAST(self, o: R64, i: IMM32) -> None:
@@ -191,17 +192,16 @@ class UopCompiler:
 
     def UOP_WRITE_PREV_INSTR(self) -> None:
         prev_instr = peachpy.x86_64.GeneralPurposeRegister64()
-        peachpy.x86_64.LEA(prev_instr, [self.next_instr - 1])
+        peachpy.x86_64.LEA(prev_instr, [self.next_instr - SIZEOF__PY_CODEUNIT])
         peachpy.x86_64.MOV([self.frame + OFFSETOF_PREV_INSTR], prev_instr)
-        pass
 
 
 def compile_trace_a() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
     """
     Compile the uops for `a = b + c`, assuming:
-    - a: object
-    - b: object
-    - c: object
+    * a: object
+    * b: object
+    * c: object
     """
     frame = peachpy.Argument(peachpy.ptr(), name="frame")
     with peachpy.x86_64.Function("<trace>", [frame], peachpy.int32_t) as trace:
@@ -226,9 +226,9 @@ def compile_trace_a() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
 def compile_trace_b() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
     """
     Compile the uops for `a = b + c`, assuming:
-    - a: NULL
-    - b: object
-    - c: object
+    * a: NULL
+    * b: object
+    * c: object
     """
     frame = peachpy.Argument(peachpy.ptr(), name="frame")
     with peachpy.x86_64.Function("<trace>", [frame], peachpy.int32_t) as trace:
@@ -247,9 +247,9 @@ def compile_trace_b() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
 def compile_trace_c() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
     """
     Compile the uops for `a = b + c`, assuming:
-    - a: object
-    - b: str
-    - c: str
+    * a: object
+    * b: str
+    * c: str
     """
     frame = peachpy.Argument(peachpy.ptr(), name="frame")
     with peachpy.x86_64.Function("<trace>", [frame], peachpy.int32_t) as trace:
@@ -276,9 +276,9 @@ def compile_trace_c() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
 def compile_trace_d() -> peachpy.x86_64.function.ExecutableFuntion:  # [sic]
     """
     Compile the uops for `a = b + c`, assuming:
-    - a: NULL
-    - b: str
-    - c: str
+    * a: NULL
+    * b: str
+    * c: str
     """
     frame = peachpy.Argument(peachpy.ptr(), name="frame")
     with peachpy.x86_64.Function("<trace>", [frame], peachpy.int32_t) as trace:
