@@ -1117,7 +1117,7 @@ class DisTests(DisTestBase):
   0           0 RESUME_QUICK             0
 
   1           2 LOAD_CONST               0 ('a')
-              4 LOAD_ATTR_SLOT           0 (__class__)
+              4 LOAD_ATTR_ADAPTIVE       0 (__class__)
              24 RETURN_VALUE
 """
         co = compile("'a'.__class__", "", "eval")

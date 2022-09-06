@@ -811,14 +811,6 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             goto success;
         }
         case DUNDER_CLASS:
-        {
-            Py_ssize_t offset = offsetof(PyObject, ob_type);
-            assert(offset == (uint16_t)offset);
-            cache->index = (uint16_t)offset;
-            write_u32(cache->version, type->tp_version_tag);
-            _Py_SET_OPCODE(*instr, LOAD_ATTR_SLOT);
-            goto success;
-        }
         case OTHER_SLOT:
             SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_NON_OBJECT_SLOT);
             goto fail;
