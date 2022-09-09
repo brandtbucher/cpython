@@ -1863,64 +1863,46 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
 }
 #endif
 
+const binary_op_specialization binary_op_specializations[] = {
+    {NB_ADD, &PyLong_Type, (binaryfunc)_PyLong_Add},
+    {NB_INPLACE_ADD, &PyLong_Type, (binaryfunc)_PyLong_Add},
+    {NB_MULTIPLY, &PyFloat_Type, (binaryfunc)_PyFloat_Multiply},
+    {NB_INPLACE_MULTIPLY, &PyFloat_Type, (binaryfunc)_PyFloat_Multiply},
+    {NB_ADD, &PyFloat_Type, (binaryfunc)_PyFloat_Add},
+    {NB_INPLACE_ADD, &PyFloat_Type, (binaryfunc)_PyFloat_Add},
+    {NB_SUBTRACT, &PyLong_Type,  (binaryfunc)_PyLong_Subtract},
+    {NB_INPLACE_SUBTRACT, &PyLong_Type, (binaryfunc)_PyLong_Subtract},
+    {NB_SUBTRACT, &PyFloat_Type, (binaryfunc)_PyFloat_Subtract},
+    {NB_INPLACE_SUBTRACT, &PyFloat_Type, (binaryfunc)_PyFloat_Subtract},
+    {NB_MULTIPLY, &PyLong_Type, (binaryfunc)_PyLong_Multiply},
+    {NB_INPLACE_MULTIPLY, &PyLong_Type, (binaryfunc)_PyLong_Multiply},
+    {NB_ADD, &PyUnicode_Type, PyUnicode_Concat},
+    {NB_INPLACE_ADD, &PyUnicode_Type, PyUnicode_Concat},
+};
+
 void
-_Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                        int oparg, PyObject **locals)
+_Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr)
 {
     assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
     _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
+    int oparg = _Py_OPARG(*instr);
     switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
+        case NB_INPLACE_MULTIPLY:
+        case NB_INPLACE_SUBTRACT:
+        case NB_MULTIPLY:
+        case NB_SUBTRACT:
             if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
                 break;
             }
-            if (PyUnicode_CheckExact(lhs)) {
-                _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
-                bool to_store = (_Py_OPCODE(next) == STORE_FAST ||
-                                 _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
-                if (to_store && locals[_Py_OPARG(next)] == lhs) {
-                    _Py_SET_OPCODE(*instr, BINARY_OP_INPLACE_ADD_UNICODE);
+            for (int index = 0; index < (int)Py_ARRAY_LENGTH(binary_op_specializations); index++) {
+                binary_op_specialization specialization = binary_op_specializations[index];
+                if (specialization.oparg == oparg && Py_IS_TYPE(lhs, specialization.lhs)) {
+                    _Py_SET_OPCODE(*instr, BINARY_OP_SPECIAL);
+                    cache->index = index;
                     goto success;
                 }
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_UNICODE);
-                goto success;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_INT);
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_FLOAT);
-                goto success;
-            }
-            break;
-        case NB_MULTIPLY:
-        case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_INT);
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_FLOAT);
-                goto success;
-            }
-            break;
-        case NB_SUBTRACT:
-        case NB_INPLACE_SUBTRACT:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_INT);
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_FLOAT);
-                goto success;
             }
             break;
 #ifndef Py_STATS

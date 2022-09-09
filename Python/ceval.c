@@ -1318,174 +1318,22 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(BINARY_OP_MULTIPLY_INT) {
+        TARGET(BINARY_OP_SPECIAL) {
             assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
+            _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr; 
+            binary_op_specialization specialization = binary_op_specializations[cache->index];
+            assert(specialization.oparg == oparg);
+            PyObject *lhs = SECOND();
+            PyObject *rhs = TOP();
+            DEOPT_IF(!Py_IS_TYPE(lhs, specialization.lhs), BINARY_OP);
+            DEOPT_IF(!Py_IS_TYPE(rhs, specialization.lhs), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            PyObject *prod = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
-            SET_SECOND(prod);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
+            PyObject *res = specialization.f(lhs, rhs);
+            SET_SECOND(res);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
             STACK_SHRINK(1);
-            if (prod == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_MULTIPLY_FLOAT) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dprod = ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-            PyObject *prod = PyFloat_FromDouble(dprod);
-            SET_SECOND(prod);
-            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
-            STACK_SHRINK(1);
-            if (prod == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_SUBTRACT_INT) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *sub = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
-            SET_SECOND(sub);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            STACK_SHRINK(1);
-            if (sub == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_SUBTRACT_FLOAT) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dsub = ((PyFloatObject *)left)->ob_fval - ((PyFloatObject *)right)->ob_fval;
-            PyObject *sub = PyFloat_FromDouble(dsub);
-            SET_SECOND(sub);
-            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
-            STACK_SHRINK(1);
-            if (sub == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_ADD_UNICODE) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *res = PyUnicode_Concat(left, right);
-            STACK_SHRINK(1);
-            SET_TOP(res);
-            _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
-            if (TOP() == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_INPLACE_ADD_UNICODE) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
-            assert(_Py_OPCODE(true_next) == STORE_FAST ||
-                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
-            PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
-            DEOPT_IF(*target_local != left, BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            /* Handle `left = left + right` or `left += right` for str.
-             *
-             * When possible, extend `left` in place rather than
-             * allocating a new PyUnicodeObject. This attempts to avoid
-             * quadratic behavior when one neglects to use str.join().
-             *
-             * If `left` has only two references remaining (one from
-             * the stack, one in the locals), DECREFing `left` leaves
-             * only the locals reference, so PyUnicode_Append knows
-             * that the string is safe to mutate.
-             */
-            assert(Py_REFCNT(left) >= 2);
-            _Py_DECREF_NO_DEALLOC(left);
-            STACK_SHRINK(2);
-            PyUnicode_Append(target_local, right);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
-            if (*target_local == NULL) {
-                goto error;
-            }
-            // The STORE_FAST is already done.
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_ADD_FLOAT) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            double dsum = ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-            PyObject *sum = PyFloat_FromDouble(dsum);
-            SET_SECOND(sum);
-            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
-            STACK_SHRINK(1);
-            if (sum == NULL) {
-                goto error;
-            }
-            JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
-            DISPATCH();
-        }
-
-        TARGET(BINARY_OP_ADD_INT) {
-            assert(cframe.use_tracing == 0);
-            PyObject *left = SECOND();
-            PyObject *right = TOP();
-            DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
-            DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
-            STAT_INC(BINARY_OP, hit);
-            PyObject *sum = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
-            SET_SECOND(sum);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            STACK_SHRINK(1);
-            if (sum == NULL) {
+            if (res == NULL) {
                 goto error;
             }
             JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP);
@@ -4940,7 +4788,7 @@ handle_eval_breaker:
                 PyObject *lhs = SECOND();
                 PyObject *rhs = TOP();
                 next_instr--;
-                _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, &GETLOCAL(0));
+                _Py_Specialize_BinaryOp(lhs, rhs, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             else {

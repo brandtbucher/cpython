@@ -26,6 +26,7 @@ typedef struct {
 
 typedef struct {
     _Py_CODEUNIT counter;
+    _Py_CODEUNIT index;
 } _PyBinaryOpCache;
 
 #define INLINE_CACHE_ENTRIES_BINARY_OP CACHE_ENTRIES(_PyBinaryOpCache)
@@ -244,8 +245,7 @@ extern int _Py_Specialize_BinarySubscr(PyObject *sub, PyObject *container, _Py_C
 extern int _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr);
 extern int _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr,
                                int nargs, PyObject *kwnames);
-extern void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
-                                    int oparg, PyObject **locals);
+extern void _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr);
 extern void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs,
                                      _Py_CODEUNIT *instr, int oparg);
 extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
@@ -509,6 +509,14 @@ _PyCode_LineNumberFromArray(PyCodeObject *co, int index)
         return ((int32_t *)co->_co_linearray)[index];
     }
 }
+
+typedef struct binary_op_specialization {
+    int oparg;
+    PyTypeObject *lhs;
+    binaryfunc f;
+} binary_op_specialization;
+
+extern const binary_op_specialization binary_op_specializations[];
 
 
 #ifdef __cplusplus

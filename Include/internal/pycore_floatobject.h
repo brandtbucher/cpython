@@ -53,6 +53,10 @@ PyAPI_FUNC(int) _PyFloat_FormatAdvancedWriter(
     Py_ssize_t start,
     Py_ssize_t end);
 
+PyObject *_PyFloat_Add(PyFloatObject *lhs, PyFloatObject *rhs);
+PyObject *_PyFloat_Multiply(PyFloatObject *lhs, PyFloatObject *rhs);
+PyObject *_PyFloat_Subtract(PyFloatObject *lhs, PyFloatObject *rhs);
+
 #ifdef __cplusplus
 }
 #endif

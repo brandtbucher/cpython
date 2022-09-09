@@ -275,14 +275,7 @@ _nb_ops = [
 _specializations = {
     "BINARY_OP": [
         "BINARY_OP_ADAPTIVE",
-        "BINARY_OP_ADD_FLOAT",
-        "BINARY_OP_ADD_INT",
-        "BINARY_OP_ADD_UNICODE",
-        "BINARY_OP_INPLACE_ADD_UNICODE",
-        "BINARY_OP_MULTIPLY_FLOAT",
-        "BINARY_OP_MULTIPLY_INT",
-        "BINARY_OP_SUBTRACT_FLOAT",
-        "BINARY_OP_SUBTRACT_INT",
+        "BINARY_OP_SPECIAL",
     ],
     "BINARY_SUBSCR": [
         "BINARY_SUBSCR_ADAPTIVE",
@@ -402,6 +395,7 @@ _cache_format = {
     },
     "BINARY_OP": {
         "counter": 1,
+        "index": 1,
     },
     "UNPACK_SEQUENCE": {
         "counter": 1,

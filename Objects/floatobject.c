@@ -595,6 +595,24 @@ float_hash(PyFloatObject *v)
     return _Py_HashDouble((PyObject *)v, v->ob_fval);
 }
 
+PyObject *
+_PyFloat_Add(PyFloatObject *lhs, PyFloatObject *rhs)
+{
+    return PyFloat_FromDouble(PyFloat_AS_DOUBLE(lhs) + PyFloat_AS_DOUBLE(rhs));
+}
+
+PyObject *
+_PyFloat_Multiply(PyFloatObject *lhs, PyFloatObject *rhs)
+{
+    return PyFloat_FromDouble(PyFloat_AS_DOUBLE(lhs) * PyFloat_AS_DOUBLE(rhs));
+}
+
+PyObject *
+_PyFloat_Subtract(PyFloatObject *lhs, PyFloatObject *rhs)
+{
+    return PyFloat_FromDouble(PyFloat_AS_DOUBLE(lhs) - PyFloat_AS_DOUBLE(rhs));
+}
+
 static PyObject *
 float_add(PyObject *v, PyObject *w)
 {

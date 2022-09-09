@@ -179,7 +179,7 @@ class TestTracing(unittest.TestCase):
             [0][C(0).x]
 
         def h():
-            # BINARY_OP[_ADD_INT] immediately follows the call to C.__del__
+            # BINARY_OP[_SPECIAL] immediately follows the call to C.__del__
             0 + C(0).x
 
         for func in (f, g, h):
