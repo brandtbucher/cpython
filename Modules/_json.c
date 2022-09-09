@@ -1135,7 +1135,11 @@ scanner_call(PyScannerObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     if (PyUnicode_Check(pystr)) {
+        int gc = PyGC_Disable();
         rval = scan_once_unicode(self, pystr, idx, &next_idx);
+        if (gc) {
+            PyGC_Enable();
+        }
     }
     else {
         PyErr_Format(PyExc_TypeError,

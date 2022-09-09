@@ -1516,7 +1516,11 @@ read_object(RFILE *p)
             return NULL;
         }
     }
+    int gc =  PyGC_Disable();
     v = r_object(p);
+    if (gc) {
+        PyGC_Enable();
+    }
     if (v == NULL && !PyErr_Occurred())
         PyErr_SetString(PyExc_TypeError, "NULL object in marshal data for object");
     return v;

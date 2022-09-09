@@ -6852,13 +6852,15 @@ load(UnpicklerObject *self)
 #define OP_ARG(opcode, load_func, arg) \
     case opcode: if (load_func(self, (arg)) < 0) break; continue;
 
+    int gc = PyGC_Disable();
+
     while (1) {
         if (_Unpickler_Read(self, &s, 1) < 0) {
             PickleState *st = _Pickle_GetGlobalState();
             if (PyErr_ExceptionMatches(st->UnpicklingError)) {
                 PyErr_Format(PyExc_EOFError, "Ran out of input");
             }
-            return NULL;
+            goto done;
         }
 
         switch ((enum opcode)s[0]) {
@@ -6945,7 +6947,7 @@ load(UnpicklerObject *self)
                     PyErr_Format(st->UnpicklingError,
                                  "invalid load key, '\\x%02x'.", c);
                 }
-                return NULL;
+                goto done;
             }
         }
 
@@ -6953,13 +6955,18 @@ load(UnpicklerObject *self)
     }
 
     if (PyErr_Occurred()) {
-        return NULL;
+        goto done;
     }
 
-    if (_Unpickler_SkipConsumed(self) < 0)
-        return NULL;
+    if (_Unpickler_SkipConsumed(self) < 0) {
+        goto done;
+    }
 
     PDATA_POP(self->stack, value);
+done:
+    if (gc) {
+        PyGC_Enable();
+    }
     return value;
 }
 
