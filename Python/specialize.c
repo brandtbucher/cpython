@@ -1897,8 +1897,8 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr)
                 break;
             }
             for (int index = 0; index < (int)Py_ARRAY_LENGTH(binary_op_specializations); index++) {
-                binary_op_specialization specialization = binary_op_specializations[index];
-                if (specialization.oparg == oparg && Py_IS_TYPE(lhs, specialization.lhs)) {
+                const binary_op_specialization *specialization = &binary_op_specializations[index];
+                if (specialization->oparg == oparg && Py_IS_TYPE(lhs, specialization->lhs)) {
                     _Py_SET_OPCODE(*instr, BINARY_OP_SPECIAL);
                     cache->index = index;
                     goto success;

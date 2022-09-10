@@ -1321,14 +1321,14 @@ handle_eval_breaker:
         TARGET(BINARY_OP_SPECIAL) {
             assert(cframe.use_tracing == 0);
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr; 
-            binary_op_specialization specialization = binary_op_specializations[cache->index];
-            assert(specialization.oparg == oparg);
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
-            DEOPT_IF(!Py_IS_TYPE(lhs, specialization.lhs), BINARY_OP);
-            DEOPT_IF(!Py_IS_TYPE(rhs, specialization.lhs), BINARY_OP);
+            DEOPT_IF(!Py_IS_TYPE(lhs, Py_TYPE(rhs)), BINARY_OP);
+            const binary_op_specialization *specialization = &binary_op_specializations[cache->index];
+            DEOPT_IF(!Py_IS_TYPE(rhs, specialization->lhs), BINARY_OP);
+            assert(specialization->oparg == oparg);
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = specialization.f(lhs, rhs);
+            PyObject *res = specialization->f(lhs, rhs);
             SET_SECOND(res);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
