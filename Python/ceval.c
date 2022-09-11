@@ -1324,11 +1324,10 @@ handle_eval_breaker:
             PyObject *lhs = SECOND();
             PyObject *rhs = TOP();
             DEOPT_IF(!Py_IS_TYPE(lhs, Py_TYPE(rhs)), BINARY_OP);
-            const binary_op_specialization *specialization = &binary_op_specializations[cache->index];
-            DEOPT_IF(!Py_IS_TYPE(rhs, specialization->lhs), BINARY_OP);
-            assert(specialization->oparg == oparg);
+            DEOPT_IF(Py_TYPE(lhs)->tp_version_tag != read_u32(cache->type_version), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            PyObject *res = specialization->f(lhs, rhs);
+            binaryfunc f = (binaryfunc)(uintptr_t)read_u64(cache->f);
+            PyObject *res = f(lhs, rhs);
             SET_SECOND(res);
             Py_DECREF(lhs);
             Py_DECREF(rhs);

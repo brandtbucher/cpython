@@ -1863,7 +1863,13 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
 }
 #endif
 
-const binary_op_specialization binary_op_specializations[] = {
+typedef struct binary_op_specialization {
+    int oparg;
+    PyTypeObject *lhs;
+    binaryfunc f;
+} binary_op_specialization;
+
+static const binary_op_specialization binary_op_specializations[] = {
     {NB_ADD, &PyLong_Type, (binaryfunc)_PyLong_Add},
     {NB_INPLACE_ADD, &PyLong_Type, (binaryfunc)_PyLong_Add},
     {NB_MULTIPLY, &PyFloat_Type, (binaryfunc)_PyFloat_Multiply},
@@ -1899,8 +1905,9 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr)
             for (int index = 0; index < (int)Py_ARRAY_LENGTH(binary_op_specializations); index++) {
                 const binary_op_specialization *specialization = &binary_op_specializations[index];
                 if (specialization->oparg == oparg && Py_IS_TYPE(lhs, specialization->lhs)) {
+                    write_u32(cache->type_version, specialization->lhs->tp_version_tag);
+                    write_u64(cache->f, (uintptr_t)specialization->f);
                     _Py_SET_OPCODE(*instr, BINARY_OP_SPECIAL);
-                    cache->index = index;
                     goto success;
                 }
             }

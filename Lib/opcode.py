@@ -395,7 +395,8 @@ _cache_format = {
     },
     "BINARY_OP": {
         "counter": 1,
-        "index": 1,
+        "type_version": 2,
+        "f": 4,
     },
     "UNPACK_SEQUENCE": {
         "counter": 1,

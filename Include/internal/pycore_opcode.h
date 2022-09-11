@@ -49,7 +49,7 @@ const uint8_t _PyOpcode_Caches[256] = {
     [LOAD_ATTR] = 9,
     [COMPARE_OP] = 2,
     [LOAD_GLOBAL] = 5,
-    [BINARY_OP] = 2,
+    [BINARY_OP] = 7,
     [CALL] = 4,
 };
 
