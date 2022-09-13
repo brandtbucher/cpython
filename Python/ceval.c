@@ -4584,7 +4584,7 @@ handle_eval_breaker:
             DEOPT_IF(meth->ml_flags != METH_O, CALL);
             PyObject *arg = TOP();
             PyObject *self = SECOND();
-            DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
+            DEOPT_IF(!PyObject_TypeCheck(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = meth->ml_meth;
@@ -4618,7 +4618,7 @@ handle_eval_breaker:
             DEOPT_IF(meth->ml_flags != (METH_FASTCALL|METH_KEYWORDS), CALL);
             PyTypeObject *d_type = callable->d_common.d_type;
             PyObject *self = PEEK(total_args);
-            DEOPT_IF(!Py_IS_TYPE(self, d_type), CALL);
+            DEOPT_IF(!PyObject_TypeCheck(self, d_type), CALL);
             STAT_INC(CALL, hit);
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             int nargs = total_args-1;
@@ -4655,7 +4655,7 @@ handle_eval_breaker:
             DEOPT_IF(!Py_IS_TYPE(callable, &PyMethodDescr_Type), CALL);
             PyMethodDef *meth = callable->d_method;
             PyObject *self = TOP();
-            DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
+            DEOPT_IF(!PyObject_TypeCheck(self, callable->d_common.d_type), CALL);
             DEOPT_IF(meth->ml_flags != METH_NOARGS, CALL);
             STAT_INC(CALL, hit);
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
@@ -4690,7 +4690,7 @@ handle_eval_breaker:
             PyMethodDef *meth = callable->d_method;
             DEOPT_IF(meth->ml_flags != METH_FASTCALL, CALL);
             PyObject *self = PEEK(total_args);
-            DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
+            DEOPT_IF(!PyObject_TypeCheck(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             _PyCFunctionFast cfunc =
