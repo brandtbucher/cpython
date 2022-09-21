@@ -8135,12 +8135,9 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
          int maxdepth, int nlocalsplus, int code_flags)
 {
     PyCodeObject *co = NULL;
-    PyObject *names = NULL;
     PyObject *consts = NULL;
     PyObject *localsplusnames = NULL;
     PyObject *localspluskinds = NULL;
-
-    names = PyTuple_New(0);  // XXX
 
     consts = PyList_AsTuple(constslist); /* PyCode_New requires a tuple */
     if (consts == NULL) {
@@ -8179,7 +8176,6 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
         .linetable = a->a_linetable,
 
         .consts = consts,
-        .names = names,
 
         .localsplusnames = localsplusnames,
         .localspluskinds = localspluskinds,
@@ -8208,7 +8204,6 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     }
 
  error:
-    Py_XDECREF(names);
     Py_XDECREF(consts);
     Py_XDECREF(localsplusnames);
     Py_XDECREF(localspluskinds);

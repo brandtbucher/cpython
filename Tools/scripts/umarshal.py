@@ -281,7 +281,6 @@ class Reader:
             retval.co_flags = self.r_long()
             retval.co_code = self.r_object()
             retval.co_consts = self.r_object()
-            retval.co_names = self.r_object()
             retval.co_localsplusnames = self.r_object()
             retval.co_localspluskinds = self.r_object()
             retval.co_filename = self.r_object()

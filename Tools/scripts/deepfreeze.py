@@ -231,7 +231,6 @@ class Printer:
         # The ordering here matches PyCode_NewWithPosOnlyArgs()
         # (but see below).
         co_consts = self.generate(name + "_consts", code.co_consts)
-        co_names = self.generate(name + "_names", code.co_names)
         co_filename = self.generate(name + "_filename", code.co_filename)
         co_name = self.generate(name + "_name", code.co_name)
         co_qualname = self.generate(name + "_qualname", code.co_qualname)
@@ -254,7 +253,6 @@ class Printer:
             # (which is a pain because we tend to reorder those for perf)
             # otherwise MSVC doesn't like it.
             self.write(f".co_consts = {co_consts},")
-            self.write(f".co_names = {co_names},")
             self.write(f".co_exceptiontable = {co_exceptiontable},")
             self.field(code, "co_flags")
             self.write(".co_warmup = QUICKENING_INITIAL_WARMUP_VALUE,")

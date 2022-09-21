@@ -48,7 +48,6 @@ typedef uint16_t _Py_CODEUNIT;
      * - co_flags                                                              \
      * - co_firstlineno                                                        \
      * - co_consts                                                             \
-     * - co_names                                                              \
      * - co_localsplusnames                                                    \
      * This is done to preserve the name and line number for tracebacks        \
      * and debuggers; otherwise, constant de-duplication would collapse        \
@@ -59,7 +58,6 @@ typedef uint16_t _Py_CODEUNIT;
                                                                                \
     /* The hottest fields (in the eval loop) are grouped here at the top. */   \
     PyObject *co_consts;           /* list (constants used) */                 \
-    PyObject *co_names;            /* list of strings (names used) */          \
     PyObject *co_exceptiontable;   /* Byte string encoding exception handling  \
                                       table */                                 \
     int co_flags;                  /* CO_..., see below */                     \
@@ -148,13 +146,13 @@ PyAPI_DATA(PyTypeObject) PyCode_Type;
 /* Public interface */
 PyAPI_FUNC(PyCodeObject *) PyCode_New(
         int, int, int, int, int, PyObject *, PyObject *,
-        PyObject *, PyObject *, PyObject *, PyObject *,
+        PyObject *, PyObject *, PyObject *,
         PyObject *, PyObject *, PyObject *, int, PyObject *,
         PyObject *);
 
 PyAPI_FUNC(PyCodeObject *) PyCode_NewWithPosOnlyArgs(
         int, int, int, int, int, int, PyObject *, PyObject *,
-        PyObject *, PyObject *, PyObject *, PyObject *,
+        PyObject *, PyObject *, PyObject *,
         PyObject *, PyObject *, PyObject *, int, PyObject *,
         PyObject *);
         /* same as struct above */

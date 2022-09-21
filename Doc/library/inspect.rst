@@ -191,10 +191,6 @@ attributes:
 |           |                   | which this code object    |
 |           |                   | was defined               |
 +-----------+-------------------+---------------------------+
-|           | co_names          | tuple of names other      |
-|           |                   | than arguments and        |
-|           |                   | function locals           |
-+-----------+-------------------+---------------------------+
 |           | co_nlocals        | number of local variables |
 +-----------+-------------------+---------------------------+
 |           | co_stacksize      | virtual machine stack     |

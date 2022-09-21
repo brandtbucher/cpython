@@ -798,7 +798,6 @@ extern "C" {
                 INIT_ID(co_kwonlyargcount), \
                 INIT_ID(co_linetable), \
                 INIT_ID(co_name), \
-                INIT_ID(co_names), \
                 INIT_ID(co_nlocals), \
                 INIT_ID(co_posonlyargcount), \
                 INIT_ID(co_qualname), \
@@ -1901,8 +1900,6 @@ _PyUnicode_InitStaticStrings(void) {
     string = &_Py_ID(co_linetable);
     PyUnicode_InternInPlace(&string);
     string = &_Py_ID(co_name);
-    PyUnicode_InternInPlace(&string);
-    string = &_Py_ID(co_names);
     PyUnicode_InternInPlace(&string);
     string = &_Py_ID(co_nlocals);
     PyUnicode_InternInPlace(&string);
@@ -5729,10 +5726,6 @@ _PyStaticObjects_CheckRefcnt(void) {
     };
     if (Py_REFCNT((PyObject *)&_Py_ID(co_name)) < _PyObject_IMMORTAL_REFCNT) {
         _PyObject_Dump((PyObject *)&_Py_ID(co_name));
-        Py_FatalError("immortal object has less refcnt than expected _PyObject_IMMORTAL_REFCNT");
-    };
-    if (Py_REFCNT((PyObject *)&_Py_ID(co_names)) < _PyObject_IMMORTAL_REFCNT) {
-        _PyObject_Dump((PyObject *)&_Py_ID(co_names));
         Py_FatalError("immortal object has less refcnt than expected _PyObject_IMMORTAL_REFCNT");
     };
     if (Py_REFCNT((PyObject *)&_Py_ID(co_nlocals)) < _PyObject_IMMORTAL_REFCNT) {

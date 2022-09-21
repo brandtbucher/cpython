@@ -11,7 +11,6 @@ name: f
 argcount: 1
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ()
 varnames: ('x', 'g')
 cellvars: ('x',)
 freevars: ()
@@ -24,7 +23,6 @@ name: g
 argcount: 1
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ()
 varnames: ('y',)
 cellvars: ()
 freevars: ('x',)
@@ -44,7 +42,6 @@ name: h
 argcount: 2
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ()
 varnames: ('x', 'y', 'a', 'b', 'c')
 cellvars: ()
 freevars: ()
@@ -62,7 +59,6 @@ name: attrs
 argcount: 1
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ()
 varnames: ('obj',)
 cellvars: ()
 freevars: ()
@@ -81,7 +77,6 @@ name: optimize_away
 argcount: 0
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ()
 varnames: ()
 cellvars: ()
 freevars: ()
@@ -98,7 +93,6 @@ name: keywordonly_args
 argcount: 2
 posonlyargcount: 0
 kwonlyargcount: 1
-names: ()
 varnames: ('a', 'b', 'k1')
 cellvars: ()
 freevars: ()
@@ -115,7 +109,6 @@ name: posonly_args
 argcount: 3
 posonlyargcount: 2
 kwonlyargcount: 0
-names: ()
 varnames: ('a', 'b', 'c')
 cellvars: ()
 freevars: ()
@@ -158,7 +151,7 @@ def consts(t):
 def dump(co):
     """Print out a text representation of a code object."""
     for attr in ["name", "argcount", "posonlyargcount",
-                 "kwonlyargcount", "names", "varnames",
+                 "kwonlyargcount", "varnames",
                  "cellvars", "freevars", "nlocals", "flags"]:
         print("%s: %s" % (attr, getattr(co, "co_" + attr)))
     print("consts:", tuple(consts(co.co_consts)))
@@ -228,7 +221,6 @@ class CodeTest(unittest.TestCase):
                         co.co_flags,
                         co.co_code,
                         co.co_consts,
-                        co.co_names,
                         co.co_varnames,
                         co.co_filename,
                         co.co_name,
@@ -268,7 +260,6 @@ class CodeTest(unittest.TestCase):
             ("co_firstlineno", 100),
             ("co_code", code2.co_code),
             ("co_consts", code2.co_consts),
-            ("co_names", ("myname",)),
             ("co_varnames", ('spam',)),
             ("co_freevars", ("freevar",)),
             ("co_cellvars", ("cellvar",)),
@@ -305,7 +296,6 @@ class CodeTest(unittest.TestCase):
                          co.co_flags,
                          co.co_code,
                          co.co_consts,
-                         co.co_names,
                          co.co_varnames,
                          co.co_filename,
                          co.co_name,

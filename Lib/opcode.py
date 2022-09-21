@@ -159,6 +159,7 @@ const_op('IMPORT_FROM', 109)     # Index in name list
 jrel_op('JUMP_FORWARD', 110)    # Number of words to skip
 jrel_op('JUMP_IF_FALSE_OR_POP', 111) # Number of words to skip
 jrel_op('JUMP_IF_TRUE_OR_POP', 112)  # ""
+
 jrel_op('POP_JUMP_IF_FALSE', 114)
 jrel_op('POP_JUMP_IF_TRUE', 115)
 const_op('LOAD_GLOBAL', 116)     # Index in name list
@@ -166,6 +167,7 @@ def_op('IS_OP', 117)
 def_op('CONTAINS_OP', 118)
 def_op('RERAISE', 119)
 def_op('COPY', 120)
+
 def_op('BINARY_OP', 122)
 jrel_op('SEND', 123) # Number of bytes to skip
 local_op('LOAD_FAST', 124)        # Local variable number, no null check

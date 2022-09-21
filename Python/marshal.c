@@ -561,7 +561,6 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_long(co->co_flags, p);
         w_object(co_code, p);
         w_object(co->co_consts, p);
-        w_object(co->co_names, p);
         w_object(co->co_localsplusnames, p);
         w_object(co->co_localspluskinds, p);
         w_object(co->co_filename, p);
@@ -1353,7 +1352,6 @@ r_object(RFILE *p)
             int flags;
             PyObject *code = NULL;
             PyObject *consts = NULL;
-            PyObject *names = NULL;
             PyObject *localsplusnames = NULL;
             PyObject *localspluskinds = NULL;
             PyObject *filename = NULL;
@@ -1392,9 +1390,6 @@ r_object(RFILE *p)
             consts = r_object(p);
             if (consts == NULL)
                 goto code_error;
-            names = r_object(p);
-            if (names == NULL)
-                goto code_error;
             localsplusnames = r_object(p);
             if (localsplusnames == NULL)
                 goto code_error;
@@ -1431,7 +1426,6 @@ r_object(RFILE *p)
                 .linetable = linetable,
 
                 .consts = consts,
-                .names = names,
 
                 .localsplusnames = localsplusnames,
                 .localspluskinds = localspluskinds,
@@ -1459,7 +1453,6 @@ r_object(RFILE *p)
           code_error:
             Py_XDECREF(code);
             Py_XDECREF(consts);
-            Py_XDECREF(names);
             Py_XDECREF(localsplusnames);
             Py_XDECREF(localspluskinds);
             Py_XDECREF(filename);

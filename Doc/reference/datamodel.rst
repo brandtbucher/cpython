@@ -964,7 +964,6 @@ Internal types
          single: co_flags (code object attribute)
          single: co_lnotab (code object attribute)
          single: co_name (code object attribute)
-         single: co_names (code object attribute)
          single: co_nlocals (code object attribute)
          single: co_stacksize (code object attribute)
          single: co_varnames (code object attribute)
@@ -986,8 +985,7 @@ Internal types
       that are referenced by nested functions; :attr:`co_freevars` is a tuple
       containing the names of free variables; :attr:`co_code` is a string
       representing the sequence of bytecode instructions; :attr:`co_consts` is
-      a tuple containing the literals used by the bytecode; :attr:`co_names` is
-      a tuple containing the names used by the bytecode; :attr:`co_filename` is
+      a tuple containing the literals used by the bytecode; :attr:`co_filename` is
       the filename from which the code was compiled; :attr:`co_firstlineno` is
       the first line number of the function; :attr:`co_lnotab` is a string
       encoding the mapping from bytecode offsets to line numbers (for details
