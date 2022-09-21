@@ -4,7 +4,7 @@ opcode module - potentially shared between dis and other modules which
 operate on bytecodes (e.g. peephole optimizers).
 """
 
-__all__ = ["cmp_op", "hasarg", "hasconst", "hasname", "hasjrel", "hasjabs",
+__all__ = ["cmp_op", "hasarg", "hasconst", "hasjrel", "hasjabs",
            "haslocal", "hascompare", "hasfree", "hasexc", "opname", "opmap",
            "HAVE_ARGUMENT", "EXTENDED_ARG"]
 
@@ -25,7 +25,6 @@ cmp_op = ('<', '<=', '==', '!=', '>', '>=')
 
 hasarg = []
 hasconst = []
-hasname = []
 hasjrel = []
 hasjabs = []
 haslocal = []
@@ -36,7 +35,7 @@ hasexc = []
 def is_pseudo(op):
     return op >= MIN_PSEUDO_OPCODE and op <= MAX_PSEUDO_OPCODE
 
-oplists = [hasarg, hasconst, hasname, hasjrel, hasjabs,
+oplists = [hasarg, hasconst, hasjrel, hasjabs,
            haslocal, hascompare, hasfree, hasexc]
 
 opmap = {}

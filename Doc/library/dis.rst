@@ -1478,11 +1478,6 @@ instructions:
    *not* include references to global or builtin scopes).
 
 
-.. data:: hasname
-
-   Sequence of bytecodes that access an attribute by name.
-
-
 .. data:: hasjrel
 
    Sequence of bytecodes that have a relative jump target.
