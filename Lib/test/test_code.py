@@ -62,13 +62,13 @@ name: attrs
 argcount: 1
 posonlyargcount: 0
 kwonlyargcount: 0
-names: ('print', 'attr1', 'attr2', 'attr3')
+names: ()
 varnames: ('obj',)
 cellvars: ()
 freevars: ()
 nlocals: 1
 flags: 3
-consts: ('None',)
+consts: ('None', "'print'", "'attr1'", "'attr2'", "'attr3'")
 
 >>> def optimize_away():
 ...     'doc string'

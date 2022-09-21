@@ -788,13 +788,13 @@ iterations of the loop.
 .. opcode:: STORE_NAME (namei)
 
    Implements ``name = TOS``. *namei* is the index of *name* in the attribute
-   :attr:`co_names` of the code object. The compiler tries to use
+   :attr:`co_consts` of the code object. The compiler tries to use
    :opcode:`STORE_FAST` or :opcode:`STORE_GLOBAL` if possible.
 
 
 .. opcode:: DELETE_NAME (namei)
 
-   Implements ``del name``, where *namei* is the index into :attr:`co_names`
+   Implements ``del name``, where *namei* is the index into :attr:`co_consts`
    attribute of the code object.
 
 
@@ -819,12 +819,12 @@ iterations of the loop.
 .. opcode:: STORE_ATTR (namei)
 
    Implements ``TOS.name = TOS1``, where *namei* is the index of name in
-   :attr:`co_names`.
+   :attr:`co_consts`.
 
 
 .. opcode:: DELETE_ATTR (namei)
 
-   Implements ``del TOS.name``, using *namei* as index into :attr:`co_names`.
+   Implements ``del TOS.name``, using *namei* as index into :attr:`co_consts`.
 
 
 .. opcode:: STORE_GLOBAL (namei)
@@ -844,7 +844,7 @@ iterations of the loop.
 
 .. opcode:: LOAD_NAME (namei)
 
-   Pushes the value associated with ``co_names[namei]`` onto the stack.
+   Pushes the value associated with ``co_consts[namei]`` onto the stack.
 
 
 .. opcode:: BUILD_TUPLE (count)
@@ -929,10 +929,10 @@ iterations of the loop.
 .. opcode:: LOAD_ATTR (namei)
 
    If the low bit of ``namei`` is not set, this replaces TOS with
-   ``getattr(TOS, co_names[namei>>1])``.
+   ``getattr(TOS, co_consts[namei>>1])``.
 
    If the low bit of ``namei`` is set, this will attempt to load a method named
-   ``co_names[namei>>1]`` from the TOS object. TOS is popped.
+   ``co_consts[namei>>1]`` from the TOS object. TOS is popped.
    This bytecode distinguishes two cases: if TOS has a method with the correct
    name, the bytecode pushes the unbound method and TOS. TOS will be used as
    the first argument (``self``) by :opcode:`CALL` when calling the
@@ -966,7 +966,7 @@ iterations of the loop.
 
 .. opcode:: IMPORT_NAME (namei)
 
-   Imports the module ``co_names[namei]``.  TOS and TOS1 are popped and provide
+   Imports the module ``co_consts[namei]``.  TOS and TOS1 are popped and provide
    the *fromlist* and *level* arguments of :func:`__import__`.  The module
    object is pushed onto the stack.  The current namespace is not affected: for
    a proper import statement, a subsequent :opcode:`STORE_FAST` instruction
@@ -975,7 +975,7 @@ iterations of the loop.
 
 .. opcode:: IMPORT_FROM (namei)
 
-   Loads the attribute ``co_names[namei]`` from the module found in TOS. The
+   Loads the attribute ``co_consts[namei]`` from the module found in TOS. The
    resulting object is pushed onto the stack, to be subsequently stored by a
    :opcode:`STORE_FAST` instruction.
 
@@ -1074,7 +1074,7 @@ iterations of the loop.
 
 .. opcode:: LOAD_GLOBAL (namei)
 
-   Loads the global named ``co_names[namei>>1]`` onto the stack.
+   Loads the global named ``co_consts[namei>>1]`` onto the stack.
 
    .. versionchanged:: 3.11
       If the low bit of ``namei`` is set, then a ``NULL`` is pushed to the

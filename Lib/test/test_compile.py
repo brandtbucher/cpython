@@ -244,7 +244,7 @@ if 1:
 
             for variable in self.test_32_63_bit_values.__code__.co_consts:
                 if variable is not None:
-                    self.assertIsInstance(variable, int)
+                    self.assertIsInstance(variable, (str, int))
 
     def test_sequence_unpacking_error(self):
         # Verify sequence packing/unpacking with "or".  SF bug #757818
@@ -1346,22 +1346,22 @@ f(
     @support.cpython_only
     def test_column_offset_deduplication(self):
         # GH-95150: Code with different column offsets shouldn't be merged!
-        for source in [
-            "lambda: a",
-            "(a for b in c)",
-            "[a for b in c]",
-            "{a for b in c}",
-            "{a: b for c in d}",
+        for source, len_consts in [
+            ("lambda: a", 2),
+            ("(a for b in c)", 3),
+            ("[a for b in c]", 3),
+            ("{a for b in c}", 3),
+            ("{a: b for c in d}", 3),
         ]:
             with self.subTest(source):
                 code = compile(f"{source}, {source}", "<test>", "eval")
-                self.assertEqual(len(code.co_consts), 2)
+                self.assertEqual(len(code.co_consts), len_consts)
                 self.assertIsInstance(code.co_consts[0], types.CodeType)
-                self.assertIsInstance(code.co_consts[1], types.CodeType)
-                self.assertNotEqual(code.co_consts[0], code.co_consts[1])
+                self.assertIsInstance(code.co_consts[-1], types.CodeType)
+                self.assertNotEqual(code.co_consts[0], code.co_consts[-1])
                 self.assertNotEqual(
                     list(code.co_consts[0].co_positions()),
-                    list(code.co_consts[1].co_positions()),
+                    list(code.co_consts[-1].co_positions()),
                 )
 
 

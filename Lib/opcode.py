@@ -48,17 +48,25 @@ _pseudo_ops = {}
 def def_op(name, op):
     opmap[name] = op
 
-def name_op(name, op):
+def const_op(name, op):
     def_op(name, op)
-    hasname.append(op)
+    hasconst.append(op)
 
 def jrel_op(name, op):
     def_op(name, op)
     hasjrel.append(op)
 
-def jabs_op(name, op):
+def free_op(name, op):
     def_op(name, op)
-    hasjabs.append(op)
+    hasfree.append(op)
+
+def compare_op(name, op):
+    def_op(name, op)
+    hascompare.append(op)
+
+def local_op(name, op):
+    def_op(name, op)
+    haslocal.append(op)
 
 def pseudo_op(name, op, real_ops):
     def_op(name, op)
@@ -128,48 +136,42 @@ def_op('POP_EXCEPT', 89)
 
 HAVE_ARGUMENT = 90             # real opcodes from here have an argument:
 
-name_op('STORE_NAME', 90)       # Index in name list
-name_op('DELETE_NAME', 91)      # ""
+const_op('STORE_NAME', 90)       # Index in name list
+const_op('DELETE_NAME', 91)      # ""
 def_op('UNPACK_SEQUENCE', 92)   # Number of tuple items
 jrel_op('FOR_ITER', 93)
 def_op('UNPACK_EX', 94)
-name_op('STORE_ATTR', 95)       # Index in name list
-name_op('DELETE_ATTR', 96)      # ""
-name_op('STORE_GLOBAL', 97)     # ""
-name_op('DELETE_GLOBAL', 98)    # ""
+const_op('STORE_ATTR', 95)       # Index in name list
+const_op('DELETE_ATTR', 96)      # ""
+const_op('STORE_GLOBAL', 97)     # ""
+const_op('DELETE_GLOBAL', 98)    # ""
 def_op('SWAP', 99)
-def_op('LOAD_CONST', 100)       # Index in const list
-hasconst.append(100)
-name_op('LOAD_NAME', 101)       # Index in name list
+const_op('LOAD_CONST', 100)       # Index in const list
+const_op('LOAD_NAME', 101)       # Index in name list
 def_op('BUILD_TUPLE', 102)      # Number of tuple items
 def_op('BUILD_LIST', 103)       # Number of list items
 def_op('BUILD_SET', 104)        # Number of set items
 def_op('BUILD_MAP', 105)        # Number of dict entries
-name_op('LOAD_ATTR', 106)       # Index in name list
-def_op('COMPARE_OP', 107)       # Comparison operator
-hascompare.append(107)
-name_op('IMPORT_NAME', 108)     # Index in name list
-name_op('IMPORT_FROM', 109)     # Index in name list
+const_op('LOAD_ATTR', 106)       # Index in name list
+compare_op('COMPARE_OP', 107)       # Comparison operator
+const_op('IMPORT_NAME', 108)     # Index in name list
+const_op('IMPORT_FROM', 109)     # Index in name list
 jrel_op('JUMP_FORWARD', 110)    # Number of words to skip
 jrel_op('JUMP_IF_FALSE_OR_POP', 111) # Number of words to skip
 jrel_op('JUMP_IF_TRUE_OR_POP', 112)  # ""
 jrel_op('POP_JUMP_IF_FALSE', 114)
 jrel_op('POP_JUMP_IF_TRUE', 115)
-name_op('LOAD_GLOBAL', 116)     # Index in name list
+const_op('LOAD_GLOBAL', 116)     # Index in name list
 def_op('IS_OP', 117)
 def_op('CONTAINS_OP', 118)
 def_op('RERAISE', 119)
 def_op('COPY', 120)
 def_op('BINARY_OP', 122)
 jrel_op('SEND', 123) # Number of bytes to skip
-def_op('LOAD_FAST', 124)        # Local variable number, no null check
-haslocal.append(124)
-def_op('STORE_FAST', 125)       # Local variable number
-haslocal.append(125)
-def_op('DELETE_FAST', 126)      # Local variable number
-haslocal.append(126)
-def_op('LOAD_FAST_CHECK', 127)  # Local variable number
-haslocal.append(127)
+local_op('LOAD_FAST', 124)        # Local variable number, no null check
+local_op('STORE_FAST', 125)       # Local variable number
+local_op('DELETE_FAST', 126)      # Local variable number
+local_op('LOAD_FAST_CHECK', 127)  # Local variable number
 jrel_op('POP_JUMP_IF_NOT_NONE', 128)
 jrel_op('POP_JUMP_IF_NONE', 129)
 def_op('RAISE_VARARGS', 130)    # Number of raise arguments (1, 2, or 3)
@@ -177,16 +179,11 @@ def_op('GET_AWAITABLE', 131)
 def_op('MAKE_FUNCTION', 132)    # Flags
 def_op('BUILD_SLICE', 133)      # Number of items
 jrel_op('JUMP_BACKWARD_NO_INTERRUPT', 134) # Number of words to skip (backwards)
-def_op('MAKE_CELL', 135)
-hasfree.append(135)
-def_op('LOAD_CLOSURE', 136)
-hasfree.append(136)
-def_op('LOAD_DEREF', 137)
-hasfree.append(137)
-def_op('STORE_DEREF', 138)
-hasfree.append(138)
-def_op('DELETE_DEREF', 139)
-hasfree.append(139)
+free_op('MAKE_CELL', 135)
+free_op('LOAD_CLOSURE', 136)
+free_op('LOAD_DEREF', 137)
+free_op('STORE_DEREF', 138)
+free_op('DELETE_DEREF', 139)
 jrel_op('JUMP_BACKWARD', 140)    # Number of words to skip (backwards)
 
 def_op('CALL_FUNCTION_EX', 142)  # Flags
@@ -196,8 +193,7 @@ EXTENDED_ARG = 144
 def_op('LIST_APPEND', 145)
 def_op('SET_ADD', 146)
 def_op('MAP_ADD', 147)
-def_op('LOAD_CLASSDEREF', 148)
-hasfree.append(148)
+free_op('LOAD_CLASSDEREF', 148)
 def_op('COPY_FREE_VARS', 149)
 def_op('YIELD_VALUE', 150)
 def_op('RESUME', 151)   # This must be kept in sync with deepfreeze.py
@@ -213,8 +209,7 @@ def_op('DICT_MERGE', 164)
 def_op('DICT_UPDATE', 165)
 
 def_op('CALL', 171)
-def_op('KW_NAMES', 172)
-hasconst.append(172)
+const_op('KW_NAMES', 172)
 
 
 hasarg.extend([op for op in opmap.values() if op >= HAVE_ARGUMENT])
@@ -228,15 +223,13 @@ hasexc.append(257)
 pseudo_op('SETUP_WITH', 258, ['NOP'])
 hasexc.append(258)
 pseudo_op('POP_BLOCK', 259, ['NOP'])
-
 pseudo_op('JUMP', 260, ['JUMP_FORWARD', 'JUMP_BACKWARD'])
 pseudo_op('JUMP_NO_INTERRUPT', 261, ['JUMP_FORWARD', 'JUMP_BACKWARD_NO_INTERRUPT'])
-
 pseudo_op('LOAD_METHOD', 262, ['LOAD_ATTR'])
 
 MAX_PSEUDO_OPCODE = MIN_PSEUDO_OPCODE + len(_pseudo_ops) - 1
 
-del def_op, name_op, jrel_op, jabs_op, pseudo_op
+del def_op, const_op, jrel_op, free_op, compare_op, pseudo_op
 
 opname = ['<%r>' % (op,) for op in range(MAX_PSEUDO_OPCODE + 1)]
 for op, i in opmap.items():

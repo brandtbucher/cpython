@@ -1612,7 +1612,7 @@ def getclosurevars(func):
             for var, cell in zip(code.co_freevars, func.__closure__)
        }
 
-    # Global and builtin references are named in co_names and resolved
+    # Global and builtin references are named in co_consts and resolved
     # by looking them up in __globals__ or __builtins__
     global_ns = func.__globals__
     builtin_ns = global_ns.get("__builtins__", builtins.__dict__)
@@ -1621,7 +1621,9 @@ def getclosurevars(func):
     global_vars = {}
     builtin_vars = {}
     unbound_names = set()
-    for name in code.co_names:
+    for name in code.co_consts:
+        if not isinstance(name, str) or not name.isidentifier():
+            continue
         if name in ("None", "True", "False"):
             # Because these used to be builtins instead of keywords, they
             # may still show up as name references. We ignore them.

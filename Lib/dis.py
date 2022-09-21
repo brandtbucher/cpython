@@ -207,10 +207,6 @@ def _format_code_info(co):
         lines.append("Constants:")
         for i_c in enumerate(co.co_consts):
             lines.append("%4d: %r" % i_c)
-    if co.co_names:
-        lines.append("Names:")
-        for i_n in enumerate(co.co_names):
-            lines.append("%4d: %s" % i_n)
     if co.co_varnames:
         lines.append("Variable names:")
         for i_n in enumerate(co.co_varnames):
@@ -348,7 +344,7 @@ def get_instructions(x, *, first_line=None, show_caches=False, adaptive=False):
         line_offset = 0
     return _get_instructions_bytes(_get_code_array(co, adaptive),
                                    co._varname_from_oparg,
-                                   co.co_names, co.co_consts,
+                                   co.co_consts,
                                    linestarts, line_offset,
                                    co_positions=co.co_positions(),
                                    show_caches=show_caches)
@@ -363,9 +359,8 @@ def _get_const_value(op, arg, co_consts):
     assert op in hasconst
 
     argval = UNKNOWN
-    if op == LOAD_CONST:
-        if co_consts is not None:
-            argval = co_consts[arg]
+    if co_consts is not None:
+        argval = co_consts[arg]
     return argval
 
 def _get_const_info(op, arg, co_consts):
@@ -377,7 +372,12 @@ def _get_const_info(op, arg, co_consts):
        and an empty string for its repr.
     """
     argval = _get_const_value(op, arg, co_consts)
-    argrepr = repr(argval) if argval is not UNKNOWN else ''
+    if argval is UNKNOWN:
+        argrepr = ""
+    elif op == LOAD_CONST:
+        argrepr = repr(argval)
+    else:
+        argrepr = argval
     return argval, argrepr
 
 def _get_name_info(name_index, get_name, **extrainfo):
@@ -422,8 +422,7 @@ def _parse_exception_table(code):
 def _is_backward_jump(op):
     return 'JUMP_BACKWARD' in opname[op]
 
-def _get_instructions_bytes(code, varname_from_oparg=None,
-                            names=None, co_consts=None,
+def _get_instructions_bytes(code, varname_from_oparg=None, co_consts=None,
                             linestarts=None, line_offset=0,
                             exception_entries=(), co_positions=None,
                             show_caches=False):
@@ -436,7 +435,6 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
 
     """
     co_positions = co_positions or iter(())
-    get_name = None if names is None else names.__getitem__
     labels = set(findlabels(code))
     for start, end, target, _, _ in exception_entries:
         for i in range(start, end):
@@ -459,18 +457,16 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
             #    raw name index for LOAD_GLOBAL, LOAD_CONST, etc.
             argval = arg
             if deop in hasconst:
-                argval, argrepr = _get_const_info(deop, arg, co_consts)
-            elif deop in hasname:
                 if deop == LOAD_GLOBAL:
-                    argval, argrepr = _get_name_info(arg//2, get_name)
+                    argval, argrepr = _get_const_info(deop, arg >> 1, co_consts)
                     if (arg & 1) and argrepr:
                         argrepr = "NULL + " + argrepr
                 elif deop == LOAD_ATTR:
-                    argval, argrepr = _get_name_info(arg//2, get_name)
+                    argval, argrepr = _get_const_info(deop, arg >> 1, co_consts)
                     if (arg & 1) and argrepr:
                         argrepr = "NULL|self + " + argrepr
                 else:
-                    argval, argrepr = _get_name_info(arg, get_name)
+                    argval, argrepr = _get_const_info(deop, arg, co_consts)
             elif deop in hasjabs:
                 argval = arg*2
                 argrepr = "to " + repr(argval)
@@ -530,7 +526,7 @@ def disassemble(co, lasti=-1, *, file=None, show_caches=False, adaptive=False):
     exception_entries = _parse_exception_table(co)
     _disassemble_bytes(_get_code_array(co, adaptive),
                        lasti, co._varname_from_oparg,
-                       co.co_names, co.co_consts, linestarts, file=file,
+                       co.co_consts, linestarts, file=file,
                        exception_entries=exception_entries,
                        co_positions=co.co_positions(), show_caches=show_caches)
 
@@ -548,7 +544,7 @@ def _disassemble_recursive(co, *, file=None, depth=None, show_caches=False, adap
                 )
 
 def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
-                       names=None, co_consts=None, linestarts=None,
+                       co_consts=None, linestarts=None,
                        *, file=None, line_offset=0, exception_entries=(),
                        co_positions=None, show_caches=False):
     # Omit the line number column entirely if we have no line number info
@@ -566,7 +562,7 @@ def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
         offset_width = len(str(maxoffset))
     else:
         offset_width = 4
-    for instr in _get_instructions_bytes(code, varname_from_oparg, names,
+    for instr in _get_instructions_bytes(code, varname_from_oparg,
                                          co_consts, linestarts,
                                          line_offset=line_offset,
                                          exception_entries=exception_entries,
@@ -670,7 +666,6 @@ def _find_imports(co):
     LOAD_CONST = opmap['LOAD_CONST']
 
     consts = co.co_consts
-    names = co.co_names
     opargs = [(op, arg) for _, op, arg in _unpack_opargs(co.co_code)
                   if op != EXTENDED_ARG]
     for i, (op, oparg) in enumerate(opargs):
@@ -680,7 +675,7 @@ def _find_imports(co):
             if (from_op[0] in hasconst and level_op[0] in hasconst):
                 level = _get_const_value(level_op[0], level_op[1], consts)
                 fromlist = _get_const_value(from_op[0], from_op[1], consts)
-                yield (names[oparg], level, fromlist)
+                yield (consts[oparg], level, fromlist)
 
 def _find_store_names(co):
     """Find names of variables which are written in the code
@@ -692,10 +687,9 @@ def _find_store_names(co):
         opmap['STORE_GLOBAL']
     }
 
-    names = co.co_names
     for _, op, arg in _unpack_opargs(co.co_code):
         if op in STORE_OPS:
-            yield names[arg]
+            yield co.co_consts[arg]
 
 
 class Bytecode:
@@ -725,7 +719,7 @@ class Bytecode:
         co = self.codeobj
         return _get_instructions_bytes(_get_code_array(co, self.adaptive),
                                        co._varname_from_oparg,
-                                       co.co_names, co.co_consts,
+                                       co.co_consts,
                                        self._linestarts,
                                        line_offset=self._line_offset,
                                        exception_entries=self.exception_entries,
@@ -759,7 +753,7 @@ class Bytecode:
         with io.StringIO() as output:
             _disassemble_bytes(_get_code_array(co, self.adaptive),
                                varname_from_oparg=co._varname_from_oparg,
-                               names=co.co_names, co_consts=co.co_consts,
+                               co_consts=co.co_consts,
                                linestarts=self._linestarts,
                                line_offset=self._line_offset,
                                file=output,

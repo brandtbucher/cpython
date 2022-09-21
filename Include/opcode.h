@@ -208,8 +208,20 @@ extern "C" {
     )
 
 #define HAS_CONST(op) (false\
+    || ((op) == STORE_NAME) \
+    || ((op) == DELETE_NAME) \
+    || ((op) == STORE_ATTR) \
+    || ((op) == DELETE_ATTR) \
+    || ((op) == STORE_GLOBAL) \
+    || ((op) == DELETE_GLOBAL) \
     || ((op) == LOAD_CONST) \
+    || ((op) == LOAD_NAME) \
+    || ((op) == LOAD_ATTR) \
+    || ((op) == IMPORT_NAME) \
+    || ((op) == IMPORT_FROM) \
+    || ((op) == LOAD_GLOBAL) \
     || ((op) == KW_NAMES) \
+    || ((op) == LOAD_METHOD) \
     )
 
 #define NB_ADD                                   0

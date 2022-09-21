@@ -369,7 +369,6 @@ struct compiler_unit {
        the argument for opcodes that refer to those collections.
     */
     PyObject *u_consts;    /* all constants */
-    PyObject *u_names;     /* all names */
     PyObject *u_varnames;  /* local variables */
     PyObject *u_cellvars;  /* cell variables */
     PyObject *u_freevars;  /* free variables */
@@ -410,8 +409,7 @@ struct compiler {
     int c_optimize;              /* optimization level */
     int c_interactive;           /* true if in interactive mode */
     int c_nestlevel;
-    PyObject *c_const_cache;     /* Python dict holding all constants,
-                                    including names tuple */
+    PyObject *c_const_cache;     /* Python dict holding all constants */
     struct compiler_unit *u; /* compiler state for current block */
     PyObject *c_stack;           /* Python list holding compiler_unit ptrs */
     PyArena *c_arena;            /* pointer to memory allocation arena */
@@ -793,7 +791,6 @@ compiler_unit_free(struct compiler_unit *u)
     Py_CLEAR(u->u_name);
     Py_CLEAR(u->u_qualname);
     Py_CLEAR(u->u_consts);
-    Py_CLEAR(u->u_names);
     Py_CLEAR(u->u_varnames);
     Py_CLEAR(u->u_freevars);
     Py_CLEAR(u->u_cellvars);
@@ -1513,15 +1510,14 @@ compiler_addop_o(struct compiler *c, int opcode, PyObject *dict,
 }
 
 static int
-compiler_addop_name(struct compiler *c, int opcode, PyObject *dict,
-                    PyObject *o)
+compiler_addop_name(struct compiler *c, int opcode, PyObject *o)
 {
     Py_ssize_t arg;
 
     PyObject *mangled = _Py_Mangle(c->u->u_private, o);
     if (!mangled)
         return 0;
-    arg = dict_add_o(dict, mangled);
+    arg = dict_add_o(c->u->u_consts, mangled);
     Py_DECREF(mangled);
     if (arg < 0)
         return 0;
@@ -1599,7 +1595,6 @@ cfg_builder_addop_j(cfg_builder *g, int opcode, jump_target_label target, struct
 }
 
 #define ADDOP_N(C, OP, O, TYPE) { \
-    assert(!HAS_CONST(OP)); /* use ADDOP_LOAD_CONST_NEW */ \
     if (!compiler_addop_o((C), (OP), (C)->u->u_ ## TYPE, (O))) { \
         Py_DECREF((O)); \
         return 0; \
@@ -1607,8 +1602,8 @@ cfg_builder_addop_j(cfg_builder *g, int opcode, jump_target_label target, struct
     Py_DECREF((O)); \
 }
 
-#define ADDOP_NAME(C, OP, O, TYPE) { \
-    if (!compiler_addop_name((C), (OP), (C)->u->u_ ## TYPE, (O))) \
+#define ADDOP_NAME(C, OP, O) { \
+    if (!compiler_addop_name((C), (OP), (O))) \
         return 0; \
 }
 
@@ -1752,11 +1747,6 @@ compiler_enter_scope(struct compiler *c, identifier name,
     u->u_loc = LOCATION(lineno, lineno, 0, 0);
     u->u_consts = PyDict_New();
     if (!u->u_consts) {
-        compiler_unit_free(u);
-        return 0;
-    }
-    u->u_names = PyDict_New();
-    if (!u->u_names) {
         compiler_unit_free(u);
         return 0;
     }
@@ -2210,10 +2200,10 @@ get_ref_type(struct compiler *c, PyObject *name)
         PyErr_Format(PyExc_SystemError,
                      "_PyST_GetScope(name=%R) failed: "
                      "unknown scope in unit %S (%R); "
-                     "symbols: %R; locals: %R; globals: %R",
+                     "symbols: %R; locals: %R; constants: %R",
                      name,
                      c->u->u_name, c->u->u_ste->ste_id,
-                     c->u->u_ste->ste_symbols, c->u->u_varnames, c->u->u_names);
+                     c->u->u_ste->ste_symbols, c->u->u_varnames, c->u->u_consts);
         return -1;
     }
     return scope;
@@ -3781,7 +3771,7 @@ compiler_import_as(struct compiler *c, identifier name, identifier asname)
             attr = PyUnicode_Substring(name, pos, (dot != -1) ? dot : len);
             if (!attr)
                 return 0;
-            ADDOP_N(c, IMPORT_FROM, attr, names);
+            ADDOP_N(c, IMPORT_FROM, attr, consts);
             if (dot == -1) {
                 break;
             }
@@ -3816,7 +3806,7 @@ compiler_import(struct compiler *c, stmt_ty s)
 
         ADDOP_LOAD_CONST(c, zero);
         ADDOP_LOAD_CONST(c, Py_None);
-        ADDOP_NAME(c, IMPORT_NAME, alias->name, names);
+        ADDOP_NAME(c, IMPORT_NAME, alias->name);
 
         if (alias->asname) {
             r = compiler_import_as(c, alias->name, alias->asname);
@@ -3871,11 +3861,11 @@ compiler_from_import(struct compiler *c, stmt_ty s)
     ADDOP_LOAD_CONST_NEW(c, names);
 
     if (s->v.ImportFrom.module) {
-        ADDOP_NAME(c, IMPORT_NAME, s->v.ImportFrom.module, names);
+        ADDOP_NAME(c, IMPORT_NAME, s->v.ImportFrom.module);
     }
     else {
         _Py_DECLARE_STR(empty, "");
-        ADDOP_NAME(c, IMPORT_NAME, &_Py_STR(empty), names);
+        ADDOP_NAME(c, IMPORT_NAME, &_Py_STR(empty));
     }
     for (i = 0; i < n; i++) {
         alias_ty alias = (alias_ty)asdl_seq_GET(s->v.ImportFrom.names, i);
@@ -3887,7 +3877,7 @@ compiler_from_import(struct compiler *c, stmt_ty s)
             return 1;
         }
 
-        ADDOP_NAME(c, IMPORT_FROM, alias->name, names);
+        ADDOP_NAME(c, IMPORT_FROM, alias->name);
         store_name = alias->name;
         if (alias->asname)
             store_name = alias->asname;
@@ -4133,7 +4123,7 @@ compiler_nameop(struct compiler *c, identifier name, expr_context_ty ctx)
     Py_ssize_t arg;
     enum { OP_FAST, OP_GLOBAL, OP_DEREF, OP_NAME } optype;
 
-    PyObject *dict = c->u->u_names;
+    PyObject *dict = c->u->u_consts;
     PyObject *mangled;
 
     assert(!_PyUnicode_EqualToASCIIString(name, "None") &&
@@ -4766,7 +4756,7 @@ maybe_optimize_method_call(struct compiler *c, expr_ty e)
     VISIT(c, expr, meth->v.Attribute.value);
     SET_LOC(c, meth);
     update_start_location_to_match_attr(c, meth);
-    ADDOP_NAME(c, LOAD_METHOD, meth->v.Attribute.attr, names);
+    ADDOP_NAME(c, LOAD_METHOD, meth->v.Attribute.attr);
     VISIT_SEQ(c, expr, e->v.Call.args);
 
     if (kwdsl) {
@@ -4835,7 +4825,7 @@ compiler_joined_str(struct compiler *c, expr_ty e)
     if (value_count > STACK_USE_GUIDELINE) {
         _Py_DECLARE_STR(empty, "");
         ADDOP_LOAD_CONST_NEW(c, Py_NewRef(&_Py_STR(empty)));
-        ADDOP_NAME(c, LOAD_METHOD, &_Py_ID(join), names);
+        ADDOP_NAME(c, LOAD_METHOD, &_Py_ID(join));
         ADDOP_I(c, BUILD_LIST, 0);
         for (Py_ssize_t i = 0; i < asdl_seq_LEN(e->v.JoinedStr.values); i++) {
             VISIT(c, expr, asdl_seq_GET(e->v.JoinedStr.values, i));
@@ -5776,17 +5766,17 @@ compiler_visit_expr1(struct compiler *c, expr_ty e)
         switch (e->v.Attribute.ctx) {
         case Load:
         {
-            ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr);
             break;
         }
         case Store:
             if (forbidden_name(c, e->v.Attribute.attr, e->v.Attribute.ctx)) {
                 return 0;
             }
-            ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr);
             break;
         case Del:
-            ADDOP_NAME(c, DELETE_ATTR, e->v.Attribute.attr, names);
+            ADDOP_NAME(c, DELETE_ATTR, e->v.Attribute.attr);
             break;
         }
         break;
@@ -5855,7 +5845,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
         VISIT(c, expr, e->v.Attribute.value);
         ADDOP_I(c, COPY, 1);
         update_start_location_to_match_attr(c, e);
-        ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr, names);
+        ADDOP_NAME(c, LOAD_ATTR, e->v.Attribute.attr);
         break;
     case Subscript_kind:
         VISIT(c, expr, e->v.Subscript.value);
@@ -5897,7 +5887,7 @@ compiler_augassign(struct compiler *c, stmt_ty s)
     case Attribute_kind:
         update_start_location_to_match_attr(c, e);
         ADDOP_I(c, SWAP, 2);
-        ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr, names);
+        ADDOP_NAME(c, STORE_ATTR, e->v.Attribute.attr);
         break;
     case Subscript_kind:
         if (is_two_element_slice(e->v.Subscript.slice)) {
@@ -6004,7 +5994,7 @@ compiler_annassign(struct compiler *c, stmt_ty s)
             else {
                 VISIT(c, expr, s->v.AnnAssign.annotation);
             }
-            ADDOP_NAME(c, LOAD_NAME, &_Py_ID(__annotations__), names);
+            ADDOP_NAME(c, LOAD_NAME, &_Py_ID(__annotations__));
             mangled = _Py_Mangle(c->u->u_private, targ->v.Name.id);
             ADDOP_LOAD_CONST_NEW(c, mangled);
             ADDOP(c, STORE_SUBSCR);
@@ -8002,25 +7992,6 @@ add_checks_for_loads_of_unknown_variables(basicblock *entryblock,
 }
 
 static PyObject *
-dict_keys_inorder(PyObject *dict, Py_ssize_t offset)
-{
-    PyObject *tuple, *k, *v;
-    Py_ssize_t i, pos = 0, size = PyDict_GET_SIZE(dict);
-
-    tuple = PyTuple_New(size);
-    if (tuple == NULL)
-        return NULL;
-    while (PyDict_Next(dict, &pos, &k, &v)) {
-        i = PyLong_AS_LONG(v);
-        Py_INCREF(k);
-        assert((i - offset) < size);
-        assert((i - offset) >= 0);
-        PyTuple_SET_ITEM(tuple, i - offset, k);
-    }
-    return tuple;
-}
-
-static PyObject *
 consts_dict_keys_inorder(PyObject *dict)
 {
     PyObject *consts, *k, *v;
@@ -8169,13 +8140,7 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     PyObject *localsplusnames = NULL;
     PyObject *localspluskinds = NULL;
 
-    names = dict_keys_inorder(c->u->u_names, 0);
-    if (!names) {
-        goto error;
-    }
-    if (!merge_const_one(c->c_const_cache, &names)) {
-        goto error;
-    }
+    names = PyTuple_New(0);  // XXX
 
     consts = PyList_AsTuple(constslist); /* PyCode_New requires a tuple */
     if (consts == NULL) {
@@ -8644,7 +8609,7 @@ assemble(struct compiler *c, int addNone)
     if (optimize_cfg(g, consts, c->c_const_cache)) {
         goto error;
     }
-    if (trim_unused_consts(g->g_entryblock, consts)) {
+    if (trim_unused_consts(g->g_entryblock, consts)) {  // XXX
         goto error;
     }
     if (duplicate_exits_without_lineno(g) < 0) {
@@ -8741,9 +8706,10 @@ get_const_value(int opcode, int oparg, PyObject *co_consts)
 {
     PyObject *constant = NULL;
     assert(HAS_CONST(opcode));
-    if (opcode == LOAD_CONST) {
-        constant = PyList_GET_ITEM(co_consts, oparg);
+    if (opcode == LOAD_ATTR || opcode == LOAD_GLOBAL) {
+        oparg >>= 1;
     }
+    constant = PyList_GET_ITEM(co_consts, oparg);
 
     if (constant == NULL) {
         PyErr_SetString(PyExc_SystemError,
@@ -8772,7 +8738,7 @@ fold_tuple_on_constants(PyObject *const_cache,
     assert(inst[n].i_oparg == n);
 
     for (int i = 0; i < n; i++) {
-        if (!HAS_CONST(inst[i].i_opcode)) {
+        if (inst[i].i_opcode != LOAD_CONST) {
             return 0;
         }
     }
@@ -9230,8 +9196,6 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                 }
                 apply_static_swaps(bb, i);
                 break;
-            case KW_NAMES:
-                break;
             case PUSH_NULL:
                 if (nextop == LOAD_GLOBAL && (inst[1].i_opcode & 1) == 0) {
                     inst->i_opcode = NOP;
@@ -9239,9 +9203,6 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                     inst[1].i_oparg |= 1;
                 }
                 break;
-            default:
-                /* All HAS_CONST opcodes should be handled with LOAD_CONST */
-                assert (!HAS_CONST(inst->i_opcode));
         }
     }
     return 0;
@@ -9556,10 +9517,14 @@ trim_unused_consts(basicblock *entryblock, PyObject *consts)
     int max_const_index = 0;
     for (basicblock *b = entryblock; b != NULL; b = b->b_next) {
         for (int i = 0; i < b->b_iused; i++) {
-            if ((b->b_instr[i].i_opcode == LOAD_CONST ||
-                b->b_instr[i].i_opcode == KW_NAMES) &&
-                    b->b_instr[i].i_oparg > max_const_index) {
-                max_const_index = b->b_instr[i].i_oparg;
+            if (HAS_CONST(b->b_instr[i].i_opcode)) {
+                int oparg = b->b_instr[i].i_oparg;
+                if (b->b_instr[i].i_opcode == LOAD_ATTR || b->b_instr[i].i_opcode == LOAD_GLOBAL) {
+                    oparg >>= 1;
+                }
+                if (oparg > max_const_index) {
+                    max_const_index = oparg;
+                }
             }
         }
     }
