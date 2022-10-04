@@ -401,7 +401,7 @@ traceback_get_frames(traceback_t *traceback)
 
     _PyInterpreterFrame *pyframe = tstate->cframe->current_frame;
     for (;;) {
-        while (pyframe && _PyFrame_IsIncomplete(pyframe)) {
+        while (pyframe && !pyframe->is_ready) {
             pyframe = pyframe->previous;
         }
         if (pyframe == NULL) {

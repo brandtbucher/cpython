@@ -70,9 +70,10 @@ take_ownership(PyFrameObject *f, _PyInterpreterFrame *frame)
     frame = (_PyInterpreterFrame *)f->_f_frame_data;
     f->f_frame = frame;
     frame->owner = FRAME_OWNED_BY_FRAME_OBJECT;
+    frame->is_ready = true;
     assert(f->f_back == NULL);
     _PyInterpreterFrame *prev = frame->previous;
-    while (prev && _PyFrame_IsIncomplete(prev)) {
+    while (prev && !prev->is_ready) {
         prev = prev->previous;
     }
     if (prev) {

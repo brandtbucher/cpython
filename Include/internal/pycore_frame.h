@@ -62,6 +62,7 @@ typedef struct _PyInterpreterFrame {
     _Py_CODEUNIT *prev_instr;
     int stacktop;     /* Offset of TOS from localsplus  */
     bool is_entry;  // Whether this is the "root" frame for the current _PyCFrame.
+    bool is_ready;  // Can this back a PyFrameObject?
     char owner;
     /* Locals and stack */
     PyObject *localsplus[1];
@@ -110,6 +111,7 @@ _PyFrame_InitializeSpecials(
     frame->frame_obj = NULL;
     frame->prev_instr = _PyCode_CODE(code) - 1;
     frame->is_entry = false;
+    frame->is_ready = false;
     frame->owner = FRAME_OWNED_BY_THREAD;
 }
 
@@ -134,21 +136,6 @@ _PyFrame_SetStackPointer(_PyInterpreterFrame *frame, PyObject **stack_pointer)
     frame->stacktop = (int)(stack_pointer - frame->localsplus);
 }
 
-/* Determine whether a frame is incomplete.
- * A frame is incomplete if it is part way through
- * creating cell objects or a generator or coroutine.
- *
- * Frames on the frame stack are incomplete until the
- * first RESUME instruction.
- * Frames owned by a generator are always complete.
- */
-static inline bool
-_PyFrame_IsIncomplete(_PyInterpreterFrame *frame)
-{
-    return frame->owner != FRAME_OWNED_BY_GENERATOR &&
-    frame->prev_instr < _PyCode_CODE(frame->f_code) + frame->f_code->_co_firsttraceable;
-}
-
 /* For use by _PyFrame_GetFrameObject
   Do not call directly. */
 PyFrameObject *
@@ -161,7 +148,7 @@ static inline PyFrameObject *
 _PyFrame_GetFrameObject(_PyInterpreterFrame *frame)
 {
 
-    assert(!_PyFrame_IsIncomplete(frame));
+    assert(frame->is_ready);
     PyFrameObject *res =  frame->frame_obj;
     if (res != NULL) {
         return res;

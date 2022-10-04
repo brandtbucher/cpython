@@ -1276,7 +1276,7 @@ PyThreadState_GetFrame(PyThreadState *tstate)
 {
     assert(tstate != NULL);
     _PyInterpreterFrame *f = tstate->cframe->current_frame;
-    while (f && _PyFrame_IsIncomplete(f)) {
+    while (f && !f->is_ready) {
         f = f->previous;
     }
     if (f == NULL) {
@@ -1406,7 +1406,7 @@ _PyThread_CurrentFrames(void)
         PyThreadState *t;
         for (t = i->threads.head; t != NULL; t = t->next) {
             _PyInterpreterFrame *frame = t->cframe->current_frame;
-            while (frame && _PyFrame_IsIncomplete(frame)) {
+            while (frame && !frame->is_ready) {
                 frame = frame->previous;
             }
             if (frame == NULL) {

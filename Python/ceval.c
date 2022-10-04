@@ -1150,6 +1150,7 @@ handle_eval_breaker:
             if (_Py_atomic_load_relaxed_int32(eval_breaker) && oparg < 2) {
                 goto handle_eval_breaker;
             }
+            frame->is_ready = true;
             DISPATCH();
         }
 
@@ -4800,6 +4801,7 @@ handle_eval_breaker:
             assert(frame->frame_obj == NULL);
             gen->gi_frame_state = FRAME_CREATED;
             gen_frame->owner = FRAME_OWNED_BY_GENERATOR;
+            gen_frame->is_ready = true;
             _Py_LeaveRecursiveCallTstate(tstate);
             if (!frame->is_entry) {
                 _PyInterpreterFrame *prev = frame->previous;
@@ -4989,6 +4991,7 @@ handle_eval_breaker:
         assert(cframe.use_tracing);
         assert(tstate->tracing == 0);
         if (INSTR_OFFSET() >= frame->f_code->_co_firsttraceable) {
+            frame->is_ready = true;
             int instr_prev = _PyInterpreterFrame_LASTI(frame);
             frame->prev_instr = next_instr;
             TRACING_NEXTOPARG();
@@ -5107,7 +5110,7 @@ error:
 #endif
 
         /* Log traceback info. */
-        if (!_PyFrame_IsIncomplete(frame)) {
+        if (frame->is_ready) {
             PyFrameObject *f = _PyFrame_GetFrameObject(frame);
             if (f != NULL) {
                 PyTraceBack_Here(f);
@@ -6521,7 +6524,7 @@ PyFrameObject *
 PyEval_GetFrame(void)
 {
     _PyInterpreterFrame *frame = _PyEval_GetFrame();
-    while (frame && _PyFrame_IsIncomplete(frame)) {
+    while (frame && !frame->is_ready) {
         frame = frame->previous;
     }
     if (frame == NULL) {

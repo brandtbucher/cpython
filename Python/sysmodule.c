@@ -1910,7 +1910,7 @@ sys__getframe_impl(PyObject *module, int depth)
             if (frame == NULL) {
                 break;
             }
-            if (_PyFrame_IsIncomplete(frame)) {
+            if (!frame->is_ready) {
                 continue;
             }
             --depth;
