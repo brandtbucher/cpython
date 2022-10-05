@@ -800,6 +800,7 @@ init_threadstate(PyThreadState *tstate,
 
     tstate->cframe = &tstate->root_cframe;
     tstate->datastack_chunk = NULL;
+    tstate->datastack_cache = NULL;
     tstate->datastack_top = NULL;
     tstate->datastack_limit = NULL;
 
@@ -1093,6 +1094,13 @@ tstate_delete_common(PyThreadState *tstate,
         PyThread_tss_get(&gilstate->autoTSSkey) == tstate)
     {
         PyThread_tss_set(&gilstate->autoTSSkey, NULL);
+    }
+    _PyStackChunk *cache = tstate->datastack_cache;
+    tstate->datastack_cache = NULL;
+    while (cache != NULL) {
+        _PyStackChunk *prev = cache->previous;
+        _PyObject_VirtualFree(cache, cache->size);
+        cache = prev;
     }
     _PyStackChunk *chunk = tstate->datastack_chunk;
     tstate->datastack_chunk = NULL;
@@ -2182,16 +2190,23 @@ push_chunk(PyThreadState *tstate, int size)
     while (allocate_size < (int)sizeof(PyObject*)*(size + MINIMUM_OVERHEAD)) {
         allocate_size *= 2;
     }
-    _PyStackChunk *new = allocate_chunk(allocate_size, tstate->datastack_chunk);
-    if (new == NULL) {
-        return NULL;
+    _PyStackChunk *new = tstate->datastack_cache;
+    if (new && allocate_size <= (int)new->size) {
+        tstate->datastack_cache = new->previous;
+        new->previous = tstate->datastack_chunk;
+    }
+    else {
+        new = allocate_chunk(allocate_size, tstate->datastack_chunk);
+        if (new == NULL) {
+            return NULL;
+        }
     }
     if (tstate->datastack_chunk) {
         tstate->datastack_chunk->top = tstate->datastack_top -
                                        &tstate->datastack_chunk->data[0];
     }
     tstate->datastack_chunk = new;
-    tstate->datastack_limit = (PyObject **)(((char *)new) + allocate_size);
+    tstate->datastack_limit = (PyObject **)(((char *)new) + new->size);
     // When new is the "root" chunk (i.e. new->previous == NULL), we can keep
     // _PyThreadState_PopFrame from freeing it later by "skipping" over the
     // first element:
@@ -2224,7 +2239,8 @@ _PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame * frame)
         assert(previous);
         tstate->datastack_top = &previous->data[previous->top];
         tstate->datastack_chunk = previous;
-        _PyObject_VirtualFree(chunk, chunk->size);
+        chunk->previous = tstate->datastack_cache;
+        tstate->datastack_cache = chunk;
         tstate->datastack_limit = (PyObject **)(((char *)previous) + previous->size);
     }
     else {

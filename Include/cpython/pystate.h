@@ -182,6 +182,7 @@ struct _ts {
     PyTraceInfo trace_info;
 
     _PyStackChunk *datastack_chunk;
+    _PyStackChunk *datastack_cache;
     PyObject **datastack_top;
     PyObject **datastack_limit;
     /* XXX signal handlers should also be here */
