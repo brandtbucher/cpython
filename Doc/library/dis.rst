@@ -1068,14 +1068,6 @@ iterations of the loop.
       The oparg is now a relative delta rather than an absolute target.
 
 
-.. opcode:: FOR_ITER (delta)
-
-   TOS is an :term:`iterator`.  Call its :meth:`~iterator.__next__` method.  If
-   this yields a new value, push it on the stack (leaving the iterator below
-   it).  If the iterator indicates it is exhausted, TOS is popped, and the byte
-   code counter is incremented by *delta*.
-
-
 .. opcode:: LOAD_GLOBAL (namei)
 
    Loads the global named ``co_names[namei>>1]`` onto the stack.
@@ -1349,7 +1341,7 @@ iterations of the loop.
 
 .. opcode:: SEND (delta)
 
-    Equivalent to ``TOS = TOS1.send(TOS)``. Used in ``yield from`` and ``await``
+    Equivalent to ``TOS = TOS1.send(TOS)``. Used in ``for``, ``yield from``, and ``await``
     statements.
 
     If the call raises :exc:`StopIteration`, pop both items, push the
