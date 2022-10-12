@@ -322,6 +322,7 @@ _specializations = {
     ],
     "SEND": [
         "SEND_ADAPTIVE",
+        "SEND_ASYNC",
         "SEND_LIST",
         "SEND_RANGE",
     ],

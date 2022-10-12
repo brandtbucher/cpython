@@ -2213,6 +2213,10 @@ _Py_Specialize_Send(PyObject *iter, PyObject *sent, _Py_CODEUNIT *instr)
         _Py_SET_OPCODE(*instr, SEND_RANGE);
         goto success;
     }
+    else if (tp->tp_as_async && tp->tp_as_async->am_send) {
+        _Py_SET_OPCODE(*instr, SEND_ASYNC);
+        goto success;
+    }
     else {
         SPECIALIZATION_FAIL(SEND, _PySpecialization_ClassifyIterator(iter));
         goto failure;

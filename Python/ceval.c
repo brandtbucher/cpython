@@ -3832,6 +3832,35 @@ handle_eval_breaker:
             }
         }
 
+        TARGET(SEND_ASYNC) {
+            PyObject *sent = TOP();
+            PyObject *iter = SECOND();
+            PyObject *result;
+            DEOPT_IF(Py_TYPE(iter)->tp_as_async == NULL, SEND);
+            DEOPT_IF(Py_TYPE(iter)->tp_as_async->am_send == NULL, SEND);
+            STAT_INC(SEND, hit);
+            PySendResult res = Py_TYPE(iter)->tp_as_async->am_send(iter, sent, &result);
+            assert(_Py_CheckSlotResult(iter, "am_send", res != PYGEN_ERROR));
+            if (res == PYGEN_ERROR) {
+                goto error;
+            }
+            if (res == PYGEN_NEXT) {
+                SET_TOP(result);
+                Py_DECREF(sent);
+                JUMPBY(INLINE_CACHE_ENTRIES_SEND);
+                DISPATCH();
+            }
+            assert(res == PYGEN_RETURN);
+            assert(result);
+            SET_SECOND(result);
+            STACK_SHRINK(1);
+            Py_DECREF(sent);
+            Py_DECREF(iter);
+            JUMPBY(INLINE_CACHE_ENTRIES_SEND + oparg);
+            assert(TOP());
+            DISPATCH();
+        }
+
         TARGET(SEND_LIST) {
             assert(cframe.use_tracing == 0);
             PyObject *none = TOP();
