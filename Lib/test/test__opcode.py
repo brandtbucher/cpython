@@ -38,10 +38,10 @@ class OpcodeTests(unittest.TestCase):
         self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0), 0)
         self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0, jump=True), 0)
         self.assertEqual(stack_effect(JUMP_IF_TRUE_OR_POP, 0, jump=False), -1)
-        FOR_ITER = dis.opmap['FOR_ITER']
-        self.assertEqual(stack_effect(FOR_ITER, 0), 1)
-        self.assertEqual(stack_effect(FOR_ITER, 0, jump=True), -1)
-        self.assertEqual(stack_effect(FOR_ITER, 0, jump=False), 1)
+        SEND = dis.opmap['SEND']
+        self.assertEqual(stack_effect(SEND, 0), 0)
+        self.assertEqual(stack_effect(SEND, 0, jump=True), -1)
+        self.assertEqual(stack_effect(SEND, 0, jump=False), 0)
         JUMP_FORWARD = dis.opmap['JUMP_FORWARD']
         self.assertEqual(stack_effect(JUMP_FORWARD, 0), 0)
         self.assertEqual(stack_effect(JUMP_FORWARD, 0, jump=True), 0)

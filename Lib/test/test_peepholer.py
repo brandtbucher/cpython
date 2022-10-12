@@ -517,16 +517,16 @@ class TestTranforms(BytecodeTestCase):
     def test_assignment_idiom_in_comprehensions(self):
         def listcomp():
             return [y for x in a for y in [f(x)]]
-        self.assertEqual(count_instr_recursively(listcomp, 'FOR_ITER'), 1)
+        self.assertEqual(count_instr_recursively(listcomp, 'SEND'), 1)
         def setcomp():
             return {y for x in a for y in [f(x)]}
-        self.assertEqual(count_instr_recursively(setcomp, 'FOR_ITER'), 1)
+        self.assertEqual(count_instr_recursively(setcomp, 'SEND'), 1)
         def dictcomp():
             return {y: y for x in a for y in [f(x)]}
-        self.assertEqual(count_instr_recursively(dictcomp, 'FOR_ITER'), 1)
+        self.assertEqual(count_instr_recursively(dictcomp, 'SEND'), 1)
         def genexpr():
             return (y for x in a for y in [f(x)])
-        self.assertEqual(count_instr_recursively(genexpr, 'FOR_ITER'), 1)
+        self.assertEqual(count_instr_recursively(genexpr, 'SEND'), 1)
 
     def test_format_combinations(self):
         flags = '-+ #0'

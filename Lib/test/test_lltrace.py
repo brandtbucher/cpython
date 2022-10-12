@@ -53,7 +53,7 @@ class TestLLTrace(unittest.TestCase):
             dont_trace_2()
         """)
         self.assertIn("GET_ITER", stdout)
-        self.assertIn("FOR_ITER", stdout)
+        self.assertIn("SEND", stdout)
         self.assertIn("UNARY_POSITIVE", stdout)
         self.assertIn("POP_TOP", stdout)
         self.assertNotIn("BINARY_OP", stdout)
@@ -71,7 +71,7 @@ class TestLLTrace(unittest.TestCase):
         """)
         self.assertIn("'example' in module 'test.test_lltrace'", stdout)
         self.assertIn('LOAD_CONST', stdout)
-        self.assertIn('FOR_ITER', stdout)
+        self.assertIn('SEND', stdout)
         self.assertIn('this is an example', stdout)
 
         # check that offsets match the output of dis.dis()
