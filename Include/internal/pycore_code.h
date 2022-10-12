@@ -87,9 +87,9 @@ typedef struct {
 
 typedef struct {
     _Py_CODEUNIT counter;
-} _PyForIterCache;
+} _PySendCache;
 
-#define INLINE_CACHE_ENTRIES_FOR_ITER CACHE_ENTRIES(_PyForIterCache)
+#define INLINE_CACHE_ENTRIES_SEND CACHE_ENTRIES(_PySendCache)
 
 #define QUICKENING_WARMUP_DELAY 8
 
@@ -250,7 +250,7 @@ extern void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs,
                                      _Py_CODEUNIT *instr, int oparg);
 extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
                                           int oparg);
-extern void _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr);
+extern void _Py_Specialize_Send(PyObject *iter, PyObject *sent, _Py_CODEUNIT *instr);
 
 /* Deallocator function for static codeobjects used in deepfreeze.py */
 extern void _PyStaticCode_Dealloc(PyCodeObject *co);

@@ -1090,9 +1090,6 @@ stack_effect(int opcode, int oparg, int jump)
             return oparg-1;
         case UNPACK_EX:
             return (oparg&0xFF) + (oparg>>8);
-        case FOR_ITER:
-            /* -1 at end of iterator, 1 if continue iterating. */
-            return jump > 0 ? -1 : 1;
         case SEND:
             return jump > 0 ? -1 : 0;
         case STORE_ATTR:
@@ -3078,7 +3075,8 @@ compiler_for(struct compiler *c, stmt_ty s)
     ADDOP(c, GET_ITER);
 
     USE_LABEL(c, start);
-    ADDOP_JUMP(c, FOR_ITER, cleanup);
+    ADDOP_LOAD_CONST(c, Py_None);
+    ADDOP_JUMP(c, SEND, cleanup);
 
     USE_LABEL(c, body);
     VISIT(c, expr, s->v.For.target);
@@ -3091,6 +3089,7 @@ compiler_for(struct compiler *c, stmt_ty s)
 
     compiler_pop_fblock(c, FOR_LOOP, start);
 
+    ADDOP(c, POP_TOP);
     VISIT_SEQ(c, stmt, s->v.For.orelse);
 
     USE_LABEL(c, end);
@@ -5169,7 +5168,8 @@ compiler_sync_comprehension_generator(struct compiler *c,
     if (IS_LABEL(start)) {
         depth++;
         USE_LABEL(c, start);
-        ADDOP_JUMP(c, FOR_ITER, anchor);
+        ADDOP_LOAD_CONST(c, Py_None);
+        ADDOP_JUMP(c, SEND, anchor);
     }
     VISIT(c, expr, gen->target);
 
@@ -5221,6 +5221,7 @@ compiler_sync_comprehension_generator(struct compiler *c,
         ADDOP_JUMP(c, JUMP, start);
 
         USE_LABEL(c, anchor);
+        ADDOP(c, POP_TOP);
     }
 
     return 1;
@@ -9222,15 +9223,15 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                         i -= jump_thread(inst, target, JUMP);
                 }
                 break;
-            case FOR_ITER:
+            case SEND:
                 if (target->i_opcode == JUMP) {
                     /* This will not work now because the jump (at target) could
-                     * be forward or backward and FOR_ITER only jumps forward. We
+                     * be forward or backward and SEND only jumps forward. We
                      * can re-enable this if ever we implement a backward version
-                     * of FOR_ITER.
+                     * of SEND.
                      */
                     /*
-                    i -= jump_thread(inst, target, FOR_ITER);
+                    i -= jump_thread(inst, target, SEND);
                     */
                 }
                 break;

@@ -131,7 +131,7 @@ HAVE_ARGUMENT = 90             # real opcodes from here have an argument:
 name_op('STORE_NAME', 90)       # Index in name list
 name_op('DELETE_NAME', 91)      # ""
 def_op('UNPACK_SEQUENCE', 92)   # Number of tuple items
-jrel_op('FOR_ITER', 93)
+
 def_op('UNPACK_EX', 94)
 name_op('STORE_ATTR', 95)       # Index in name list
 name_op('DELETE_ATTR', 96)      # ""
@@ -320,10 +320,10 @@ _specializations = {
     "EXTENDED_ARG": [
         "EXTENDED_ARG_QUICK",
     ],
-    "FOR_ITER": [
-        "FOR_ITER_ADAPTIVE",
-        "FOR_ITER_LIST",
-        "FOR_ITER_RANGE",
+    "SEND": [
+        "SEND_ADAPTIVE",
+        "SEND_LIST",
+        "SEND_RANGE",
     ],
     "JUMP_BACKWARD": [
         "JUMP_BACKWARD_QUICK",
@@ -415,7 +415,7 @@ _cache_format = {
         "type_version": 2,
         "func_version": 1,
     },
-    "FOR_ITER": {
+    "SEND": {
         "counter": 1,
     },
     "LOAD_ATTR": {

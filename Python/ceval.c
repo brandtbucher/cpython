@@ -2004,55 +2004,6 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(SEND) {
-            assert(frame->is_entry);
-            assert(STACK_LEVEL() >= 2);
-            PyObject *v = POP();
-            PyObject *receiver = TOP();
-            PySendResult gen_status;
-            PyObject *retval;
-            if (tstate->c_tracefunc == NULL) {
-                gen_status = PyIter_Send(receiver, v, &retval);
-            } else {
-                if (Py_IsNone(v) && PyIter_Check(receiver)) {
-                    retval = Py_TYPE(receiver)->tp_iternext(receiver);
-                }
-                else {
-                    retval = PyObject_CallMethodOneArg(receiver, &_Py_ID(send), v);
-                }
-                if (retval == NULL) {
-                    if (tstate->c_tracefunc != NULL
-                            && _PyErr_ExceptionMatches(tstate, PyExc_StopIteration))
-                        call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate, frame);
-                    if (_PyGen_FetchStopIterationValue(&retval) == 0) {
-                        gen_status = PYGEN_RETURN;
-                    }
-                    else {
-                        gen_status = PYGEN_ERROR;
-                    }
-                }
-                else {
-                    gen_status = PYGEN_NEXT;
-                }
-            }
-            Py_DECREF(v);
-            if (gen_status == PYGEN_ERROR) {
-                assert(retval == NULL);
-                goto error;
-            }
-            if (gen_status == PYGEN_RETURN) {
-                assert(retval != NULL);
-                Py_DECREF(receiver);
-                SET_TOP(retval);
-                JUMPBY(oparg);
-                DISPATCH();
-            }
-            assert(gen_status == PYGEN_NEXT);
-            assert(retval != NULL);
-            PUSH(retval);
-            DISPATCH();
-        }
-
         TARGET(ASYNC_GEN_WRAP) {
             PyObject *v = TOP();
             assert(frame->f_code->co_flags & CO_ASYNC_GENERATOR);
@@ -3825,81 +3776,103 @@ handle_eval_breaker:
             DISPATCH();
         }
 
-        TARGET(FOR_ITER) {
-            PREDICTED(FOR_ITER);
-            /* before: [iter]; after: [iter, iter()] *or* [] */
-            PyObject *iter = TOP();
-            PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
-            if (next != NULL) {
-                PUSH(next);
-                JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER);
+        TARGET(SEND) {
+            PREDICTED(SEND);
+            /* before: [iter, sent]; after: [iter, next] *or* [returned] */
+            PyObject *sent = TOP();
+            PyObject *iter = SECOND();
+            PyObject *result;
+            if (Py_IsNone(sent) && Py_TYPE(iter)->tp_iternext) {
+                result = Py_TYPE(iter)->tp_iternext(iter);
+            }
+            else {
+                result = PyObject_CallMethodOneArg(iter, &_Py_ID(send), sent);
+            }
+            if (result) {
+                SET_TOP(result);
+                Py_DECREF(sent);
+                JUMPBY(INLINE_CACHE_ENTRIES_SEND);
                 DISPATCH();
             }
             if (_PyErr_Occurred(tstate)) {
                 if (!_PyErr_ExceptionMatches(tstate, PyExc_StopIteration)) {
                     goto error;
                 }
-                else if (tstate->c_tracefunc != NULL) {
+                if (tstate->c_tracefunc != NULL) {
                     call_exc_trace(tstate->c_tracefunc, tstate->c_traceobj, tstate, frame);
                 }
-                _PyErr_Clear(tstate);
+                _PyGen_FetchStopIterationValue(&result);
             }
-            /* iterator ended normally */
+            else {
+                result = Py_None;
+                Py_INCREF(result);
+            }
+            assert(result);
+            SET_SECOND(result);
             STACK_SHRINK(1);
+            Py_DECREF(sent);
             Py_DECREF(iter);
-            JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
+            JUMPBY(INLINE_CACHE_ENTRIES_SEND + oparg);
+            assert(TOP());
             DISPATCH();
         }
 
-        TARGET(FOR_ITER_ADAPTIVE) {
+        TARGET(SEND_ADAPTIVE) {
             assert(cframe.use_tracing == 0);
-            _PyForIterCache *cache = (_PyForIterCache *)next_instr;
+            _PySendCache *cache = (_PySendCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache)) {
                 next_instr--;
-                _Py_Specialize_ForIter(TOP(), next_instr);
+                _Py_Specialize_Send(SECOND(), TOP(), next_instr);
                 DISPATCH_SAME_OPARG();
             }
             else {
-                STAT_INC(FOR_ITER, deferred);
+                STAT_INC(SEND, deferred);
                 DECREMENT_ADAPTIVE_COUNTER(cache);
-                JUMP_TO_INSTRUCTION(FOR_ITER);
+                JUMP_TO_INSTRUCTION(SEND);
             }
         }
 
-        TARGET(FOR_ITER_LIST) {
+        TARGET(SEND_LIST) {
             assert(cframe.use_tracing == 0);
-            _PyListIterObject *it = (_PyListIterObject *)TOP();
-            DEOPT_IF(Py_TYPE(it) != &PyListIter_Type, FOR_ITER);
-            STAT_INC(FOR_ITER, hit);
+            PyObject *none = TOP();
+            DEOPT_IF(!Py_IsNone(none), SEND);
+            _PyListIterObject *it = (_PyListIterObject *)SECOND();
+            DEOPT_IF(Py_TYPE(it) != &PyListIter_Type, SEND);
+            STAT_INC(SEND, hit);
             PyListObject *seq = it->it_seq;
             if (seq) {
                 if (it->it_index < PyList_GET_SIZE(seq)) {
                     PyObject *next = PyList_GET_ITEM(seq, it->it_index++);
                     Py_INCREF(next);
-                    PUSH(next);
-                    JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER);
+                    SET_TOP(next);
+                    Py_DECREF(none);
+                    JUMPBY(INLINE_CACHE_ENTRIES_SEND);
                     DISPATCH();
                 }
                 it->it_seq = NULL;
                 Py_DECREF(seq);
             }
             STACK_SHRINK(1);
+            SET_TOP(none);
             Py_DECREF(it);
-            JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
+            JUMPBY(INLINE_CACHE_ENTRIES_SEND + oparg);
             DISPATCH();
         }
 
-        TARGET(FOR_ITER_RANGE) {
+        TARGET(SEND_RANGE) {
             assert(cframe.use_tracing == 0);
-            _PyRangeIterObject *r = (_PyRangeIterObject *)TOP();
-            DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, FOR_ITER);
-            STAT_INC(FOR_ITER, hit);
-            _Py_CODEUNIT next = next_instr[INLINE_CACHE_ENTRIES_FOR_ITER];
+            PyObject *none = TOP();
+            DEOPT_IF(!Py_IsNone(none), SEND);
+            _PyRangeIterObject *r = (_PyRangeIterObject *)SECOND();
+            DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, SEND);
+            STAT_INC(SEND, hit);
+            _Py_CODEUNIT next = next_instr[INLINE_CACHE_ENTRIES_SEND];
             assert(_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST);
             if (r->index >= r->len) {
                 STACK_SHRINK(1);
+                SET_TOP(none);
                 Py_DECREF(r);
-                JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + oparg);
+                JUMPBY(INLINE_CACHE_ENTRIES_SEND + oparg);
                 DISPATCH();
             }
             long value = (long)(r->start +
@@ -3907,8 +3880,10 @@ handle_eval_breaker:
             if (_PyLong_AssignValue(&GETLOCAL(_Py_OPARG(next)), value) < 0) {
                 goto error;
             }
+            STACK_SHRINK(1);
+            Py_DECREF(none);
             // The STORE_FAST is already done.
-            JUMPBY(INLINE_CACHE_ENTRIES_FOR_ITER + 1);
+            JUMPBY(INLINE_CACHE_ENTRIES_SEND + 1);
             DISPATCH();
         }
 
