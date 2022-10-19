@@ -1361,7 +1361,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *prod = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
             SET_SECOND(prod);
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
@@ -1381,7 +1381,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             double dprod = ((PyFloatObject *)left)->ob_fval *
                 ((PyFloatObject *)right)->ob_fval;
             PyObject *prod = PyFloat_FromDouble(dprod);
@@ -1403,7 +1403,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *sub = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
             SET_SECOND(sub);
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
@@ -1423,7 +1423,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             double dsub = ((PyFloatObject *)left)->ob_fval - ((PyFloatObject *)right)->ob_fval;
             PyObject *sub = PyFloat_FromDouble(dsub);
             SET_SECOND(sub);
@@ -1444,7 +1444,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = PyUnicode_Concat(left, right);
             STACK_SHRINK(1);
             SET_TOP(res);
@@ -1469,7 +1469,7 @@ handle_eval_breaker:
             PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
             DEOPT_IF(*target_local != left, BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             /* Handle `left = left + right` or `left += right` for str.
              *
              * When possible, extend `left` in place rather than
@@ -1501,7 +1501,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             double dsum = ((PyFloatObject *)left)->ob_fval +
                 ((PyFloatObject *)right)->ob_fval;
             PyObject *sum = PyFloat_FromDouble(dsum);
@@ -1523,7 +1523,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *sum = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
             SET_SECOND(sum);
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
@@ -1622,7 +1622,7 @@ handle_eval_breaker:
             Py_ssize_t index = ((PyLongObject*)sub)->ob_digit[0];
             DEOPT_IF(index >= PyList_GET_SIZE(list), BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = PyList_GET_ITEM(list, index);
             assert(res != NULL);
             Py_INCREF(res);
@@ -1648,7 +1648,7 @@ handle_eval_breaker:
             Py_ssize_t index = ((PyLongObject*)sub)->ob_digit[0];
             DEOPT_IF(index >= PyTuple_GET_SIZE(tuple), BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = PyTuple_GET_ITEM(tuple, index);
             assert(res != NULL);
             Py_INCREF(res);
@@ -1665,7 +1665,7 @@ handle_eval_breaker:
             PyObject *dict = SECOND();
             DEOPT_IF(!PyDict_CheckExact(SECOND()), BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *sub = TOP();
             PyObject *res = PyDict_GetItemWithError(dict, sub);
             if (res == NULL) {
@@ -1699,7 +1699,7 @@ handle_eval_breaker:
             assert(code->co_argcount == 2);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), BINARY_SUBSCR);
             STAT_INC(BINARY_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(getitem);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, getitem);
             STACK_SHRINK(2);
@@ -1789,7 +1789,7 @@ handle_eval_breaker:
             // Ensure index < len(list)
             DEOPT_IF(index >= PyList_GET_SIZE(list), STORE_SUBSCR);
             STAT_INC(STORE_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
 
             PyObject *old_value = PyList_GET_ITEM(list, index);
             PyList_SET_ITEM(list, index, value);
@@ -1810,7 +1810,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyDict_CheckExact(dict), STORE_SUBSCR);
             STACK_SHRINK(3);
             STAT_INC(STORE_SUBSCR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             int err = _PyDict_SetItem_Take2((PyDictObject *)dict, sub, value);
             Py_DECREF(dict);
             if (err != 0) {
@@ -2298,7 +2298,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyTuple_GET_SIZE(seq) != 2, UNPACK_SEQUENCE);
             STAT_INC(UNPACK_SEQUENCE, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             SET_TOP(Py_NewRef(PyTuple_GET_ITEM(seq, 1)));
             PUSH(Py_NewRef(PyTuple_GET_ITEM(seq, 0)));
             Py_DECREF(seq);
@@ -2311,7 +2311,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyTuple_GET_SIZE(seq) != oparg, UNPACK_SEQUENCE);
             STAT_INC(UNPACK_SEQUENCE, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             STACK_SHRINK(1);
             PyObject **items = _PyTuple_ITEMS(seq);
             while (oparg--) {
@@ -2327,7 +2327,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyList_CheckExact(seq), UNPACK_SEQUENCE);
             DEOPT_IF(PyList_GET_SIZE(seq) != oparg, UNPACK_SEQUENCE);
             STAT_INC(UNPACK_SEQUENCE, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             STACK_SHRINK(1);
             PyObject **items = _PyList_ITEMS(seq);
             while (oparg--) {
@@ -2551,7 +2551,7 @@ handle_eval_breaker:
             PyObject *res = entries[cache->index].me_value;
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
             STAT_INC(LOAD_GLOBAL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             int push_null = oparg & 1;
             PEEK(0) = NULL;
             JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
@@ -2577,7 +2577,7 @@ handle_eval_breaker:
             PyObject *res = entries[cache->index].me_value;
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
             STAT_INC(LOAD_GLOBAL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             int push_null = oparg & 1;
             PEEK(0) = NULL;
             JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
@@ -3015,7 +3015,7 @@ handle_eval_breaker:
             res = _PyDictOrValues_GetValues(dorv)->values[cache->index];
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(res);
             SET_TOP(NULL);
             STACK_GROW((oparg & 1));
@@ -3041,7 +3041,7 @@ handle_eval_breaker:
             res = ep->me_value;
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(res);
             SET_TOP(NULL);
             STACK_GROW((oparg & 1));
@@ -3081,7 +3081,7 @@ handle_eval_breaker:
             }
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(res);
             SET_TOP(NULL);
             STACK_GROW((oparg & 1));
@@ -3104,7 +3104,7 @@ handle_eval_breaker:
             res = *(PyObject **)addr;
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(res);
             SET_TOP(NULL);
             STACK_GROW((oparg & 1));
@@ -3126,7 +3126,7 @@ handle_eval_breaker:
             assert(type_version != 0);
 
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = read_obj(cache->descr);
             assert(res != NULL);
             Py_INCREF(res);
@@ -3158,7 +3158,7 @@ handle_eval_breaker:
             assert(code->co_argcount == 1);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_INCREF(fget);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f);
             SET_TOP(NULL);
@@ -3196,7 +3196,7 @@ handle_eval_breaker:
             assert(code->co_argcount == 2);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), CALL);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
 
             PyObject *name = GETITEM(names, oparg >> 1);
             Py_INCREF(f);
@@ -3250,7 +3250,7 @@ handle_eval_breaker:
             PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
             DEOPT_IF(!_PyDictOrValues_IsValues(dorv), STORE_ATTR);
             STAT_INC(STORE_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             Py_ssize_t index = cache->index;
             STACK_SHRINK(1);
             PyObject *value = POP();
@@ -3309,7 +3309,7 @@ handle_eval_breaker:
             }
             Py_DECREF(old_value);
             STAT_INC(STORE_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             /* Ensure dict is GC tracked if it needs to be */
             if (!_PyObject_GC_IS_TRACKED(dict) && _PyObject_GC_MAY_BE_TRACKED(value)) {
                 _PyObject_GC_TRACK(dict);
@@ -3331,7 +3331,7 @@ handle_eval_breaker:
             DEOPT_IF(tp->tp_version_tag != type_version, STORE_ATTR);
             char *addr = (char *)owner + cache->index;
             STAT_INC(STORE_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             STACK_SHRINK(1);
             PyObject *value = POP();
             PyObject *old_value = *(PyObject **)addr;
@@ -3390,7 +3390,7 @@ handle_eval_breaker:
             DEOPT_IF(isnan(dleft), COMPARE_OP);
             DEOPT_IF(isnan(dright), COMPARE_OP);
             STAT_INC(COMPARE_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
             NEXTOPARG();
             STACK_SHRINK(2);
@@ -3419,7 +3419,7 @@ handle_eval_breaker:
             DEOPT_IF((size_t)(Py_SIZE(left) + 1) > 2, COMPARE_OP);
             DEOPT_IF((size_t)(Py_SIZE(right) + 1) > 2, COMPARE_OP);
             STAT_INC(COMPARE_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             assert(Py_ABS(Py_SIZE(left)) <= 1 && Py_ABS(Py_SIZE(right)) <= 1);
             Py_ssize_t ileft = Py_SIZE(left) * ((PyLongObject *)left)->ob_digit[0];
             Py_ssize_t iright = Py_SIZE(right) * ((PyLongObject *)right)->ob_digit[0];
@@ -3450,7 +3450,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyUnicode_CheckExact(left), COMPARE_OP);
             DEOPT_IF(!PyUnicode_CheckExact(right), COMPARE_OP);
             STAT_INC(COMPARE_OP, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             int res = _PyUnicode_Equal(left, right);
             assert(oparg == Py_EQ || oparg == Py_NE);
             JUMPBY(INLINE_CACHE_ENTRIES_COMPARE_OP);
@@ -3909,7 +3909,7 @@ handle_eval_breaker:
             _PyListIterObject *it = (_PyListIterObject *)TOP();
             DEOPT_IF(Py_TYPE(it) != &PyListIter_Type, FOR_ITER);
             STAT_INC(FOR_ITER, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyListObject *seq = it->it_seq;
             if (seq) {
                 if (it->it_index < PyList_GET_SIZE(seq)) {
@@ -3933,7 +3933,7 @@ handle_eval_breaker:
             _PyRangeIterObject *r = (_PyRangeIterObject *)TOP();
             DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, FOR_ITER);
             STAT_INC(FOR_ITER, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             _Py_CODEUNIT next = next_instr[INLINE_CACHE_ENTRIES_FOR_ITER];
             assert(_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST);
             if (r->index >= r->len) {
@@ -4089,7 +4089,7 @@ handle_eval_breaker:
             DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
                      read_u32(cache->keys_version), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = read_obj(cache->descr);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
@@ -4118,7 +4118,7 @@ handle_eval_breaker:
             DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->keys_version),
                      LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = read_obj(cache->descr);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
@@ -4138,7 +4138,7 @@ handle_eval_breaker:
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(self_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = read_obj(cache->descr);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
@@ -4162,7 +4162,7 @@ handle_eval_breaker:
             /* This object has a __dict__, just not yet created */
             DEOPT_IF(dict != NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *res = read_obj(cache->descr);
             assert(res != NULL);
             assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
@@ -4178,7 +4178,7 @@ handle_eval_breaker:
             PyObject *function = PEEK(oparg + 1);
             DEOPT_IF(Py_TYPE(function) != &PyMethod_Type, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             PyObject *meth = ((PyMethodObject *)function)->im_func;
             PyObject *self = ((PyMethodObject *)function)->im_self;
             Py_INCREF(meth);
@@ -4308,7 +4308,7 @@ handle_eval_breaker:
             DEOPT_IF(code->co_argcount != argcount, CALL);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, func);
             CALL_STAT_INC(inlined_py_calls);
             STACK_SHRINK(argcount);
@@ -4343,7 +4343,7 @@ handle_eval_breaker:
             DEOPT_IF(argcount < minargs, CALL);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, func);
             CALL_STAT_INC(inlined_py_calls);
             STACK_SHRINK(argcount);
@@ -4377,7 +4377,7 @@ handle_eval_breaker:
             PyObject *callable = SECOND();
             DEOPT_IF(callable != (PyObject *)&PyType_Type, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyObject *res = Py_NewRef(Py_TYPE(obj));
             Py_DECREF(callable);
@@ -4395,7 +4395,7 @@ handle_eval_breaker:
             PyObject *callable = PEEK(2);
             DEOPT_IF(callable != (PyObject *)&PyUnicode_Type, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             PyObject *res = PyObject_Str(arg);
@@ -4417,7 +4417,7 @@ handle_eval_breaker:
             PyObject *callable = PEEK(2);
             DEOPT_IF(callable != (PyObject *)&PyTuple_Type, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             PyObject *res = PySequence_Tuple(arg);
@@ -4441,7 +4441,7 @@ handle_eval_breaker:
             PyTypeObject *tp = (PyTypeObject *)callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             STACK_SHRINK(total_args);
             PyObject *res = tp->tp_vectorcall((PyObject *)tp, stack_pointer,
@@ -4472,7 +4472,7 @@ handle_eval_breaker:
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_O, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
             // This is slower but CPython promises to check all non-vectorcall
@@ -4507,7 +4507,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) != METH_FASTCALL,
                 CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
             STACK_SHRINK(total_args);
@@ -4547,7 +4547,7 @@ handle_eval_breaker:
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             STACK_SHRINK(total_args);
             /* res = func(self, args, nargs, kwnames) */
@@ -4588,7 +4588,7 @@ handle_eval_breaker:
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.len, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyObject *arg = TOP();
             Py_ssize_t len_i = PyObject_Length(arg);
@@ -4619,7 +4619,7 @@ handle_eval_breaker:
             PyInterpreterState *interp = _PyInterpreterState_GET();
             DEOPT_IF(callable != interp->callable_cache.isinstance, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyObject *cls = POP();
             PyObject *inst = TOP();
@@ -4652,7 +4652,7 @@ handle_eval_breaker:
             PyObject *list = SECOND();
             DEOPT_IF(!PyList_Check(list), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             // CALL + POP_TOP
             JUMPBY(INLINE_CACHE_ENTRIES_CALL + 1);
             assert(_Py_OPCODE(next_instr[-1]) == POP_TOP);
@@ -4680,7 +4680,7 @@ handle_eval_breaker:
             PyObject *self = SECOND();
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = meth->ml_meth;
             // This is slower but CPython promises to check all non-vectorcall
@@ -4715,7 +4715,7 @@ handle_eval_breaker:
             PyObject *self = PEEK(total_args);
             DEOPT_IF(!Py_IS_TYPE(self, d_type), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             int nargs = total_args-1;
             STACK_SHRINK(nargs);
@@ -4754,7 +4754,7 @@ handle_eval_breaker:
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             DEOPT_IF(meth->ml_flags != METH_NOARGS, CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             PyCFunction cfunc = meth->ml_meth;
             // This is slower but CPython promises to check all non-vectorcall
@@ -4789,7 +4789,7 @@ handle_eval_breaker:
             PyObject *self = PEEK(total_args);
             DEOPT_IF(!Py_IS_TYPE(self, callable->d_common.d_type), CALL);
             STAT_INC(CALL, hit);
-            if (*next_instr != UINT16_MAX) *next_instr += 1;
+            *next_instr >>= 1;
             JUMPBY(INLINE_CACHE_ENTRIES_CALL);
             _PyCFunctionFast cfunc =
                 (_PyCFunctionFast)(void(*)(void))meth->ml_meth;
@@ -5169,8 +5169,9 @@ miss:
             STAT_INC(opcode, miss);
             /* The counter is always the first cache entry: */
             _Py_CODEUNIT *counter = next_instr;
-            *counter -= 1;
-            if (*counter == 0) {
+            *counter = (*counter << 1) | 1;
+            assert(*counter < (1 << 13));
+            if (*counter == (1 << 13) - 1) {
                 int adaptive_opcode = _PyOpcode_Adaptive[opcode];
                 assert(adaptive_opcode);
                 _Py_SET_OPCODE(next_instr[-1], adaptive_opcode);

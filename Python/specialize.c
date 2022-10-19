@@ -349,7 +349,7 @@ miss_counter_start(void) {
      * A value around 50 seems to work, and we choose a
      * prime number to avoid artifacts.
      */
-    return 53;
+    return 0;
 }
 
 #define SIMPLE_FUNCTION 0
