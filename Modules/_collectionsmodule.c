@@ -2,15 +2,15 @@
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_long.h"          // _PyLong_GetZero()
 #include "structmember.h"         // PyMemberDef
+#include "pycore_descrobject.h"
 #include <stddef.h>
 
 /*[clinic input]
 module _collections
-class _tuplegetter "_tuplegetterobject *" "&tuplegetter_type"
+class _tuplegetter "_PyTupleGetterObject *" "&_PyTupleGetter_Type"
 [clinic start generated code]*/
-/*[clinic end generated code: output=da39a3ee5e6b4b0d input=a8ece4ccad7e30ac]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=9f4a1e961ee3805b]*/
 
-static PyTypeObject tuplegetter_type;
 #include "clinic/_collectionsmodule.c.h"
 
 /* collections module implementation of a deque() datatype
@@ -2389,12 +2389,6 @@ done:
 
 /* Helper function for namedtuple() ************************************/
 
-typedef struct {
-    PyObject_HEAD
-    Py_ssize_t index;
-    PyObject* doc;
-} _tuplegetterobject;
-
 /*[clinic input]
 @classmethod
 _tuplegetter.__new__ as tuplegetter_new
@@ -2408,8 +2402,8 @@ static PyObject *
 tuplegetter_new_impl(PyTypeObject *type, Py_ssize_t index, PyObject *doc)
 /*[clinic end generated code: output=014be444ad80263f input=87c576a5bdbc0bbb]*/
 {
-    _tuplegetterobject* self;
-    self = (_tuplegetterobject *)type->tp_alloc(type, 0);
+    _PyTupleGetterObject* self;
+    self = (_PyTupleGetterObject *)type->tp_alloc(type, 0);
     if (self == NULL) {
         return NULL;
     }
@@ -2422,7 +2416,7 @@ tuplegetter_new_impl(PyTypeObject *type, Py_ssize_t index, PyObject *doc)
 static PyObject *
 tuplegetter_descr_get(PyObject *self, PyObject *obj, PyObject *type)
 {
-    Py_ssize_t index = ((_tuplegetterobject*)self)->index;
+    Py_ssize_t index = ((_PyTupleGetterObject*)self)->index;
     PyObject *result;
 
     if (obj == NULL) {
@@ -2466,7 +2460,7 @@ tuplegetter_descr_set(PyObject *self, PyObject *obj, PyObject *value)
 static int
 tuplegetter_traverse(PyObject *self, visitproc visit, void *arg)
 {
-    _tuplegetterobject *tuplegetter = (_tuplegetterobject *)self;
+    _PyTupleGetterObject *tuplegetter = (_PyTupleGetterObject *)self;
     Py_VISIT(tuplegetter->doc);
     return 0;
 }
@@ -2474,13 +2468,13 @@ tuplegetter_traverse(PyObject *self, visitproc visit, void *arg)
 static int
 tuplegetter_clear(PyObject *self)
 {
-    _tuplegetterobject *tuplegetter = (_tuplegetterobject *)self;
+    _PyTupleGetterObject *tuplegetter = (_PyTupleGetterObject *)self;
     Py_CLEAR(tuplegetter->doc);
     return 0;
 }
 
 static void
-tuplegetter_dealloc(_tuplegetterobject *self)
+tuplegetter_dealloc(_PyTupleGetterObject *self)
 {
     PyObject_GC_UnTrack(self);
     tuplegetter_clear((PyObject*)self);
@@ -2488,13 +2482,13 @@ tuplegetter_dealloc(_tuplegetterobject *self)
 }
 
 static PyObject*
-tuplegetter_reduce(_tuplegetterobject *self, PyObject *Py_UNUSED(ignored))
+tuplegetter_reduce(_PyTupleGetterObject *self, PyObject *Py_UNUSED(ignored))
 {
     return Py_BuildValue("(O(nO))", (PyObject*) Py_TYPE(self), self->index, self->doc);
 }
 
 static PyObject*
-tuplegetter_repr(_tuplegetterobject *self)
+tuplegetter_repr(_PyTupleGetterObject *self)
 {
     return PyUnicode_FromFormat("%s(%zd, %R)",
                                 _PyType_Name(Py_TYPE(self)),
@@ -2503,7 +2497,7 @@ tuplegetter_repr(_tuplegetterobject *self)
 
 
 static PyMemberDef tuplegetter_members[] = {
-    {"__doc__",  T_OBJECT, offsetof(_tuplegetterobject, doc), 0},
+    {"__doc__",  T_OBJECT, offsetof(_PyTupleGetterObject, doc), 0},
     {0}
 };
 
@@ -2512,10 +2506,10 @@ static PyMethodDef tuplegetter_methods[] = {
     {NULL},
 };
 
-static PyTypeObject tuplegetter_type = {
+PyTypeObject _PyTupleGetter_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "_collections._tuplegetter",                /* tp_name */
-    sizeof(_tuplegetterobject),                 /* tp_basicsize */
+    sizeof(_PyTupleGetterObject),                 /* tp_basicsize */
     0,                                          /* tp_itemsize */
     /* methods */
     (destructor)tuplegetter_dealloc,            /* tp_dealloc */
@@ -2577,7 +2571,7 @@ collections_exec(PyObject *module) {
         &PyODict_Type,
         &dequeiter_type,
         &dequereviter_type,
-        &tuplegetter_type
+        &_PyTupleGetter_Type
     };
 
     defdict_type.tp_base = &PyDict_Type;

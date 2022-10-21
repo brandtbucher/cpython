@@ -552,6 +552,7 @@ typedef enum {
     NON_DESCRIPTOR, /* Is not a descriptor, and is an instance of an immutable class */
     MUTABLE,   /* Instance of a mutable class; might, or might not, be a descriptor */
     ABSENT, /* Attribute is not present on the class */
+    TUPLE_GETTER,  // A named tuple member.
     DUNDER_CLASS, /* __class__ attribute */
     GETSET_OVERRIDDEN, /* __getattribute__ or __setattr__ has been overridden */
     GETATTRIBUTE_IS_PYTHON_FUNCTION  /* Descriptor requires calling a Python __getattribute__ */
@@ -637,6 +638,9 @@ analyze_descriptor(PyTypeObject *type, PyObject *name, PyObject **descr, int sto
             if (descriptor == _PyType_Lookup(&PyBaseObject_Type, name)) {
                 return DUNDER_CLASS;
             }
+        }
+        if (desc_cls == &_PyTupleGetter_Type) {
+            return TUPLE_GETTER;
         }
         if (store) {
             return OVERRIDING;
@@ -802,6 +806,24 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             _Py_SET_OPCODE(*instr, LOAD_ATTR_SLOT);
             goto success;
         }
+        case TUPLE_GETTER:
+        {
+            // XXX: This probably isn't safe, since we lack a length check...
+            if (!PyTuple_Check(owner)) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_EXPECTED_ERROR);
+                goto fail;
+            }
+            _PyTupleGetterObject *getter = (_PyTupleGetterObject *)descr;
+            Py_ssize_t offset = offsetof(PyTupleObject, ob_item[getter->index]);
+            if (offset != (uint16_t)offset) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_OUT_OF_RANGE);
+                goto fail;
+            }
+            cache->index = (uint16_t)offset;
+            write_u32(cache->version, type->tp_version_tag);
+            _Py_SET_OPCODE(*instr, LOAD_ATTR_SLOT);
+            goto success;
+        }
         case DUNDER_CLASS:
         {
             Py_ssize_t offset = offsetof(PyObject, ob_type);
@@ -910,6 +932,9 @@ _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             _Py_SET_OPCODE(*instr, STORE_ATTR_SLOT);
             goto success;
         }
+        case TUPLE_GETTER:
+            SPECIALIZATION_FAIL(STORE_ATTR, SPEC_FAIL_ATTR_READ_ONLY);
+            goto fail;
         case DUNDER_CLASS:
         case OTHER_SLOT:
             SPECIALIZATION_FAIL(STORE_ATTR, SPEC_FAIL_ATTR_NON_OBJECT_SLOT);
@@ -967,6 +992,7 @@ load_attr_fail_kind(DescriptorClassification kind)
             return SPEC_FAIL_ATTR_OBJECT_SLOT;
         case OTHER_SLOT:
             return SPEC_FAIL_ATTR_NON_OBJECT_SLOT;
+        case TUPLE_GETTER:
         case DUNDER_CLASS:
             return SPEC_FAIL_OTHER;
         case MUTABLE:

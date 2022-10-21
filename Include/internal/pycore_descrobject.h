@@ -20,6 +20,14 @@ typedef struct {
 
 typedef propertyobject _PyPropertyObject;
 
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t index;
+    PyObject* doc;
+} _PyTupleGetterObject;
+
+PyTypeObject _PyTupleGetter_Type;
+
 #ifdef __cplusplus
 }
 #endif
