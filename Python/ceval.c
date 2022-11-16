@@ -677,7 +677,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 #define INSTRUCTION_START(op) (frame->prev_instr = next_instr++)
 #endif
 
-#if USE_COMPUTED_GOTOS
+#if 0
 #define TARGET(op) TARGET_##op: INSTRUCTION_START(op);
 #define DISPATCH_GOTO() goto *opcode_targets[opcode]
 #else
@@ -773,7 +773,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
 
 #define PREDICT_ID(op)          PRED_##op
 
-#if USE_COMPUTED_GOTOS
+#if 0
 #define PREDICT(op)             if (0) goto PREDICT_ID(op)
 #else
 #define PREDICT(op) \
@@ -1052,7 +1052,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     _Py_EnsureTstateNotNULL(tstate);
     CALL_STAT_INC(pyeval_calls);
 
-#if USE_COMPUTED_GOTOS
+#if 0
 /* Import the static jump table */
 #include "opcode_targets.h"
 #endif
@@ -1192,7 +1192,7 @@ handle_eval_breaker:
 
     {
     /* Start instructions */
-#if !USE_COMPUTED_GOTOS
+#if !0
     dispatch_opcode:
         switch (opcode)
 #endif
@@ -1200,7 +1200,7 @@ handle_eval_breaker:
 
 #include "generated_cases.c.h"
 
-#if USE_COMPUTED_GOTOS
+#if 0
         TARGET_DO_TRACING:
 #else
         case DO_TRACING:
@@ -1285,7 +1285,7 @@ handle_eval_breaker:
         DISPATCH_GOTO();
     }
 
-#if USE_COMPUTED_GOTOS
+#if 0
         _unknown_opcode:
 #else
         EXTRA_CASES  // From opcode.h, a 'case' for each unused opcode
