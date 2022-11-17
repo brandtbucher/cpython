@@ -392,7 +392,7 @@ write_location_entry_start(uint8_t *ptr, int code, int length)
 // the same state as a warming-up instruction (value == 1, backoff == 1) after
 // deoptimization. This isn't strictly necessary, but it is bit easier to reason
 // about when thinking about the opcode transitions as a state machine:
-#define ADAPTIVE_COOLDOWN_VALUE (127 - 1)
+#define ADAPTIVE_COOLDOWN_VALUE (251 - 1)
 #define ADAPTIVE_COOLDOWN_BACKOFF 0
 
 #define MAX_BACKOFF_VALUE (16 - ADAPTIVE_BACKOFF_BITS)
