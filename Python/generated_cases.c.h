@@ -63,115 +63,6 @@
             DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_FAST) {
-            PyObject *_tmp_1;
-            PyObject *_tmp_2;
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_2 = value;
-            }
-            NEXTOPARG();
-            JUMPBY(1);
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_1 = value;
-            }
-            STACK_GROW(2);
-            POKE(1, _tmp_1);
-            POKE(2, _tmp_2);
-            DISPATCH();
-        }
-
-        TARGET(LOAD_FAST__LOAD_CONST) {
-            PyObject *_tmp_1;
-            PyObject *_tmp_2;
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_2 = value;
-            }
-            NEXTOPARG();
-            JUMPBY(1);
-            {
-                PyObject *value;
-                value = GETITEM(consts, oparg);
-                Py_INCREF(value);
-                _tmp_1 = value;
-            }
-            STACK_GROW(2);
-            POKE(1, _tmp_1);
-            POKE(2, _tmp_2);
-            DISPATCH();
-        }
-
-        TARGET(STORE_FAST__LOAD_FAST) {
-            PyObject *_tmp_1 = PEEK(1);
-            {
-                PyObject *value = _tmp_1;
-                SETLOCAL(oparg, value);
-            }
-            NEXTOPARG();
-            JUMPBY(1);
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_1 = value;
-            }
-            POKE(1, _tmp_1);
-            DISPATCH();
-        }
-
-        TARGET(STORE_FAST__STORE_FAST) {
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                PyObject *value = _tmp_1;
-                SETLOCAL(oparg, value);
-            }
-            NEXTOPARG();
-            JUMPBY(1);
-            {
-                PyObject *value = _tmp_2;
-                SETLOCAL(oparg, value);
-            }
-            STACK_SHRINK(2);
-            DISPATCH();
-        }
-
-        TARGET(LOAD_CONST__LOAD_FAST) {
-            PyObject *_tmp_1;
-            PyObject *_tmp_2;
-            {
-                PyObject *value;
-                value = GETITEM(consts, oparg);
-                Py_INCREF(value);
-                _tmp_2 = value;
-            }
-            NEXTOPARG();
-            JUMPBY(1);
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_1 = value;
-            }
-            STACK_GROW(2);
-            POKE(1, _tmp_1);
-            POKE(2, _tmp_2);
-            DISPATCH();
-        }
-
         TARGET(POP_TOP) {
             PyObject *value = PEEK(1);
             Py_DECREF(value);
@@ -349,8 +240,7 @@
             DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
-            assert(_Py_OPCODE(true_next) == STORE_FAST ||
-                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
+            assert(_Py_OPCODE(true_next) == STORE_FAST);
             PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
             DEOPT_IF(*target_local != left, BINARY_OP);
             STAT_INC(BINARY_OP, hit);

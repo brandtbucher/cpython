@@ -257,39 +257,19 @@ do { \
 #define SPECIALIZATION_FAIL(opcode, kind) ((void)0)
 #endif
 
-// Initialize warmup counters and insert superinstructions. This cannot fail.
+// Initialize warmup counters. This cannot fail.
 void
 _PyCode_Quicken(PyCodeObject *code)
 {
-    int previous_opcode = 0;
     _Py_CODEUNIT *instructions = _PyCode_CODE(code);
     for (int i = 0; i < Py_SIZE(code); i++) {
         int opcode = _PyOpcode_Deopt[_Py_OPCODE(instructions[i])];
         int caches = _PyOpcode_Caches[opcode];
         if (caches) {
             instructions[i + 1] = adaptive_counter_warmup();
-            previous_opcode = 0;
             i += caches;
             continue;
         }
-        switch (previous_opcode << 8 | opcode) {
-            case LOAD_CONST << 8 | LOAD_FAST:
-                _Py_SET_OPCODE(instructions[i - 1], LOAD_CONST__LOAD_FAST);
-                break;
-            case LOAD_FAST << 8 | LOAD_CONST:
-                _Py_SET_OPCODE(instructions[i - 1], LOAD_FAST__LOAD_CONST);
-                break;
-            case LOAD_FAST << 8 | LOAD_FAST:
-                _Py_SET_OPCODE(instructions[i - 1], LOAD_FAST__LOAD_FAST);
-                break;
-            case STORE_FAST << 8 | LOAD_FAST:
-                _Py_SET_OPCODE(instructions[i - 1], STORE_FAST__LOAD_FAST);
-                break;
-            case STORE_FAST << 8 | STORE_FAST:
-                _Py_SET_OPCODE(instructions[i - 1], STORE_FAST__STORE_FAST);
-                break;
-        }
-        previous_opcode = opcode;
     }
 }
 
@@ -1826,8 +1806,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             if (PyUnicode_CheckExact(lhs)) {
                 _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
-                bool to_store = (_Py_OPCODE(next) == STORE_FAST ||
-                                 _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
+                bool to_store = _Py_OPCODE(next) == STORE_FAST;
                 if (to_store && locals[_Py_OPARG(next)] == lhs) {
                     _Py_SET_OPCODE(*instr, BINARY_OP_INPLACE_ADD_UNICODE);
                     goto success;

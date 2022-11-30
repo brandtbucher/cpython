@@ -358,11 +358,7 @@ class EmbeddingTests(EmbeddingTestsMixin, unittest.TestCase):
             def is_specialized(f):
                 for instruction in dis.get_instructions(f, adaptive=True):
                     opname = instruction.opname
-                    if (
-                        opname in opcode._specialized_instructions
-                        # Exclude superinstructions:
-                        and "__" not in opname
-                    ):
+                    if opname in opcode._specialized_instructions:
                         return True
                 return False
 
