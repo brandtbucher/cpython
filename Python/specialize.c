@@ -1788,14 +1788,15 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
 
 _Py_Specialize_BinaryOpTableEntry _Py_Specialize_BinaryOpTable[SIZE] = {0};
 
-int
-_PyCode_SpecializeBinaryOp(int oparg, PyObject *lhs, PyObject *rhs,
-                           binaryfunc func)
+bool
+specialize_binary_op_registered(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject *rhs, binaryfunc func)
 {
+    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
     PyTypeObject *lhs_type = Py_TYPE(lhs);
     PyTypeObject *rhs_type = Py_TYPE(rhs);
-    for (int i = 0; i < SIZE; i++) {
-        _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[i];
+    int index;
+    for (index = 0; index < SIZE; index++) {
+        _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[index];
         if (entry->func == NULL) {
             assert(entry->lhs_type == NULL);
             assert(entry->rhs_type == NULL);
@@ -1804,7 +1805,7 @@ _PyCode_SpecializeBinaryOp(int oparg, PyObject *lhs, PyObject *rhs,
                 entry->lhs_type = lhs_type;
                 entry->rhs_type = rhs_type;
                 entry->func = func;
-                return i;
+                goto hit;
             }
             break;
         }
@@ -1815,10 +1816,14 @@ _PyCode_SpecializeBinaryOp(int oparg, PyObject *lhs, PyObject *rhs,
             entry->rhs_type == rhs_type)
         {
             assert(func == NULL || entry->func == func);
-            return i;
+            goto hit;
         }
     }
-    return -1;
+    return false;
+hit:
+    _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
+    cache->index = index;
+    return true;
 }
 
 static bool
@@ -1904,14 +1909,7 @@ specialize_binary_op_int(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject
         default:
             Py_UNREACHABLE();
     }
-    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, func);
-    if (index < 0) {
-        return false;
-    }
-    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
-    _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
-    cache->index = index;
-    return true;
+    return specialize_binary_op_registered(instr, oparg, lhs, rhs, func);
 }
 
 static bool
@@ -1968,14 +1966,7 @@ specialize_binary_op_mixed_float_int(_Py_CODEUNIT *instr, int oparg, PyObject *l
         default:
             Py_UNREACHABLE();
     }
-    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, func);
-    if (index < 0) {
-        return false;
-    }
-    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
-    _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
-    cache->index = index;
-    return true;
+    return specialize_binary_op_registered(instr, oparg, lhs, rhs, func);
 }
 
 static bool
@@ -2006,10 +1997,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
 {
     assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
     _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
-    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, NULL);
-    if (0 <= index) {
-        _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
-        cache->index = index;
+    if (specialize_binary_op_registered(instr, oparg, lhs, rhs, NULL)) {
         goto success;
     }
     if (PyLong_CheckExact(lhs)) {
