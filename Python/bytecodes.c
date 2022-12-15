@@ -335,19 +335,18 @@ dummy_func(
 
         inst(BINARY_OP_REGISTERED, (unused/1, index/1, lhs, rhs -- res)) {
             assert(cframe.use_tracing == 0);
-            PyTypeObject *lhs_type, *rhs_type;
-            binaryfunc func;
-            _PyCode_GetBinaryOp(index, &lhs_type, &rhs_type, &func);
-            assert(lhs_type);
-            assert(rhs_type);
-            assert(func);
-            DEOPT_IF(!Py_IS_TYPE(lhs, lhs_type), BINARY_OP);
-            DEOPT_IF(!Py_IS_TYPE(rhs, rhs_type), BINARY_OP);
+            _PyCode_BinaryOpEntry *entry = &_PyCode_BinaryOpTable[index];
+            assert(entry->lhs_type);
+            assert(entry->rhs_type);
+            assert(entry->func);
+            DEOPT_IF(!Py_IS_TYPE(lhs, entry->lhs_type), BINARY_OP);
+            DEOPT_IF(!Py_IS_TYPE(rhs, entry->rhs_type), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            res = func(lhs, rhs);
+            res = entry->func(lhs, rhs);
             Py_DECREF(lhs);
             Py_DECREF(rhs);
             ERROR_IF(res == NULL, error);
+            assert(!Py_Is(res, Py_NotImplemented));
         }
 
         family(binary_subscr, INLINE_CACHE_ENTRIES_BINARY_SUBSCR) = {

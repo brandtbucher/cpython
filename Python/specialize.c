@@ -1804,21 +1804,15 @@ binary_op_fail_kind(int oparg)
 #define BINARY_OPS_COUNT 26
 #define BINARY_OP_REGISTERED_SIZE 4
 
-typedef struct {
-    PyTypeObject *lhs_type;
-    PyTypeObject *rhs_type;
-    binaryfunc func;
-} binary_op_registered_entry;
-
-static binary_op_registered_entry
-binary_op_registered_table[BINARY_OPS_COUNT * BINARY_OP_REGISTERED_SIZE];
+_PyCode_BinaryOpEntry
+_PyCode_BinaryOpTable[BINARY_OPS_COUNT * BINARY_OP_REGISTERED_SIZE];
 
 static int
 lookup_binary_op(int oparg, PyTypeObject *lhs_type, PyTypeObject *rhs_type)
 {
     assert(0 <= oparg && oparg < BINARY_OPS_COUNT);
     int index = oparg * BINARY_OP_REGISTERED_SIZE;
-    binary_op_registered_entry *entry = &binary_op_registered_table[index];
+    _PyCode_BinaryOpEntry *entry = &_PyCode_BinaryOpTable[index];
     for (int i = 0; i < BINARY_OP_REGISTERED_SIZE; i++, entry++, index++) {
         if (Py_Is(entry->lhs_type, lhs_type) && Py_Is(entry->rhs_type, rhs_type)) {
             return index;
@@ -1828,23 +1822,12 @@ lookup_binary_op(int oparg, PyTypeObject *lhs_type, PyTypeObject *rhs_type)
 }
 
 void
-_PyCode_GetBinaryOp(uint16_t index, PyTypeObject **lhs_type_p,
-                    PyTypeObject **rhs_type_p, binaryfunc *func_p)
-{
-    assert(index < BINARY_OPS_COUNT * BINARY_OP_REGISTERED_SIZE);
-    binary_op_registered_entry *entry = &binary_op_registered_table[index];
-    *lhs_type_p = entry->lhs_type;
-    *rhs_type_p = entry->rhs_type;
-    *func_p = entry->func;
-}
-
-void
 _PyCode_SetBinaryOp(int oparg, PyTypeObject *lhs_type, PyTypeObject *rhs_type,
                     binaryfunc func)
 {
     int index = lookup_binary_op(oparg, NULL, NULL);
     if (0 <= index) {
-        binary_op_registered_entry *entry = &binary_op_registered_table[index];
+        _PyCode_BinaryOpEntry *entry = &_PyCode_BinaryOpTable[index];
         entry->lhs_type = lhs_type;
         entry->rhs_type = rhs_type;
         entry->func = func;

@@ -237,10 +237,15 @@ extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
 extern void _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg);
 
 extern void _PyCode_SetBinaryOp(int oparg, PyTypeObject *lhs_type,
-                                     PyTypeObject *rhs_type, binaryfunc func);
+                                PyTypeObject *rhs_type, binaryfunc func);
 
-extern void _PyCode_GetBinaryOp(uint16_t index, PyTypeObject **lhs_type_p,
-                                PyTypeObject **rhs_type_p, binaryfunc *func_p);
+typedef struct {
+    PyTypeObject *lhs_type;
+    PyTypeObject *rhs_type;
+    binaryfunc func;
+} _PyCode_BinaryOpEntry;
+
+extern _PyCode_BinaryOpEntry _PyCode_BinaryOpTable[];
 
 /* Finalizer function for static codeobjects used in deepfreeze.py */
 extern void _PyStaticCode_Fini(PyCodeObject *co);
