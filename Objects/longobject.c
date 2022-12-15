@@ -10,6 +10,7 @@
 #include "pycore_pystate.h"       // _Py_IsMainInterpreter()
 #include "pycore_runtime.h"       // _PY_NSMALLPOSINTS
 #include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#include "opcode.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -6372,6 +6373,32 @@ _PyLong_InitTypes(PyInterpreterState *interp)
     if (PyType_Ready(&PyLong_Type) < 0) {
         return _PyStatus_ERR("Can't initialize int type");
     }
+
+    // _PyCode_SetBinaryOp(NB_ADD, &PyLong_Type, &PyLong_Type, long_add);
+    _PyCode_SetBinaryOp(NB_AND, &PyLong_Type, &PyLong_Type, long_and);
+    _PyCode_SetBinaryOp(NB_FLOOR_DIVIDE, &PyLong_Type, &PyLong_Type, long_div);
+    _PyCode_SetBinaryOp(NB_LSHIFT, &PyLong_Type, &PyLong_Type, long_lshift);
+    // _PyCode_SetBinaryOp(NB_MULTIPLY, &PyLong_Type, &PyLong_Type, long_mul);
+    _PyCode_SetBinaryOp(NB_REMAINDER, &PyLong_Type, &PyLong_Type, long_mod);
+    _PyCode_SetBinaryOp(NB_OR, &PyLong_Type, &PyLong_Type, long_or);
+    // _PyCode_SetBinaryOp(NB_POWER, &PyLong_Type, &PyLong_Type, long_pow);
+    _PyCode_SetBinaryOp(NB_RSHIFT, &PyLong_Type, &PyLong_Type, long_rshift);
+    // _PyCode_SetBinaryOp(NB_SUBTRACT, &PyLong_Type, &PyLong_Type, long_sub);
+    _PyCode_SetBinaryOp(NB_TRUE_DIVIDE, &PyLong_Type, &PyLong_Type, long_true_divide);
+    _PyCode_SetBinaryOp(NB_XOR, &PyLong_Type, &PyLong_Type, long_xor);
+
+    // _PyCode_SetBinaryOp(NB_INPLACE_ADD, &PyLong_Type, &PyLong_Type, long_add);
+    _PyCode_SetBinaryOp(NB_INPLACE_AND, &PyLong_Type, &PyLong_Type, long_and);
+    _PyCode_SetBinaryOp(NB_INPLACE_FLOOR_DIVIDE, &PyLong_Type, &PyLong_Type, long_div);
+    _PyCode_SetBinaryOp(NB_INPLACE_LSHIFT, &PyLong_Type, &PyLong_Type, long_lshift);
+    // _PyCode_SetBinaryOp(NB_INPLACE_MULTIPLY, &PyLong_Type, &PyLong_Type, long_mul);
+    _PyCode_SetBinaryOp(NB_INPLACE_REMAINDER, &PyLong_Type, &PyLong_Type, long_mod);
+    _PyCode_SetBinaryOp(NB_INPLACE_OR, &PyLong_Type, &PyLong_Type, long_or);
+    // _PyCode_SetBinaryOp(NB_INPLACE_POWER, &PyLong_Type, &PyLong_Type, long_pow);
+    _PyCode_SetBinaryOp(NB_INPLACE_RSHIFT, &PyLong_Type, &PyLong_Type, long_rshift);
+    // _PyCode_SetBinaryOp(NB_INPLACE_SUBTRACT, &PyLong_Type, &PyLong_Type, long_sub);
+    _PyCode_SetBinaryOp(NB_INPLACE_TRUE_DIVIDE, &PyLong_Type, &PyLong_Type, long_true_divide);
+    _PyCode_SetBinaryOp(NB_INPLACE_XOR, &PyLong_Type, &PyLong_Type, long_xor);
 
     /* initialize int_info */
     if (Int_InfoType.tp_name == NULL) {

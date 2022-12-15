@@ -13,6 +13,7 @@
 #include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
 #include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#include "opcode.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -2000,7 +2001,49 @@ _PyFloat_InitTypes(PyInterpreterState *interp)
         return _PyStatus_ERR("Can't initialize float type");
     }
 
-    
+    // _PyCode_SetBinaryOp(NB_ADD, &PyFloat_Type, &PyFloat_Type, float_add);
+    _PyCode_SetBinaryOp(NB_ADD, &PyFloat_Type, &PyLong_Type, float_add);
+    _PyCode_SetBinaryOp(NB_ADD, &PyLong_Type, &PyFloat_Type, float_add);
+    _PyCode_SetBinaryOp(NB_FLOOR_DIVIDE, &PyFloat_Type, &PyFloat_Type, float_floor_div);
+    _PyCode_SetBinaryOp(NB_FLOOR_DIVIDE, &PyFloat_Type, &PyLong_Type, float_floor_div);
+    _PyCode_SetBinaryOp(NB_FLOOR_DIVIDE, &PyLong_Type, &PyFloat_Type, float_floor_div);
+    // _PyCode_SetBinaryOp(NB_MULTIPLY, &PyFloat_Type, &PyFloat_Type, float_mul);
+    _PyCode_SetBinaryOp(NB_MULTIPLY, &PyFloat_Type, &PyLong_Type, float_mul);
+    _PyCode_SetBinaryOp(NB_MULTIPLY, &PyLong_Type, &PyFloat_Type, float_mul);
+    // _PyCode_SetBinaryOp(NB_POWER, &PyFloat_Type, &PyFloat_Type, float_pow);
+    // _PyCode_SetBinaryOp(NB_POWER, &PyFloat_Type, &PyLong_Type, float_pow);
+    // _PyCode_SetBinaryOp(NB_POWER, &PyLong_Type, &PyFloat_Type, float_pow);
+    _PyCode_SetBinaryOp(NB_REMAINDER, &PyFloat_Type, &PyFloat_Type, float_rem);
+    _PyCode_SetBinaryOp(NB_REMAINDER, &PyFloat_Type, &PyLong_Type, float_rem);
+    _PyCode_SetBinaryOp(NB_REMAINDER, &PyLong_Type, &PyFloat_Type, float_rem);
+    // _PyCode_SetBinaryOp(NB_SUBTRACT, &PyFloat_Type, &PyFloat_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_SUBTRACT, &PyFloat_Type, &PyLong_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_SUBTRACT, &PyLong_Type, &PyFloat_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_TRUE_DIVIDE, &PyFloat_Type, &PyFloat_Type, float_div);
+    _PyCode_SetBinaryOp(NB_TRUE_DIVIDE, &PyFloat_Type, &PyLong_Type, float_div);
+    _PyCode_SetBinaryOp(NB_TRUE_DIVIDE, &PyLong_Type, &PyFloat_Type, float_div);
+
+    // _PyCode_SetBinaryOp(NB_INPLACE_ADD, &PyFloat_Type, &PyFloat_Type, float_add);
+    _PyCode_SetBinaryOp(NB_INPLACE_ADD, &PyFloat_Type, &PyLong_Type, float_add);
+    _PyCode_SetBinaryOp(NB_INPLACE_ADD, &PyLong_Type, &PyFloat_Type, float_add);
+    _PyCode_SetBinaryOp(NB_INPLACE_FLOOR_DIVIDE, &PyFloat_Type, &PyFloat_Type, float_floor_div);
+    _PyCode_SetBinaryOp(NB_INPLACE_FLOOR_DIVIDE, &PyFloat_Type, &PyLong_Type, float_floor_div);
+    _PyCode_SetBinaryOp(NB_INPLACE_FLOOR_DIVIDE, &PyLong_Type, &PyFloat_Type, float_floor_div);
+    // _PyCode_SetBinaryOp(NB_INPLACE_MULTIPLY, &PyFloat_Type, &PyFloat_Type, float_mul);
+    _PyCode_SetBinaryOp(NB_INPLACE_MULTIPLY, &PyFloat_Type, &PyLong_Type, float_mul);
+    _PyCode_SetBinaryOp(NB_INPLACE_MULTIPLY, &PyLong_Type, &PyFloat_Type, float_mul);
+    // _PyCode_SetBinaryOp(NB_INPLACE_POWER, &PyFloat_Type, &PyFloat_Type, float_pow);
+    // _PyCode_SetBinaryOp(NB_INPLACE_POWER, &PyFloat_Type, &PyLong_Type, float_pow);
+    // _PyCode_SetBinaryOp(NB_INPLACE_POWER, &PyLong_Type, &PyFloat_Type, float_pow);
+    _PyCode_SetBinaryOp(NB_INPLACE_REMAINDER, &PyFloat_Type, &PyFloat_Type, float_rem);
+    _PyCode_SetBinaryOp(NB_INPLACE_REMAINDER, &PyFloat_Type, &PyLong_Type, float_rem);
+    _PyCode_SetBinaryOp(NB_INPLACE_REMAINDER, &PyLong_Type, &PyFloat_Type, float_rem);
+    // _PyCode_SetBinaryOp(NB_INPLACE_SUBTRACT, &PyFloat_Type, &PyFloat_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_INPLACE_SUBTRACT, &PyFloat_Type, &PyLong_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_INPLACE_SUBTRACT, &PyLong_Type, &PyFloat_Type, float_sub);
+    _PyCode_SetBinaryOp(NB_INPLACE_TRUE_DIVIDE, &PyFloat_Type, &PyFloat_Type, float_div);
+    _PyCode_SetBinaryOp(NB_INPLACE_TRUE_DIVIDE, &PyFloat_Type, &PyLong_Type, float_div);
+    _PyCode_SetBinaryOp(NB_INPLACE_TRUE_DIVIDE, &PyLong_Type, &PyFloat_Type, float_div);
 
     /* Init float info */
     if (FloatInfoType.tp_name == NULL) {
