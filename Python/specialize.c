@@ -1801,7 +1801,7 @@ binary_op_fail_kind(int oparg)
 }
 #endif
 
-#define BINARY_OP_REGISTERED_SIZE 10
+#define BINARY_OP_REGISTERED_SIZE 4
 
 typedef struct {
     PyTypeObject *lhs_type;
