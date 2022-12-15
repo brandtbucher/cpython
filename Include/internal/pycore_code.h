@@ -28,6 +28,7 @@ typedef struct {
 
 typedef struct {
     _Py_CODEUNIT counter;
+    _Py_CODEUNIT index;
 } _PyBinaryOpCache;
 
 #define INLINE_CACHE_ENTRIES_BINARY_OP CACHE_ENTRIES(_PyBinaryOpCache)
@@ -234,6 +235,15 @@ extern void _Py_Specialize_CompareOp(PyObject *lhs, PyObject *rhs,
 extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
                                           int oparg);
 extern void _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg);
+
+typedef struct {
+    uint8_t oparg;
+    PyTypeObject *lhs_type;
+    PyTypeObject *rhs_type;
+    binaryfunc func;
+} _Py_Specialize_BinaryOpTableEntry;
+
+extern _Py_Specialize_BinaryOpTableEntry _Py_Specialize_BinaryOpTable[];
 
 /* Finalizer function for static codeobjects used in deepfreeze.py */
 extern void _PyStaticCode_Fini(PyCodeObject *co);

@@ -209,12 +209,13 @@ dummy_func(
             // BINARY_OP_INPLACE_ADD_UNICODE,  // This is an odd duck.
             BINARY_OP_MULTIPLY_FLOAT,
             BINARY_OP_MULTIPLY_INT,
+            BINARY_OP_REGISTERED,
             BINARY_OP_SUBTRACT_FLOAT,
             BINARY_OP_SUBTRACT_INT,
         };
 
 
-        inst(BINARY_OP_MULTIPLY_INT, (unused/1, left, right -- prod)) {
+        inst(BINARY_OP_MULTIPLY_INT, (unused/2, left, right -- prod)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
@@ -225,7 +226,7 @@ dummy_func(
             ERROR_IF(prod == NULL, error);
         }
 
-        inst(BINARY_OP_MULTIPLY_FLOAT, (unused/1, left, right -- prod)) {
+        inst(BINARY_OP_MULTIPLY_FLOAT, (unused/2, left, right -- prod)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
@@ -238,7 +239,7 @@ dummy_func(
             ERROR_IF(prod == NULL, error);
         }
 
-        inst(BINARY_OP_SUBTRACT_INT, (unused/1, left, right -- sub)) {
+        inst(BINARY_OP_SUBTRACT_INT, (unused/2, left, right -- sub)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyLong_CheckExact(right), BINARY_OP);
@@ -249,7 +250,7 @@ dummy_func(
             ERROR_IF(sub == NULL, error);
         }
 
-        inst(BINARY_OP_SUBTRACT_FLOAT, (unused/1, left, right -- sub)) {
+        inst(BINARY_OP_SUBTRACT_FLOAT, (unused/2, left, right -- sub)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
@@ -261,7 +262,7 @@ dummy_func(
             ERROR_IF(sub == NULL, error);
         }
 
-        inst(BINARY_OP_ADD_UNICODE, (unused/1, left, right -- res)) {
+        inst(BINARY_OP_ADD_UNICODE, (unused/2, left, right -- res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
@@ -308,7 +309,7 @@ dummy_func(
             JUMPBY(INLINE_CACHE_ENTRIES_BINARY_OP + 1);
         }
 
-        inst(BINARY_OP_ADD_FLOAT, (unused/1, left, right -- sum)) {
+        inst(BINARY_OP_ADD_FLOAT, (unused/2, left, right -- sum)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
@@ -321,7 +322,7 @@ dummy_func(
             ERROR_IF(sum == NULL, error);
         }
 
-        inst(BINARY_OP_ADD_INT, (unused/1, left, right -- sum)) {
+        inst(BINARY_OP_ADD_INT, (unused/2, left, right -- sum)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyLong_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
@@ -330,6 +331,22 @@ dummy_func(
             _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             ERROR_IF(sum == NULL, error);
+        }
+
+        inst(BINARY_OP_REGISTERED, (unused/1, index/1, lhs, rhs -- res)) {
+            assert(cframe.use_tracing == 0);
+            _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[index];
+            assert(entry->oparg == oparg);
+            assert(entry->lhs_type);
+            assert(entry->rhs_type);
+            DEOPT_IF(!Py_IS_TYPE(lhs, entry->lhs_type), BINARY_OP);
+            DEOPT_IF(!Py_IS_TYPE(rhs, entry->rhs_type), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            assert(entry->func);
+            res = entry->func(lhs, rhs);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            ERROR_IF(res == NULL, error);
         }
 
         family(binary_subscr, INLINE_CACHE_ENTRIES_BINARY_SUBSCR) = {
@@ -3565,7 +3582,7 @@ dummy_func(
             PUSH(Py_NewRef(peek));
         }
 
-        inst(BINARY_OP, (unused/1, lhs, rhs -- res)) {
+        inst(BINARY_OP, (unused/2, lhs, rhs -- res)) {
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);

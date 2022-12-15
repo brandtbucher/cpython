@@ -263,7 +263,7 @@
             if (prod == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, prod);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -283,7 +283,7 @@
             if (prod == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, prod);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -301,7 +301,7 @@
             if (sub == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, sub);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -320,7 +320,7 @@
             if (sub == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, sub);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -338,7 +338,7 @@
             if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, res);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -392,7 +392,7 @@
             if (sum == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, sum);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -410,7 +410,31 @@
             if (sum == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, sum);
-            JUMPBY(1);
+            JUMPBY(2);
+            DISPATCH();
+        }
+
+        TARGET(BINARY_OP_REGISTERED) {
+            PyObject *rhs = PEEK(1);
+            PyObject *lhs = PEEK(2);
+            PyObject *res;
+            uint16_t index = read_u16(next_instr + 1);
+            assert(cframe.use_tracing == 0);
+            _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[index];
+            assert(entry->oparg == oparg);
+            assert(entry->lhs_type);
+            assert(entry->rhs_type);
+            DEOPT_IF(!Py_IS_TYPE(lhs, entry->lhs_type), BINARY_OP);
+            DEOPT_IF(!Py_IS_TYPE(rhs, entry->rhs_type), BINARY_OP);
+            STAT_INC(BINARY_OP, hit);
+            assert(entry->func);
+            res = entry->func(lhs, rhs);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            if (res == NULL) goto pop_2_error;
+            STACK_SHRINK(1);
+            POKE(1, res);
+            JUMPBY(2);
             DISPATCH();
         }
 
@@ -3808,7 +3832,7 @@
 
         TARGET(BINARY_OP) {
             PREDICTED(BINARY_OP);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 2, "incorrect cache size");
             PyObject *rhs = PEEK(1);
             PyObject *lhs = PEEK(2);
             PyObject *res;
@@ -3830,7 +3854,7 @@
             if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             POKE(1, res);
-            JUMPBY(1);
+            JUMPBY(2);
             DISPATCH();
         }
 

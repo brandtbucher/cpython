@@ -355,26 +355,19 @@ _PyCode_Quicken(PyCodeObject *code)
 
 /* Binary op */
 
-#define SPEC_FAIL_BINARY_OP_ADD_DIFFERENT_TYPES          8
-#define SPEC_FAIL_BINARY_OP_ADD_OTHER                    9
-#define SPEC_FAIL_BINARY_OP_AND_DIFFERENT_TYPES         10
-#define SPEC_FAIL_BINARY_OP_AND_INT                     11
-#define SPEC_FAIL_BINARY_OP_AND_OTHER                   12
-#define SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE                13
-#define SPEC_FAIL_BINARY_OP_LSHIFT                      14
-#define SPEC_FAIL_BINARY_OP_MATRIX_MULTIPLY             15
-#define SPEC_FAIL_BINARY_OP_MULTIPLY_DIFFERENT_TYPES    16
-#define SPEC_FAIL_BINARY_OP_MULTIPLY_OTHER              17
-#define SPEC_FAIL_BINARY_OP_OR                          18
-#define SPEC_FAIL_BINARY_OP_POWER                       19
-#define SPEC_FAIL_BINARY_OP_REMAINDER                   20
-#define SPEC_FAIL_BINARY_OP_RSHIFT                      21
-#define SPEC_FAIL_BINARY_OP_SUBTRACT_DIFFERENT_TYPES    22
-#define SPEC_FAIL_BINARY_OP_SUBTRACT_OTHER              23
-#define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_DIFFERENT_TYPES 24
-#define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_FLOAT           25
-#define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_OTHER           26
-#define SPEC_FAIL_BINARY_OP_XOR                         27
+#define SPEC_FAIL_BINARY_OP_ADD              8
+#define SPEC_FAIL_BINARY_OP_AND              9
+#define SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE    10
+#define SPEC_FAIL_BINARY_OP_LSHIFT          11
+#define SPEC_FAIL_BINARY_OP_MATRIX_MULTIPLY 12
+#define SPEC_FAIL_BINARY_OP_MULTIPLY        13
+#define SPEC_FAIL_BINARY_OP_OR              14
+#define SPEC_FAIL_BINARY_OP_POWER           15
+#define SPEC_FAIL_BINARY_OP_REMAINDER       16
+#define SPEC_FAIL_BINARY_OP_RSHIFT          17
+#define SPEC_FAIL_BINARY_OP_SUBTRACT        18
+#define SPEC_FAIL_BINARY_OP_TRUE_DIVIDE     19
+#define SPEC_FAIL_BINARY_OP_XOR             20
 
 /* Calls */
 #define SPEC_FAIL_CALL_COMPLEX_PARAMETERS 9
@@ -1749,19 +1742,10 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
     switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                return SPEC_FAIL_BINARY_OP_ADD_DIFFERENT_TYPES;
-            }
-            return SPEC_FAIL_BINARY_OP_ADD_OTHER;
+            return SPEC_FAIL_BINARY_OP_ADD;
         case NB_AND:
         case NB_INPLACE_AND:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                return SPEC_FAIL_BINARY_OP_AND_DIFFERENT_TYPES;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                return SPEC_FAIL_BINARY_OP_AND_INT;
-            }
-            return SPEC_FAIL_BINARY_OP_AND_OTHER;
+            return SPEC_FAIL_BINARY_OP_AND;
         case NB_FLOOR_DIVIDE:
         case NB_INPLACE_FLOOR_DIVIDE:
             return SPEC_FAIL_BINARY_OP_FLOOR_DIVIDE;
@@ -1773,10 +1757,7 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
             return SPEC_FAIL_BINARY_OP_MATRIX_MULTIPLY;
         case NB_MULTIPLY:
         case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                return SPEC_FAIL_BINARY_OP_MULTIPLY_DIFFERENT_TYPES;
-            }
-            return SPEC_FAIL_BINARY_OP_MULTIPLY_OTHER;
+            return SPEC_FAIL_BINARY_OP_MULTIPLY;
         case NB_OR:
         case NB_INPLACE_OR:
             return SPEC_FAIL_BINARY_OP_OR;
@@ -1791,19 +1772,10 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
             return SPEC_FAIL_BINARY_OP_RSHIFT;
         case NB_SUBTRACT:
         case NB_INPLACE_SUBTRACT:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                return SPEC_FAIL_BINARY_OP_SUBTRACT_DIFFERENT_TYPES;
-            }
-            return SPEC_FAIL_BINARY_OP_SUBTRACT_OTHER;
+            return SPEC_FAIL_BINARY_OP_SUBTRACT;
         case NB_TRUE_DIVIDE:
         case NB_INPLACE_TRUE_DIVIDE:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                return SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_DIFFERENT_TYPES;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                return SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_FLOAT;
-            }
-            return SPEC_FAIL_BINARY_OP_TRUE_DIVIDE_OTHER;
+            return SPEC_FAIL_BINARY_OP_TRUE_DIVIDE;
         case NB_XOR:
         case NB_INPLACE_XOR:
             return SPEC_FAIL_BINARY_OP_XOR;
@@ -1812,66 +1784,269 @@ binary_op_fail_kind(int oparg, PyObject *lhs, PyObject *rhs)
 }
 #endif
 
+#define SIZE 256
+
+_Py_Specialize_BinaryOpTableEntry _Py_Specialize_BinaryOpTable[SIZE] = {0};
+
+int
+_PyCode_SpecializeBinaryOp(int oparg, PyObject *lhs, PyObject *rhs,
+                           binaryfunc func)
+{
+    PyTypeObject *lhs_type = Py_TYPE(lhs);
+    PyTypeObject *rhs_type = Py_TYPE(rhs);
+    for (int i = 0; i < SIZE; i++) {
+        _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[i];
+        if (entry->func == NULL) {
+            assert(entry->lhs_type == NULL);
+            assert(entry->rhs_type == NULL);
+            if (func) {
+                entry->oparg = oparg;
+                entry->lhs_type = lhs_type;
+                entry->rhs_type = rhs_type;
+                entry->func = func;
+                return i;
+            }
+            break;
+        }
+        assert(entry->lhs_type);
+        assert(entry->rhs_type);
+        if (entry->oparg == oparg &&
+            entry->lhs_type == lhs_type && 
+            entry->rhs_type == rhs_type)
+        {
+            assert(func == NULL || entry->func == func);
+            return i;
+        }
+    }
+    return -1;
+}
+
+static bool
+specialize_binary_op_str(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject *rhs, PyObject **locals)
+{
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            ;  // a label blah blah blah...
+            _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
+            bool to_store = _PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST;
+            if (to_store && locals[_Py_OPARG(next)] == lhs) {
+                _Py_SET_OPCODE(*instr, BINARY_OP_INPLACE_ADD_UNICODE);
+            }
+            else {
+                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_UNICODE);
+            }
+            return true;
+    }
+    return false;
+}
+
+static bool
+specialize_binary_op_int(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject *rhs)
+{
+    assert(PyLong_CheckExact(lhs));
+    assert(PyLong_CheckExact(rhs));
+    PyNumberMethods *long_as_number = PyLong_Type.tp_as_number;
+    binaryfunc func = NULL;
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            _Py_SET_OPCODE(*instr, BINARY_OP_ADD_INT);
+            return true;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_INT);
+            return true;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_INT);
+            return true;
+        case NB_FLOOR_DIVIDE:
+        case NB_INPLACE_FLOOR_DIVIDE:
+            func = long_as_number->nb_floor_divide;
+            break;
+        case NB_REMAINDER:
+        case NB_INPLACE_REMAINDER:
+            func = long_as_number->nb_remainder;
+            break;
+        case NB_TRUE_DIVIDE:
+        case NB_INPLACE_TRUE_DIVIDE:
+            func = long_as_number->nb_true_divide;
+            break;
+        case NB_AND:
+        case NB_INPLACE_AND:
+            func = long_as_number->nb_and;
+            break;
+        case NB_LSHIFT:
+        case NB_INPLACE_LSHIFT:
+            func = long_as_number->nb_lshift;
+            break;
+        case NB_OR:
+        case NB_INPLACE_OR:
+            func = long_as_number->nb_or;
+            break;
+        case NB_RSHIFT:
+        case NB_INPLACE_RSHIFT:
+            func = long_as_number->nb_rshift;
+            break;
+        case NB_XOR:
+        case NB_INPLACE_XOR:
+            func = long_as_number->nb_xor;
+            break;
+        case NB_POWER:
+        case NB_INPLACE_POWER:
+            // nb_power is a ternaryfunc.
+            return false;
+        case NB_MATRIX_MULTIPLY:
+        case NB_INPLACE_MATRIX_MULTIPLY:
+            // nb_matrix_multiply is not defined for int.
+            return false;
+        default:
+            Py_UNREACHABLE();
+    }
+    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, func);
+    if (index < 0) {
+        return false;
+    }
+    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
+    _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
+    cache->index = index;
+    return true;
+}
+
+static bool
+specialize_binary_op_mixed_float_int(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject *rhs)
+{
+    assert(PyFloat_CheckExact(lhs) || PyLong_CheckExact(lhs));
+    assert(PyFloat_CheckExact(rhs) || PyLong_CheckExact(rhs));
+    assert(PyFloat_CheckExact(lhs) || PyFloat_CheckExact(rhs));
+    PyNumberMethods *float_as_number = PyFloat_Type.tp_as_number;
+    binaryfunc func = NULL;
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            func = float_as_number->nb_add;
+            break;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            func = float_as_number->nb_multiply;
+            break;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            func = float_as_number->nb_subtract;
+            break;
+        case NB_FLOOR_DIVIDE:
+        case NB_INPLACE_FLOOR_DIVIDE:
+            func = float_as_number->nb_floor_divide;
+            break;
+        case NB_REMAINDER:
+        case NB_INPLACE_REMAINDER:
+            func = float_as_number->nb_remainder;
+            break;
+        case NB_TRUE_DIVIDE:
+        case NB_INPLACE_TRUE_DIVIDE:
+            func = float_as_number->nb_true_divide;
+            break;
+        case NB_POWER:
+        case NB_INPLACE_POWER:
+            // nb_power is a ternaryfunc.
+            return false;
+        case NB_AND:
+        case NB_INPLACE_AND:
+        case NB_LSHIFT:
+        case NB_INPLACE_LSHIFT:
+        case NB_MATRIX_MULTIPLY:
+        case NB_INPLACE_MATRIX_MULTIPLY:
+        case NB_OR:
+        case NB_INPLACE_OR:
+        case NB_RSHIFT:
+        case NB_INPLACE_RSHIFT:
+        case NB_XOR:
+        case NB_INPLACE_XOR:
+            // These operations are not defined for float.
+            return false;
+        default:
+            Py_UNREACHABLE();
+    }
+    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, func);
+    if (index < 0) {
+        return false;
+    }
+    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
+    _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
+    cache->index = index;
+    return true;
+}
+
+static bool
+specialize_binary_op_float(_Py_CODEUNIT *instr, int oparg, PyObject *lhs, PyObject *rhs)
+{
+    assert(PyFloat_CheckExact(lhs));
+    assert(PyFloat_CheckExact(rhs));
+    switch (oparg) {
+        case NB_ADD:
+        case NB_INPLACE_ADD:
+            _Py_SET_OPCODE(*instr, BINARY_OP_ADD_FLOAT);
+            return true;
+        case NB_MULTIPLY:
+        case NB_INPLACE_MULTIPLY:
+            _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_FLOAT);
+            return true;
+        case NB_SUBTRACT:
+        case NB_INPLACE_SUBTRACT:
+            _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_FLOAT);
+            return true;
+    }
+    return specialize_binary_op_mixed_float_int(instr, oparg, lhs, rhs);
+}
+
 void
 _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                         int oparg, PyObject **locals)
 {
     assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
     _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
-    switch (oparg) {
-        case NB_ADD:
-        case NB_INPLACE_ADD:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyUnicode_CheckExact(lhs)) {
-                _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
-                bool to_store = (_Py_OPCODE(next) == STORE_FAST ||
-                                 _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
-                if (to_store && locals[_Py_OPARG(next)] == lhs) {
-                    _Py_SET_OPCODE(*instr, BINARY_OP_INPLACE_ADD_UNICODE);
-                    goto success;
-                }
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_UNICODE);
+    int index = _PyCode_SpecializeBinaryOp(oparg, lhs, rhs, NULL);
+    if (0 <= index) {
+        _Py_SET_OPCODE(*instr, BINARY_OP_REGISTERED);
+        cache->index = index;
+        goto success;
+    }
+    if (PyLong_CheckExact(lhs)) {
+        if (PyLong_CheckExact(rhs)) {
+            // int <oparg> int:
+            if (specialize_binary_op_int(instr, oparg, lhs, rhs)) {
                 goto success;
             }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_INT);
+        }
+        else if (PyFloat_CheckExact(rhs)) {
+            // int <oparg> float:
+            if (specialize_binary_op_mixed_float_int(instr, oparg, lhs, rhs)) {
                 goto success;
             }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_ADD_FLOAT);
+        }
+    }
+    else if (PyFloat_CheckExact(lhs)) {
+        if (PyFloat_CheckExact(rhs)) {
+            // float <oparg> float:
+            if (specialize_binary_op_float(instr, oparg, lhs, rhs)) {
                 goto success;
             }
-            break;
-        case NB_MULTIPLY:
-        case NB_INPLACE_MULTIPLY:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_INT);
+        }
+        else if (PyLong_CheckExact(rhs)) {
+            // float <oparg> int:
+            if (specialize_binary_op_mixed_float_int(instr, oparg, lhs, rhs)) {
                 goto success;
             }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_MULTIPLY_FLOAT);
+        }
+    }
+    else if (PyUnicode_CheckExact(lhs)) {
+        if (PyUnicode_CheckExact(rhs)) {
+            // str <oparg> str:
+            if (specialize_binary_op_str(instr, oparg, lhs, rhs, locals)) {
                 goto success;
             }
-            break;
-        case NB_SUBTRACT:
-        case NB_INPLACE_SUBTRACT:
-            if (!Py_IS_TYPE(lhs, Py_TYPE(rhs))) {
-                break;
-            }
-            if (PyLong_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_INT);
-                goto success;
-            }
-            if (PyFloat_CheckExact(lhs)) {
-                _Py_SET_OPCODE(*instr, BINARY_OP_SUBTRACT_FLOAT);
-                goto success;
-            }
-            break;
+        }
     }
     SPECIALIZATION_FAIL(BINARY_OP, binary_op_fail_kind(oparg, lhs, rhs));
     STAT_INC(BINARY_OP, failure);

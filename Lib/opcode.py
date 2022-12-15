@@ -285,6 +285,7 @@ _specializations = {
         "BINARY_OP_INPLACE_ADD_UNICODE",
         "BINARY_OP_MULTIPLY_FLOAT",
         "BINARY_OP_MULTIPLY_INT",
+        "BINARY_OP_REGISTERED",
         "BINARY_OP_SUBTRACT_FLOAT",
         "BINARY_OP_SUBTRACT_INT",
     ],
@@ -390,6 +391,7 @@ _cache_format = {
     },
     "BINARY_OP": {
         "counter": 1,
+        "index": 1,
     },
     "UNPACK_SEQUENCE": {
         "counter": 1,
