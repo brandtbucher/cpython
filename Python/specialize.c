@@ -1818,7 +1818,7 @@ lookup_binary_op(int oparg, PyTypeObject *lhs_type, PyTypeObject *rhs_type)
     int index = oparg * BINARY_OP_REGISTERED_SIZE;
     binary_op_registered_entry *entry = &binary_op_registered_table[index];
     for (int i = 0; i < BINARY_OP_REGISTERED_SIZE; i++, entry++, index++) {
-        if (entry->lhs_type == lhs_type && entry->rhs_type == rhs_type) {
+        if (Py_Is(entry->lhs_type, lhs_type) && Py_Is(entry->rhs_type, rhs_type)) {
             return index;
         }
     }
@@ -1870,8 +1870,9 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 }
                 if (Py_Is(lhs_type, &PyUnicode_Type)) {
                     _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
-                    bool to_store = _PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST;
-                    if (to_store && locals[_Py_OPARG(next)] == lhs) {
+                    if (_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST && 
+                        Py_Is(locals[_Py_OPARG(next)], lhs))
+                    {
                         _py_set_opcode(instr, BINARY_OP_INPLACE_ADD_UNICODE);
                         goto success;
                     }
