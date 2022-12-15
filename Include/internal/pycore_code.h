@@ -237,6 +237,7 @@ extern void _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr,
 extern void _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg);
 
 typedef struct {
+    uint8_t opcode;
     uint8_t oparg;
     PyTypeObject *lhs_type;
     PyTypeObject *rhs_type;

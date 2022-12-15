@@ -421,13 +421,14 @@
             uint16_t index = read_u16(&next_instr[1].cache);
             assert(cframe.use_tracing == 0);
             _Py_Specialize_BinaryOpTableEntry *entry = &_Py_Specialize_BinaryOpTable[index];
+            assert(entry->opcode == opcode);
             assert(entry->oparg == oparg);
             assert(entry->lhs_type);
             assert(entry->rhs_type);
+            assert(entry->func);
             DEOPT_IF(!Py_IS_TYPE(lhs, entry->lhs_type), BINARY_OP);
             DEOPT_IF(!Py_IS_TYPE(rhs, entry->rhs_type), BINARY_OP);
             STAT_INC(BINARY_OP, hit);
-            assert(entry->func);
             res = entry->func(lhs, rhs);
             Py_DECREF(lhs);
             Py_DECREF(rhs);

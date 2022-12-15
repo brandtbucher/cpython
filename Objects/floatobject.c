@@ -2000,6 +2000,8 @@ _PyFloat_InitTypes(PyInterpreterState *interp)
         return _PyStatus_ERR("Can't initialize float type");
     }
 
+    
+
     /* Init float info */
     if (FloatInfoType.tp_name == NULL) {
         if (_PyStructSequence_InitBuiltin(&FloatInfoType,
