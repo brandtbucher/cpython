@@ -31,6 +31,8 @@ typedef struct _specialization_stats {
     uint64_t deferred;
     uint64_t miss;
     uint64_t deopt;
+    uint64_t caches_total;
+    uint64_t caches_used;
     uint64_t failure_kinds[SPECIALIZATION_FAILURE_KINDS];
 } SpecializationStats;
 

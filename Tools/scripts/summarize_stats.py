@@ -95,6 +95,8 @@ def calculate_specialization_stats(family_stats, total):
             continue
         elif key.startswith("pair"):
             continue
+        elif key.startswith("specialization.caches"):
+            continue
         else:
             label = key
         rows.append((f"{label:>12}", f"{family_stats[key]:>12}", format_ratio(family_stats[key], total)))
@@ -111,6 +113,17 @@ def calculate_specialization_success_failure(family_stats):
             label = label[0].upper() + label[1:]
             val = family_stats.get(key, 0)
             rows.append((label, val, format_ratio(val, total_attempts)))
+    return rows
+
+def calculate_specialization_caches(family_stats):
+    total = family_stats.get("specialization.caches_total", 0)
+    used = family_stats.get("specialization.caches_used", 0)
+    unused = total - used
+    rows = []
+    if total:
+        rows.append(("Total", total, ""))
+        rows.append(("Used", used, format_ratio(used, total)))
+        rows.append(("Unused", unused, format_ratio(unused, total)))
     return rows
 
 def calculate_specialization_failure_kinds(name, family_stats, defines):
@@ -146,6 +159,10 @@ def print_specialization_stats(name, family_stats, defines):
             emit_table(("", "Count:", "Ratio:"), rows)
             rows = calculate_specialization_failure_kinds(name, family_stats, defines)
             emit_table(("Failure kind", "Count:", "Ratio:"), rows)
+        rows = calculate_specialization_caches(family_stats)
+        if rows:
+            print_title("Caches", 4)
+            emit_table(("", "Count", "Ratio"), rows)
 
 def print_comparative_specialization_stats(name, base_family_stats, head_family_stats, defines):
     if "specializable" not in base_family_stats:
@@ -174,6 +191,14 @@ def print_comparative_specialization_stats(name, base_family_stats, head_family_
                 ("Failure kind", "Base Count:", "Base Ratio:", "Head Count:", "Head Ratio:"),
                 join_rows(base_rows, head_rows)
             )
+        base_rows = calculate_specialization_caches(base_family_stats)
+        head_rows = calculate_specialization_caches(head_family_stats)
+        if rows:
+            print_title("Caches", 4)
+            emit_table(
+                ("", "Base Count", "Base Ratio", "Head Count", "Head Ratio"),
+                join_rows(base_rows, head_rows),
+                )
 
 def gather_stats(input):
     # Note the output of this function must be JSON-serializable

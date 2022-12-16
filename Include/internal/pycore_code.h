@@ -253,6 +253,28 @@ extern int _PyStaticCode_Init(PyCodeObject *co);
 #define EVAL_CALL_STAT_INC(name) do { if (_py_stats) _py_stats->call_stats.eval_calls[name]++; } while (0)
 #define EVAL_CALL_STAT_INC_IF_FUNCTION(name, callable) \
     do { if (_py_stats && PyFunction_Check(callable)) _py_stats->call_stats.eval_calls[name]++; } while (0)
+#define STAT_ADD_CACHES(OPNAME)                                                      \
+    do {                                                                             \
+        if (_py_stats) {                                                             \
+            uint8_t caches = _PyOpcode_Caches[(OPNAME)];                             \
+            _py_stats->opcode_stats[(OPNAME)].specialization.caches_total += caches; \
+            _py_stats->opcode_stats[(OPNAME)].specialization.caches_used += 1;       \
+        }                                                                            \
+    } while (0)
+#define STAT_USE_CACHES(OPNAME)                                                     \
+    do {                                                                            \
+        if (_py_stats) {                                                            \
+            uint8_t caches = _PyOpcode_Caches[(OPNAME)] - 1;                        \
+            _py_stats->opcode_stats[(OPNAME)].specialization.caches_used += caches; \
+        }                                                                           \
+    } while (0)
+#define STAT_UNUSE_CACHES(OPNAME)                                                   \
+    do {                                                                            \
+        if (_py_stats) {                                                            \
+            uint8_t caches = _PyOpcode_Caches[(OPNAME)] - 1;                        \
+            _py_stats->opcode_stats[(OPNAME)].specialization.caches_used -= caches; \
+        }                                                                           \
+    } while (0)
 
 // Used by the _opcode extension which is built as a shared library
 PyAPI_FUNC(PyObject*) _Py_GetSpecializationStats(void);
@@ -266,6 +288,9 @@ PyAPI_FUNC(PyObject*) _Py_GetSpecializationStats(void);
 #define OBJECT_STAT_INC_COND(name, cond) ((void)0)
 #define EVAL_CALL_STAT_INC(name) ((void)0)
 #define EVAL_CALL_STAT_INC_IF_FUNCTION(name, callable) ((void)0)
+#define STAT_ADD_CACHES(opname) ((void)0)
+#define STAT_USE_CACHES(opname) ((void)0)
+#define STAT_UNUSE_CACHES(opname) ((void)0)
 #endif  // !Py_STATS
 
 // Utility functions for reading/writing 32/64-bit values in the inline caches.

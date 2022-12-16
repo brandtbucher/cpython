@@ -866,6 +866,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
         /* The counter is always the first cache entry: */       \
         if (ADAPTIVE_COUNTER_IS_ZERO(next_instr->cache)) {       \
             STAT_INC((INSTNAME), deopt);                         \
+            STAT_UNUSE_CACHES(INSTNAME);                         \
         }                                                        \
         else {                                                   \
             /* This is about to be (incorrectly) incremented: */ \

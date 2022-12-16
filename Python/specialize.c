@@ -137,6 +137,8 @@ print_spec_stats(FILE *out, OpcodeStats *stats)
         PRINT_STAT(i, specialization.deferred);
         PRINT_STAT(i, specialization.miss);
         PRINT_STAT(i, specialization.deopt);
+        PRINT_STAT(i, specialization.caches_total);
+        PRINT_STAT(i, specialization.caches_used);
         PRINT_STAT(i, execution_count);
         for (int j = 0; j < SPECIALIZATION_FAILURE_KINDS; j++) {
             uint64_t val = stats[i].specialization.failure_kinds[j];
@@ -267,6 +269,7 @@ _PyCode_Quicken(PyCodeObject *code)
         int opcode = _PyOpcode_Deopt[_Py_OPCODE(instructions[i])];
         int caches = _PyOpcode_Caches[opcode];
         if (caches) {
+            STAT_ADD_CACHES(opcode);
             instructions[i + 1].cache = adaptive_counter_warmup();
             previous_opcode = 0;
             i += caches;
@@ -827,6 +830,7 @@ fail:
     return;
 success:
     STAT_INC(LOAD_ATTR, success);
+    STAT_USE_CACHES(LOAD_ATTR);
     assert(!PyErr_Occurred());
     cache->counter = adaptive_counter_cooldown();
 }
@@ -915,6 +919,7 @@ fail:
     return;
 success:
     STAT_INC(STORE_ATTR, success);
+    STAT_USE_CACHES(STORE_ATTR);
     assert(!PyErr_Occurred());
     cache->counter = adaptive_counter_cooldown();
 }
@@ -1177,6 +1182,7 @@ fail:
     return;
 success:
     STAT_INC(LOAD_GLOBAL, success);
+    STAT_USE_CACHES(LOAD_GLOBAL);
     assert(!PyErr_Occurred());
     cache->counter = adaptive_counter_cooldown();
 }
@@ -1270,8 +1276,7 @@ void
 _Py_Specialize_BinarySubscr(
      PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
-    assert(_PyOpcode_Caches[BINARY_SUBSCR] ==
-           INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
+    assert(_PyOpcode_Caches[BINARY_SUBSCR] == INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
     _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)(instr + 1);
     PyTypeObject *container_type = Py_TYPE(container);
     if (container_type == &PyList_Type) {
@@ -1337,6 +1342,7 @@ fail:
     return;
 success:
     STAT_INC(BINARY_SUBSCR, success);
+    STAT_USE_CACHES(BINARY_SUBSCR);
     assert(!PyErr_Occurred());
     cache->counter = adaptive_counter_cooldown();
 }
@@ -1344,6 +1350,7 @@ success:
 void
 _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
+    assert(_PyOpcode_Caches[STORE_SUBSCR] == INLINE_CACHE_ENTRIES_STORE_SUBSCR);
     _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)(instr + 1);
     PyTypeObject *container_type = Py_TYPE(container);
     if (container_type == &PyList_Type) {
@@ -1441,6 +1448,7 @@ fail:
     return;
 success:
     STAT_INC(STORE_SUBSCR, success);
+    STAT_USE_CACHES(STORE_SUBSCR);
     assert(!PyErr_Occurred());
     cache->counter = adaptive_counter_cooldown();
 }
@@ -1754,6 +1762,7 @@ _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs,
     }
     else {
         STAT_INC(CALL, success);
+        STAT_USE_CACHES(CALL);
         assert(!PyErr_Occurred());
         cache->counter = adaptive_counter_cooldown();
     }
@@ -1897,6 +1906,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
     return;
 success:
     STAT_INC(BINARY_OP, success);
+    STAT_USE_CACHES(BINARY_OP);
     cache->counter = adaptive_counter_cooldown();
 }
 
@@ -2008,6 +2018,7 @@ failure:
     return;
 success:
     STAT_INC(COMPARE_OP, success);
+    STAT_USE_CACHES(COMPARE_OP);
     cache->counter = adaptive_counter_cooldown();
 }
 
@@ -2059,6 +2070,7 @@ failure:
     return;
 success:
     STAT_INC(UNPACK_SEQUENCE, success);
+    STAT_USE_CACHES(UNPACK_SEQUENCE);
     cache->counter = adaptive_counter_cooldown();
 }
 
@@ -2167,5 +2179,6 @@ _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg)
     return;
 success:
     STAT_INC(FOR_ITER, success);
+    STAT_USE_CACHES(FOR_ITER);
     cache->counter = adaptive_counter_cooldown();
 }
