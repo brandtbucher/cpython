@@ -129,6 +129,8 @@ struct _dictvalues {
 #define DK_SIZE(dk)      (1<<DK_LOG_SIZE(dk))
 #endif
 
+#define DK_IS_SMALL(DK) ((DK)->dk_nentries < (1 << 2))
+
 static inline void* _DK_ENTRIES(PyDictKeysObject *dk) {
     int8_t *indices = (int8_t*)(dk->dk_indices);
     size_t index = (size_t)1 << dk->dk_log2_index_bytes;

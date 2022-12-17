@@ -906,10 +906,24 @@ static Py_ssize_t _Py_HOT_FUNCTION
 unicodekeys_lookup_unicode(PyDictKeysObject* dk, PyObject *key, Py_hash_t hash)
 {
     PyDictUnicodeEntry *ep0 = DK_UNICODE_ENTRIES(dk);
+    Py_ssize_t ix;
+    if (DK_IS_SMALL(dk)) {
+        for (ix = 0; ix < dk->dk_nentries; ix++) {
+            PyDictUnicodeEntry *ep = &ep0[ix];
+            if (ep->me_key == NULL) {
+                continue;
+            }
+            assert(PyUnicode_CheckExact(ep->me_key));
+            if (ep->me_key == key ||
+                    (unicode_get_hash(ep->me_key) == hash && unicode_eq(ep->me_key, key))) {
+                return ix;
+            }
+        }
+        return DKIX_EMPTY;
+    }
     size_t mask = DK_MASK(dk);
     size_t perturb = hash;
     size_t i = (size_t)hash & mask;
-    Py_ssize_t ix;
     for (;;) {
         ix = dictkeys_get_index(dk, i);
         if (ix >= 0) {
