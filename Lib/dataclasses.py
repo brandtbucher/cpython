@@ -223,6 +223,10 @@ _POST_INIT_NAME = '__post_init__'
 # https://bugs.python.org/issue33453 for details.
 _MODULE_IDENTIFIER_RE = re.compile(r'^(?:\s*(\w+)\s*\.)?\s*(\w+)')
 
+_PLACEHOLDER_PREFIX = "_field_"
+
+_BOUNDARY = re.compile(r"\b")
+
 class InitVar:
     __slots__ = ('type', )
 
@@ -395,7 +399,7 @@ def _fields_in_init_order(fields):
 def _tuple_str(obj_name, fields):
     # Return a string representing each field of obj_name as a tuple
     # member.  So, if fields is ['x', 'y'] and obj_name is "self",
-    # return "(self.$x$,self.$y$)".
+    # return "(self._field_x,self._field_y)".
 
     # Special case for the 0-tuple.
     if not fields:
@@ -428,32 +432,42 @@ def _recursive_repr(user_function):
 _code_cache = {}
 _code_cache_hits = 0
 
+def _build_sub_function(map):
+    pattern = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(" + r"|".join(map) + r")\b")
+    replacer = lambda match: map[match.group()]
+    return functools.partial(pattern.sub, replacer)
+
 def _create_fn(name, args, body, *, globals=None, locals=None):
     # Note that we may mutate locals. Callers beware!
     # The only callers are internal to this module, so no
     # worries about external callers.
     if locals is None:
         locals = {}
+    # Build the function definition:
     args = ','.join(args)
     body = '\n'.join(f'  {b}' for b in body)
+
+    # Compute the text of the entire function.
     txt = f'def {name}({args}):\n{body}'
-    # Turn every illegal named placeholder ("$foo$", "$bar$", ...) in the
-    # source into a legal numbered identifier ("__field_0__", "__field_1__",
-    # ...). At the same time, build a mapping of these new identifiers to their
-    # final field names ({"__field_0__": "foo", "__field_1__": "bar", ...}):
-    # patches = {}
-    # for i, f in enumerate(fields):
-    #     named_placeholder = f._placeholder
-    #     numbered_identifier = f"__field_{i}__"
-    #     txt = txt.replace(named_placeholder, numbered_identifier)
-    #     patches[numbered_identifier] = f.name
-    patches = {}
-    for named_placeholder in dict.fromkeys(re.findall(r"\$\w+\$", txt)):
-        numbered_identifier = f"__field_{len(patches)}__"
-        field_name = named_placeholder[1:-1]
-        txt = txt.replace(named_placeholder, numbered_identifier)
-        patches[numbered_identifier] = field_name
-    key = txt
+
+    # Turn every named placeholder ("_field_foo", "_field_foo", ...) in the
+    # source into a numbered placeholder ("_field_0", "_field_1", ...). At the
+    # same time, build a mapping of these new numbered placeholders to their
+    # actual field names ({"_field_0": "foo", "_field_1": "bar", ...}):
+    named_to_numbered = {}
+    numbered_to_field = {}
+    # We need to match on complete words to avoid replacing *only part* of an
+    # identifier. As a particularly nasty example, a field name like "_field_x"
+    # is represented in the source as "_field__field_x". If we also have a field
+    # named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
+    for match in re.finditer(rf"\b_field_(\w+)\b", txt):
+        named_placeholder, field_name = match.group(0, 1)
+        if named_placeholder not in named_to_numbered:
+            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
+            named_to_numbered[named_placeholder] = numbered_placeholder
+            numbered_to_field[numbered_placeholder] = field_name
+    sub = _build_sub_function(named_to_numbered)
+    key = txt = sub(txt)
     code = _code_cache.get(key)
     if code is None:
         # Free variables in exec are resolved in the global namespace.
@@ -468,24 +482,41 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     else:
         global _code_cache_hits
         _code_cache_hits += 1
-    consts = []
-    for const in code.co_consts:
-        if isinstance(const, str):
-            for numbered_symbol, field_name in patches.items():
-                const = const.replace(numbered_symbol, field_name)
-        consts.append(const)
-    consts = tuple(consts)
-    names = tuple(patches.get(name, name) for name in code.co_names)
-    varnames = tuple(patches.get(name, name) for name in code.co_varnames)
-    closure = tuple(CellType(locals[freevar]) for freevar in code.co_freevars)
+    # Patch all of the str consts. Note that we replace substrings too! This is
+    # needed for __repr__, __setattr__, and __delattr__:
+    if numbered_to_field:
+        consts = []
+        sub = _build_sub_function(numbered_to_field)
+        for const in code.co_consts:
+            if isinstance(const, str):
+                const = sub(const)
+            consts.append(const)
+    else:
+        consts = code.co_consts
+    # Patch the names:
+    names = []
+    for name in code.co_names:
+        if name in numbered_to_field:
+            name = numbered_to_field[name]
+        names.append(name)
+    # Patch the varnames:
+    varnames = []
+    for varname in code.co_varnames:
+        if varname in numbered_to_field:
+            varname = numbered_to_field[varname]
+        varnames.append(varname)
+    # Build the closure:
+    closure = []
+    for freevar in code.co_freevars:
+        closure.append(CellType(locals[freevar]))
     return FunctionType(
         code=code.replace(
-            co_consts=consts,
-            co_names=names,
-            co_varnames=varnames,
+            co_consts=tuple(consts),
+            co_names=tuple(names),
+            co_varnames=tuple(varnames),
         ),
         globals=globals or {},
-        closure=closure,
+        closure=tuple(closure),
     )
 
 
@@ -672,8 +703,8 @@ def _frozen_get_del_attr(cls, fields, globals):
 def _cmp_fn(name, op, self_tuple, other_tuple, globals):
     # Create a comparison function.  If the fields in the object are
     # named 'x' and 'y', then self_tuple is the string
-    # '(self.$x$,self.$y$)' and other_tuple is the string
-    # '(other.$x$,other.$y$)'.
+    # '(self._field_x,self._field_y)' and other_tuple is the string
+    # '(other._field_x,other._field_y)'.
 
     return _create_fn(name,
                       ('self', 'other'),
@@ -687,7 +718,7 @@ def _hash_fn(fields, globals):
     self_tuple = _tuple_str('self', fields)
     return _create_fn('__hash__',
                       ('self',),
-                      [f'return hash({self_tuple})',],
+                      [f'return hash({self_tuple})'],
                       globals=globals)
 
 
@@ -789,7 +820,7 @@ def _get_field(cls, a_name, a_type, default_kw_only):
     f.name = a_name
     f.type = a_type
 
-    f._placeholder = f"${a_name}$"
+    f._placeholder = f"{_PLACEHOLDER_PREFIX}{a_name}"
 
     # Assume it's a normal field until proven otherwise.  We're next
     # going to decide if it's a ClassVar or InitVar, everything else
