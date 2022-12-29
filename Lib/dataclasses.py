@@ -433,7 +433,7 @@ _code_cache = {}
 _code_cache_hits = 0
 
 def _build_sub_function(map):
-    pattern = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(" + r"|".join(map) + r")\b")
+    pattern = re.compile(rf"\b(" + r"|".join(map) + r")\b")
     replacer = lambda match: map[match.group()]
     return functools.partial(pattern.sub, replacer)
 
@@ -466,8 +466,11 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
             numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
             named_to_numbered[named_placeholder] = numbered_placeholder
             numbered_to_field[numbered_placeholder] = field_name
-    sub = _build_sub_function(named_to_numbered)
-    key = txt = sub(txt)
+            
+    if named_to_numbered:
+        sub = _build_sub_function(named_to_numbered)
+        txt = sub(txt)
+    key = txt
     code = _code_cache.get(key)
     if code is None:
         # Free variables in exec are resolved in the global namespace.
