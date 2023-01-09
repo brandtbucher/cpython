@@ -468,8 +468,9 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
             numbered_to_field[numbered_placeholder] = field_name
             
     if named_to_numbered:
-        sub = _build_sub_function(named_to_numbered)
-        txt = sub(txt)
+        pattern = rf"\b(" + r"|".join(named_to_numbered) + r")\b"
+        replacer = lambda match: named_to_numbered[match.group()]
+        txt = re.sub(pattern, replacer, txt)
     key = txt
     code = _code_cache.get(key)
     if code is None:
@@ -489,10 +490,11 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # needed for __repr__, __setattr__, and __delattr__:
     if numbered_to_field:
         consts = []
-        sub = _build_sub_function(numbered_to_field)
+        pattern = rf"\b(" + r"|".join(numbered_to_field) + r")\b"
+        replacer = lambda match: numbered_to_field[match.group()]
         for const in code.co_consts:
             if isinstance(const, str):
-                const = sub(const)
+                const = re.sub(pattern, replacer, const)
             consts.append(const)
     else:
         consts = code.co_consts
