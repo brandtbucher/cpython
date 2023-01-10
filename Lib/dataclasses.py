@@ -224,13 +224,9 @@ _POST_INIT_NAME = '__post_init__'
 _MODULE_IDENTIFIER_RE = re.compile(r'^(?:\s*(\w+)\s*\.)?\s*(\w+)')
 
 _PLACEHOLDER_PREFIX = "_field_"
-
-# We need to match on complete words to avoid replacing *only part* of an
-# identifier. As a particularly nasty example, a field name like "_field_x"
-# is represented in the source as "_field__field_x". If we also have a field
-# named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
-_PLACEHOLDER_RE = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(\w+)\b")
-_WORD_BOUNDARY_RE = re.compile(r"\b")
+# Oui, c'est un français-str:
+_PLACEHOLDER_RE = re.compile(fr"({_PLACEHOLDER_PREFIX}\w+)")
+split_on_placeholders = _PLACEHOLDER_RE.split
 
 # This function's logic is copied from "recursive_repr" function in
 # reprlib module to avoid dependency.
@@ -434,38 +430,42 @@ def _tuple_str(obj_name, fields):
     return f'({",".join([f"{obj_name}.{f._placeholder}" for f in fields])},)'
 
 
-_code_cache = {}
-_code_cache_hits = 0
+def _extract_fields(source):
+    """
+    Replace every named placeholder (like "_field_spam") in the source with a
+    numbered placeholder (like "_field_1"). At the same time, build a mapping
+    of these new numbered placeholders to their actual field names.
 
-def _extract_fields(txt):
-    # Turn every named placeholder ("_field_foo", "_field_foo", ...) in the
-    # source into a numbered placeholder ("_field_0", "_field_1", ...). At the
-    # same time, build a mapping of these new numbered placeholders to their
-    # actual field names ({"_field_0": "foo", "_field_1": "bar", ...}):
-    named_to_numbered = {}
-    numbered_to_field = {}
-    def replacer(match):
-        named_placeholder = match.group()
-        if named_placeholder not in named_to_numbered:
-            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
-            numbered_to_field[numbered_placeholder] = match.group(1)
+    Return the mapping and the patched source.
+    """
+    named_to_numbered = {}  # {"_field_spam": "_field_1", ...}
+    numbered_to_field = {}  # {"_field_1": "spam", ...}
+    parts = split_on_placeholders(source)
+    # Every other part is a named placeholder. Those are all that we care about:
+    for i in range(1, len(parts), 2):
+        named_placeholder = parts[i]
+        if named_placeholder in named_to_numbered:
+            parts[i] = named_to_numbered[named_placeholder]
+        else:
+            # Using i doesn't give us sequential field numbers, but that's okay:
+            parts[i] = numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{i}"
+            field_name = named_placeholder.removeprefix(_PLACEHOLDER_PREFIX)
             named_to_numbered[named_placeholder] = numbered_placeholder
-        return named_to_numbered[named_placeholder]
-    return numbered_to_field, _PLACEHOLDER_RE.sub(replacer, txt)
+            numbered_to_field[numbered_placeholder] = field_name
+    return numbered_to_field, "".join(parts)
 
-def patch_iterable(t, patches):
+
+def _apply_patches(patches, unpatched):
     patched = []
-    for c in t:
-        if c in patches:
-            c = patches[c]
-        patched.append(c)
+    for item in unpatched:
+        if item in patches:
+            item = patches[item]
+        patched.append(item)
     return patched
 
-def patch_string(s, patches):
-    # Patch all of the str consts. Note that we replace substrings too! This
-    # is needed for __repr__, __setattr__, and __delattr__:
-    words = _WORD_BOUNDARY_RE.split(s)
-    return "".join(patch_iterable(words, patches))
+
+_code_cache = {}
+_code_cache_hits = 0
 
 def _create_fn(name, args, body, *, globals=None, locals=None):
     # Note that we may mutate locals. Callers beware!
@@ -497,14 +497,22 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
         _code_cache_hits += 1
     consts = []
     for const in code.co_consts:
-        match const:
-            case str():
-                const = patch_string(const, patches)
-            case tuple():
-                const = tuple(patch_iterable(const, patches))
+        match name, const:
+            case "__init__", str() if const in patches:
+                # const is a field name:
+                const = patches[const]
+            case "__repr__", str():
+                # const may be a string *containing* field names:
+                unpatched = split_on_placeholders(const)
+                patched = _apply_patches(patches, unpatched)
+                const = "".join(patched)
+            case "__delattr__" | "__setattr__", tuple():
+                # const may be a tuple *containing* field names:
+                patched = _apply_patches(patches, const)
+                const = tuple(patched)
         consts.append(const)
-    names = patch_iterable(code.co_names, patches)
-    varnames = patch_iterable(code.co_varnames, patches)
+    names = _apply_patches(patches, code.co_names)
+    varnames = _apply_patches(patches, code.co_varnames)
     # Build the closure:
     closure = []
     for freevar in code.co_freevars:
