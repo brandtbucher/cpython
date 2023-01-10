@@ -224,8 +224,27 @@ _POST_INIT_NAME = '__post_init__'
 _MODULE_IDENTIFIER_RE = re.compile(r'^(?:\s*(\w+)\s*\.)?\s*(\w+)')
 
 _PLACEHOLDER_PREFIX = "_field_"
+_PLACEHOLDER_RE = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(\w+)\b")
 
-_BOUNDARY = re.compile(r"\b")
+# This function's logic is copied from "recursive_repr" function in
+# reprlib module to avoid dependency.
+def _recursive_repr(user_function):
+    # Decorator to make a repr function return "..." for a recursive
+    # call.
+    repr_running = set()
+
+    @functools.wraps(user_function)
+    def wrapper(self):
+        key = id(self), _thread.get_ident()
+        if key in repr_running:
+            return '...'
+        repr_running.add(key)
+        try:
+            result = user_function(self)
+        finally:
+            repr_running.discard(key)
+        return result
+    return wrapper
 
 class InitVar:
     __slots__ = ('type', )
@@ -286,6 +305,7 @@ class Field:
         self._field_type = None
         self._placeholder = None
 
+    @_recursive_repr
     def __repr__(self):
         return ('Field('
                 f'name={self.name!r},'
@@ -408,34 +428,8 @@ def _tuple_str(obj_name, fields):
     return f'({",".join([f"{obj_name}.{f._placeholder}" for f in fields])},)'
 
 
-# This function's logic is copied from "recursive_repr" function in
-# reprlib module to avoid dependency.
-def _recursive_repr(user_function):
-    # Decorator to make a repr function return "..." for a recursive
-    # call.
-    repr_running = set()
-
-    @functools.wraps(user_function)
-    def wrapper(self):
-        key = id(self), _thread.get_ident()
-        if key in repr_running:
-            return '...'
-        repr_running.add(key)
-        try:
-            result = user_function(self)
-        finally:
-            repr_running.discard(key)
-        return result
-    return wrapper
-
-
 _code_cache = {}
 _code_cache_hits = 0
-
-def _build_sub_function(map):
-    pattern = re.compile(rf"\b(" + r"|".join(map) + r")\b")
-    replacer = lambda match: map[match.group()]
-    return functools.partial(pattern.sub, replacer)
 
 def _create_fn(name, args, body, *, globals=None, locals=None):
     # Note that we may mutate locals. Callers beware!
@@ -460,7 +454,7 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # identifier. As a particularly nasty example, a field name like "_field_x"
     # is represented in the source as "_field__field_x". If we also have a field
     # named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
-    for match in re.finditer(rf"\b_field_(\w+)\b", txt):
+    for match in _PLACEHOLDER_RE.finditer(txt):
         named_placeholder, field_name = match.group(0, 1)
         if named_placeholder not in named_to_numbered:
             numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
