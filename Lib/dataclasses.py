@@ -428,6 +428,72 @@ def _tuple_str(obj_name, fields):
     # Note the trailing comma, needed if this turns out to be a 1-tuple.
     return f'({",".join([f"{obj_name}.{f._placeholder}" for f in fields])},)'
 
+_code_cache = {}
+_code_cache_hits = 0
+
+def _create_fn(name, args, body, *, globals=None, locals=None):
+    # Note that we may mutate locals. Callers beware!
+    # The only callers are internal to this module, so no
+    # worries about external callers.
+    if locals is None:
+        locals = {}
+    args = ','.join(args)
+    body = '\n'.join(f'  {b}' for b in body)
+
+    # Compute the text of the entire function.
+    txt = f' def {name}({args}):\n{body}'
+
+    # exec is *really* slow, so we want to avoid using it if at all possible.
+    # Turns out, if we already have a code object that is the exact same as the
+    # one we want to create (except for the actual names of the fields), it's
+    # 2-3x faster to just copy the other code object, fix up the names, and
+    # create a function using the types.FunctionType constructor.
+    #
+    # In order for this to work, we need to be able to detect the names of the
+    # fields from the source. For this reason, it's *crucial* that anything
+    # building source strings uses field._placeholder, *not* field.name!
+    # 
+    # This trick requires two passes:
+    # - Strip out the field names from the source text, and replace them with
+    #   something else (like numbers). This is used to search for (or create)
+    #   cached code with the same structure. This happens in _extract_fields.
+    # - Make a copy of the cached code object, and fix up all of the stripped
+    #   names in the consts, names, and varnames. This happens in _patch_fields.
+    #
+    # This is surprisingly effective, since we generate lots of functions that
+    # differ *only* in the names of their fields (we avoid something like 95% of
+    # the exec calls in test_dataclasses.py). Credit for this neat idea goes to
+    # https://github.com/dabeaz/dataklasses.
+
+    patches, key = _extract_fields(txt)
+    if key in _code_cache:
+        global _code_cache_hits
+        _code_cache_hits += 1
+        code = _code_cache[key]
+    else:
+        code = _code_cache[key] = _create_code(name, key, globals, locals)
+    # Build the closure:
+    closure = []
+    for freevar in code.co_freevars:
+        closure.append(CellType(locals[freevar]))
+    # Build the function:
+    return FunctionType(
+        code=_patch_fields(patches, code),
+        globals=globals or {},
+        closure=tuple(closure),
+    )
+
+def _create_code(name, txt, globals, locals):
+    # Free variables in exec are resolved in the global namespace.
+    # The global namespace we have is user-provided, so we can't modify it for
+    # our purposes. So we put the things we need into locals and introduce a
+    # scope to allow the function we're creating to close over them.
+    local_vars = ', '.join(locals.keys())
+    txt = f"def __create_fn__({local_vars}):\n{txt}\n return {name}"
+    ns = {}
+    exec(txt, globals, ns)
+    return ns['__create_fn__'](**locals).__code__
+
 
 def _extract_fields(source):
     """
@@ -488,71 +554,6 @@ def _apply_patches(patches, unpatched):
             item = patches[item]
         patched.append(item)
     return patched
-
-
-_code_cache = {}
-_code_cache_hits = 0
-
-def _create_fn(name, args, body, *, globals=None, locals=None):
-    # Note that we may mutate locals. Callers beware!
-    # The only callers are internal to this module, so no
-    # worries about external callers.
-    if locals is None:
-        locals = {}
-    args = ','.join(args)
-    body = '\n'.join(f'  {b}' for b in body)
-
-    # Compute the text of the entire function.
-    txt = f' def {name}({args}):\n{body}'
-
-    # exec is *really* slow, so we want to avoid using it if at all possible.
-    # Turns out, if we already have a code object that is the exact same as the
-    # one we want to create (except for the actual names of the fields), it's
-    # 2-3x faster to just copy the other code object, fix up the names, and
-    # create a function using the types.FunctionType constructor.
-    #
-    # In order for this to work, we need to be able to detect the names of the
-    # fields from the source. For this reason, it's *crucial* that anything
-    # building source strings uses field._placeholder, *not* field.name!
-    # 
-    # This trick requires two passes:
-    # - Strip out the field names from the source text, and replace them with
-    #   something else (like numbers). This is used to search for (or create)
-    #   cached code with the same structure. This happens in _extract_fields.
-    # - Make a copy of the cached code object, and fix up all of the stripped
-    #   names in the consts, names, and varnames. This happens in _patch_fields.
-    #
-    # This is surprisingly effective, since we generate lots of functions that
-    # differ *only* in the names of their fields (we avoid something like 95% of
-    # the exec calls in test_dataclasses.py). Credit for this neat idea goes to
-    # https://github.com/dabeaz/dataklasses.
-
-    patches, txt = _extract_fields(txt)
-    key = txt
-    if key in _code_cache:
-        global _code_cache_hits
-        _code_cache_hits += 1
-        code = _code_cache[key]
-    else:
-        # Free variables in exec are resolved in the global namespace.
-        # The global namespace we have is user-provided, so we can't modify it for
-        # our purposes. So we put the things we need into locals and introduce a
-        # scope to allow the function we're creating to close over them.
-        local_vars = ', '.join(locals.keys())
-        txt = f"def __create_fn__({local_vars}):\n{txt}\n return {name}"
-        ns = {}
-        exec(txt, globals, ns)
-        code = _code_cache[key] = ns['__create_fn__'](**locals).__code__
-    # Build the closure:
-    closure = []
-    for freevar in code.co_freevars:
-        closure.append(CellType(locals[freevar]))
-    # Build the function:
-    return FunctionType(
-        code=_patch_fields(patches, code),
-        globals=globals or {},
-        closure=tuple(closure),
-    )
 
 
 def _field_assign(frozen, name, value, self_name):
