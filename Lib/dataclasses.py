@@ -428,6 +428,7 @@ def _tuple_str(obj_name, fields):
     # Note the trailing comma, needed if this turns out to be a 1-tuple.
     return f'({",".join([f"{obj_name}.{f._placeholder}" for f in fields])},)'
 
+
 _code_cache = {}
 _code_cache_hits = 0
 
@@ -443,7 +444,7 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # Compute the text of the entire function.
     txt = f' def {name}({args}):\n{body}'
 
-    # exec is *really* slow, so we want to avoid using it if at all possible.
+    # exec is *really* slow, so we want to avoid using it whenever possible.
     # Turns out, if we already have a code object that is the exact same as the
     # one we want to create (except for the actual names of the fields), it's
     # 2-3x faster to just copy the other code object, fix up the names, and
@@ -482,6 +483,7 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
         globals=globals or {},
         closure=tuple(closure),
     )
+
 
 def _create_code(name, txt, globals, locals):
     # Free variables in exec are resolved in the global namespace.
@@ -683,6 +685,15 @@ def _init_fn(fields, std_fields, kw_only_fields, frozen, has_post_init,
                    tuple(body_lines),
                    locals=locals,
                    globals=globals)
+    _add_init_dunders(f, std_fields, kw_only_fields)
+    return f
+
+
+def _add_init_dunders(init, std_fields, kw_only_fields):
+    """
+    Add __annotations__, __defaults__, and __kwdefaults__ to an __init__
+    function.
+    """
     annotations = {"return": None}
     defaults = []
     kwdefaults = {}
@@ -698,10 +709,9 @@ def _init_fn(fields, std_fields, kw_only_fields, frozen, has_post_init,
             kwdefaults[field.name] = field.default
         elif field.default_factory is not MISSING:
             kwdefaults[field.name] = _HAS_DEFAULT_FACTORY
-    f.__annotations__ = annotations
-    f.__defaults__ = tuple(defaults) or None
-    f.__kwdefaults__ = kwdefaults or None
-    return f
+    init.__annotations__ = annotations
+    init.__defaults__ = tuple(defaults) or None
+    init.__kwdefaults__ = kwdefaults or None
 
 
 def _repr_fn(fields, globals):
