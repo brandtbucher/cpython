@@ -226,7 +226,6 @@ _MODULE_IDENTIFIER_RE = re.compile(r'^(?:\s*(\w+)\s*\.)?\s*(\w+)')
 _PLACEHOLDER_PREFIX = "_field_"
 # Oui, c'est un français-str:
 _PLACEHOLDER_RE = re.compile(fr"({_PLACEHOLDER_PREFIX}\w+)")
-split_on_placeholders = _PLACEHOLDER_RE.split
 
 # This function's logic is copied from "recursive_repr" function in
 # reprlib module to avoid dependency.
@@ -440,7 +439,7 @@ def _extract_fields(source):
     """
     named_to_numbered = {}  # {"_field_spam": "_field_1", ...}
     numbered_to_field = {}  # {"_field_1": "spam", ...}
-    parts = split_on_placeholders(source)
+    parts = _PLACEHOLDER_RE.split(source)
     # Every other part is a named placeholder. Those are all that we care about:
     for i in range(1, len(parts), 2):
         named_placeholder = parts[i]
@@ -453,6 +452,33 @@ def _extract_fields(source):
             named_to_numbered[named_placeholder] = numbered_placeholder
             numbered_to_field[numbered_placeholder] = field_name
     return numbered_to_field, "".join(parts)
+
+
+def _patch_fields(patches, code):
+    """Copy the given code with its consts, names, and varnames patched."""
+    consts = []
+    for const in code.co_consts:
+        match code.co_name, const:
+            case "__init__", str() if const in patches:
+                # const is a field name:
+                const = patches[const]
+            case "__repr__", str():
+                # const may be a string *containing* field names:
+                unpatched = _PLACEHOLDER_RE.split(const)
+                patched = _apply_patches(patches, unpatched)
+                const = "".join(patched)
+            case "__delattr__" | "__setattr__", tuple():
+                # const may be a tuple *containing* field names:
+                patched = _apply_patches(patches, const)
+                const = tuple(patched)
+        consts.append(const)
+    names = _apply_patches(patches, code.co_names)
+    varnames = _apply_patches(patches, code.co_varnames)
+    return code.replace(
+        co_consts=tuple(consts),
+        co_names=tuple(names),
+        co_varnames=tuple(varnames),
+    )
 
 
 def _apply_patches(patches, unpatched):
@@ -479,10 +505,35 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # Compute the text of the entire function.
     txt = f' def {name}({args}):\n{body}'
 
+    # exec is *really* slow, so we want to avoid using it if at all possible.
+    # Turns out, if we already have a code object that is the exact same as the
+    # one we want to create (except for the actual names of the fields), it's
+    # 2-3x faster to just copy the other code object, fix up the names, and
+    # create a function using the types.FunctionType constructor.
+    #
+    # In order for this to work, we need to be able to detect the names of the
+    # fields from the source. For this reason, it's *crucial* that anything
+    # building source strings uses field._placeholder, *not* field.name!
+    # 
+    # This trick requires two passes:
+    # - Strip out the field names from the source text, and replace them with
+    #   something else (like numbers). This is used to search for (or create)
+    #   cached code with the same structure. This happens in _extract_fields.
+    # - Make a copy of the cached code object, and fix up all of the stripped
+    #   names in the consts, names, and varnames. This happens in _patch_fields.
+    #
+    # This is surprisingly effective, since we generate lots of functions that
+    # differ *only* in the names of their fields (we avoid something like 95% of
+    # the exec calls in test_dataclasses.py). Credit for this neat idea goes to
+    # https://github.com/dabeaz/dataklasses.
+
     patches, txt = _extract_fields(txt)
     key = txt
-    code = _code_cache.get(key)
-    if code is None:
+    if key in _code_cache:
+        global _code_cache_hits
+        _code_cache_hits += 1
+        code = _code_cache[key]
+    else:
         # Free variables in exec are resolved in the global namespace.
         # The global namespace we have is user-provided, so we can't modify it for
         # our purposes. So we put the things we need into locals and introduce a
@@ -492,38 +543,13 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
         ns = {}
         exec(txt, globals, ns)
         code = _code_cache[key] = ns['__create_fn__'](**locals).__code__
-    else:
-        global _code_cache_hits
-        _code_cache_hits += 1
-    consts = []
-    for const in code.co_consts:
-        match name, const:
-            case "__init__", str() if const in patches:
-                # const is a field name:
-                const = patches[const]
-            case "__repr__", str():
-                # const may be a string *containing* field names:
-                unpatched = split_on_placeholders(const)
-                patched = _apply_patches(patches, unpatched)
-                const = "".join(patched)
-            case "__delattr__" | "__setattr__", tuple():
-                # const may be a tuple *containing* field names:
-                patched = _apply_patches(patches, const)
-                const = tuple(patched)
-        consts.append(const)
-    names = _apply_patches(patches, code.co_names)
-    varnames = _apply_patches(patches, code.co_varnames)
     # Build the closure:
     closure = []
     for freevar in code.co_freevars:
         closure.append(CellType(locals[freevar]))
     # Build the function:
     return FunctionType(
-        code=code.replace(
-            co_consts=tuple(consts),
-            co_names=tuple(names),
-            co_varnames=tuple(varnames),
-        ),
+        code=_patch_fields(patches, code),
         globals=globals or {},
         closure=tuple(closure),
     )
