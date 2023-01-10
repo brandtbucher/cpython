@@ -224,6 +224,11 @@ _POST_INIT_NAME = '__post_init__'
 _MODULE_IDENTIFIER_RE = re.compile(r'^(?:\s*(\w+)\s*\.)?\s*(\w+)')
 
 _PLACEHOLDER_PREFIX = "_field_"
+
+# We need to match on complete words to avoid replacing *only part* of an
+# identifier. As a particularly nasty example, a field name like "_field_x"
+# is represented in the source as "_field__field_x". If we also have a field
+# named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
 _PLACEHOLDER_RE = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(\w+)\b")
 
 # This function's logic is copied from "recursive_repr" function in
@@ -448,24 +453,17 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # source into a numbered placeholder ("_field_0", "_field_1", ...). At the
     # same time, build a mapping of these new numbered placeholders to their
     # actual field names ({"_field_0": "foo", "_field_1": "bar", ...}):
-    named_to_numbered = {}
+    seen = {}
     numbered_to_field = {}
-    # We need to match on complete words to avoid replacing *only part* of an
-    # identifier. As a particularly nasty example, a field name like "_field_x"
-    # is represented in the source as "_field__field_x". If we also have a field
-    # named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
-    for match in _PLACEHOLDER_RE.finditer(txt):
-        named_placeholder, field_name = match.group(0, 1)
-        if named_placeholder not in named_to_numbered:
-            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
-            named_to_numbered[named_placeholder] = numbered_placeholder
-            numbered_to_field[numbered_placeholder] = field_name
-            
-    if named_to_numbered:
-        pattern = rf"\b(" + r"|".join(named_to_numbered) + r")\b"
-        replacer = lambda match: named_to_numbered[match.group()]
-        txt = re.sub(pattern, replacer, txt)
-    key = txt
+    def replacer(match):
+        named_placeholder = match.group()
+        if named_placeholder not in seen:
+            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(seen)}"
+            numbered_to_field[numbered_placeholder] = match.group(1)
+            seen[named_placeholder] = numbered_placeholder
+        return seen[named_placeholder]
+    txt = _PLACEHOLDER_RE.sub(replacer, txt)
+    key = txt = _PLACEHOLDER_RE.sub(replacer, txt)
     code = _code_cache.get(key)
     if code is None:
         # Free variables in exec are resolved in the global namespace.
@@ -484,11 +482,12 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # needed for __repr__, __setattr__, and __delattr__:
     if numbered_to_field:
         consts = []
-        pattern = rf"\b(" + r"|".join(numbered_to_field) + r")\b"
-        replacer = lambda match: numbered_to_field[match.group()]
+        pattern = re.compile(rf"\b({'|'.join(numbered_to_field)})\b")
+        def replacer(match):
+            return numbered_to_field[match.group()]
         for const in code.co_consts:
             if isinstance(const, str):
-                const = re.sub(pattern, replacer, const)
+                const = pattern.sub(replacer, const)
             consts.append(const)
     else:
         consts = code.co_consts
@@ -508,6 +507,7 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     closure = []
     for freevar in code.co_freevars:
         closure.append(CellType(locals[freevar]))
+    # Build the function:
     return FunctionType(
         code=code.replace(
             co_consts=tuple(consts),
