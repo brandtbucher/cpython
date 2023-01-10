@@ -453,19 +453,19 @@ def _extract_fields(txt):
         return named_to_numbered[named_placeholder]
     return numbered_to_field, _PLACEHOLDER_RE.sub(replacer, txt)
 
-def patch_tuple(t, patches):
+def patch_iterable(t, patches):
     patched = []
     for c in t:
         if c in patches:
             c = patches[c]
         patched.append(c)
-    return tuple(patched)
+    return patched
 
 def patch_string(s, patches):
     # Patch all of the str consts. Note that we replace substrings too! This
     # is needed for __repr__, __setattr__, and __delattr__:
     words = _WORD_BOUNDARY_RE.split(s)
-    return "".join(patch_tuple(words, patches))
+    return "".join(patch_iterable(words, patches))
 
 def _create_fn(name, args, body, *, globals=None, locals=None):
     # Note that we may mutate locals. Callers beware!
@@ -473,12 +473,11 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # worries about external callers.
     if locals is None:
         locals = {}
-    # Build the function definition:
     args = ','.join(args)
     body = '\n'.join(f'  {b}' for b in body)
 
     # Compute the text of the entire function.
-    txt = f'def {name}({args}):\n{body}'
+    txt = f' def {name}({args}):\n{body}'
 
     patches, txt = _extract_fields(txt)
     key = txt
@@ -489,37 +488,34 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
         # our purposes. So we put the things we need into locals and introduce a
         # scope to allow the function we're creating to close over them.
         local_vars = ', '.join(locals.keys())
-        txt = f"def __create_fn__({local_vars}):\n {txt}\n return {name}"
+        txt = f"def __create_fn__({local_vars}):\n{txt}\n return {name}"
         ns = {}
         exec(txt, globals, ns)
         code = _code_cache[key] = ns['__create_fn__'](**locals).__code__
     else:
         global _code_cache_hits
         _code_cache_hits += 1
-    if patches:
-        consts = []
-        for const in code.co_consts:
-            match const:
-                case str():
-                    const = patch_string(const, patches)
-                case tuple():
-                    const = patch_tuple(const, patches)
-            consts.append(const)
-        consts = tuple(consts)
-        names = patch_tuple(code.co_names, patches)
-        varnames = patch_tuple(code.co_varnames, patches)
-        code = code.replace(
-            co_consts=consts,
-            co_names=names,
-            co_varnames=varnames,
-        )
+    consts = []
+    for const in code.co_consts:
+        match const:
+            case str():
+                const = patch_string(const, patches)
+            case tuple():
+                const = tuple(patch_iterable(const, patches))
+        consts.append(const)
+    names = patch_iterable(code.co_names, patches)
+    varnames = patch_iterable(code.co_varnames, patches)
     # Build the closure:
     closure = []
     for freevar in code.co_freevars:
         closure.append(CellType(locals[freevar]))
     # Build the function:
     return FunctionType(
-        code=code,
+        code=code.replace(
+            co_consts=tuple(consts),
+            co_names=tuple(names),
+            co_varnames=tuple(varnames),
+        ),
         globals=globals or {},
         closure=tuple(closure),
     )
