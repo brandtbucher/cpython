@@ -230,6 +230,7 @@ _PLACEHOLDER_PREFIX = "_field_"
 # is represented in the source as "_field__field_x". If we also have a field
 # named "x", txt.replace("_field_x", "_field_42") will do the wrong thing:
 _PLACEHOLDER_RE = re.compile(rf"\b{_PLACEHOLDER_PREFIX}(\w+)\b")
+_WORD_BOUNDARY_RE = re.compile(r"\b")
 
 # This function's logic is copied from "recursive_repr" function in
 # reprlib module to avoid dependency.
@@ -436,6 +437,36 @@ def _tuple_str(obj_name, fields):
 _code_cache = {}
 _code_cache_hits = 0
 
+def _extract_fields(txt):
+    # Turn every named placeholder ("_field_foo", "_field_foo", ...) in the
+    # source into a numbered placeholder ("_field_0", "_field_1", ...). At the
+    # same time, build a mapping of these new numbered placeholders to their
+    # actual field names ({"_field_0": "foo", "_field_1": "bar", ...}):
+    named_to_numbered = {}
+    numbered_to_field = {}
+    def replacer(match):
+        named_placeholder = match.group()
+        if named_placeholder not in named_to_numbered:
+            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(named_to_numbered)}"
+            numbered_to_field[numbered_placeholder] = match.group(1)
+            named_to_numbered[named_placeholder] = numbered_placeholder
+        return named_to_numbered[named_placeholder]
+    return numbered_to_field, _PLACEHOLDER_RE.sub(replacer, txt)
+
+def patch_tuple(t, patches):
+    patched = []
+    for c in t:
+        if c in patches:
+            c = patches[c]
+        patched.append(c)
+    return tuple(patched)
+
+def patch_string(s, patches):
+    # Patch all of the str consts. Note that we replace substrings too! This
+    # is needed for __repr__, __setattr__, and __delattr__:
+    words = _WORD_BOUNDARY_RE.split(s)
+    return "".join(patch_tuple(words, patches))
+
 def _create_fn(name, args, body, *, globals=None, locals=None):
     # Note that we may mutate locals. Callers beware!
     # The only callers are internal to this module, so no
@@ -449,21 +480,8 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     # Compute the text of the entire function.
     txt = f'def {name}({args}):\n{body}'
 
-    # Turn every named placeholder ("_field_foo", "_field_foo", ...) in the
-    # source into a numbered placeholder ("_field_0", "_field_1", ...). At the
-    # same time, build a mapping of these new numbered placeholders to their
-    # actual field names ({"_field_0": "foo", "_field_1": "bar", ...}):
-    seen = {}
-    numbered_to_field = {}
-    def replacer(match):
-        named_placeholder = match.group()
-        if named_placeholder not in seen:
-            numbered_placeholder = f"{_PLACEHOLDER_PREFIX}{len(seen)}"
-            numbered_to_field[numbered_placeholder] = match.group(1)
-            seen[named_placeholder] = numbered_placeholder
-        return seen[named_placeholder]
-    txt = _PLACEHOLDER_RE.sub(replacer, txt)
-    key = txt = _PLACEHOLDER_RE.sub(replacer, txt)
+    patches, txt = _extract_fields(txt)
+    key = txt
     code = _code_cache.get(key)
     if code is None:
         # Free variables in exec are resolved in the global namespace.
@@ -478,42 +496,30 @@ def _create_fn(name, args, body, *, globals=None, locals=None):
     else:
         global _code_cache_hits
         _code_cache_hits += 1
-    # Patch all of the str consts. Note that we replace substrings too! This is
-    # needed for __repr__, __setattr__, and __delattr__:
-    if numbered_to_field:
+    if patches:
         consts = []
-        pattern = re.compile(rf"\b({'|'.join(numbered_to_field)})\b")
-        def replacer(match):
-            return numbered_to_field[match.group()]
         for const in code.co_consts:
-            if isinstance(const, str):
-                const = pattern.sub(replacer, const)
+            match const:
+                case str():
+                    const = patch_string(const, patches)
+                case tuple():
+                    const = patch_tuple(const, patches)
             consts.append(const)
-    else:
-        consts = code.co_consts
-    # Patch the names:
-    names = []
-    for name in code.co_names:
-        if name in numbered_to_field:
-            name = numbered_to_field[name]
-        names.append(name)
-    # Patch the varnames:
-    varnames = []
-    for varname in code.co_varnames:
-        if varname in numbered_to_field:
-            varname = numbered_to_field[varname]
-        varnames.append(varname)
+        consts = tuple(consts)
+        names = patch_tuple(code.co_names, patches)
+        varnames = patch_tuple(code.co_varnames, patches)
+        code = code.replace(
+            co_consts=consts,
+            co_names=names,
+            co_varnames=varnames,
+        )
     # Build the closure:
     closure = []
     for freevar in code.co_freevars:
         closure.append(CellType(locals[freevar]))
     # Build the function:
     return FunctionType(
-        code=code.replace(
-            co_consts=tuple(consts),
-            co_names=tuple(names),
-            co_varnames=tuple(varnames),
-        ),
+        code=code,
         globals=globals or {},
         closure=tuple(closure),
     )
@@ -681,17 +687,21 @@ def _repr_fn(fields, globals):
 def _frozen_get_del_attr(cls, fields, globals):
     locals = {'cls': cls,
               'FrozenInstanceError': FrozenInstanceError}
-    fields_str = ' '.join(f._placeholder for f in fields)
+    if fields:
+        fields_str = '(' + ','.join(repr(f._placeholder) for f in fields) + ',)'
+    else:
+        # Special case for the zero-length tuple.
+        fields_str = '()'
     return (_create_fn('__setattr__',
                       ('self', 'name', 'value'),
-                      (f'if type(self) is cls or name in {fields_str!r}:',
+                      (f'if type(self) is cls or name in {fields_str}:',
                         ' raise FrozenInstanceError(f"cannot assign to field {name!r}")',
                        f'super(cls, self).__setattr__(name, value)'),
                        locals=locals,
                        globals=globals),
             _create_fn('__delattr__',
                       ('self', 'name'),
-                      (f'if type(self) is cls or name in {fields_str!r}:',
+                      (f'if type(self) is cls or name in {fields_str}:',
                         ' raise FrozenInstanceError(f"cannot delete field {name!r}")',
                        f'super(cls, self).__delattr__(name)'),
                        locals=locals,
