@@ -276,16 +276,11 @@ void
 _PyCode_Quicken(PyCodeObject *code)
 {
     int opcode = 0;
+    _PyCode_ResetInto(code, _PyCode_CODE(code));
     _Py_CODEUNIT *instructions = _PyCode_CODE(code);
-    for (int i = 0; i < Py_SIZE(code); i++) {
+    for (int i = 0; i < Py_SIZE(code); i += 1 + _PyOpcode_Caches[opcode]) {
         int previous_opcode = opcode;
-        opcode = _PyOpcode_Deopt[_Py_OPCODE(instructions[i])];
-        int caches = _PyOpcode_Caches[opcode];
-        if (caches) {
-            instructions[i + 1].cache = adaptive_counter_warmup();
-            i += caches;
-            continue;
-        }
+        opcode = _Py_OPCODE(instructions[i]);
         switch (previous_opcode << 8 | opcode) {
             case LOAD_CONST << 8 | LOAD_FAST:
                 instructions[i - 1].opcode = LOAD_CONST__LOAD_FAST;

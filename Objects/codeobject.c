@@ -1500,17 +1500,22 @@ PyCode_GetFreevars(PyCodeObject *code)
     return _PyCode_GetFreevars(code);
 }
 
-static void
-deopt_code(_Py_CODEUNIT *instructions, Py_ssize_t len)
+void
+_PyCode_ResetInto(PyCodeObject *code, _Py_CODEUNIT *dest)
 {
+    _Py_CODEUNIT *from = _PyCode_CODE(code);
+    Py_ssize_t len = Py_SIZE(code);
     for (int i = 0; i < len; i++) {
-        _Py_CODEUNIT instruction = instructions[i];
+        _Py_CODEUNIT instruction = from[i];
         int opcode = _PyOpcode_Deopt[_Py_OPCODE(instruction)];
         int caches = _PyOpcode_Caches[opcode];
-        instructions[i].opcode = opcode;
-        while (caches--) {
-            instructions[++i].opcode = CACHE;
-            instructions[i].oparg = 0;
+        dest[i].opcode = opcode;
+        if (caches) {
+            dest[++i].cache = adaptive_counter_warmup();
+            while (--caches) {
+                dest[++i].opcode = CACHE;
+                dest[i].oparg = 0;
+            }
         }
     }
 }
@@ -1524,12 +1529,11 @@ _PyCode_GetCode(PyCodeObject *co)
     if (co->_co_cached->_co_code != NULL) {
         return Py_NewRef(co->_co_cached->_co_code);
     }
-    PyObject *code = PyBytes_FromStringAndSize((const char *)_PyCode_CODE(co),
-                                               _PyCode_NBYTES(co));
+    PyObject *code = PyBytes_FromStringAndSize(NULL, _PyCode_NBYTES(co));
     if (code == NULL) {
         return NULL;
     }
-    deopt_code((_Py_CODEUNIT *)PyBytes_AS_STRING(code), Py_SIZE(co));
+    _PyCode_ResetInto(co, (_Py_CODEUNIT *)PyBytes_AS_STRING(code));
     assert(co->_co_cached->_co_code == NULL);
     co->_co_cached->_co_code = Py_NewRef(code);
     return code;
@@ -2272,7 +2276,7 @@ _PyCode_ConstantKey(PyObject *op)
 void
 _PyStaticCode_Fini(PyCodeObject *co)
 {
-    deopt_code(_PyCode_CODE(co), Py_SIZE(co));
+    _PyCode_ResetInto(co, _PyCode_CODE(co));
     PyMem_Free(co->co_extra);
     if (co->_co_cached != NULL) {
         Py_CLEAR(co->_co_cached->_co_code);

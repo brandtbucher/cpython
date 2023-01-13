@@ -3353,6 +3353,11 @@ dummy_func(
         }
 
         // stack effect: ( -- )
+        inst(COUNTER) {
+            Py_UNREACHABLE();
+        }
+
+        // stack effect: ( -- )
         inst(CACHE) {
             Py_UNREACHABLE();
         }
