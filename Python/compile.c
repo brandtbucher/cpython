@@ -8371,6 +8371,7 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     if (co == NULL) {
         goto error;
     }
+    _PyCode_CopyAndReset(co, _PyCode_CODE(co));
 
  error:
     Py_XDECREF(names);

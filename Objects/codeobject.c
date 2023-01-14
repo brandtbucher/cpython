@@ -360,8 +360,6 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
     return 0;
 }
 
-extern void _PyCode_Quicken(PyCodeObject *code);
-
 static void
 init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
 {
@@ -417,7 +415,6 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
         entry_point++;
     }
     co->_co_firsttraceable = entry_point;
-    _PyCode_Quicken(co);
     notify_code_watchers(PY_CODE_EVENT_CREATE, co);
 }
 
@@ -1500,20 +1497,59 @@ PyCode_GetFreevars(PyCodeObject *code)
     return _PyCode_GetFreevars(code);
 }
 
+static int compare_masks[] = {
+    [Py_LT] = COMPARISON_LESS_THAN,
+    [Py_LE] = COMPARISON_LESS_THAN | COMPARISON_EQUALS,
+    [Py_EQ] = COMPARISON_EQUALS,
+    [Py_NE] = COMPARISON_NOT_EQUALS,
+    [Py_GT] = COMPARISON_GREATER_THAN,
+    [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
+};
+
 void
-_PyCode_ResetInto(PyCodeObject *code, _Py_CODEUNIT *destination)
+_PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
 {
     _Py_CODEUNIT *source = _PyCode_CODE(code);
     Py_ssize_t len = Py_SIZE(code);
     for (int i = 0; i < len; i++) {
-        _Py_CODEUNIT *instruction = &destination[i];
         int opcode = _PyOpcode_Deopt[source[i].opcode];
-        if (opcode == 0) {  // XXX: test_invalid_bytecode
-            opcode = source[i].opcode;
+        int oparg = source[i].oparg;
+        int caches = _PyOpcode_Caches[opcode];
+        int j = i + caches + 1;
+        if (j < len) {
+            int next_opcode = _PyOpcode_Deopt[source[j].opcode];
+            switch (opcode << 8 | next_opcode) {
+                case LOAD_CONST << 8 | LOAD_FAST:
+                    opcode = LOAD_CONST__LOAD_FAST;
+                    break;
+                case LOAD_FAST << 8 | LOAD_CONST:
+                    opcode = LOAD_FAST__LOAD_CONST;
+                    break;
+                case LOAD_FAST << 8 | LOAD_FAST:
+                    opcode = LOAD_FAST__LOAD_FAST;
+                    break;
+                case STORE_FAST << 8 | LOAD_FAST:
+                    opcode = STORE_FAST__LOAD_FAST;
+                    break;
+                case STORE_FAST << 8 | STORE_FAST:
+                    opcode = STORE_FAST__STORE_FAST;
+                    break;
+                // XXX: Move this!
+                case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
+                case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
+                {
+                    assert((oparg >> 4) <= Py_GE);
+                    int mask = compare_masks[oparg >> 4];
+                    if (next_opcode == POP_JUMP_IF_FALSE) {
+                        mask = mask ^ 0xf;
+                    }
+                    oparg = (oparg & 0xf0) | mask;
+                    break;
+                }
+            }
         }
-        instruction->opcode = opcode;
-        instruction->oparg = source[i].oparg;
-        int caches = _PyOpcode_Caches[instruction->opcode];
+        destination[i].opcode = opcode;
+        destination[i].oparg = oparg;
         if (caches) {
             destination[++i].cache = adaptive_counter_warmup();
             while (--caches) {
@@ -1536,7 +1572,7 @@ _PyCode_GetCode(PyCodeObject *co)
     if (code == NULL) {
         return NULL;
     }
-    _PyCode_ResetInto(co, (_Py_CODEUNIT *)PyBytes_AS_STRING(code));
+    _PyCode_CopyAndReset(co, (_Py_CODEUNIT *)PyBytes_AS_STRING(code));
     assert(co->_co_cached->_co_code == NULL);
     co->_co_cached->_co_code = Py_NewRef(code);
     return code;
@@ -2279,7 +2315,7 @@ _PyCode_ConstantKey(PyObject *op)
 void
 _PyStaticCode_Fini(PyCodeObject *co)
 {
-    _PyCode_ResetInto(co, _PyCode_CODE(co));
+    _PyCode_CopyAndReset(co, _PyCode_CODE(co));
     PyMem_Free(co->co_extra);
     if (co->_co_cached != NULL) {
         Py_CLEAR(co->_co_cached->_co_code);
@@ -2315,7 +2351,6 @@ _PyStaticCode_Init(PyCodeObject *co)
     if (res < 0) {
         return -1;
     }
-    _PyCode_Quicken(co);
     return 0;
 }
 
