@@ -1769,11 +1769,17 @@ class InstructionTests(InstructionTestCase):
         for show_caches in (False, True):
             for adaptive in (False, True):
                 with self.subTest(f"{adaptive=}, {show_caches=}"):
-                    co_positions = [
-                        positions
-                        for op, positions in zip(ops, code.co_positions(), strict=True)
-                        if show_caches or op != 0
-                    ]
+                    co_positions = []
+                    caches = 0
+                    for op, positions in zip(ops, code.co_positions(), strict=True):
+                        if caches:
+                            caches -= 1
+                            if not show_caches:
+                                continue
+                        else:
+                            deop = dis._deoptop(op)
+                            caches = opcode._inline_cache_entries[deop]
+                        co_positions.append(positions)
                     dis_positions = [
                         instruction.positions
                         for instruction in dis.get_instructions(
