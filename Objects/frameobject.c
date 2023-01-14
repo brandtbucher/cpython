@@ -460,6 +460,7 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     stacks[i+1] = next_stack;
                 }
             }
+            i += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]];
         }
         /* Scan exception table */
         unsigned char *start = (unsigned char *)PyBytes_AS_STRING(code_obj->co_exceptiontable);

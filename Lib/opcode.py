@@ -74,7 +74,6 @@ def pseudo_op(name, op, real_ops):
 # Instruction opcodes for compiled code
 # Blank lines correspond to available opcodes
 
-def_op('CACHE', 0)
 def_op('POP_TOP', 1)
 def_op('PUSH_NULL', 2)
 def_op('INTERPRETER_EXIT', 3)
@@ -87,8 +86,6 @@ def_op('UNARY_NEGATIVE', 11)
 def_op('UNARY_NOT', 12)
 
 def_op('UNARY_INVERT', 15)
-
-def_op('COUNTER', 17)
 
 def_op('BINARY_SUBSCR', 25)
 def_op('BINARY_SLICE', 26)

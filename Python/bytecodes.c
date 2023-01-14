@@ -3352,16 +3352,6 @@ dummy_func(
             DISPATCH_GOTO();
         }
 
-        // stack effect: ( -- )
-        inst(COUNTER) {
-            Py_UNREACHABLE();
-        }
-
-        // stack effect: ( -- )
-        inst(CACHE) {
-            Py_UNREACHABLE();
-        }
-
 
 // END BYTECODES //
 

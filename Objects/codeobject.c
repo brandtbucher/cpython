@@ -1506,11 +1506,14 @@ _PyCode_ResetInto(PyCodeObject *code, _Py_CODEUNIT *destination)
     _Py_CODEUNIT *source = _PyCode_CODE(code);
     Py_ssize_t len = Py_SIZE(code);
     for (int i = 0; i < len; i++) {
+        _Py_CODEUNIT *instruction = &destination[i];
         int opcode = _PyOpcode_Deopt[source[i].opcode];
-        int oparg = source[i].oparg;
-        destination[i].opcode = opcode;
-        destination[i].oparg = oparg;
-        int caches = _PyOpcode_Caches[opcode];
+        if (opcode == 0) {  // XXX: test_invalid_bytecode
+            opcode = source[i].opcode;
+        }
+        instruction->opcode = opcode;
+        instruction->oparg = source[i].oparg;
+        int caches = _PyOpcode_Caches[instruction->opcode];
         if (caches) {
             destination[++i].cache = adaptive_counter_warmup();
             while (--caches) {

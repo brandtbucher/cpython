@@ -1184,7 +1184,7 @@ class DisTests(DisTestBase):
         for instruction in dis.get_instructions(
             f, show_caches=True, adaptive=adaptive
         ):
-            if instruction.opname == "CACHE":
+            if instruction.opcode == 0:
                 yield instruction.argrepr
 
     @cpython_only
@@ -1766,7 +1766,6 @@ class InstructionTests(InstructionTestCase):
                 yield (-b + cmath.sqrt(d)) / (2 * a)
         code = roots.__code__
         ops = code.co_code[::2]
-        cache_opcode = opcode.opmap["CACHE"]
         caches = sum(op == cache_opcode for op in ops)
         non_caches = len(ops) - caches
         # Make sure we have "lots of caches". If not, roots should be changed:
@@ -1777,7 +1776,7 @@ class InstructionTests(InstructionTestCase):
                     co_positions = [
                         positions
                         for op, positions in zip(ops, code.co_positions(), strict=True)
-                        if show_caches or op != cache_opcode
+                        if show_caches or op != 0
                     ]
                     dis_positions = [
                         instruction.positions

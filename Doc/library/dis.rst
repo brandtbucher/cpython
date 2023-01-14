@@ -42,6 +42,9 @@ interpreter.
       bytecode to specialize it for different runtime conditions. The
       adaptive bytecode can be shown by passing ``adaptive=True``.
 
+   .. versionchanged:: 3.12
+      TODO TODO TODO
+
 
 Example: Given the function :func:`myfunc`::
 
@@ -444,24 +447,6 @@ operations on it as if it was a Python list. The top of the stack corresponds to
    Swap the top of the stack with the i-th element.::
 
       STACK[-i], STACK[-1] = stack[-1], STACK[-i]
-
-   .. versionadded:: 3.11
-
-
-.. opcode:: CACHE
-
-   Rather than being an actual instruction, this opcode is used to mark extra
-   space for the interpreter to cache useful data directly in the bytecode
-   itself. It is automatically hidden by all ``dis`` utilities, but can be
-   viewed with ``show_caches=True``.
-
-   Logically, this space is part of the preceding instruction. Many opcodes
-   expect to be followed by an exact number of caches, and will instruct the
-   interpreter to skip over them at runtime.
-
-   Populated caches can look like arbitrary instructions, so great care should
-   be taken when reading or modifying raw, adaptive bytecode containing
-   quickened data.
 
    .. versionadded:: 3.11
 

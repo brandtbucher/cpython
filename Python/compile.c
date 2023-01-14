@@ -298,8 +298,7 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
             Py_UNREACHABLE();
     }
     while (caches--) {
-        codestr->opcode = CACHE;
-        codestr->oparg = 0;
+        codestr->cache = 0;
         codestr++;
     }
 }
@@ -1078,7 +1077,6 @@ stack_effect(int opcode, int oparg, int jump)
         case NOP:
         case EXTENDED_ARG:
         case RESUME:
-        case CACHE:
             return 0;
 
         /* Stack manipulation */

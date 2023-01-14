@@ -3693,11 +3693,3 @@
             PRE_DISPATCH_GOTO();
             DISPATCH_GOTO();
         }
-
-        TARGET(COUNTER) {
-            Py_UNREACHABLE();
-        }
-
-        TARGET(CACHE) {
-            Py_UNREACHABLE();
-        }
