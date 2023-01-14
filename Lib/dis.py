@@ -517,7 +517,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                 else:
                     argrepr = ""
                 yield Instruction(
-                    f"<inline cache: {name}>", 0, 0, None, argrepr, offset, None, False,
+                    f"<cached {name}>", None, int.from_bytes(code[offset: offset + 2], sys.byteorder), None, argrepr, offset, None, False,
                     Positions(*next(co_positions, ()))
                 )
 
