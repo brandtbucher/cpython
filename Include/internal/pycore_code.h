@@ -196,7 +196,6 @@ PyAPI_FUNC(PyCodeObject *) _PyCode_New(struct _PyCodeConstructor *);
 extern PyObject* _PyCode_GetVarnames(PyCodeObject *);
 extern PyObject* _PyCode_GetCellvars(PyCodeObject *);
 extern PyObject* _PyCode_GetFreevars(PyCodeObject *);
-extern PyObject* _PyCode_GetCode(PyCodeObject *);
 
 extern void _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination);
 

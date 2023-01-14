@@ -253,17 +253,12 @@ print_stacks(int64_t *stacks, int n) {
 static int64_t *
 mark_stacks(PyCodeObject *code_obj, int len)
 {
-    PyObject *co_code = _PyCode_GetCode(code_obj);
-    if (co_code == NULL) {
-        return NULL;
-    }
-    _Py_CODEUNIT *code = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
+    _Py_CODEUNIT *code = _PyCode_CODE(code_obj);
     int64_t *stacks = PyMem_New(int64_t, len+1);
     int i, j, opcode;
 
     if (stacks == NULL) {
         PyErr_NoMemory();
-        Py_DECREF(co_code);
         return NULL;
     }
     for (int i = 1; i <= len; i++) {
@@ -485,7 +480,6 @@ mark_stacks(PyCodeObject *code_obj, int len)
             }
         }
     }
-    Py_DECREF(co_code);
     return stacks;
 }
 

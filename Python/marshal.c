@@ -550,7 +550,7 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
     }
     else if (PyCode_Check(v)) {
         PyCodeObject *co = (PyCodeObject *)v;
-        PyObject *co_code = _PyCode_GetCode(co);
+        PyObject *co_code = PyCode_GetCode(co);
         if (co_code == NULL) {
             p->error = WFERR_NOMEMORY;
             return;

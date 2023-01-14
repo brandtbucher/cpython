@@ -1560,7 +1560,7 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
 }
 
 PyObject *
-_PyCode_GetCode(PyCodeObject *co)
+PyCode_GetCode(PyCodeObject *co)
 {
     if (init_co_cached(co)) {
         return NULL;
@@ -1576,12 +1576,6 @@ _PyCode_GetCode(PyCodeObject *co)
     assert(co->_co_cached->_co_code == NULL);
     co->_co_cached->_co_code = Py_NewRef(code);
     return code;
-}
-
-PyObject *
-PyCode_GetCode(PyCodeObject *co)
-{
-    return _PyCode_GetCode(co);
 }
 
 /******************
@@ -1958,7 +1952,7 @@ code_getcodeadaptive(PyCodeObject *code, void *closure)
 static PyObject *
 code_getcode(PyCodeObject *code, void *closure)
 {
-    return _PyCode_GetCode(code);
+    return PyCode_GetCode(code);
 }
 
 static PyGetSetDef code_getsetlist[] = {
@@ -2049,7 +2043,7 @@ code_replace_impl(PyCodeObject *self, int co_argcount,
 
     PyObject *code = NULL;
     if (co_code == NULL) {
-        code = _PyCode_GetCode(self);
+        code = PyCode_GetCode(self);
         if (code == NULL) {
             return NULL;
         }
