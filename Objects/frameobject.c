@@ -460,7 +460,12 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     stacks[i+1] = next_stack;
                 }
             }
-            i += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]];
+            // XXX: Hacky!
+            int caches = _PyOpcode_Caches[_PyOpcode_Deopt[opcode]];
+            for (int j = 0; j < caches; j++) {
+                stacks[i + 2] = stacks[i + 1];
+                i++;
+            }
         }
         /* Scan exception table */
         unsigned char *start = (unsigned char *)PyBytes_AS_STRING(code_obj->co_exceptiontable);

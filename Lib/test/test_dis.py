@@ -1192,13 +1192,9 @@ class DisTests(DisTestBase):
         for quickened in (False, True):
             for adaptive in (False, True):
                 with self.subTest(f"{quickened=}, {adaptive=}"):
-                    if adaptive:
-                        pattern = r"^(\w+: \d+)?$"
-                    else:
-                        pattern = r"^(\w+: 0)?$"
                     caches = list(self.get_cached_values(quickened, adaptive))
                     for cache in caches:
-                        self.assertRegex(cache, pattern)
+                        self.assertRegex(cache, r"^(\d+)?$")
                     total_caches = 23
                     empty_caches = 8
                     self.assertEqual(caches.count(""), empty_caches)
@@ -1766,7 +1762,7 @@ class InstructionTests(InstructionTestCase):
                 yield (-b + cmath.sqrt(d)) / (2 * a)
         code = roots.__code__
         ops = code.co_code[::2]
-        caches = sum(op == cache_opcode for op in ops)
+        caches = sum(op == 0 for op in ops)
         non_caches = len(ops) - caches
         # Make sure we have "lots of caches". If not, roots should be changed:
         assert 1 / 3 <= caches / non_caches, "this test needs more caches!"

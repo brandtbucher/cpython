@@ -42,7 +42,7 @@ LOAD_ATTR = opmap['LOAD_ATTR']
 
 _all_opname = list(opname)
 _all_opmap = dict(opmap)
-_empty_slot = [slot for slot, name in enumerate(_all_opname) if name.startswith("<")]
+_empty_slot = [slot for slot, name in enumerate(_all_opname[1:], 1) if name.startswith("<")]  # XXX
 for spec_op, specialized in zip(_empty_slot, _specialized_instructions):
     # fill opname and opmap
     _all_opname[spec_op] = specialized
