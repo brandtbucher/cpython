@@ -103,7 +103,8 @@ def dis(x=None, *, file=None, depth=None, show_caches=False, adaptive=False):
     elif hasattr(x, 'co_code'): # Code object
         _disassemble_recursive(x, file=file, depth=depth, show_caches=show_caches, adaptive=adaptive)
     elif isinstance(x, (bytes, bytearray)): # Raw bytecode
-        _disassemble_bytes(x, file=file, show_caches=show_caches)
+        _disassemble_bytes(x, file=file, show_caches=show_caches, 
+                           adaptive=adaptive)
     elif isinstance(x, str):    # Source code
         _disassemble_str(x, file=file, depth=depth, show_caches=show_caches, adaptive=adaptive)
     else:
@@ -349,7 +350,7 @@ def get_instructions(x, *, first_line=None, show_caches=False, adaptive=False):
                                    co.co_names, co.co_consts,
                                    linestarts, line_offset,
                                    co_positions=co.co_positions(),
-                                   show_caches=show_caches)
+                                   show_caches=show_caches, adaptive=adaptive)
 
 def _get_const_value(op, arg, co_consts):
     """Helper to get the value of the const in a hasconst op.
@@ -424,7 +425,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                             names=None, co_consts=None,
                             linestarts=None, line_offset=0,
                             exception_entries=(), co_positions=None,
-                            show_caches=False):
+                            show_caches=False, adaptive=False):
     """Iterate over the instructions in a bytecode string.
 
     Generates a sequence of Instruction namedtuples giving the details of each
@@ -450,6 +451,8 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
         argrepr = ''
         positions = Positions(*next(co_positions, ()))
         deop = _deoptop(op)
+        if not adaptive:
+            op = deop
         if arg is not None:
             #  Set argval to the dereferenced value of the argument when
             #  available, and argrepr to the string representation of argval.
@@ -513,11 +516,11 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                 # the first entry for a particular cache value:
                 if i == 0:
                     data = code[offset: offset + 2 * size]
-                    argrepr = str(int.from_bytes(data, sys.byteorder))
+                    argrepr = f"{name}: {int.from_bytes(data, sys.byteorder)}"
                 else:
                     argrepr = ""
                 yield Instruction(
-                    f"<cached {name}>", None, int.from_bytes(code[offset: offset + 2], sys.byteorder), None, argrepr, offset, None, False,
+                    "<cache>", 0, 0, None, argrepr, offset, None, False,
                     Positions(*next(co_positions, ()))
                 )
 
@@ -529,7 +532,8 @@ def disassemble(co, lasti=-1, *, file=None, show_caches=False, adaptive=False):
                        lasti, co._varname_from_oparg,
                        co.co_names, co.co_consts, linestarts, file=file,
                        exception_entries=exception_entries,
-                       co_positions=co.co_positions(), show_caches=show_caches)
+                       co_positions=co.co_positions(), show_caches=show_caches,
+                       adaptive=adaptive)
 
 def _disassemble_recursive(co, *, file=None, depth=None, show_caches=False, adaptive=False):
     disassemble(co, file=file, show_caches=show_caches, adaptive=adaptive)
@@ -547,7 +551,7 @@ def _disassemble_recursive(co, *, file=None, depth=None, show_caches=False, adap
 def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
                        names=None, co_consts=None, linestarts=None,
                        *, file=None, line_offset=0, exception_entries=(),
-                       co_positions=None, show_caches=False):
+                       co_positions=None, show_caches=False, adaptive=False):
     # Omit the line number column entirely if we have no line number info
     show_lineno = bool(linestarts)
     if show_lineno:
@@ -568,7 +572,8 @@ def _disassemble_bytes(code, lasti=-1, varname_from_oparg=None,
                                          line_offset=line_offset,
                                          exception_entries=exception_entries,
                                          co_positions=co_positions,
-                                         show_caches=show_caches):
+                                         show_caches=show_caches,
+                                         adaptive=adaptive):
         new_source_line = (show_lineno and
                            instr.starts_line is not None and
                            instr.offset > 0)
@@ -726,7 +731,8 @@ class Bytecode:
                                        line_offset=self._line_offset,
                                        exception_entries=self.exception_entries,
                                        co_positions=co.co_positions(),
-                                       show_caches=self.show_caches)
+                                       show_caches=self.show_caches,
+                                       adaptive=self.adaptive)
 
     def __repr__(self):
         return "{}({!r})".format(self.__class__.__name__,
@@ -762,7 +768,8 @@ class Bytecode:
                                lasti=offset,
                                exception_entries=self.exception_entries,
                                co_positions=co.co_positions(),
-                               show_caches=self.show_caches)
+                               show_caches=self.show_caches,
+                               adaptive=self.adaptive)
             return output.getvalue()
 
 
