@@ -105,8 +105,7 @@ def dis(x=None, *, file=None, depth=None, show_caches=False, adaptive=False):
     elif hasattr(x, 'co_code'): # Code object
         _disassemble_recursive(x, file=file, depth=depth, show_caches=show_caches, adaptive=adaptive)
     elif isinstance(x, (bytes, bytearray)): # Raw bytecode
-        _disassemble_bytes(x, file=file, show_caches=show_caches, 
-                           adaptive=adaptive)
+        _disassemble_bytes(x, file=file, show_caches=show_caches, adaptive=adaptive)
     elif isinstance(x, str):    # Source code
         _disassemble_str(x, file=file, depth=depth, show_caches=show_caches, adaptive=adaptive)
     else:

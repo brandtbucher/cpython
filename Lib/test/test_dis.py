@@ -1198,10 +1198,9 @@ class DisTests(DisTestBase):
         for quickened in (False, True):
             for adaptive in (False, True):
                 with self.subTest(f"{quickened=}, {adaptive=}"):
-                    pattern = r"^(\w+: \d+)?$"
                     caches = list(self.get_cached_values(quickened, adaptive))
                     for cache in caches:
-                        self.assertRegex(cache, pattern)
+                        self.assertRegex(cache, r"^(\w+: \d+)?$")
                     total_caches = 23
                     empty_caches = 8
                     self.assertEqual(caches.count(""), empty_caches)

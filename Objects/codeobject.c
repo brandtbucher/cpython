@@ -1506,6 +1506,9 @@ static int compare_masks[] = {
     [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
 };
 
+// NOTE: This function is often called with destination == _PyCode_CODE(code)!
+// Great care should be taken to ensure that it still works correctly when the
+// source and destination overlap:
 void
 _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
 {
@@ -1560,7 +1563,7 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
         }
     }
 #else
-    memcpy(destination, source, len * sizeof(_Py_CODEUNIT));
+    memmove(destination, source, len * sizeof(_Py_CODEUNIT));
 #endif // ENABLE_SPECIALIZATION
 }
 
@@ -2054,7 +2057,7 @@ code_replace_impl(PyCodeObject *self, int co_argcount,
 
     PyObject *code = NULL;
     if (co_code == NULL) {
-        code = PyCode_GetCode(self);
+        code = _PyCode_GetCode(self);
         if (code == NULL) {
             return NULL;
         }
