@@ -1543,6 +1543,7 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
                     if (next_opcode == POP_JUMP_IF_FALSE) {
                         mask = mask ^ 0xf;
                     }
+                    opcode = COMPARE_AND_BRANCH;
                     oparg = (oparg & 0xf0) | mask;
                     break;
                 }
