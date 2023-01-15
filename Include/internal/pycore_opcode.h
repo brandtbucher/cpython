@@ -79,6 +79,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [BUILD_SLICE] = BUILD_SLICE,
     [BUILD_STRING] = BUILD_STRING,
     [BUILD_TUPLE] = BUILD_TUPLE,
+    [CACHE] = CACHE,
     [CALL] = CALL,
     [CALL_BOUND_METHOD_EXACT_ARGS] = CALL,
     [CALL_BUILTIN_CLASS] = CALL,
@@ -227,7 +228,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
 
 #ifdef Py_DEBUG
 static const char *const _PyOpcode_OpName[263] = {
-    [0] = "<0>",
+    [CACHE] = "CACHE",
     [POP_TOP] = "POP_TOP",
     [PUSH_NULL] = "PUSH_NULL",
     [INTERPRETER_EXIT] = "INTERPRETER_EXIT",
@@ -494,7 +495,6 @@ static const char *const _PyOpcode_OpName[263] = {
 #endif
 
 #define EXTRA_CASES \
-    case 0: \
     case 161: \
     case 166: \
     case 167: \

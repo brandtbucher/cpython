@@ -1,5 +1,5 @@
 static void *opcode_targets[256] = {
-    &&_unknown_opcode,
+    &&TARGET_CACHE,
     &&TARGET_POP_TOP,
     &&TARGET_PUSH_NULL,
     &&TARGET_INTERPRETER_EXIT,

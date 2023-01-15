@@ -8,6 +8,7 @@ extern "C" {
 
 
 /* Instruction opcodes for compiled code */
+#define CACHE                                    0
 #define POP_TOP                                  1
 #define PUSH_NULL                                2
 #define INTERPRETER_EXIT                         3

@@ -40,9 +40,11 @@ JUMP_BACKWARD = opmap['JUMP_BACKWARD']
 FOR_ITER = opmap['FOR_ITER']
 LOAD_ATTR = opmap['LOAD_ATTR']
 
+CACHE = opmap["CACHE"]
+
 _all_opname = list(opname)
 _all_opmap = dict(opmap)
-_empty_slot = [slot for slot, name in enumerate(_all_opname[1:], 1) if name.startswith("<")]  # XXX
+_empty_slot = [slot for slot, name in enumerate(_all_opname) if name.startswith("<")]
 for spec_op, specialized in zip(_empty_slot, _specialized_instructions):
     # fill opname and opmap
     _all_opname[spec_op] = specialized
@@ -452,6 +454,8 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
         positions = Positions(*next(co_positions, ()))
         deop = _deoptop(op)
         if not adaptive:
+            # Don't show superinstructions when adaptive == False, even though
+            # they're present in co_code:
             op = deop
         if arg is not None:
             #  Set argval to the dereferenced value of the argument when
@@ -512,7 +516,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
         for name, size in _cache_format[opname[deop]].items():
             for i in range(size):
                 offset += 2
-                # Only show the fancy argrepr for a cache when it's
+                # Only show the fancy argrepr for a CACHE instruction when it's
                 # the first entry for a particular cache value:
                 if i == 0:
                     data = code[offset: offset + 2 * size]
@@ -520,7 +524,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                 else:
                     argrepr = ""
                 yield Instruction(
-                    "<cache>", 0, 0, None, argrepr, offset, None, False,
+                    "CACHE", CACHE, 0, None, argrepr, offset, None, False,
                     Positions(*next(co_positions, ()))
                 )
 
@@ -605,7 +609,7 @@ def _unpack_opargs(code):
     extended_arg = 0
     caches = 0
     for i in range(0, len(code), 2):
-        # Skip inline cache entries:
+        # Skip inline CACHE entries:
         if caches:
             caches -= 1
             continue

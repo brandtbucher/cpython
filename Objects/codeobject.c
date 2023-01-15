@@ -1511,6 +1511,7 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
 {
     _Py_CODEUNIT *source = _PyCode_CODE(code);
     Py_ssize_t len = Py_SIZE(code);
+#if ENABLE_SPECIALIZATION
     for (int i = 0; i < len; i++) {
         int opcode = _PyOpcode_Deopt[source[i].opcode];
         int oparg = source[i].oparg;
@@ -1558,10 +1559,13 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
             }
         }
     }
+#else
+    memcpy(destination, source, len * sizeof(_Py_CODEUNIT));
+#endif // ENABLE_SPECIALIZATION
 }
 
 PyObject *
-PyCode_GetCode(PyCodeObject *co)
+_PyCode_GetCode(PyCodeObject *co)
 {
     if (init_co_cached(co)) {
         return NULL;
@@ -1577,6 +1581,12 @@ PyCode_GetCode(PyCodeObject *co)
     assert(co->_co_cached->_co_code == NULL);
     co->_co_cached->_co_code = Py_NewRef(code);
     return code;
+}
+
+PyObject *
+PyCode_GetCode(PyCodeObject *co)
+{
+    return _PyCode_GetCode(co);
 }
 
 /******************
@@ -1953,7 +1963,7 @@ code_getcodeadaptive(PyCodeObject *code, void *closure)
 static PyObject *
 code_getcode(PyCodeObject *code, void *closure)
 {
-    return PyCode_GetCode(code);
+    return _PyCode_GetCode(code);
 }
 
 static PyGetSetDef code_getsetlist[] = {

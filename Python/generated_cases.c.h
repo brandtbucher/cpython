@@ -3712,3 +3712,7 @@
             PRE_DISPATCH_GOTO();
             DISPATCH_GOTO();
         }
+
+        TARGET(CACHE) {
+            Py_UNREACHABLE();
+        }

@@ -1190,7 +1190,7 @@ class DisTests(DisTestBase):
         for instruction in dis.get_instructions(
             f, show_caches=True, adaptive=adaptive
         ):
-            if instruction.opcode == 0:
+            if instruction.opname == "CACHE":
                 yield instruction.argrepr
 
     @cpython_only
@@ -1768,27 +1768,26 @@ class InstructionTests(InstructionTestCase):
             if d:
                 yield (-b + cmath.sqrt(d)) / (2 * a)
         code = roots.__code__
-        ops = code.co_code[::2]
-        caches = sum(op == 0 for op in ops)
-        non_caches = len(ops) - caches
+        opnames = [
+            instruction.opname
+            for instruction in dis.get_instructions(code, show_caches=True)
+        ]
+        caches = opnames.count("CACHE")
+        non_caches = len(opnames) - caches
         # Make sure we have "lots of caches". If not, roots should be changed:
         assert 1 / 3 <= caches / non_caches, "this test needs more caches!"
         for show_caches in (False, True):
             for adaptive in (False, True):
                 with self.subTest(f"{adaptive=}, {show_caches=}"):
-                    co_positions = []
-                    caches = 0
-                    for op, positions in zip(ops, code.co_positions(), strict=True):
-                        if caches:
-                            caches -= 1
-                            if not show_caches:
-                                continue
-                        else:
-                            deop = dis._deoptop(op)
-                            caches = opcode._inline_cache_entries[deop]
-                        co_positions.append(positions)
+                    co_positions = [
+                        positions
+                        for opname, positions in zip(
+                            opnames, code.co_positions(), strict=True
+                        )
+                        if show_caches or opname != "CACHE"
+                    ]
                     dis_positions = [
-                        instruction.positions
+                        instruction.positions 
                         for instruction in dis.get_instructions(
                             code, adaptive=adaptive, show_caches=show_caches
                         )

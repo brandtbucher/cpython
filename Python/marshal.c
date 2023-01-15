@@ -550,7 +550,7 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
     }
     else if (PyCode_Check(v)) {
         PyCodeObject *co = (PyCodeObject *)v;
-        PyObject *co_code = PyCode_GetCode(co);
+        PyObject *co_code = _PyCode_GetCode(co);
         if (co_code == NULL) {
             p->error = WFERR_NOMEMORY;
             return;
@@ -1414,7 +1414,7 @@ r_object(RFILE *p)
             if (exceptiontable == NULL)
                 goto code_error;
             int n = r_long(p);
-            if (PyErr_Occurred()) {
+            if (n == -1 && PyErr_Occurred()) {
                 goto code_error;
             }
             if (n < 0 || n > SIZE32_MAX) {
@@ -1428,7 +1428,11 @@ r_object(RFILE *p)
             }
             _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code);
             for (int i = 0; i < n; i++) {
-                instructions[i].cache = r_short(p);
+                int word = r_short(p);
+                if (word == -1 && PyErr_Occurred()) {
+                    goto code_error;
+                }
+                instructions[i].cache = word;
             }
 
             struct _PyCodeConstructor con = {
