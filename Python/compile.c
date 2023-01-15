@@ -127,13 +127,6 @@
          (opcode) == RAISE_VARARGS || \
          (opcode) == RERAISE)
 
-#define IS_SUPERINSTRUCTION_OPCODE(opcode) \
-        ((opcode) == LOAD_FAST__LOAD_FAST || \
-         (opcode) == LOAD_FAST__LOAD_CONST || \
-         (opcode) == LOAD_CONST__LOAD_FAST || \
-         (opcode) == STORE_FAST__LOAD_FAST || \
-         (opcode) == STORE_FAST__STORE_FAST)
-
 #define IS_TOP_LEVEL_AWAIT(C) ( \
         ((C)->c_flags.cf_flags & PyCF_ALLOW_TOP_LEVEL_AWAIT) \
         && ((C)->u->u_ste->ste_type == ModuleBlock))
@@ -8005,7 +7998,6 @@ scan_block_for_locals(basicblock *b, basicblock ***sp)
     for (int i = 0; i < b->b_iused; i++) {
         struct instr *instr = &b->b_instr[i];
         assert(instr->i_opcode != EXTENDED_ARG);
-        assert(!IS_SUPERINSTRUCTION_OPCODE(instr->i_opcode));
         if (instr->i_except != NULL) {
             maybe_push(instr->i_except, unsafe_mask, sp);
         }
@@ -8061,7 +8053,6 @@ fast_scan_many_locals(basicblock *entryblock, int nlocals)
         for (int i = 0; i < b->b_iused; i++) {
             struct instr *instr = &b->b_instr[i];
             assert(instr->i_opcode != EXTENDED_ARG);
-            assert(!IS_SUPERINSTRUCTION_OPCODE(instr->i_opcode));
             int arg = instr->i_oparg;
             if (arg < 64) {
                 continue;

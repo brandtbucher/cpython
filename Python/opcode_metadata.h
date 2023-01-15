@@ -2,7 +2,7 @@
 // from Python/bytecodes.c
 // Do not edit!
 enum Direction { DIR_NONE, DIR_READ, DIR_WRITE };
-enum InstructionFormat { INSTR_FMT_IB, INSTR_FMT_IBC, INSTR_FMT_IBC0, INSTR_FMT_IBC000, INSTR_FMT_IBIB, INSTR_FMT_IX, INSTR_FMT_IXC, INSTR_FMT_IXC000 };
+enum InstructionFormat { INSTR_FMT_IB, INSTR_FMT_IBC, INSTR_FMT_IBC0, INSTR_FMT_IBC000, INSTR_FMT_IX, INSTR_FMT_IXC, INSTR_FMT_IXC000 };
 static const struct {
     short n_popped;
     short n_pushed;
@@ -19,11 +19,6 @@ static const struct {
     [LOAD_FAST] = { 0, 1, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_CONST] = { 0, 1, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [STORE_FAST] = { 1, 0, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_FAST__LOAD_FAST] = { 0, 2, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
-    [LOAD_FAST__LOAD_CONST] = { 0, 2, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
-    [STORE_FAST__LOAD_FAST] = { 1, 1, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
-    [STORE_FAST__STORE_FAST] = { 2, 0, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
-    [LOAD_CONST__LOAD_FAST] = { 0, 2, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [POP_TOP] = { 1, 0, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [PUSH_NULL] = { 0, 1, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [END_FOR] = { 2, 0, DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },

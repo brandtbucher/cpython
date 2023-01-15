@@ -339,13 +339,6 @@ _specializations = {
         "LOAD_ATTR_METHOD_NO_DICT",
         "LOAD_ATTR_METHOD_WITH_VALUES",
     ],
-    "LOAD_CONST": [
-        "LOAD_CONST__LOAD_FAST",
-    ],
-    "LOAD_FAST": [
-        "LOAD_FAST__LOAD_CONST",
-        "LOAD_FAST__LOAD_FAST",
-    ],
     "LOAD_GLOBAL": [
         "LOAD_GLOBAL_BUILTIN",
         "LOAD_GLOBAL_MODULE",
@@ -354,10 +347,6 @@ _specializations = {
         "STORE_ATTR_INSTANCE_VALUE",
         "STORE_ATTR_SLOT",
         "STORE_ATTR_WITH_HINT",
-    ],
-    "STORE_FAST": [
-        "STORE_FAST__LOAD_FAST",
-        "STORE_FAST__STORE_FAST",
     ],
     "STORE_SUBSCR": [
         "STORE_SUBSCR_DICT",

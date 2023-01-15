@@ -241,9 +241,7 @@ def categorized_counts(opcode_stats):
     basic = 0
     specialized = 0
     not_specialized = 0
-    specialized_instructions = {
-        op for op in opcode._specialized_instructions
-        if "__" not in op}
+    specialized_instructions = frozenset(opcode._specialized_instructions)
     for i, opcode_stat in enumerate(opcode_stats):
         if "execution_count" not in opcode_stat:
             continue

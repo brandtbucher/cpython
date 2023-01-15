@@ -123,12 +123,6 @@ dummy_func(
             SETLOCAL(oparg, value);
         }
 
-        super(LOAD_FAST__LOAD_FAST) = LOAD_FAST + LOAD_FAST;
-        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST + LOAD_CONST;
-        super(STORE_FAST__LOAD_FAST)  = STORE_FAST + LOAD_FAST;
-        super(STORE_FAST__STORE_FAST) = STORE_FAST + STORE_FAST;
-        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST + LOAD_FAST;
-
         inst(POP_TOP, (value --)) {
             DECREF_INPUTS();
         }
@@ -246,8 +240,7 @@ dummy_func(
             DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
-            assert(_Py_OPCODE(true_next) == STORE_FAST ||
-                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
+            assert(_Py_OPCODE(true_next) == STORE_FAST);
             PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
             DEOPT_IF(*target_local != left, BINARY_OP);
             STAT_INC(BINARY_OP, hit);
@@ -3365,7 +3358,6 @@ family(load_attr) = {
 family(load_global) = {
     LOAD_GLOBAL, LOAD_GLOBAL_BUILTIN,
     LOAD_GLOBAL_MODULE };
-family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST };
 family(unpack_sequence) = {
     UNPACK_SEQUENCE, UNPACK_SEQUENCE_LIST,
     UNPACK_SEQUENCE_TUPLE, UNPACK_SEQUENCE_TWO_TUPLE };

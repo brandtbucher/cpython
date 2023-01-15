@@ -171,21 +171,16 @@ extern "C" {
 #define LOAD_ATTR_METHOD_LAZY_DICT              76
 #define LOAD_ATTR_METHOD_NO_DICT                77
 #define LOAD_ATTR_METHOD_WITH_VALUES            78
-#define LOAD_CONST__LOAD_FAST                   79
-#define LOAD_FAST__LOAD_CONST                   80
-#define LOAD_FAST__LOAD_FAST                    81
-#define LOAD_GLOBAL_BUILTIN                     82
-#define LOAD_GLOBAL_MODULE                      84
-#define STORE_ATTR_INSTANCE_VALUE               86
-#define STORE_ATTR_SLOT                         87
-#define STORE_ATTR_WITH_HINT                   113
-#define STORE_FAST__LOAD_FAST                  121
-#define STORE_FAST__STORE_FAST                 143
-#define STORE_SUBSCR_DICT                      153
-#define STORE_SUBSCR_LIST_INT                  154
-#define UNPACK_SEQUENCE_LIST                   158
-#define UNPACK_SEQUENCE_TUPLE                  159
-#define UNPACK_SEQUENCE_TWO_TUPLE              160
+#define LOAD_GLOBAL_BUILTIN                     79
+#define LOAD_GLOBAL_MODULE                      80
+#define STORE_ATTR_INSTANCE_VALUE               81
+#define STORE_ATTR_SLOT                         82
+#define STORE_ATTR_WITH_HINT                    84
+#define STORE_SUBSCR_DICT                       86
+#define STORE_SUBSCR_LIST_INT                   87
+#define UNPACK_SEQUENCE_LIST                   113
+#define UNPACK_SEQUENCE_TUPLE                  121
+#define UNPACK_SEQUENCE_TWO_TUPLE              143
 #define DO_TRACING                             255
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
