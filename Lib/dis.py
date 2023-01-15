@@ -443,6 +443,12 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
             labels.add(target)
     starts_line = None
     for offset, op, arg in _unpack_opargs(code):
+        name = _all_opname[op]
+        if not adaptive and "__" in name:
+            # Don't show superinstructions when adaptive=False (even though
+            # they're present in co_code):
+            name, _, _ = name.partition("__")
+            op = _all_opmap[name]
         if linestarts is not None:
             starts_line = linestarts.get(offset, None)
             if starts_line is not None:
@@ -452,10 +458,6 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
         argrepr = ''
         positions = Positions(*next(co_positions, ()))
         deop = _deoptop(op)
-        if not adaptive:
-            # Don't show superinstructions when adaptive == False, even though
-            # they're present in co_code:
-            op = deop
         if arg is not None:
             #  Set argval to the dereferenced value of the argument when
             #  available, and argrepr to the string representation of argval.
@@ -501,7 +503,7 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                                     if arg & (1<<i))
             elif deop == BINARY_OP:
                 _, argrepr = _nb_ops[arg]
-        yield Instruction(_all_opname[op], op,
+        yield Instruction(name, op,
                           arg, argval, argrepr,
                           offset, starts_line, is_jump_target, positions)
         caches = _inline_cache_entries[deop]

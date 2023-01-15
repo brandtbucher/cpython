@@ -1497,14 +1497,7 @@ PyCode_GetFreevars(PyCodeObject *code)
     return _PyCode_GetFreevars(code);
 }
 
-static int compare_masks[] = {
-    [Py_LT] = COMPARISON_LESS_THAN,
-    [Py_LE] = COMPARISON_LESS_THAN | COMPARISON_EQUALS,
-    [Py_EQ] = COMPARISON_EQUALS,
-    [Py_NE] = COMPARISON_NOT_EQUALS,
-    [Py_GT] = COMPARISON_GREATER_THAN,
-    [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
-};
+
 
 // NOTE: This function is often called with destination == _PyCode_CODE(code)!
 // Great care should be taken to ensure that it still works correctly when the
@@ -1514,57 +1507,21 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
 {
     _Py_CODEUNIT *source = _PyCode_CODE(code);
     Py_ssize_t len = Py_SIZE(code);
-#if ENABLE_SPECIALIZATION
     for (int i = 0; i < len; i++) {
         int opcode = _PyOpcode_Deopt[source[i].opcode];
-        int oparg = source[i].oparg;
-        int caches = _PyOpcode_Caches[opcode];
-        int j = i + caches + 1;
-        if (j < len) {
-            int next_opcode = _PyOpcode_Deopt[source[j].opcode];
-            switch (opcode << 8 | next_opcode) {
-                case LOAD_CONST << 8 | LOAD_FAST:
-                    opcode = LOAD_CONST__LOAD_FAST;
-                    break;
-                case LOAD_FAST << 8 | LOAD_CONST:
-                    opcode = LOAD_FAST__LOAD_CONST;
-                    break;
-                case LOAD_FAST << 8 | LOAD_FAST:
-                    opcode = LOAD_FAST__LOAD_FAST;
-                    break;
-                case STORE_FAST << 8 | LOAD_FAST:
-                    opcode = STORE_FAST__LOAD_FAST;
-                    break;
-                case STORE_FAST << 8 | STORE_FAST:
-                    opcode = STORE_FAST__STORE_FAST;
-                    break;
-                // XXX: Move this!
-                case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
-                case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
-                {
-                    assert((oparg >> 4) <= Py_GE);
-                    int mask = compare_masks[oparg >> 4];
-                    if (next_opcode == POP_JUMP_IF_FALSE) {
-                        mask = mask ^ 0xf;
-                    }
-                    opcode = COMPARE_AND_BRANCH;
-                    oparg = (oparg & 0xf0) | mask;
-                    break;
-                }
-            }
-        }
         destination[i].opcode = opcode;
-        destination[i].oparg = oparg;
+        destination[i].oparg = source[i].oparg;
+        int caches = _PyOpcode_Caches[opcode];
         if (caches) {
-            destination[++i].cache = adaptive_counter_warmup();
+            i++;
+            destination[i].cache = adaptive_counter_warmup();
             while (--caches) {
-                destination[++i].cache = 0;
+                i++;
+                destination[i].opcode = CACHE;
+                destination[i].oparg = 0;
             }
         }
     }
-#else
-    memmove(destination, source, len * sizeof(_Py_CODEUNIT));
-#endif // ENABLE_SPECIALIZATION
 }
 
 PyObject *

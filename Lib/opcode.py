@@ -217,7 +217,16 @@ def_op('LIST_EXTEND', 162)
 def_op('SET_UPDATE', 163)
 def_op('DICT_MERGE', 164)
 def_op('DICT_UPDATE', 165)
-
+def_op('LOAD_CONST__LOAD_FAST', 166)
+hasconst.append(166)
+def_op('LOAD_FAST__LOAD_CONST', 167)
+haslocal.append(167)
+def_op('LOAD_FAST__LOAD_FAST', 168)
+haslocal.append(168)
+def_op('STORE_FAST__LOAD_FAST', 169)
+haslocal.append(169)
+def_op('STORE_FAST__STORE_FAST', 170)
+haslocal.append(170)
 def_op('CALL', 171)
 def_op('KW_NAMES', 172)
 hasconst.append(172)
@@ -339,13 +348,6 @@ _specializations = {
         "LOAD_ATTR_METHOD_NO_DICT",
         "LOAD_ATTR_METHOD_WITH_VALUES",
     ],
-    "LOAD_CONST": [
-        "LOAD_CONST__LOAD_FAST",
-    ],
-    "LOAD_FAST": [
-        "LOAD_FAST__LOAD_CONST",
-        "LOAD_FAST__LOAD_FAST",
-    ],
     "LOAD_GLOBAL": [
         "LOAD_GLOBAL_BUILTIN",
         "LOAD_GLOBAL_MODULE",
@@ -354,10 +356,6 @@ _specializations = {
         "STORE_ATTR_INSTANCE_VALUE",
         "STORE_ATTR_SLOT",
         "STORE_ATTR_WITH_HINT",
-    ],
-    "STORE_FAST": [
-        "STORE_FAST__LOAD_FAST",
-        "STORE_FAST__STORE_FAST",
     ],
     "STORE_SUBSCR": [
         "STORE_SUBSCR_DICT",

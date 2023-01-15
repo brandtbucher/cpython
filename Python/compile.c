@@ -132,7 +132,8 @@
          (opcode) == LOAD_FAST__LOAD_CONST || \
          (opcode) == LOAD_CONST__LOAD_FAST || \
          (opcode) == STORE_FAST__LOAD_FAST || \
-         (opcode) == STORE_FAST__STORE_FAST)
+         (opcode) == STORE_FAST__STORE_FAST || \
+         (opcode) == COMPARE_AND_BRANCH)
 
 #define IS_TOP_LEVEL_AWAIT(C) ( \
         ((C)->c_flags.cf_flags & PyCF_ALLOW_TOP_LEVEL_AWAIT) \
@@ -297,10 +298,14 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
         default:
             Py_UNREACHABLE();
     }
-    while (caches--) {
-        codestr->opcode = CACHE;
-        codestr->oparg = 0;
+    if (caches) {
+        codestr->cache = adaptive_counter_warmup();
         codestr++;
+        while (--caches) {
+            codestr->opcode = CACHE;
+            codestr->oparg = 0;
+            codestr++;
+        }
     }
 }
 
@@ -1195,8 +1200,16 @@ stack_effect(int opcode, int oparg, int jump)
         case POP_JUMP_IF_TRUE:
             return -1;
 
+        // Until we have proper variable-length instructions, the stack effect
+        // of these superinstrucions is just the stack effect of its first part:
         case COMPARE_AND_BRANCH:
+        case STORE_FAST__LOAD_FAST:
+        case STORE_FAST__STORE_FAST:
             return -1;
+        case LOAD_CONST__LOAD_FAST:
+        case LOAD_FAST__LOAD_CONST:
+        case LOAD_FAST__LOAD_FAST:
+            return 1;
 
         case LOAD_GLOBAL:
             return (oparg & 1) + 1;
@@ -7913,6 +7926,57 @@ normalize_jumps(cfg_builder *g)
     return 0;
 }
 
+static int compare_masks[] = {
+    [Py_LT] = COMPARISON_LESS_THAN,
+    [Py_LE] = COMPARISON_LESS_THAN | COMPARISON_EQUALS,
+    [Py_EQ] = COMPARISON_EQUALS,
+    [Py_NE] = COMPARISON_NOT_EQUALS,
+    [Py_GT] = COMPARISON_GREATER_THAN,
+    [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
+};
+
+static void
+insert_superinstructions(basicblock *entryblock)
+{
+    for (basicblock *b = entryblock; b != NULL; b = b->b_next) {
+        for (int i = 0; i < b->b_iused - 1; i++) {
+            struct instr *first = &b->b_instr[i];
+            struct instr *second = &b->b_instr[i + 1];
+            // Can't have an EXTENDED_ARG in the middle of this:
+            if (0xFF < second->i_oparg) {
+                continue;
+            }
+            switch (first->i_opcode << 8 | second->i_opcode) {
+                case LOAD_CONST << 8 | LOAD_FAST:
+                    first->i_opcode = LOAD_CONST__LOAD_FAST;
+                    break;
+                case LOAD_FAST << 8 | LOAD_CONST:
+                    first->i_opcode = LOAD_FAST__LOAD_CONST;
+                    break;
+                case LOAD_FAST << 8 | LOAD_FAST:
+                    first->i_opcode = LOAD_FAST__LOAD_FAST;
+                    break;
+                case STORE_FAST << 8 | LOAD_FAST:
+                    first->i_opcode = STORE_FAST__LOAD_FAST;
+                    break;
+                case STORE_FAST << 8 | STORE_FAST:
+                    first->i_opcode = STORE_FAST__STORE_FAST;
+                    break;
+                case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
+                case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
+                    assert((first->i_oparg >> 4) <= Py_GE);
+                    int mask = compare_masks[first->i_oparg >> 4];
+                    if (second->i_opcode == POP_JUMP_IF_FALSE) {
+                        mask = mask ^ 0xf;
+                    }
+                    first->i_opcode = COMPARE_AND_BRANCH;
+                    first->i_oparg = (first->i_oparg & 0xf0) | mask;
+                    break;
+            }
+        }
+    }
+}
+
 static void
 assemble_jump_offsets(basicblock *entryblock)
 {
@@ -8376,7 +8440,6 @@ makecode(struct compiler *c, struct assembler *a, PyObject *constslist,
     if (co == NULL) {
         goto error;
     }
-    _PyCode_CopyAndReset(co, _PyCode_CODE(co));
 
  error:
     Py_XDECREF(names);
@@ -8668,6 +8731,11 @@ opcode_metadata_is_sane(cfg_builder *g) {
             if (pushed >= 0) {
                 assert(_PyOpcode_opcode_metadata[opcode].valid_entry);
                 int effect = stack_effect(opcode, instr->i_oparg, -1);
+                if (IS_SUPERINSTRUCTION_OPCODE(opcode)) {
+                    assert(i < b->b_iused - 1);
+                    struct instr *next = &b->b_instr[i + 1];
+                    effect += stack_effect(next->i_opcode, next->i_oparg, -1);
+                }
                 if (effect != pushed - popped) {
                    fprintf(stderr,
                            "op=%d: stack_effect (%d) != pushed (%d) - popped (%d)\n",
@@ -8865,8 +8933,10 @@ assemble(struct compiler *c, int addNone)
     assert(no_redundant_jumps(g));
     assert(opcode_metadata_is_sane(g));
 
-    /* Can't modify the bytecode after computing jump offsets. */
+    /* Can't change the size of instructions after computing jump offsets. */
     assemble_jump_offsets(g->g_entryblock);
+
+    insert_superinstructions(g->g_entryblock);
 
     /* Create assembler */
     if (assemble_init(&a, c->u->u_firstlineno) < 0) {
