@@ -1,6 +1,7 @@
 # Implementat marshal.loads() in pure Python
 
 import ast
+import sys
 
 from typing import Any, Tuple
 
@@ -279,7 +280,6 @@ class Reader:
             retval.co_kwonlyargcount = self.r_long()
             retval.co_stacksize = self.r_long()
             retval.co_flags = self.r_long()
-            retval.co_code = self.r_object()
             retval.co_consts = self.r_object()
             retval.co_names = self.r_object()
             retval.co_localsplusnames = self.r_object()
@@ -290,6 +290,12 @@ class Reader:
             retval.co_firstlineno = self.r_long()
             retval.co_linetable = self.r_object()
             retval.co_exceptiontable = self.r_object()
+            code = bytearray()
+            n = self.r_long()
+            for _ in range(n):
+                word = self.r_short()
+                code += word.to_bytes(2, sys.byteorder, signed=True)
+            retval.co_code = bytes(code)
             return retval
         elif type == Type.REF:
             n = self.r_long()
