@@ -7175,9 +7175,6 @@ stackdepth(basicblock *entryblock, int code_flags)
                 next = NULL;
                 break;
             }
-            if (instr->i_opcode == YIELD_VALUE) {
-                instr->i_oparg = depth;
-            }
         }
         if (next != NULL) {
             assert(BB_HAS_FALLTHROUGH(b));
@@ -7345,6 +7342,9 @@ label_exception_targets(basicblock *entryblock) {
                 }
             }
             else {
+                if (instr->i_opcode == YIELD_VALUE) {
+                    instr->i_oparg = except_stack->depth;
+                }
                 instr->i_except = handler;
             }
         }

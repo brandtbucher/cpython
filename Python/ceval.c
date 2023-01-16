@@ -1962,7 +1962,7 @@ exception_group_match(PyObject* exc_value, PyObject *match_type,
     }
     /* no match */
     *match = Py_NewRef(Py_None);
-    *rest = Py_NewRef(Py_None);
+    *rest = Py_NewRef(exc_value);
     return 0;
 }
 
