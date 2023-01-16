@@ -446,7 +446,7 @@ mark_stacks(PyCodeObject *code_obj, int len)
             }
             int caches = _PyOpcode_Caches[opcode];
             next_stack = stacks[i + 1];
-            if (next_stack != UNINITIALIZED) {
+            if (caches && next_stack != UNINITIALIZED) {
                 stacks[i + 1] = UNINITIALIZED;
                 i += caches;
                 assert(stacks[i + 1] == UNINITIALIZED || 
