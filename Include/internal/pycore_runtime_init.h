@@ -64,7 +64,7 @@ extern "C" {
             .double_format = _py_float_format_unknown, \
         }, \
         .dict_state = { \
-            .next_keys_version = 2, \
+            .next_keys_version = 1 + (1 << 8) + 1, \
         }, \
         .func_state = { \
             .next_version = 1, \

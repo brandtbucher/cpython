@@ -5648,68 +5648,75 @@ _PyDictKeys_DecRef(PyDictKeysObject *keys)
     dictkeys_decref(keys);
 }
 
-#define CACHED_VERSION_MAX_SIZE SHARED_KEYS_MAX_SIZE
-#define CACHED_KEYS_VERSION_ENTRIES (1 << 9)
+#define KEYS_CACHE_SIZE (1 << 8)
 
-typedef struct {
-    uint32_t version;
-    PyObject *keys[CACHED_VERSION_MAX_SIZE];
-} cached_key_version;
+static PyDictKeysObject *keys_cache[KEYS_CACHE_SIZE];
 
-static cached_key_version cached_keys_versions[CACHED_KEYS_VERSION_ENTRIES];
+// static bool
+// cache_hit(PyDictUnicodeEntry *entries, PyObject **cached_keys)
+// {
+//     for (int i = 0; i < SHARED_KEYS_MAX_SIZE; i++) {
+//         PyObject *a = cached_keys[i];
+//         PyObject *b = entries[i].me_key;
+//         // if (a != b) {
+//         //     return false;
+//         // }
+//         if (a == b) {
+//             continue;
+//         }
+//         if (a == NULL || b == NULL) {
+//             return false;
+//         }
+//         if (unicode_get_hash(a) != unicode_get_hash(b)) {
+//             return false;
+//         }
+//         if (!unicode_eq(a, b)) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
-
-uint32_t _PyDictKeys_GetVersionForCurrentState(PyDictKeysObject *dictkeys)
+uint32_t
+_PyDictKeys_GetVersionForCurrentState(PyDictKeysObject *dictkeys)
 {
     if (dictkeys->dk_version != 0) {
         return dictkeys->dk_version;
     }
-    int nentries = USABLE_FRACTION(DK_SIZE(dictkeys));
-    if (DK_IS_UNICODE(dictkeys) && nentries <= CACHED_VERSION_MAX_SIZE) {
+    uint32_t v;
+    if (dictkeys->dk_kind == DICT_KEYS_SPLIT && dictkeys->dk_nentries) {
+        assert(0 < dictkeys->dk_nentries);
+        assert(dictkeys->dk_nentries <= SHARED_KEYS_MAX_SIZE);
         PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(dictkeys);
-        for (int i = 0; i < CACHED_KEYS_VERSION_ENTRIES; i++) {
-            PyObject **cached_keys = cached_keys_versions[i].keys;
-            if (cached_keys_versions[i].version == 0) {
-                dictkeys->dk_version = _PyRuntime.dict_state.next_keys_version++;
-                cached_keys_versions[i].version = dictkeys->dk_version;
-                for (int j = 0; j < nentries; j++) {
-                    cached_keys[j] = Py_XNewRef(entries[j].me_key);
-                }
-                for (int j = nentries; j < CACHED_VERSION_MAX_SIZE; j++) {
-                    cached_keys[j] = NULL;
-                }
-                return dictkeys->dk_version;
+        for (int i = 0; i < KEYS_CACHE_SIZE; i++) {
+            PyDictKeysObject *cached = keys_cache[i];
+            if (cached == NULL) {
+                dictkeys_incref(dictkeys);
+                keys_cache[i] = dictkeys;
+                goto miss;
             }
-            for (int j = 0; j < nentries; j++) {
-                PyObject *a = cached_keys[j];
-                PyObject *b = entries[j].me_key;
-                if (a == b) {
-                    continue;
-                }
-                if (a == NULL || b == NULL || 
-                    unicode_get_hash(a) != unicode_get_hash(a) ||
-                    !unicode_eq(a, b))
-                {
-                    goto next;
-                }
+            if (cached->dk_version == 0 || cached->dk_refcnt == 1) {
+                dictkeys_incref(dictkeys);
+                keys_cache[i] = dictkeys;
+                dictkeys_decref(cached);
+                goto miss;
             }
-            for (int j = nentries; j < CACHED_VERSION_MAX_SIZE; j++) {
-                if (cached_keys[j]) {
-                    goto next;
-                }
+            if (memcmp(entries, DK_UNICODE_ENTRIES(cached), 
+                       sizeof(PyDictUnicodeEntry) * SHARED_KEYS_MAX_SIZE) == 0)
+            {
+                v = cached->dk_version;
+                // printf("--> found version %d\n", v);
+                goto hit;
             }
-            dictkeys->dk_version = cached_keys_versions[i].version;
-            printf("--> found version %d\n", i);
-            return dictkeys->dk_version;
-        next:
-            ;
         }
         assert(0);
     }
     if (_PyRuntime.dict_state.next_keys_version == 0) {
         return 0;
     }
-    uint32_t v = _PyRuntime.dict_state.next_keys_version++;
+miss:
+    v = _PyRuntime.dict_state.next_keys_version++;
+hit:
     dictkeys->dk_version = v;
     return v;
 }
