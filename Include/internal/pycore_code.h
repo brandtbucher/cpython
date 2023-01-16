@@ -199,7 +199,7 @@ extern PyObject* _PyCode_GetFreevars(PyCodeObject *);
 extern PyObject* _PyCode_GetCode(PyCodeObject *);
 
 extern void _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination);
-void _PyCode_ClearCache(int caches, _Py_CODEUNIT *instructions);
+extern void _PyCode_ClearCache(int caches, _Py_CODEUNIT *instructions);
 
 /** API for initializing the line number tables. */
 extern int _PyCode_InitAddressRange(PyCodeObject* co, PyCodeAddressRange *bounds);
