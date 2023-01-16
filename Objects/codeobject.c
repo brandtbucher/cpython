@@ -1497,8 +1497,6 @@ PyCode_GetFreevars(PyCodeObject *code)
     return _PyCode_GetFreevars(code);
 }
 
-
-
 // NOTE: This function is often called with destination == _PyCode_CODE(code)!
 // Great care should be taken to ensure that it still works correctly when the
 // source and destination overlap:
@@ -1512,14 +1510,19 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
         destination[i].opcode = opcode;
         destination[i].oparg = source[i].oparg;
         int caches = _PyOpcode_Caches[opcode];
-        if (caches) {
-            i++;
-            destination[i].cache = adaptive_counter_warmup();
-            while (--caches) {
-                i++;
-                destination[i].opcode = CACHE;
-                destination[i].oparg = 0;
-            }
+        _PyCode_ClearCache(caches, &destination[i + 1]);
+        i += caches;
+    }
+}
+
+void
+_PyCode_ClearCache(int caches, _Py_CODEUNIT *instructions)
+{
+    if (caches) {
+        instructions->cache = adaptive_counter_warmup();
+        while (--caches) {
+            instructions++;
+            instructions->cache = 0;
         }
     }
 }

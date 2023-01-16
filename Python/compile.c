@@ -298,15 +298,7 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
         default:
             Py_UNREACHABLE();
     }
-    if (caches) {
-        codestr->cache = adaptive_counter_warmup();
-        codestr++;
-        while (--caches) {
-            codestr->opcode = CACHE;
-            codestr->oparg = 0;
-            codestr++;
-        }
-    }
+    _PyCode_ClearCache(caches, codestr);
 }
 
 typedef struct basicblock_ {
@@ -7941,24 +7933,41 @@ insert_superinstructions(basicblock *entryblock)
             if (0xFF < second->i_oparg) {
                 continue;
             }
+            // Don't want to miss any line events, either:
+            if (first->i_loc.lineno != second->i_loc.lineno &&
+                second->i_loc.lineno != -1)
+            {
+                continue;
+            }
+        #ifdef Py_DEBUG
+            int first_size = instr_size(first);
+            int second_size = instr_size(second);
+        #endif
             switch (first->i_opcode << 8 | second->i_opcode) {
                 case LOAD_CONST << 8 | LOAD_FAST:
+                    assert(second_size == 1);
                     first->i_opcode = LOAD_CONST__LOAD_FAST;
                     break;
                 case LOAD_FAST << 8 | LOAD_CONST:
+                    assert(second_size == 1);
                     first->i_opcode = LOAD_FAST__LOAD_CONST;
                     break;
                 case LOAD_FAST << 8 | LOAD_FAST:
+                    assert(second_size == 1);
                     first->i_opcode = LOAD_FAST__LOAD_FAST;
                     break;
+                    assert(second_size == 1);
                 case STORE_FAST << 8 | LOAD_FAST:
+                    assert(second_size == 1);
                     first->i_opcode = STORE_FAST__LOAD_FAST;
                     break;
                 case STORE_FAST << 8 | STORE_FAST:
+                    assert(second_size == 1);
                     first->i_opcode = STORE_FAST__STORE_FAST;
                     break;
                 case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
                 case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
+                    assert(second_size == 1);
                     assert((first->i_oparg >> 4) <= Py_GE);
                     int mask = compare_masks[first->i_oparg >> 4];
                     if (second->i_opcode == POP_JUMP_IF_FALSE) {
@@ -7968,6 +7977,10 @@ insert_superinstructions(basicblock *entryblock)
                     first->i_oparg = (first->i_oparg & 0xf0) | mask;
                     break;
             }
+        #ifdef Py_DEBUG
+            assert(instr_size(first) == first_size);
+            assert(instr_size(second) == second_size);
+        #endif
         }
     }
 }

@@ -721,7 +721,7 @@ dis_load_test_quickened_code = """\
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
               4 LOAD_FAST                1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
-              8 STORE_FAST__LOAD_FAST     2 (a)
+              8 STORE_FAST               2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
              12 LOAD_FAST                3 (b)
@@ -1767,12 +1767,13 @@ class InstructionTests(InstructionTestCase):
             if d:
                 yield (-b + cmath.sqrt(d)) / (2 * a)
         code = roots.__code__
-        opnames = [
-            instruction.opname
+        ops = [
+            instruction.opcode
             for instruction in dis.get_instructions(code, show_caches=True)
         ]
-        caches = opnames.count("CACHE")
-        non_caches = len(opnames) - caches
+        cache_opcode = opcode.opmap["CACHE"]
+        caches = sum(op == cache_opcode for op in ops)
+        non_caches = len(ops) - caches
         # Make sure we have "lots of caches". If not, roots should be changed:
         assert 1 / 3 <= caches / non_caches, "this test needs more caches!"
         for show_caches in (False, True):
@@ -1780,13 +1781,11 @@ class InstructionTests(InstructionTestCase):
                 with self.subTest(f"{adaptive=}, {show_caches=}"):
                     co_positions = [
                         positions
-                        for opname, positions in zip(
-                            opnames, code.co_positions(), strict=True
-                        )
-                        if show_caches or opname != "CACHE"
+                        for op, positions in zip(ops, code.co_positions(), strict=True)
+                        if show_caches or op != cache_opcode
                     ]
                     dis_positions = [
-                        instruction.positions 
+                        instruction.positions
                         for instruction in dis.get_instructions(
                             code, adaptive=adaptive, show_caches=show_caches
                         )

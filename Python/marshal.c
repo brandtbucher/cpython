@@ -561,6 +561,12 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_long(co->co_kwonlyargcount, p);
         w_long(co->co_stacksize, p);
         w_long(co->co_flags, p);
+        _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
+        int n = PyBytes_GET_SIZE(co_code) / sizeof(_Py_CODEUNIT);
+        w_long(n, p);
+        for (int i = 0; i < n; i++) {
+            w_short(instructions[i].cache, p);
+        }
         w_object(co->co_consts, p);
         w_object(co->co_names, p);
         w_object(co->co_localsplusnames, p);
@@ -571,12 +577,6 @@ w_complex_object(PyObject *v, char flag, WFILE *p)
         w_long(co->co_firstlineno, p);
         w_object(co->co_linetable, p);
         w_object(co->co_exceptiontable, p);
-        _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(co_code);
-        int n = PyBytes_GET_SIZE(co_code) / sizeof(_Py_CODEUNIT);
-        w_long(n, p);
-        for (int i = 0; i < n; i++) {
-            w_short(instructions[i].cache, p);
-        }
         Py_DECREF(co_code);
     }
     else if (PyObject_CheckBuffer(v)) {
@@ -1383,6 +1383,27 @@ r_object(RFILE *p)
             flags = (int)r_long(p);
             if (PyErr_Occurred())
                 goto code_error;
+            int n = r_long(p);
+            if (n == -1 && PyErr_Occurred()) {
+                goto code_error;
+            }
+            if (n < 0 || n > SIZE32_MAX) {
+                const char *e = "bad marshal data (code size out of range)";
+                PyErr_SetString(PyExc_ValueError, e);
+                goto code_error;
+            }
+            code = PyBytes_FromStringAndSize(NULL, n * sizeof(_Py_CODEUNIT));
+            if (code == NULL) {
+                goto code_error;
+            }
+            _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code);
+            for (int i = 0; i < n; i++) {
+                int word = r_short(p);
+                if (word == -1 && PyErr_Occurred()) {
+                    goto code_error;
+                }
+                instructions[i].cache = word;
+            }
             consts = r_object(p);
             if (consts == NULL)
                 goto code_error;
@@ -1413,27 +1434,6 @@ r_object(RFILE *p)
             exceptiontable = r_object(p);
             if (exceptiontable == NULL)
                 goto code_error;
-            int n = r_long(p);
-            if (n == -1 && PyErr_Occurred()) {
-                goto code_error;
-            }
-            if (n < 0 || n > SIZE32_MAX) {
-                const char *e = "bad marshal data (code size out of range)";
-                PyErr_SetString(PyExc_ValueError, e);
-                goto code_error;
-            }
-            code = PyBytes_FromStringAndSize(NULL, n * sizeof(_Py_CODEUNIT));
-            if (code == NULL) {
-                goto code_error;
-            }
-            _Py_CODEUNIT *instructions = (_Py_CODEUNIT *)PyBytes_AS_STRING(code);
-            for (int i = 0; i < n; i++) {
-                int word = r_short(p);
-                if (word == -1 && PyErr_Occurred()) {
-                    goto code_error;
-                }
-                instructions[i].cache = word;
-            }
 
             struct _PyCodeConstructor con = {
                 .filename = filename,

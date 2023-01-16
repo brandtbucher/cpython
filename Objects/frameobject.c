@@ -281,13 +281,13 @@ mark_stacks(PyCodeObject *code_obj, int len)
             }
             int oparg = 0;
             while (true) {
-                opcode = _PyOpcode_Deopt[_Py_OPCODE(code[i])];
-                oparg |= _Py_OPARG(code[i]);
+                opcode = _PyOpcode_Deopt[code[i].opcode];
+                oparg |= code[i].oparg;
                 if (opcode != EXTENDED_ARG) {
                     break;
                 }
-                stacks[++i] = next_stack;
                 oparg <<= 8;
+                i++;
             }
             switch (opcode) {
                 case JUMP_IF_FALSE_OR_POP:
@@ -444,11 +444,14 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     stacks[i+1] = next_stack;
                 }
             }
-            // XXX: Hacky!
             int caches = _PyOpcode_Caches[opcode];
-            for (int j = 0; j < caches; j++) {
-                stacks[i + 2] = stacks[i + 1];
-                i++;
+            next_stack = stacks[i + 1];
+            if (next_stack != UNINITIALIZED) {
+                stacks[i + 1] = UNINITIALIZED;
+                i += caches;
+                assert(stacks[i + 1] == UNINITIALIZED || 
+                       stacks[i + 1] == next_stack);
+                stacks[i + 1] = next_stack;
             }
         }
         /* Scan exception table */
