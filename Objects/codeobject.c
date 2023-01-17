@@ -1510,19 +1510,19 @@ _PyCode_CopyAndReset(PyCodeObject *code, _Py_CODEUNIT *destination)
         destination[i].opcode = opcode;
         destination[i].oparg = source[i].oparg;
         int caches = _PyOpcode_Caches[opcode];
-        _PyCode_ClearCache(caches, &destination[i + 1]);
+        _PyCode_ClearCache(&destination[i + 1], caches);
         i += caches;
     }
 }
 
 void
-_PyCode_ClearCache(int caches, _Py_CODEUNIT *instructions)
+_PyCode_ClearCache(_Py_CODEUNIT *cache, int entries)
 {
-    if (caches) {
-        instructions->cache = adaptive_counter_warmup();
-        while (--caches) {
-            instructions++;
-            instructions->cache = 0;
+    if (entries) {
+        cache->cache = adaptive_counter_warmup();
+        while (--entries) {
+            cache++;
+            cache->cache = 0;
         }
     }
 }

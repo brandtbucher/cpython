@@ -298,7 +298,7 @@ write_instr(_Py_CODEUNIT *codestr, struct instr *instruction, int ilen)
         default:
             Py_UNREACHABLE();
     }
-    _PyCode_ClearCache(caches, codestr);
+    _PyCode_ClearCache(codestr, caches);
 }
 
 typedef struct basicblock_ {
@@ -7968,6 +7968,10 @@ insert_superinstructions(basicblock *entryblock)
                 case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
                 case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
                     assert(second_size == 1);
+                    // Note that this pass's strict instruction size constraints
+                    // mean that *all* COMPARE_OP instructions (even those that
+                    // survive superinstruction insertion) need to have an
+                    // unused cache the same size as COMPARE_AND_BRANCH's... :(
                     assert((first->i_oparg >> 4) <= Py_GE);
                     int mask = compare_masks[first->i_oparg >> 4];
                     if (second->i_opcode == POP_JUMP_IF_FALSE) {
@@ -8946,6 +8950,9 @@ assemble(struct compiler *c, int addNone)
     /* Can't change the size of instructions after computing jump offsets. */
     assemble_jump_offsets(g->g_entryblock);
 
+    // This really should be part of the peepholing process, but (without proper
+    // variable-length instructions) we can't actually do this until all of the
+    // opargs have been computed, etc.:
     insert_superinstructions(g->g_entryblock);
 
     /* Create assembler */
