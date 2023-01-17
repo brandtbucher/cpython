@@ -364,7 +364,6 @@ _PyCode_Quicken(PyCodeObject *code)
 #define SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE 27
 #define SPEC_FAIL_ATTR_PROPERTY_NOT_PY_FUNCTION 28
 #define SPEC_FAIL_ATTR_NOT_IN_KEYS 29
-#define SPEC_FAIL_ATTR_NOT_IN_DICT 30
 #define SPEC_FAIL_ATTR_CLASS_ATTR_SIMPLE 31
 #define SPEC_FAIL_ATTR_CLASS_ATTR_DESCRIPTOR 32
 #define SPEC_FAIL_ATTR_BUILTIN_CLASS_METHOD_OBJ 33
@@ -647,7 +646,7 @@ static int
 specialize_dict_access(
     PyObject *owner, _Py_CODEUNIT *instr, PyTypeObject *type,
     DescriptorClassification kind, PyObject *name,
-    int base_op, int values_op, int hint_op)
+    int base_op, int values_op, int dict_op)
 {
     assert(kind == NON_OVERRIDING || kind == NON_DESCRIPTOR || kind == ABSENT ||
         kind == BUILTIN_CLASSMETHOD || kind == PYTHON_CLASSMETHOD);
@@ -656,23 +655,10 @@ specialize_dict_access(
         SPECIALIZATION_FAIL(base_op, SPEC_FAIL_ATTR_NOT_MANAGED_DICT);
         return 0;
     }
+    PyDictKeysObject *keys = ((PyHeapTypeObject *)type)->ht_cached_keys;
     _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
     if (_PyDictOrValues_IsValues(dorv)) {
-        // Virtual dictionary
-        PyDictKeysObject *keys = ((PyHeapTypeObject *)type)->ht_cached_keys;
-        assert(PyUnicode_CheckExact(name));
-        Py_ssize_t index = _PyDictKeys_StringLookup(keys, name);
-        assert (index != DKIX_ERROR);
-        if (index != (uint16_t)index) {
-            SPECIALIZATION_FAIL(base_op,
-                                index == DKIX_EMPTY ?
-                                SPEC_FAIL_ATTR_NOT_IN_KEYS :
-                                SPEC_FAIL_OUT_OF_RANGE);
-            return 0;
-        }
-        write_u32(cache->version, type->tp_version_tag);
-        cache->index = (uint16_t)index;
         _py_set_opcode(instr, values_op);
     }
     else {
@@ -681,20 +667,25 @@ specialize_dict_access(
             SPECIALIZATION_FAIL(base_op, SPEC_FAIL_NO_DICT);
             return 0;
         }
-        // We found an instance with a __dict__.
-        Py_ssize_t index =
-            _PyDict_LookupIndex(dict, name);
-        if (index != (uint16_t)index) {
-            SPECIALIZATION_FAIL(base_op,
-                                index == DKIX_EMPTY ?
-                                SPEC_FAIL_ATTR_NOT_IN_DICT :
-                                SPEC_FAIL_OUT_OF_RANGE);
+        if (dict->ma_keys != keys) {
+            SPECIALIZATION_FAIL(base_op, SPEC_FAIL_ATTR_NOT_MANAGED_DICT);
             return 0;
         }
-        cache->index = (uint16_t)index;
-        write_u32(cache->version, type->tp_version_tag);
-        _py_set_opcode(instr, hint_op);
+        _py_set_opcode(instr, dict_op);
     }
+    assert(PyUnicode_CheckExact(name));
+    Py_ssize_t index = _PyDictKeys_StringLookup(keys, name);
+    assert(index != DKIX_ERROR);
+    if (index == DKIX_EMPTY) {
+        SPECIALIZATION_FAIL(base_op, SPEC_FAIL_ATTR_NOT_IN_KEYS);
+        return 0;
+    }
+    if (index != (uint16_t)index) {
+        SPECIALIZATION_FAIL(base_op, SPEC_FAIL_OUT_OF_RANGE);
+        return 0;
+    }
+    cache->index = (uint16_t)index;
+    write_u32(cache->version, type->tp_version_tag);
     return 1;
 }
 
@@ -858,7 +849,8 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             goto fail;
         case ABSENT:
             if (specialize_dict_access(owner, instr, type, kind, name, LOAD_ATTR,
-                                    LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_WITH_HINT))
+                                       LOAD_ATTR_INSTANCE_VALUE,
+                                       LOAD_ATTR_MANAGED_DICT))
             {
                 goto success;
             }
@@ -954,7 +946,8 @@ _Py_Specialize_StoreAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             goto fail;
         case ABSENT:
             if (specialize_dict_access(owner, instr, type, kind, name, STORE_ATTR,
-                                    STORE_ATTR_INSTANCE_VALUE, STORE_ATTR_WITH_HINT))
+                                       STORE_ATTR_INSTANCE_VALUE,
+                                       STORE_ATTR_MANAGED_DICT))
             {
                 goto success;
             }

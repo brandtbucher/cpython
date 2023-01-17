@@ -164,10 +164,10 @@ extern "C" {
 #define LOAD_ATTR_CLASS                         64
 #define LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN       65
 #define LOAD_ATTR_INSTANCE_VALUE                66
-#define LOAD_ATTR_MODULE                        67
-#define LOAD_ATTR_PROPERTY                      70
-#define LOAD_ATTR_SLOT                          72
-#define LOAD_ATTR_WITH_HINT                     73
+#define LOAD_ATTR_MANAGED_DICT                  67
+#define LOAD_ATTR_MODULE                        70
+#define LOAD_ATTR_PROPERTY                      72
+#define LOAD_ATTR_SLOT                          73
 #define LOAD_ATTR_METHOD_LAZY_DICT              76
 #define LOAD_ATTR_METHOD_NO_DICT                77
 #define LOAD_ATTR_METHOD_WITH_VALUES            78
@@ -177,8 +177,8 @@ extern "C" {
 #define LOAD_GLOBAL_BUILTIN                     82
 #define LOAD_GLOBAL_MODULE                      84
 #define STORE_ATTR_INSTANCE_VALUE               86
-#define STORE_ATTR_SLOT                         87
-#define STORE_ATTR_WITH_HINT                   113
+#define STORE_ATTR_MANAGED_DICT                 87
+#define STORE_ATTR_SLOT                        113
 #define STORE_FAST__LOAD_FAST                  121
 #define STORE_FAST__STORE_FAST                 143
 #define STORE_SUBSCR_DICT                      153

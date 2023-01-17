@@ -330,10 +330,10 @@ _specializations = {
         "LOAD_ATTR_CLASS",
         "LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN",
         "LOAD_ATTR_INSTANCE_VALUE",
+        "LOAD_ATTR_MANAGED_DICT",
         "LOAD_ATTR_MODULE",
         "LOAD_ATTR_PROPERTY",
         "LOAD_ATTR_SLOT",
-        "LOAD_ATTR_WITH_HINT",
         # These will always push [unbound method, self] onto the stack.
         "LOAD_ATTR_METHOD_LAZY_DICT",
         "LOAD_ATTR_METHOD_NO_DICT",
@@ -352,8 +352,8 @@ _specializations = {
     ],
     "STORE_ATTR": [
         "STORE_ATTR_INSTANCE_VALUE",
+        "STORE_ATTR_MANAGED_DICT",
         "STORE_ATTR_SLOT",
-        "STORE_ATTR_WITH_HINT",
     ],
     "STORE_FAST": [
         "STORE_FAST__LOAD_FAST",
