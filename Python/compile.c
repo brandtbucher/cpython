@@ -1193,7 +1193,7 @@ stack_effect(int opcode, int oparg, int jump)
             return -1;
 
         // Until we have proper variable-length instructions, the stack effect
-        // of these superinstrucions is just the stack effect of its first part:
+        // of a  superinstrucion is just the stack effect of its first part:
         case COMPARE_AND_BRANCH:
         case STORE_FAST__LOAD_FAST:
         case STORE_FAST__STORE_FAST:
