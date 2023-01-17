@@ -7934,40 +7934,32 @@ insert_superinstructions(basicblock *entryblock)
                 continue;
             }
             // Don't want to miss any line events, either:
-            if (first->i_loc.lineno != second->i_loc.lineno &&
+            if (second->i_loc.lineno != first->i_loc.lineno &&
                 second->i_loc.lineno != -1)
             {
                 continue;
             }
         #ifdef Py_DEBUG
-            int first_size = instr_size(first);
-            int second_size = instr_size(second);
+            int size = instr_size(first) + instr_size(second);
         #endif
             switch (first->i_opcode << 8 | second->i_opcode) {
                 case LOAD_CONST << 8 | LOAD_FAST:
-                    assert(second_size == 1);
                     first->i_opcode = LOAD_CONST__LOAD_FAST;
                     break;
                 case LOAD_FAST << 8 | LOAD_CONST:
-                    assert(second_size == 1);
                     first->i_opcode = LOAD_FAST__LOAD_CONST;
                     break;
                 case LOAD_FAST << 8 | LOAD_FAST:
-                    assert(second_size == 1);
                     first->i_opcode = LOAD_FAST__LOAD_FAST;
                     break;
-                    assert(second_size == 1);
                 case STORE_FAST << 8 | LOAD_FAST:
-                    assert(second_size == 1);
                     first->i_opcode = STORE_FAST__LOAD_FAST;
                     break;
                 case STORE_FAST << 8 | STORE_FAST:
-                    assert(second_size == 1);
                     first->i_opcode = STORE_FAST__STORE_FAST;
                     break;
                 case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
                 case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
-                    assert(second_size == 1);
                     // Note that this pass's strict instruction size constraints
                     // mean that *all* COMPARE_OP instructions (even those that
                     // survive superinstruction insertion) need to have an
@@ -7982,8 +7974,7 @@ insert_superinstructions(basicblock *entryblock)
                     break;
             }
         #ifdef Py_DEBUG
-            assert(instr_size(first) == first_size);
-            assert(instr_size(second) == second_size);
+            assert(instr_size(first) + instr_size(second) == size);
         #endif
         }
     }
