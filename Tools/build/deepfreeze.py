@@ -12,6 +12,7 @@ import collections
 import contextlib
 import os
 import re
+import sys
 import time
 import types
 from typing import Dict, FrozenSet, TextIO, Tuple
@@ -25,9 +26,18 @@ identifiers, strings = get_identifiers_and_strings()
 # This must be kept in sync with opcode.py
 RESUME = 151
 
+SIZEOF_PY_CODEUNIT = 2
+
 def isprintable(b: bytes) -> bool:
     return all(0x20 <= c < 0x7f for c in b)
 
+def make_codeunit_array(code: bytes) -> str:
+    structs = []
+    for i in range(0, len(code), SIZEOF_PY_CODEUNIT):
+        chunk = code[i: i + SIZEOF_PY_CODEUNIT]
+        word = int.from_bytes(chunk, sys.byteorder)
+        structs.append(f"{{.cache={word}}}")
+    return "{" + ",".join(structs) + "}"
 
 def make_string_literal(b: bytes) -> str:
     res = ['"']
@@ -242,12 +252,13 @@ class Printer:
         # Derived values
         nlocals, ncellvars, nfreevars = \
             get_localsplus_counts(code, localsplusnames, localspluskinds)
-        co_code_adaptive = make_string_literal(code.co_code)
+        co_code_adaptive = make_codeunit_array(code.co_code)
         self.write("static")
+        size = len(code.co_code) // SIZEOF_PY_CODEUNIT
         with self.indent():
-            self.write(f"struct _PyCode_DEF({len(code.co_code)})")
+            self.write(f"struct _PyCode_DEF({size})")
         with self.block(f"{name} =", ";"):
-            self.object_var_head("PyCode_Type", len(code.co_code) // 2)
+            self.object_var_head("PyCode_Type", size)
             # But the ordering here must match that in cpython/code.h
             # (which is a pain because we tend to reorder those for perf)
             # otherwise MSVC doesn't like it.
@@ -278,7 +289,7 @@ class Printer:
             self.write(f"._co_cached = NULL,")
             self.write("._co_linearray = NULL,")
             self.write(f".co_code_adaptive = {co_code_adaptive},")
-            for i, op in enumerate(code.co_code[::2]):
+            for i, op in enumerate(code.co_code[::SIZEOF_PY_CODEUNIT]):
                 if op == RESUME:
                     self.write(f"._co_firsttraceable = {i},")
                     break

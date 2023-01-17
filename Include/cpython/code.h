@@ -106,7 +106,7 @@ typedef struct {
        Type is a void* to keep the format private in codeobject.c to force     \
        people to go through the proper APIs. */                                \
     void *co_extra;                                                            \
-    char co_code_adaptive[(SIZE)];                                             \
+    _Py_CODEUNIT co_code_adaptive[(SIZE)];                                     \
 }
 
 /* Bytecode object */
@@ -161,7 +161,7 @@ static inline int PyCode_GetFirstFree(PyCodeObject *op) {
     return op->co_nlocalsplus - op->co_nfreevars;
 }
 
-#define _PyCode_CODE(CO) _Py_RVALUE((_Py_CODEUNIT *)(CO)->co_code_adaptive)
+#define _PyCode_CODE(CO) _Py_RVALUE((CO)->co_code_adaptive)
 #define _PyCode_NBYTES(CO) (Py_SIZE(CO) * (Py_ssize_t)sizeof(_Py_CODEUNIT))
 
 /* Public interface */
