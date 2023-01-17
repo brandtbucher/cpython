@@ -1856,6 +1856,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             if (PyUnicode_CheckExact(lhs)) {
                 _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
+                // STORE_FAST__STORE_FAST doesn't make sense here:
                 bool to_store = (_Py_OPCODE(next) == STORE_FAST ||
                                  _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
                 if (to_store && locals[_Py_OPARG(next)] == lhs) {
@@ -2141,7 +2142,10 @@ _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg)
         _py_set_opcode(instr, FOR_ITER_TUPLE);
         goto success;
     }
-    else if (tp == &PyRangeIter_Type && next_op == STORE_FAST) {
+    else if (tp == &PyRangeIter_Type &&
+             // STORE_FAST__STORE_FAST doesn't make sense here:
+             (next_op == STORE_FAST || next_op == STORE_FAST__LOAD_FAST))
+    {
         _py_set_opcode(instr, FOR_ITER_RANGE);
         goto success;
     }

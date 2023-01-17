@@ -2667,7 +2667,8 @@
             DEOPT_IF(Py_TYPE(r) != &PyRangeIter_Type, FOR_ITER);
             STAT_INC(FOR_ITER, hit);
             _Py_CODEUNIT next = next_instr[INLINE_CACHE_ENTRIES_FOR_ITER];
-            assert(_PyOpcode_Deopt[_Py_OPCODE(next)] == STORE_FAST);
+            assert(_Py_OPCODE(next) == STORE_FAST ||
+                   _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
             if (r->len <= 0) {
                 STACK_SHRINK(1);
                 Py_DECREF(r);
