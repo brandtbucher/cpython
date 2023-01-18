@@ -7925,58 +7925,60 @@ static int compare_masks[] = {
 static void
 insert_superinstructions(basicblock *entryblock)
 {
-    for (basicblock *b = entryblock; b != NULL; b = b->b_next) {
-        for (int i = 0; i < b->b_iused - 1; i++) {
-            struct instr *first = &b->b_instr[i];
-            struct instr *second = &b->b_instr[i + 1];
-            // Can't have an EXTENDED_ARG in the middle of this:
-            if (0xFF < second->i_oparg) {
-                continue;
+    basicblock *block = entryblock;
+    int i = 0;
+    while (true) {
+        assert(i < block->b_iused);
+        struct instr *first = &block->b_instr[i++];
+        while (i == block->b_iused) {
+            block = block->b_next;
+            i = 0;
+            if (block == NULL) {
+                return;
             }
-            // Don't want to miss any line events, either:
-            if (second->i_loc.lineno != first->i_loc.lineno &&
-                second->i_loc.lineno != -1)
-            {
-                continue;
-            }
-        #ifdef Py_DEBUG
-            int size = instr_size(first) + instr_size(second);
-        #endif
-            switch (first->i_opcode << 8 | second->i_opcode) {
-                case LOAD_CONST << 8 | LOAD_FAST:
-                    first->i_opcode = LOAD_CONST__LOAD_FAST;
-                    break;
-                case LOAD_FAST << 8 | LOAD_CONST:
-                    first->i_opcode = LOAD_FAST__LOAD_CONST;
-                    break;
-                case LOAD_FAST << 8 | LOAD_FAST:
-                    first->i_opcode = LOAD_FAST__LOAD_FAST;
-                    break;
-                case STORE_FAST << 8 | LOAD_FAST:
-                    first->i_opcode = STORE_FAST__LOAD_FAST;
-                    break;
-                case STORE_FAST << 8 | STORE_FAST:
-                    first->i_opcode = STORE_FAST__STORE_FAST;
-                    break;
-                case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
-                case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
-                    // Note that this pass's strict instruction size constraints
-                    // mean that *all* COMPARE_OP instructions (even those that
-                    // survive superinstruction insertion) need to have an
-                    // unused cache the same size as COMPARE_AND_BRANCH's... :(
-                    assert((first->i_oparg >> 4) <= Py_GE);
-                    int mask = compare_masks[first->i_oparg >> 4];
-                    if (second->i_opcode == POP_JUMP_IF_FALSE) {
-                        mask = mask ^ 0xf;
-                    }
-                    first->i_opcode = COMPARE_AND_BRANCH;
-                    first->i_oparg = (first->i_oparg & 0xf0) | mask;
-                    break;
-            }
-        #ifdef Py_DEBUG
-            assert(instr_size(first) + instr_size(second) == size);
-        #endif
         }
+        assert(i < block->b_iused);
+        struct instr *second = &block->b_instr[i];
+        if (0xFF < second->i_oparg) {
+            continue;
+        }
+    #ifdef Py_DEBUG
+        int size = instr_size(first) + instr_size(second);
+    #endif
+        switch (first->i_opcode << 8 | second->i_opcode) {
+            case LOAD_CONST << 8 | LOAD_FAST:
+                first->i_opcode = LOAD_CONST__LOAD_FAST;
+                break;
+            case LOAD_FAST << 8 | LOAD_CONST:
+                first->i_opcode = LOAD_FAST__LOAD_CONST;
+                break;
+            case LOAD_FAST << 8 | LOAD_FAST:
+                first->i_opcode = LOAD_FAST__LOAD_FAST;
+                break;
+            case STORE_FAST << 8 | LOAD_FAST:
+                first->i_opcode = STORE_FAST__LOAD_FAST;
+                break;
+            case STORE_FAST << 8 | STORE_FAST:
+                first->i_opcode = STORE_FAST__STORE_FAST;
+                break;
+            case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
+            case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
+                // Note that this pass's strict instruction size constraints
+                // mean that *all* COMPARE_OP instructions (even those that
+                // survive superinstruction insertion) need to have an unused
+                // cache the same size as COMPARE_AND_BRANCH's... :(
+                assert((first->i_oparg >> 4) <= Py_GE);
+                int mask = compare_masks[first->i_oparg >> 4];
+                if (second->i_opcode == POP_JUMP_IF_FALSE) {
+                    mask = mask ^ 0xf;
+                }
+                first->i_opcode = COMPARE_AND_BRANCH;
+                first->i_oparg = (first->i_oparg & 0xf0) | mask;
+                break;
+        }
+    #ifdef Py_DEBUG
+        assert(instr_size(first) + instr_size(second) == size);
+    #endif
     }
 }
 

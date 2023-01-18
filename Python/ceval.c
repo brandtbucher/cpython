@@ -934,6 +934,19 @@ handle_eval_breaker:
             PRE_DISPATCH_GOTO();
         }
         opcode = _PyOpcode_Deopt[opcode];
+        switch (opcode) {
+            case LOAD_CONST__LOAD_FAST:
+                opcode = LOAD_CONST;
+                break;
+            case LOAD_FAST__LOAD_CONST:
+            case LOAD_FAST__LOAD_FAST:
+                opcode = LOAD_FAST;
+                break;
+            case STORE_FAST__LOAD_FAST:
+            case STORE_FAST__STORE_FAST:
+                opcode = STORE_FAST;
+                break;
+        }
         if (_PyOpcode_Caches[opcode]) {
             uint16_t *counter = &next_instr[1].cache;
             // The instruction is going to decrement the counter, so we need to

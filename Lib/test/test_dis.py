@@ -721,7 +721,7 @@ dis_load_test_quickened_code = """\
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
               4 LOAD_FAST                1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
-              8 STORE_FAST               2 (a)
+              8 STORE_FAST__LOAD_FAST     2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
              12 LOAD_FAST                3 (b)
