@@ -358,6 +358,7 @@ dummy_func(
 
         op(BINARY_SUBSCR_QUICKEN, (unused/4 -- )) {
             _py_set_opcode(next_instr - 1, BINARY_SUBSCR_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
         }
 
         op(BINARY_SUBSCR_ADAPT, (unused/4, container, sub -- container, sub)) {
@@ -508,6 +509,7 @@ dummy_func(
 
         op(STORE_SUBSCR_QUICKEN, (unused/1 -- )) {
             _py_set_opcode(next_instr - 1, STORE_SUBSCR_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
         }
 
         op(STORE_SUBSCR_ADAPT, (counter/1, container, sub -- container, sub)) {
@@ -949,6 +951,7 @@ dummy_func(
         // stack effect: (__0 -- __array[oparg])
         inst(UNPACK_SEQUENCE) {
             _py_set_opcode(next_instr - 1, UNPACK_SEQUENCE_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
         }
 
@@ -1045,6 +1048,7 @@ dummy_func(
 
         op(STORE_ATTR_QUICKEN, (unused/4 -- )) {
             _py_set_opcode(next_instr - 1, STORE_ATTR_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
         }
 
         op(STORE_ATTR_ADAPT, (counter/1, unused/3, owner -- owner)) {
@@ -1167,6 +1171,7 @@ dummy_func(
         // error: LOAD_GLOBAL has irregular stack effect
         inst(LOAD_GLOBAL) {
             _py_set_opcode(next_instr - 1, LOAD_GLOBAL_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
         }
 
@@ -1544,6 +1549,7 @@ dummy_func(
         // error: LOAD_ATTR has irregular stack effect
         inst(LOAD_ATTR, (unused/9 -- unused if (oparg & 1))) {
             _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
         }
 
@@ -1887,6 +1893,7 @@ dummy_func(
                     }
                     new_opcode = COMPARE_OP_ADAPTIVE;
                     new_oparg = (oparg & 0xf0) | mask;
+                    next_instr->cache = adaptive_counter_warmup();
                     break;
                 default:
                     new_opcode = COMPARE_OP_QUICK;
@@ -2290,6 +2297,7 @@ dummy_func(
         // stack effect: ( -- __0)
         inst(FOR_ITER) {
             _py_set_opcode(next_instr - 1, FOR_ITER_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(FOR_ITER_QUICK);
         }
 
@@ -2625,6 +2633,7 @@ dummy_func(
         // stack effect: (__0, __array[oparg] -- )
         inst(CALL) {
             _py_set_opcode(next_instr - 1, CALL_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(CALL_QUICK);
         }
 
@@ -3380,6 +3389,7 @@ dummy_func(
 
         op(BINARY_OP_QUICKEN, (unused/1 -- )) {
             _py_set_opcode(next_instr - 1, BINARY_OP_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
         }
 
         op(BINARY_OP_ADAPT, (unused/1, lhs, rhs -- lhs, rhs)) {

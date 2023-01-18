@@ -487,6 +487,7 @@
             PyObject *_tmp_2 = PEEK(2);
             {
                 _py_set_opcode(next_instr - 1, BINARY_SUBSCR_ADAPTIVE);
+                next_instr->cache = adaptive_counter_warmup();
             }
             {
                 PyObject *sub = _tmp_1;
@@ -710,6 +711,7 @@
             PyObject *_tmp_3 = PEEK(3);
             {
                 _py_set_opcode(next_instr - 1, STORE_SUBSCR_ADAPTIVE);
+                next_instr->cache = adaptive_counter_warmup();
             }
             {
                 PyObject *sub = _tmp_1;
@@ -1240,6 +1242,7 @@
 
         TARGET(UNPACK_SEQUENCE) {
             _py_set_opcode(next_instr - 1, UNPACK_SEQUENCE_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
         }
 
@@ -1334,6 +1337,7 @@
             PyObject *_tmp_2 = PEEK(2);
             {
                 _py_set_opcode(next_instr - 1, STORE_ATTR_ADAPTIVE);
+                next_instr->cache = adaptive_counter_warmup();
             }
             {
                 PyObject *owner = _tmp_1;
@@ -1488,6 +1492,7 @@
 
         TARGET(LOAD_GLOBAL) {
             _py_set_opcode(next_instr - 1, LOAD_GLOBAL_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
         }
 
@@ -1937,6 +1942,7 @@
 
         TARGET(LOAD_ATTR) {
             _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
         }
 
@@ -2310,6 +2316,7 @@
                     }
                     new_opcode = COMPARE_OP_ADAPTIVE;
                     new_oparg = (oparg & 0xf0) | mask;
+                    next_instr->cache = adaptive_counter_warmup();
                     break;
                 default:
                     new_opcode = COMPARE_OP_QUICK;
@@ -2801,6 +2808,7 @@
 
         TARGET(FOR_ITER) {
             _py_set_opcode(next_instr - 1, FOR_ITER_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(FOR_ITER_QUICK);
         }
 
@@ -3143,6 +3151,7 @@
 
         TARGET(CALL) {
             _py_set_opcode(next_instr - 1, CALL_ADAPTIVE);
+            next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(CALL_QUICK);
         }
 
@@ -3903,6 +3912,7 @@
             PyObject *_tmp_2 = PEEK(2);
             {
                 _py_set_opcode(next_instr - 1, BINARY_OP_ADAPTIVE);
+                next_instr->cache = adaptive_counter_warmup();
             }
             {
                 PyObject *rhs = _tmp_1;

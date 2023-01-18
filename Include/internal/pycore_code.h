@@ -386,10 +386,19 @@ write_location_entry_start(uint8_t *ptr, int code, int length)
 /* With a 16-bit counter, we have 12 bits for the counter value, and 4 bits for the backoff */
 #define ADAPTIVE_BACKOFF_BITS 4
 
+// A value of 1 means that we attempt to specialize the *second* time each
+// instruction is executed. Executing twice is a much better indicator of
+// "hotness" than executing once, but additional warmup delays only prevent
+// specialization. Most types stabilize by the second execution, too:
+#define ADAPTIVE_WARMUP_VALUE 1
+#define ADAPTIVE_WARMUP_BACKOFF 1
+
 // A value of 52 means that we attempt to re-specialize after 53 misses (a prime
 // number, useful for avoiding artifacts if every nth value is a different type
 // or something). Setting the backoff to 0 means that the counter is reset to
-// (value == 1, backoff == 1) after deoptimization.
+// the same state as a warming-up instruction (value == 1, backoff == 1) after
+// deoptimization. This isn't strictly necessary, but it is bit easier to reason
+// about when thinking about the opcode transitions as a state machine:
 #define ADAPTIVE_COOLDOWN_VALUE 52
 #define ADAPTIVE_COOLDOWN_BACKOFF 0
 
@@ -400,6 +409,14 @@ static inline uint16_t
 adaptive_counter_bits(int value, int backoff) {
     return (value << ADAPTIVE_BACKOFF_BITS) |
         (backoff & ((1<<ADAPTIVE_BACKOFF_BITS)-1));
+}
+
+static inline uint16_t
+adaptive_counter_warmup(void) {
+    // Subtract 1 from the value, to account for the current instruction:
+    static_assert(0 <= (ADAPTIVE_WARMUP_VALUE - 1));
+    return adaptive_counter_bits(ADAPTIVE_WARMUP_VALUE - 1,
+                                 ADAPTIVE_WARMUP_BACKOFF);
 }
 
 static inline uint16_t
