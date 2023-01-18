@@ -76,7 +76,8 @@ dummy_func(
     PyObject **stack_pointer,
     PyObject *kwnames,
     int throwflag,
-    binaryfunc binary_ops[]
+    binaryfunc binary_ops[],
+    int compare_masks[],
 )
 {
     _PyInterpreterFrame  entry_frame;
@@ -108,26 +109,74 @@ dummy_func(
             Py_INCREF(value);
         }
 
-        inst(LOAD_FAST, (-- value)) {
+        inst(LOAD_FAST, (-- unused)) {
+            int new;
+            switch (next_instr->opcode) {
+                case LOAD_CONST:
+                    new = LOAD_FAST__LOAD_CONST;
+                    break;
+                case LOAD_FAST:
+                    new = LOAD_FAST__LOAD_FAST;
+                    break;
+                default:
+                    new = LOAD_FAST_QUICK;
+                    break;
+            }
+            _py_set_opcode(next_instr - 1, new);
+            GO_TO_INSTRUCTION(LOAD_FAST_QUICK);
+        }
+
+        inst(LOAD_FAST_QUICK, (-- value)) {
             value = GETLOCAL(oparg);
             assert(value != NULL);
             Py_INCREF(value);
         }
 
-        inst(LOAD_CONST, (-- value)) {
+        inst(LOAD_CONST, (-- unused)) {
+            int new;
+            switch (next_instr->opcode) {
+                case LOAD_FAST:
+                    new = LOAD_CONST__LOAD_FAST;
+                    break;
+                default:
+                    new = LOAD_CONST_QUICK;
+                    break;
+            }
+            _py_set_opcode(next_instr - 1, new);
+            GO_TO_INSTRUCTION(LOAD_CONST_QUICK);
+        }
+
+        inst(LOAD_CONST_QUICK, (-- value)) {
             value = GETITEM(consts, oparg);
             Py_INCREF(value);
         }
 
-        inst(STORE_FAST, (value --)) {
+        inst(STORE_FAST, (unused --)) {
+            int new;
+            switch (next_instr->opcode) {
+                case LOAD_FAST:
+                    new = STORE_FAST__LOAD_FAST;
+                    break;
+                case STORE_FAST:
+                    new = STORE_FAST__STORE_FAST;
+                    break;
+                default:
+                    new = STORE_FAST_QUICK;
+                    break;
+            }
+            _py_set_opcode(next_instr - 1, new);
+            GO_TO_INSTRUCTION(STORE_FAST_QUICK);
+        }
+
+        inst(STORE_FAST_QUICK, (value --)) {
             SETLOCAL(oparg, value);
         }
 
-        super(LOAD_FAST__LOAD_FAST) = LOAD_FAST + LOAD_FAST;
-        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST + LOAD_CONST;
-        super(STORE_FAST__LOAD_FAST)  = STORE_FAST + LOAD_FAST;
-        super(STORE_FAST__STORE_FAST) = STORE_FAST + STORE_FAST;
-        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST + LOAD_FAST;
+        super(LOAD_FAST__LOAD_FAST) = LOAD_FAST_QUICK + LOAD_FAST_QUICK;
+        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST_QUICK + LOAD_CONST_QUICK;
+        super(STORE_FAST__LOAD_FAST)  = STORE_FAST_QUICK + LOAD_FAST_QUICK;
+        super(STORE_FAST__STORE_FAST) = STORE_FAST_QUICK + STORE_FAST_QUICK;
+        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST_QUICK + LOAD_FAST_QUICK;
 
         inst(POP_TOP, (value --)) {
             DECREF_INPUTS();
@@ -166,6 +215,7 @@ dummy_func(
 
         family(binary_op, INLINE_CACHE_ENTRIES_BINARY_OP) = {
             BINARY_OP,
+            BINARY_OP_ADAPTIVE,
             BINARY_OP_ADD_FLOAT,
             BINARY_OP_ADD_INT,
             BINARY_OP_ADD_UNICODE,
@@ -174,6 +224,7 @@ dummy_func(
             BINARY_OP_MULTIPLY_INT,
             BINARY_OP_SUBTRACT_FLOAT,
             BINARY_OP_SUBTRACT_INT,
+            BINARY_OP_QUICK,
         };
 
 
@@ -246,8 +297,7 @@ dummy_func(
             DEOPT_IF(!PyUnicode_CheckExact(left), BINARY_OP);
             DEOPT_IF(Py_TYPE(right) != Py_TYPE(left), BINARY_OP);
             _Py_CODEUNIT true_next = next_instr[INLINE_CACHE_ENTRIES_BINARY_OP];
-            assert(_Py_OPCODE(true_next) == STORE_FAST ||
-                   _Py_OPCODE(true_next) == STORE_FAST__LOAD_FAST);
+            assert(_PyOpcode_Deopt[_Py_OPCODE(true_next)] == STORE_FAST);
             PyObject **target_local = &GETLOCAL(_Py_OPARG(true_next));
             DEOPT_IF(*target_local != left, BINARY_OP);
             STAT_INC(BINARY_OP, hit);
@@ -297,13 +347,20 @@ dummy_func(
 
         family(binary_subscr, INLINE_CACHE_ENTRIES_BINARY_SUBSCR) = {
             BINARY_SUBSCR,
+            BINARY_SUBSCR_ADAPTIVE,
             BINARY_SUBSCR_DICT,
             BINARY_SUBSCR_GETITEM,
             BINARY_SUBSCR_LIST_INT,
+            BINARY_SUBSCR_QUICK,
             BINARY_SUBSCR_TUPLE_INT,
         };
 
-        inst(BINARY_SUBSCR, (unused/4, container, sub -- res)) {
+        inst(BINARY_SUBSCR, (unused/4, unused, unused -- unused)) {
+            _py_set_opcode(next_instr - 1, BINARY_SUBSCR_ADAPTIVE);
+            GO_TO_INSTRUCTION(BINARY_SUBSCR_QUICK);
+        }
+
+        inst(BINARY_SUBSCR_ADAPTIVE, (unused/4, container, sub -- unused)) {
             #if ENABLE_SPECIALIZATION
             _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -315,6 +372,10 @@ dummy_func(
             STAT_INC(BINARY_SUBSCR, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(BINARY_SUBSCR_QUICK);
+        }
+
+        inst(BINARY_SUBSCR_QUICK, (unused/4, container, sub -- res)) {
             res = PyObject_GetItem(container, sub);
             DECREF_INPUTS();
             ERROR_IF(res == NULL, error);
@@ -438,11 +499,18 @@ dummy_func(
 
         family(store_subscr) = {
             STORE_SUBSCR,
+            STORE_SUBSCR_ADAPTIVE,
             STORE_SUBSCR_DICT,
             STORE_SUBSCR_LIST_INT,
+            STORE_SUBSCR_QUICK,
         };
 
-        inst(STORE_SUBSCR, (counter/1, v, container, sub -- )) {
+        inst(STORE_SUBSCR, (unused/1, unused, unused, unused -- )) {
+            _py_set_opcode(next_instr - 1, STORE_SUBSCR_ADAPTIVE);
+            GO_TO_INSTRUCTION(STORE_SUBSCR_QUICK);
+        }
+
+        inst(STORE_SUBSCR_ADAPTIVE, (counter/1, unused, container, sub -- )) {
             #if ENABLE_SPECIALIZATION
             if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 assert(cframe.use_tracing == 0);
@@ -456,6 +524,10 @@ dummy_func(
             #else
             (void)counter;  // Unused.
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(STORE_SUBSCR_QUICK);
+        }
+
+        inst(STORE_SUBSCR_QUICK, (unused/1, v, container, sub -- )) {
             /* container[sub] = v */
             int err = PyObject_SetItem(container, sub, v);
             DECREF_INPUTS();
@@ -874,6 +946,11 @@ dummy_func(
 
         // stack effect: (__0 -- __array[oparg])
         inst(UNPACK_SEQUENCE) {
+            _py_set_opcode(next_instr - 1, UNPACK_SEQUENCE_ADAPTIVE);
+            GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
+        }
+
+        inst(UNPACK_SEQUENCE_ADAPTIVE) {
             #if ENABLE_SPECIALIZATION
             _PyUnpackSequenceCache *cache = (_PyUnpackSequenceCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -886,6 +963,10 @@ dummy_func(
             STAT_INC(UNPACK_SEQUENCE, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
+        }
+
+        inst(UNPACK_SEQUENCE_QUICK) {
             PyObject *seq = POP();
             PyObject **top = stack_pointer + oparg;
             if (!unpack_iterable(tstate, seq, oparg, -1, top)) {
@@ -954,12 +1035,19 @@ dummy_func(
 
         family(store_attr) = {
             STORE_ATTR,
+            STORE_ATTR_ADAPTIVE,
             STORE_ATTR_INSTANCE_VALUE,
+            STORE_ATTR_QUICK,
             STORE_ATTR_SLOT,
             STORE_ATTR_WITH_HINT,
         };
 
-        inst(STORE_ATTR, (counter/1, unused/3, v, owner --)) {
+        inst(STORE_ATTR, (unused/4, unused, unused --)) {
+            _py_set_opcode(next_instr - 1, STORE_ATTR_ADAPTIVE);
+            GO_TO_INSTRUCTION(STORE_ATTR_QUICK);
+        }
+
+        inst(STORE_ATTR_ADAPTIVE, (counter/1, unused/3, unused, owner --)) {
             #if ENABLE_SPECIALIZATION
             if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 assert(cframe.use_tracing == 0);
@@ -974,6 +1062,10 @@ dummy_func(
             #else
             (void)counter;  // Unused.
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(STORE_ATTR_QUICK);
+        }
+
+        inst(STORE_ATTR_QUICK, (unused/4, v, owner --)) {
             PyObject *name = GETITEM(names, oparg);
             int err = PyObject_SetAttr(owner, name, v);
             Py_DECREF(v);
@@ -1072,6 +1164,11 @@ dummy_func(
 
         // error: LOAD_GLOBAL has irregular stack effect
         inst(LOAD_GLOBAL) {
+            _py_set_opcode(next_instr - 1, LOAD_GLOBAL_ADAPTIVE);
+            GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
+        }
+
+        inst(LOAD_GLOBAL_ADAPTIVE) {
             #if ENABLE_SPECIALIZATION
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1084,6 +1181,10 @@ dummy_func(
             STAT_INC(LOAD_GLOBAL, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
+        }
+
+        inst(LOAD_GLOBAL_QUICK) {
             int push_null = oparg & 1;
             PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
@@ -1440,6 +1541,11 @@ dummy_func(
 
         // error: LOAD_ATTR has irregular stack effect
         inst(LOAD_ATTR) {
+            _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
+            GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
+        }
+
+        inst(LOAD_ATTR_ADAPTIVE) {
             #if ENABLE_SPECIALIZATION
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1453,6 +1559,10 @@ dummy_func(
             STAT_INC(LOAD_ATTR, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
+        }
+
+        inst(LOAD_ATTR_QUICK) {
             PyObject *name = GETITEM(names, oparg >> 1);
             PyObject *owner = TOP();
             if (oparg & 1) {
@@ -1773,7 +1883,31 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(COMPARE_OP, (unused/1, left, right -- res)) {
+        inst(COMPARE_OP, (unused/1, unused, unused -- unused)) {
+            int new_opcode;
+            int new_oparg;
+            switch (next_instr->opcode) {
+                case POP_JUMP_IF_FALSE:
+                case POP_JUMP_IF_TRUE:
+                    assert((oparg >> 4) <= Py_GE);
+                    int mask = compare_masks[oparg >> 4];
+                    if (opcode == POP_JUMP_IF_FALSE) {
+                        mask = mask ^ 0xf;
+                    }
+                    new_opcode = COMPARE_AND_BRANCH;
+                    new_oparg = (oparg & 0xf0) | mask;
+                    break;
+                default:
+                    new_opcode = COMPARE_OP_QUICK;
+                    new_oparg = oparg;
+                    break;
+            }
+            next_instr[-1].opcode = new_opcode;
+            next_instr[-1].oparg = new_oparg;
+            GO_TO_INSTRUCTION(COMPARE_OP_QUICK);
+        }
+
+        inst(COMPARE_OP_QUICK, (unused/1, left, right -- res)) {
             STAT_INC(COMPARE_OP, deferred);
             assert((oparg >> 4) <= Py_GE);
             res = PyObject_RichCompare(left, right, oparg>>4);
@@ -2164,6 +2298,11 @@ dummy_func(
 
         // stack effect: ( -- __0)
         inst(FOR_ITER) {
+            _py_set_opcode(next_instr - 1, FOR_ITER_ADAPTIVE);
+            GO_TO_INSTRUCTION(FOR_ITER_QUICK);
+        }
+
+        inst(FOR_ITER_ADAPTIVE) {
             #if ENABLE_SPECIALIZATION
             _PyForIterCache *cache = (_PyForIterCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -2175,6 +2314,10 @@ dummy_func(
             STAT_INC(FOR_ITER, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(FOR_ITER_QUICK);
+        }
+
+        inst(FOR_ITER_QUICK) {
             /* before: [iter]; after: [iter, iter()] *or* [] */
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -2490,6 +2633,11 @@ dummy_func(
 
         // stack effect: (__0, __array[oparg] -- )
         inst(CALL) {
+            _py_set_opcode(next_instr - 1, CALL_ADAPTIVE);
+            GO_TO_INSTRUCTION(CALL_QUICK);
+        }
+
+        inst(CALL_ADAPTIVE) {
             #if ENABLE_SPECIALIZATION
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -2504,6 +2652,10 @@ dummy_func(
             STAT_INC(CALL, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(CALL_QUICK);
+        }
+
+        inst(CALL_QUICK) {
             int total_args, is_meth;
             is_meth = is_method(stack_pointer, oparg);
             PyObject *function = PEEK(oparg + 1);
@@ -3235,7 +3387,12 @@ dummy_func(
             PUSH(Py_NewRef(peek));
         }
 
-        inst(BINARY_OP, (unused/1, lhs, rhs -- res)) {
+        inst(BINARY_OP, (unused/1, unused, unused -- unused)) {
+            _py_set_opcode(next_instr - 1, BINARY_OP_ADAPTIVE);
+            GO_TO_INSTRUCTION(BINARY_OP_QUICK);
+        }
+
+        inst(BINARY_OP_ADAPTIVE, (unused/1, lhs, rhs -- unused)) {
             #if ENABLE_SPECIALIZATION
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -3247,6 +3404,10 @@ dummy_func(
             STAT_INC(BINARY_OP, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(BINARY_OP_QUICK);
+        }
+
+        inst(BINARY_OP_QUICK, (unused/1, lhs, rhs -- res)) {
             assert(0 <= oparg);
             assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
             assert(binary_ops[oparg]);
@@ -3298,26 +3459,26 @@ dummy_func(
 // Future families go below this point //
 
 family(call) = {
-    CALL, CALL_PY_EXACT_ARGS,
+    CALL, CALL_ADAPTIVE, CALL_PY_EXACT_ARGS,
     CALL_PY_WITH_DEFAULTS, CALL_BOUND_METHOD_EXACT_ARGS, CALL_BUILTIN_CLASS,
     CALL_BUILTIN_FAST_WITH_KEYWORDS, CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS, CALL_NO_KW_BUILTIN_FAST,
     CALL_NO_KW_BUILTIN_O, CALL_NO_KW_ISINSTANCE, CALL_NO_KW_LEN,
     CALL_NO_KW_LIST_APPEND, CALL_NO_KW_METHOD_DESCRIPTOR_FAST, CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS,
     CALL_NO_KW_METHOD_DESCRIPTOR_O, CALL_NO_KW_STR_1, CALL_NO_KW_TUPLE_1,
-    CALL_NO_KW_TYPE_1 };
+    CALL_NO_KW_TYPE_1, CALL_QUICK };
 family(for_iter) = {
-    FOR_ITER, FOR_ITER_LIST,
-    FOR_ITER_RANGE };
+    FOR_ITER, FOR_ITER_ADAPTIVE, FOR_ITER_LIST,
+    FOR_ITER_RANGE FOR_ITER_QUICK };
 family(load_attr) = {
-    LOAD_ATTR, LOAD_ATTR_CLASS,
+    LOAD_ATTR, LOAD_ATTR_ADAPTIVE, LOAD_ATTR_QUICK, LOAD_ATTR_CLASS,
     LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_MODULE,
     LOAD_ATTR_PROPERTY, LOAD_ATTR_SLOT, LOAD_ATTR_WITH_HINT,
     LOAD_ATTR_METHOD_LAZY_DICT, LOAD_ATTR_METHOD_NO_DICT,
     LOAD_ATTR_METHOD_WITH_VALUES };
 family(load_global) = {
-    LOAD_GLOBAL, LOAD_GLOBAL_BUILTIN,
-    LOAD_GLOBAL_MODULE };
-family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST };
+    LOAD_GLOBAL, LOAD_GLOBAL_ADAPTIVE, LOAD_GLOBAL_BUILTIN,
+    LOAD_GLOBAL_MODULE, LOAD_GLOBAL_QUICK };
+family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST STORE_FAST_QUICK };
 family(unpack_sequence) = {
-    UNPACK_SEQUENCE, UNPACK_SEQUENCE_LIST,
-    UNPACK_SEQUENCE_TUPLE, UNPACK_SEQUENCE_TWO_TUPLE };
+    UNPACK_SEQUENCE, UNPACK_SEQUENCE_ADAPTIVE, UNPACK_SEQUENCE_LIST,
+    UNPACK_SEQUENCE_QUICK, UNPACK_SEQUENCE_TUPLE, UNPACK_SEQUENCE_TWO_TUPLE };

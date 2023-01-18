@@ -719,12 +719,12 @@ dis_load_test_quickened_code = """\
 %3d           0 RESUME                   0
 
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
-              4 LOAD_FAST                1 (y)
+              4 LOAD_FAST_QUICK          1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
               8 STORE_FAST__LOAD_FAST     2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
-             12 LOAD_FAST                3 (b)
+             12 LOAD_FAST_QUICK          3 (b)
              14 BUILD_TUPLE              2
              16 RETURN_VALUE
 """ % (load_test.__code__.co_firstlineno,
@@ -739,22 +739,22 @@ dis_loop_test_quickened_code = """\
 %3d        RESUME                   0
 
 %3d        BUILD_LIST               0
-           LOAD_CONST               1 ((1, 2, 3))
+           LOAD_CONST_QUICK         1 ((1, 2, 3))
            LIST_EXTEND              1
-           LOAD_CONST               2 (3)
-           BINARY_OP                5 (*)
+           LOAD_CONST_QUICK         2 (3)
+           BINARY_OP_ADAPTIVE       5 (*)
            GET_ITER
         >> FOR_ITER_LIST           15 (to 50)
-           STORE_FAST               0 (i)
+           STORE_FAST_QUICK         0 (i)
 
 %3d        LOAD_GLOBAL_MODULE       1 (NULL + load_test)
-           LOAD_FAST                0 (i)
+           LOAD_FAST_QUICK          0 (i)
            CALL_PY_WITH_DEFAULTS     1
            POP_TOP
            JUMP_BACKWARD           17 (to 16)
 
 %3d     >> END_FOR
-           LOAD_CONST               0 (None)
+           LOAD_CONST_QUICK         0 (None)
            RETURN_VALUE
 """ % (loop_test.__code__.co_firstlineno,
        loop_test.__code__.co_firstlineno + 1,
@@ -1118,7 +1118,7 @@ class DisTests(DisTestBase):
   0           0 RESUME                   0
 
   1           2 LOAD_NAME                0 (a)
-              4 LOAD_CONST               0 (0)
+              4 LOAD_CONST_QUICK         0 (0)
               6 %s
              16 RETURN_VALUE
 """
@@ -1138,7 +1138,7 @@ class DisTests(DisTestBase):
         load_attr_quicken = """\
   0           0 RESUME                   0
 
-  1           2 LOAD_CONST               0 ('a')
+  1           2 LOAD_CONST_QUICK         0 ('a')
               4 LOAD_ATTR_SLOT           0 (__class__)
              24 RETURN_VALUE
 """
@@ -1155,7 +1155,7 @@ class DisTests(DisTestBase):
 
   1        PUSH_NULL
            LOAD_NAME                0 (str)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_QUICK         0 (1)
            CALL_NO_KW_STR_1         1
            RETURN_VALUE
 """
@@ -1567,12 +1567,12 @@ expected_opinfo_jumpy = [
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=58, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=60, starts_line=5, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=2, argval=4, argrepr='4', offset=62, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='COMPARE_AND_BRANCH', opcode=141, arg=13, argval='<', argrepr='<', offset=64, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='COMPARE_OP', opcode=107, arg=0, argval='<', argrepr='<', offset=64, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=72, argrepr='to 72', offset=68, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=22, argval=28, argrepr='to 28', offset=70, starts_line=6, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=72, starts_line=7, is_jump_target=True, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=6, argrepr='6', offset=74, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='COMPARE_AND_BRANCH', opcode=141, arg=68, argval='>', argrepr='>', offset=76, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='COMPARE_OP', opcode=107, arg=64, argval='>', argrepr='>', offset=76, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_TRUE', opcode=115, arg=1, argval=84, argrepr='to 84', offset=80, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=28, argval=28, argrepr='to 28', offset=82, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=84, starts_line=8, is_jump_target=True, positions=None),
@@ -1594,12 +1594,12 @@ expected_opinfo_jumpy = [
   Instruction(opname='STORE_FAST', opcode=125, arg=0, argval='i', argrepr='i', offset=154, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=156, starts_line=14, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=6, argrepr='6', offset=158, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='COMPARE_AND_BRANCH', opcode=141, arg=75, argval='>', argrepr='>', offset=160, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='COMPARE_OP', opcode=107, arg=64, argval='>', argrepr='>', offset=160, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=168, argrepr='to 168', offset=164, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=26, argval=116, argrepr='to 116', offset=166, starts_line=15, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=168, starts_line=16, is_jump_target=True, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=2, argval=4, argrepr='4', offset=170, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='COMPARE_AND_BRANCH', opcode=141, arg=13, argval='<', argrepr='<', offset=172, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='COMPARE_OP', opcode=107, arg=0, argval='<', argrepr='<', offset=172, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=180, argrepr='to 180', offset=176, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_FORWARD', opcode=110, arg=16, argval=212, argrepr='to 212', offset=178, starts_line=17, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=180, starts_line=11, is_jump_target=True, positions=None),

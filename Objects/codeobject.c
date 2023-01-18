@@ -360,8 +360,6 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
     return 0;
 }
 
-extern void _PyCode_Quicken(PyCodeObject *code);
-
 static void
 init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
 {
@@ -417,7 +415,6 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
         entry_point++;
     }
     co->_co_firsttraceable = entry_point;
-    _PyCode_Quicken(co);
     notify_code_watchers(PY_CODE_EVENT_CREATE, co);
 }
 
@@ -2308,7 +2305,6 @@ _PyStaticCode_Init(PyCodeObject *co)
     if (res < 0) {
         return -1;
     }
-    _PyCode_Quicken(co);
     return 0;
 }
 

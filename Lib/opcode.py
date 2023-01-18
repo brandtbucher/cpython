@@ -192,8 +192,6 @@ hasfree.append(138)
 def_op('DELETE_DEREF', 139)
 hasfree.append(139)
 jrel_op('JUMP_BACKWARD', 140)    # Number of words to skip (backwards)
-def_op('COMPARE_AND_BRANCH', 141)   # Comparison and jump
-hascompare.append(141)
 
 def_op('CALL_FUNCTION_EX', 142)  # Flags
 
@@ -280,22 +278,27 @@ _nb_ops = [
 
 _specializations = {
     "BINARY_OP": [
+        "BINARY_OP_ADAPTIVE",
         "BINARY_OP_ADD_FLOAT",
         "BINARY_OP_ADD_INT",
         "BINARY_OP_ADD_UNICODE",
         "BINARY_OP_INPLACE_ADD_UNICODE",
         "BINARY_OP_MULTIPLY_FLOAT",
         "BINARY_OP_MULTIPLY_INT",
+        "BINARY_OP_QUICK",
         "BINARY_OP_SUBTRACT_FLOAT",
         "BINARY_OP_SUBTRACT_INT",
     ],
     "BINARY_SUBSCR": [
+        "BINARY_SUBSCR_ADAPTIVE",
         "BINARY_SUBSCR_DICT",
         "BINARY_SUBSCR_GETITEM",
         "BINARY_SUBSCR_LIST_INT",
         "BINARY_SUBSCR_TUPLE_INT",
+        "BINARY_SUBSCR_QUICK",
     ],
     "CALL": [
+        "CALL_ADAPTIVE",
         "CALL_PY_EXACT_ARGS",
         "CALL_PY_WITH_DEFAULTS",
         "CALL_BOUND_METHOD_EXACT_ARGS",
@@ -313,19 +316,26 @@ _specializations = {
         "CALL_NO_KW_STR_1",
         "CALL_NO_KW_TUPLE_1",
         "CALL_NO_KW_TYPE_1",
+        "CALL_QUICK",
     ],
-    "COMPARE_AND_BRANCH": [
+    "COMPARE_OP": [
+        "COMPARE_AND_BRANCH",
         "COMPARE_AND_BRANCH_FLOAT",
         "COMPARE_AND_BRANCH_INT",
         "COMPARE_AND_BRANCH_STR",
+        "COMPARE_OP_QUICK",
     ],
     "FOR_ITER": [
+        "FOR_ITER_ADAPTIVE",
         "FOR_ITER_LIST",
         "FOR_ITER_TUPLE",
         "FOR_ITER_RANGE",
         "FOR_ITER_GEN",
+        "FOR_ITER_QUICK",
     ],
     "LOAD_ATTR": [
+        "LOAD_ATTR_ADAPTIVE",
+        "LOAD_ATTR_QUICK",
         # These potentially push [NULL, bound method] onto the stack.
         "LOAD_ATTR_CLASS",
         "LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN",
@@ -341,30 +351,41 @@ _specializations = {
     ],
     "LOAD_CONST": [
         "LOAD_CONST__LOAD_FAST",
+        "LOAD_CONST_QUICK",
     ],
     "LOAD_FAST": [
         "LOAD_FAST__LOAD_CONST",
         "LOAD_FAST__LOAD_FAST",
+        "LOAD_FAST_QUICK",
     ],
     "LOAD_GLOBAL": [
+        "LOAD_GLOBAL_ADAPTIVE",
         "LOAD_GLOBAL_BUILTIN",
         "LOAD_GLOBAL_MODULE",
+        "LOAD_GLOBAL_QUICK",
     ],
     "STORE_ATTR": [
+        "STORE_ATTR_ADAPTIVE",
         "STORE_ATTR_INSTANCE_VALUE",
+        "STORE_ATTR_QUICK",
         "STORE_ATTR_SLOT",
         "STORE_ATTR_WITH_HINT",
     ],
     "STORE_FAST": [
         "STORE_FAST__LOAD_FAST",
         "STORE_FAST__STORE_FAST",
+        "STORE_FAST_QUICK",
     ],
     "STORE_SUBSCR": [
+        "STORE_SUBSCR_ADAPTIVE",
         "STORE_SUBSCR_DICT",
         "STORE_SUBSCR_LIST_INT",
+        "STORE_SUBSCR_QUICK",
     ],
     "UNPACK_SEQUENCE": [
+        "UNPACK_SEQUENCE_ADAPTIVE",
         "UNPACK_SEQUENCE_LIST",
+        "UNPACK_SEQUENCE_QUICK",
         "UNPACK_SEQUENCE_TUPLE",
         "UNPACK_SEQUENCE_TWO_TUPLE",
     ],
@@ -395,9 +416,6 @@ _cache_format = {
         "counter": 1,
     },
     "COMPARE_OP": {
-        "counter": 1,
-    },
-    "COMPARE_AND_BRANCH": {
         "counter": 1,
     },
     "BINARY_SUBSCR": {

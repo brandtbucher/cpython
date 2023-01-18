@@ -263,65 +263,6 @@ do { \
 #define SPECIALIZATION_FAIL(opcode, kind) ((void)0)
 #endif
 
-static int compare_masks[] = {
-    [Py_LT] = COMPARISON_LESS_THAN,
-    [Py_LE] = COMPARISON_LESS_THAN | COMPARISON_EQUALS,
-    [Py_EQ] = COMPARISON_EQUALS,
-    [Py_NE] = COMPARISON_NOT_EQUALS,
-    [Py_GT] = COMPARISON_GREATER_THAN,
-    [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
-};
-
-// Initialize warmup counters and insert superinstructions. This cannot fail.
-void
-_PyCode_Quicken(PyCodeObject *code)
-{
-    #if ENABLE_SPECIALIZATION
-    int opcode = 0;
-    _Py_CODEUNIT *instructions = _PyCode_CODE(code);
-    for (int i = 0; i < Py_SIZE(code); i++) {
-        int previous_opcode = opcode;
-        opcode = _PyOpcode_Deopt[_Py_OPCODE(instructions[i])];
-        int caches = _PyOpcode_Caches[opcode];
-        if (caches) {
-            instructions[i + 1].cache = adaptive_counter_warmup();
-            i += caches;
-            continue;
-        }
-        switch (previous_opcode << 8 | opcode) {
-            case LOAD_CONST << 8 | LOAD_FAST:
-                instructions[i - 1].opcode = LOAD_CONST__LOAD_FAST;
-                break;
-            case LOAD_FAST << 8 | LOAD_CONST:
-                instructions[i - 1].opcode = LOAD_FAST__LOAD_CONST;
-                break;
-            case LOAD_FAST << 8 | LOAD_FAST:
-                instructions[i - 1].opcode = LOAD_FAST__LOAD_FAST;
-                break;
-            case STORE_FAST << 8 | LOAD_FAST:
-                instructions[i - 1].opcode = STORE_FAST__LOAD_FAST;
-                break;
-            case STORE_FAST << 8 | STORE_FAST:
-                instructions[i - 1].opcode = STORE_FAST__STORE_FAST;
-                break;
-            case COMPARE_OP << 8 | POP_JUMP_IF_TRUE:
-            case COMPARE_OP << 8 | POP_JUMP_IF_FALSE:
-            {
-                int oparg = instructions[i - 1 - INLINE_CACHE_ENTRIES_COMPARE_OP].oparg;
-                assert((oparg >> 4) <= Py_GE);
-                int mask = compare_masks[oparg >> 4];
-                if (opcode == POP_JUMP_IF_FALSE) {
-                    mask = mask ^ 0xf;
-                }
-                instructions[i - 1 - INLINE_CACHE_ENTRIES_COMPARE_OP].opcode = COMPARE_AND_BRANCH;
-                instructions[i - 1 - INLINE_CACHE_ENTRIES_COMPARE_OP].oparg = (oparg & 0xf0) | mask;
-                break;
-            }
-        }
-    }
-    #endif /* ENABLE_SPECIALIZATION */
-}
-
 #define SIMPLE_FUNCTION 0
 
 /* Common */
@@ -1915,8 +1856,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
             }
             if (PyUnicode_CheckExact(lhs)) {
                 _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_BINARY_OP + 1];
-                bool to_store = (_Py_OPCODE(next) == STORE_FAST ||
-                                 _Py_OPCODE(next) == STORE_FAST__LOAD_FAST);
+                bool to_store = (_PyOpcode_Deopt[_Py_OPCODE(next)]  == STORE_FAST);
                 if (to_store && locals[_Py_OPARG(next)] == lhs) {
                     _py_set_opcode(instr, BINARY_OP_INPLACE_ADD_UNICODE);
                     goto success;

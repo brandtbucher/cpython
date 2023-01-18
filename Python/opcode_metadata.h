@@ -16,9 +16,15 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 0;
         case LOAD_FAST:
             return 0;
+        case LOAD_FAST_QUICK:
+            return 0;
         case LOAD_CONST:
             return 0;
+        case LOAD_CONST_QUICK:
+            return 0;
         case STORE_FAST:
+            return 1;
+        case STORE_FAST_QUICK:
             return 1;
         case LOAD_FAST__LOAD_FAST:
             return 0+0;
@@ -60,6 +66,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 2;
         case BINARY_SUBSCR:
             return 2;
+        case BINARY_SUBSCR_ADAPTIVE:
+            return 2;
+        case BINARY_SUBSCR_QUICK:
+            return 2;
         case BINARY_SLICE:
             return 3;
         case STORE_SLICE:
@@ -77,6 +87,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case SET_ADD:
             return (oparg-1) + 2;
         case STORE_SUBSCR:
+            return 3;
+        case STORE_SUBSCR_ADAPTIVE:
+            return 3;
+        case STORE_SUBSCR_QUICK:
             return 3;
         case STORE_SUBSCR_LIST_INT:
             return 3;
@@ -122,6 +136,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 0;
         case UNPACK_SEQUENCE:
             return -1;
+        case UNPACK_SEQUENCE_ADAPTIVE:
+            return -1;
+        case UNPACK_SEQUENCE_QUICK:
+            return -1;
         case UNPACK_SEQUENCE_TWO_TUPLE:
             return -1;
         case UNPACK_SEQUENCE_TUPLE:
@@ -132,6 +150,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return -1;
         case STORE_ATTR:
             return 2;
+        case STORE_ATTR_ADAPTIVE:
+            return 2;
+        case STORE_ATTR_QUICK:
+            return 2;
         case DELETE_ATTR:
             return 1;
         case STORE_GLOBAL:
@@ -141,6 +163,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case LOAD_NAME:
             return 0;
         case LOAD_GLOBAL:
+            return -1;
+        case LOAD_GLOBAL_ADAPTIVE:
+            return -1;
+        case LOAD_GLOBAL_QUICK:
             return -1;
         case LOAD_GLOBAL_MODULE:
             return -1;
@@ -186,6 +212,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 2;
         case LOAD_ATTR:
             return -1;
+        case LOAD_ATTR_ADAPTIVE:
+            return -1;
+        case LOAD_ATTR_QUICK:
+            return -1;
         case LOAD_ATTR_INSTANCE_VALUE:
             return -1;
         case LOAD_ATTR_MODULE:
@@ -207,6 +237,8 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case STORE_ATTR_SLOT:
             return 2;
         case COMPARE_OP:
+            return 2;
+        case COMPARE_OP_QUICK:
             return 2;
         case COMPARE_AND_BRANCH:
             return 2;
@@ -262,6 +294,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return -1;
         case FOR_ITER:
             return -1;
+        case FOR_ITER_ADAPTIVE:
+            return -1;
+        case FOR_ITER_QUICK:
+            return -1;
         case FOR_ITER_LIST:
             return -1;
         case FOR_ITER_TUPLE:
@@ -289,6 +325,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case KW_NAMES:
             return -1;
         case CALL:
+            return -1;
+        case CALL_ADAPTIVE:
+            return -1;
+        case CALL_QUICK:
             return -1;
         case CALL_PY_EXACT_ARGS:
             return -1;
@@ -336,6 +376,10 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return -1;
         case BINARY_OP:
             return 2;
+        case BINARY_OP_ADAPTIVE:
+            return 2;
+        case BINARY_OP_QUICK:
+            return 2;
         case SWAP:
             return -1;
         case EXTENDED_ARG:
@@ -362,9 +406,15 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 1;
         case LOAD_FAST:
             return 1;
+        case LOAD_FAST_QUICK:
+            return 1;
         case LOAD_CONST:
             return 1;
+        case LOAD_CONST_QUICK:
+            return 1;
         case STORE_FAST:
+            return 0;
+        case STORE_FAST_QUICK:
             return 0;
         case LOAD_FAST__LOAD_FAST:
             return 1+1;
@@ -406,6 +456,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 1;
         case BINARY_SUBSCR:
             return 1;
+        case BINARY_SUBSCR_ADAPTIVE:
+            return 1;
+        case BINARY_SUBSCR_QUICK:
+            return 1;
         case BINARY_SLICE:
             return 1;
         case STORE_SLICE:
@@ -423,6 +477,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case SET_ADD:
             return (oparg-1) + 1;
         case STORE_SUBSCR:
+            return 0;
+        case STORE_SUBSCR_ADAPTIVE:
+            return 0;
+        case STORE_SUBSCR_QUICK:
             return 0;
         case STORE_SUBSCR_LIST_INT:
             return 0;
@@ -468,6 +526,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 0;
         case UNPACK_SEQUENCE:
             return -1;
+        case UNPACK_SEQUENCE_ADAPTIVE:
+            return -1;
+        case UNPACK_SEQUENCE_QUICK:
+            return -1;
         case UNPACK_SEQUENCE_TWO_TUPLE:
             return -1;
         case UNPACK_SEQUENCE_TUPLE:
@@ -478,6 +540,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return -1;
         case STORE_ATTR:
             return 0;
+        case STORE_ATTR_ADAPTIVE:
+            return 0;
+        case STORE_ATTR_QUICK:
+            return 0;
         case DELETE_ATTR:
             return 0;
         case STORE_GLOBAL:
@@ -487,6 +553,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case LOAD_NAME:
             return 1;
         case LOAD_GLOBAL:
+            return -1;
+        case LOAD_GLOBAL_ADAPTIVE:
+            return -1;
+        case LOAD_GLOBAL_QUICK:
             return -1;
         case LOAD_GLOBAL_MODULE:
             return -1;
@@ -532,6 +602,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 0;
         case LOAD_ATTR:
             return -1;
+        case LOAD_ATTR_ADAPTIVE:
+            return -1;
+        case LOAD_ATTR_QUICK:
+            return -1;
         case LOAD_ATTR_INSTANCE_VALUE:
             return -1;
         case LOAD_ATTR_MODULE:
@@ -553,6 +627,8 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case STORE_ATTR_SLOT:
             return 0;
         case COMPARE_OP:
+            return 1;
+        case COMPARE_OP_QUICK:
             return 1;
         case COMPARE_AND_BRANCH:
             return 0;
@@ -608,6 +684,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return -1;
         case FOR_ITER:
             return -1;
+        case FOR_ITER_ADAPTIVE:
+            return -1;
+        case FOR_ITER_QUICK:
+            return -1;
         case FOR_ITER_LIST:
             return -1;
         case FOR_ITER_TUPLE:
@@ -635,6 +715,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case KW_NAMES:
             return -1;
         case CALL:
+            return -1;
+        case CALL_ADAPTIVE:
+            return -1;
+        case CALL_QUICK:
             return -1;
         case CALL_PY_EXACT_ARGS:
             return -1;
@@ -682,6 +766,10 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return -1;
         case BINARY_OP:
             return 1;
+        case BINARY_OP_ADAPTIVE:
+            return 1;
+        case BINARY_OP_QUICK:
+            return 1;
         case SWAP:
             return -1;
         case EXTENDED_ARG:
@@ -706,9 +794,12 @@ struct opcode_metadata {
     [RESUME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_CLOSURE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST_CHECK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_CONST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [STORE_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [LOAD_FAST__LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [STORE_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
@@ -729,6 +820,8 @@ struct opcode_metadata {
     [BINARY_OP_ADD_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [BINARY_OP_ADD_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [BINARY_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
+    [BINARY_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
+    [BINARY_SUBSCR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [BINARY_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [STORE_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [BINARY_SUBSCR_LIST_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
@@ -738,6 +831,8 @@ struct opcode_metadata {
     [LIST_APPEND] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [SET_ADD] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [STORE_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [STORE_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [STORE_SUBSCR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [STORE_SUBSCR_LIST_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [STORE_SUBSCR_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [DELETE_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
@@ -759,17 +854,23 @@ struct opcode_metadata {
     [LOAD_BUILD_CLASS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [STORE_NAME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [DELETE_NAME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [UNPACK_SEQUENCE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [UNPACK_SEQUENCE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [UNPACK_SEQUENCE_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [UNPACK_SEQUENCE_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [UNPACK_SEQUENCE_TWO_TUPLE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [UNPACK_SEQUENCE_TUPLE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [UNPACK_SEQUENCE_LIST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [UNPACK_EX] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
+    [STORE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
+    [STORE_ATTR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
+    [STORE_ATTR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
     [DELETE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [STORE_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [DELETE_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_NAME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_GLOBAL_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_GLOBAL_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_GLOBAL_MODULE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_GLOBAL_BUILTIN] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [DELETE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
@@ -791,7 +892,9 @@ struct opcode_metadata {
     [DICT_UPDATE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [DICT_MERGE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [MAP_ADD] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_ATTR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_ATTR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_ATTR_INSTANCE_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_ATTR_MODULE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
@@ -803,6 +906,7 @@ struct opcode_metadata {
     [STORE_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
     [STORE_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [COMPARE_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [COMPARE_OP_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [COMPARE_AND_BRANCH] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
     [COMPARE_AND_BRANCH_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
     [COMPARE_AND_BRANCH_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
@@ -829,7 +933,9 @@ struct opcode_metadata {
     [MATCH_KEYS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [GET_ITER] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [GET_YIELD_FROM_ITER] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
-    [FOR_ITER] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [FOR_ITER] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [FOR_ITER_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [FOR_ITER_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [FOR_ITER_LIST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [FOR_ITER_TUPLE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [FOR_ITER_RANGE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
@@ -843,7 +949,9 @@ struct opcode_metadata {
     [LOAD_ATTR_METHOD_LAZY_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [CALL_BOUND_METHOD_EXACT_ARGS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [KW_NAMES] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [CALL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [CALL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [CALL_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [CALL_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CALL_PY_EXACT_ARGS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CALL_PY_WITH_DEFAULTS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CALL_NO_KW_TYPE_1] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
@@ -866,7 +974,9 @@ struct opcode_metadata {
     [BUILD_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [FORMAT_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [COPY] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [BINARY_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [BINARY_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [BINARY_OP_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [BINARY_OP_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [SWAP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [EXTENDED_ARG] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CACHE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
