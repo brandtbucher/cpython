@@ -1883,12 +1883,13 @@ dummy_func(
         inst(COMPARE_OP, (unused/1, unused, unused -- unused)) {
             int new_opcode;
             int new_oparg;
-            switch (next_instr->opcode) {
+            int next_opcode = next_instr[INLINE_CACHE_ENTRIES_COMPARE_OP].opcode;
+            switch (next_opcode) {
                 case POP_JUMP_IF_FALSE:
                 case POP_JUMP_IF_TRUE:
                     assert((oparg >> 4) <= Py_GE);
                     int mask = compare_masks[oparg >> 4];
-                    if (opcode == POP_JUMP_IF_FALSE) {
+                    if (next_opcode == POP_JUMP_IF_FALSE) {
                         mask = mask ^ 0xf;
                     }
                     new_opcode = COMPARE_OP_ADAPTIVE;
