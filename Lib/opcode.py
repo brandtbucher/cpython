@@ -285,7 +285,6 @@ _specializations = {
         "BINARY_OP_INPLACE_ADD_UNICODE",
         "BINARY_OP_MULTIPLY_FLOAT",
         "BINARY_OP_MULTIPLY_INT",
-        "BINARY_OP_QUICK",
         "BINARY_OP_SUBTRACT_FLOAT",
         "BINARY_OP_SUBTRACT_INT",
     ],
@@ -295,7 +294,6 @@ _specializations = {
         "BINARY_SUBSCR_GETITEM",
         "BINARY_SUBSCR_LIST_INT",
         "BINARY_SUBSCR_TUPLE_INT",
-        "BINARY_SUBSCR_QUICK",
     ],
     "CALL": [
         "CALL_ADAPTIVE",
@@ -335,13 +333,13 @@ _specializations = {
     ],
     "LOAD_ATTR": [
         "LOAD_ATTR_ADAPTIVE",
-        "LOAD_ATTR_QUICK",
         # These potentially push [NULL, bound method] onto the stack.
         "LOAD_ATTR_CLASS",
         "LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN",
         "LOAD_ATTR_INSTANCE_VALUE",
         "LOAD_ATTR_MODULE",
         "LOAD_ATTR_PROPERTY",
+        "LOAD_ATTR_QUICK",
         "LOAD_ATTR_SLOT",
         "LOAD_ATTR_WITH_HINT",
         # These will always push [unbound method, self] onto the stack.
@@ -367,7 +365,6 @@ _specializations = {
     "STORE_ATTR": [
         "STORE_ATTR_ADAPTIVE",
         "STORE_ATTR_INSTANCE_VALUE",
-        "STORE_ATTR_QUICK",
         "STORE_ATTR_SLOT",
         "STORE_ATTR_WITH_HINT",
     ],
@@ -380,7 +377,6 @@ _specializations = {
         "STORE_SUBSCR_ADAPTIVE",
         "STORE_SUBSCR_DICT",
         "STORE_SUBSCR_LIST_INT",
-        "STORE_SUBSCR_QUICK",
     ],
     "UNPACK_SEQUENCE": [
         "UNPACK_SEQUENCE_ADAPTIVE",
