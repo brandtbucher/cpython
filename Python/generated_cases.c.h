@@ -981,18 +981,21 @@
         }
 
         TARGET(END_ASYNC_FOR) {
-            PyObject *val = POP();
-            assert(val && PyExceptionInstance_Check(val));
-            if (PyErr_GivenExceptionMatches(val, PyExc_StopAsyncIteration)) {
-                Py_DECREF(val);
-                Py_DECREF(POP());
+            PyObject *exc = PEEK(1);
+            PyObject *awaitable = PEEK(2);
+            assert(exc && PyExceptionInstance_Check(exc));
+            if (PyErr_GivenExceptionMatches(exc, PyExc_StopAsyncIteration)) {
+                Py_DECREF(awaitable);
+                Py_DECREF(exc);
             }
             else {
-                PyObject *exc = Py_NewRef(PyExceptionInstance_Class(val));
-                PyObject *tb = PyException_GetTraceback(val);
-                _PyErr_Restore(tstate, exc, val, tb);
+                Py_INCREF(exc);
+                PyObject *typ = Py_NewRef(PyExceptionInstance_Class(exc));
+                PyObject *tb = PyException_GetTraceback(exc);
+                _PyErr_Restore(tstate, typ, exc, tb);
                 goto exception_unwind;
             }
+            STACK_SHRINK(2);
             DISPATCH();
         }
 
@@ -2460,16 +2463,15 @@
         }
 
         TARGET(GET_LEN) {
+            PyObject *obj = PEEK(1);
+            PyObject *len_o;
             // PUSH(len(TOS))
-            Py_ssize_t len_i = PyObject_Length(TOP());
-            if (len_i < 0) {
-                goto error;
-            }
-            PyObject *len_o = PyLong_FromSsize_t(len_i);
-            if (len_o == NULL) {
-                goto error;
-            }
-            PUSH(len_o);
+            Py_ssize_t len_i = PyObject_Length(obj);
+            if (len_i < 0) goto error;
+            len_o = PyLong_FromSsize_t(len_i);
+            if (len_o == NULL) goto error;
+            STACK_GROW(1);
+            POKE(1, len_o);
             DISPATCH();
         }
 
@@ -2532,13 +2534,13 @@
         }
 
         TARGET(GET_ITER) {
+            PyObject *iterable = PEEK(1);
+            PyObject *iter;
             /* before: [obj]; after [getiter(obj)] */
-            PyObject *iterable = TOP();
-            PyObject *iter = PyObject_GetIter(iterable);
+            iter = PyObject_GetIter(iterable);
             Py_DECREF(iterable);
-            SET_TOP(iter);
-            if (iter == NULL)
-                goto error;
+            if (iter == NULL) goto pop_1_error;
+            POKE(1, iter);
             DISPATCH();
         }
 
@@ -2701,7 +2703,8 @@
         }
 
         TARGET(BEFORE_ASYNC_WITH) {
-            PyObject *mgr = TOP();
+            PyObject *mgr = PEEK(1);
+            PyObject *exit;
             PyObject *res;
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__aenter__));
             if (enter == NULL) {
@@ -2713,7 +2716,7 @@
                 }
                 goto error;
             }
-            PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__aexit__));
+            exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__aexit__));
             if (exit == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
                     _PyErr_Format(tstate, PyExc_TypeError,
@@ -2725,20 +2728,27 @@
                 Py_DECREF(enter);
                 goto error;
             }
-            SET_TOP(exit);
             Py_DECREF(mgr);
             res = _PyObject_CallNoArgs(enter);
             Py_DECREF(enter);
-            if (res == NULL)
-                goto error;
-            PUSH(res);
+            if (res == NULL) {
+                Py_DECREF(exit);
+                if (true) goto pop_1_error;
+            }
+            STACK_GROW(1);
+            POKE(1, res);
+            POKE(2, exit);
             PREDICT(GET_AWAITABLE);
             DISPATCH();
         }
 
         TARGET(BEFORE_WITH) {
-            PyObject *mgr = TOP();
+            PyObject *mgr = PEEK(1);
+            PyObject *exit;
             PyObject *res;
+            /* pop the context manager, push its __exit__ and the
+             * value returned from calling its __enter__
+             */
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__enter__));
             if (enter == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
@@ -2749,7 +2759,7 @@
                 }
                 goto error;
             }
-            PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__exit__));
+            exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__exit__));
             if (exit == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
                     _PyErr_Format(tstate, PyExc_TypeError,
@@ -2761,14 +2771,16 @@
                 Py_DECREF(enter);
                 goto error;
             }
-            SET_TOP(exit);
             Py_DECREF(mgr);
             res = _PyObject_CallNoArgs(enter);
             Py_DECREF(enter);
             if (res == NULL) {
-                goto error;
+                Py_DECREF(exit);
+                if (true) goto pop_1_error;
             }
-            PUSH(res);
+            STACK_GROW(1);
+            POKE(1, res);
+            POKE(2, exit);
             DISPATCH();
         }
 
