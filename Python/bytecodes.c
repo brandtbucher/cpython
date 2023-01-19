@@ -846,18 +846,16 @@ dummy_func(
             ERROR_IF(val == NULL, error);
         }
 
-        // stack effect: (__0, __1 -- )
-        inst(END_ASYNC_FOR) {
-            PyObject *val = POP();
-            assert(val && PyExceptionInstance_Check(val));
-            if (PyErr_GivenExceptionMatches(val, PyExc_StopAsyncIteration)) {
-                Py_DECREF(val);
-                Py_DECREF(POP());
+        inst(END_ASYNC_FOR, (awaitable, exc -- )) {
+            assert(exc && PyExceptionInstance_Check(exc));
+            if (PyErr_GivenExceptionMatches(exc, PyExc_StopAsyncIteration)) {
+                DECREF_INPUTS();
             }
             else {
-                PyObject *exc = Py_NewRef(PyExceptionInstance_Class(val));
-                PyObject *tb = PyException_GetTraceback(val);
-                _PyErr_Restore(tstate, exc, val, tb);
+                Py_INCREF(exc);
+                PyObject *typ = Py_NewRef(PyExceptionInstance_Class(exc));
+                PyObject *tb = PyException_GetTraceback(exc);
+                _PyErr_Restore(tstate, typ, exc, tb);
                 goto exception_unwind;
             }
         }
@@ -2198,8 +2196,7 @@ dummy_func(
             }
         }
 
-        // stack effect: ( -- )
-        inst(JUMP_BACKWARD_NO_INTERRUPT) {
+        inst(JUMP_BACKWARD_NO_INTERRUPT, (--)) {
             /* This bytecode is used in the `yield from` or `await` loop.
              * If there is an interrupt, we want it handled in the innermost
              * generator or coroutine, so we deliberately do not check it here.
@@ -2208,18 +2205,12 @@ dummy_func(
             JUMPBY(-oparg);
         }
 
-        // stack effect: ( -- __0)
-        inst(GET_LEN) {
+        inst(GET_LEN, (obj -- obj, len_o)) {
             // PUSH(len(TOS))
-            Py_ssize_t len_i = PyObject_Length(TOP());
-            if (len_i < 0) {
-                goto error;
-            }
-            PyObject *len_o = PyLong_FromSsize_t(len_i);
-            if (len_o == NULL) {
-                goto error;
-            }
-            PUSH(len_o);
+            Py_ssize_t len_i = PyObject_Length(obj);
+            ERROR_IF(len_i < 0, error);
+            len_o = PyLong_FromSsize_t(len_i);
+            ERROR_IF(len_o == NULL, error);
         }
 
         inst(MATCH_CLASS, (subject, type, names -- attrs)) {
@@ -2255,15 +2246,11 @@ dummy_func(
             ERROR_IF(values_or_none == NULL, error);
         }
 
-        // stack effect: ( -- )
-        inst(GET_ITER) {
+        inst(GET_ITER, (iterable -- iter)) {
             /* before: [obj]; after [getiter(obj)] */
-            PyObject *iterable = TOP();
-            PyObject *iter = PyObject_GetIter(iterable);
-            Py_DECREF(iterable);
-            SET_TOP(iter);
-            if (iter == NULL)
-                goto error;
+            iter = PyObject_GetIter(iterable);
+            DECREF_INPUTS();
+            ERROR_IF(iter == NULL, error);
         }
 
         // stack effect: ( -- )
@@ -2432,10 +2419,7 @@ dummy_func(
             DISPATCH_INLINED(gen_frame);
         }
 
-        // stack effect: ( -- __0)
-        inst(BEFORE_ASYNC_WITH) {
-            PyObject *mgr = TOP();
-            PyObject *res;
+        inst(BEFORE_ASYNC_WITH, (mgr -- exit, res)) {
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__aenter__));
             if (enter == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
@@ -2446,7 +2430,7 @@ dummy_func(
                 }
                 goto error;
             }
-            PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__aexit__));
+            exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__aexit__));
             if (exit == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
                     _PyErr_Format(tstate, PyExc_TypeError,
@@ -2458,20 +2442,20 @@ dummy_func(
                 Py_DECREF(enter);
                 goto error;
             }
-            SET_TOP(exit);
-            Py_DECREF(mgr);
+            DECREF_INPUTS();
             res = _PyObject_CallNoArgs(enter);
             Py_DECREF(enter);
-            if (res == NULL)
-                goto error;
-            PUSH(res);
+            if (res == NULL) {
+                Py_DECREF(exit);
+                ERROR_IF(true, error);
+            }
             PREDICT(GET_AWAITABLE);
         }
 
-        // stack effect: ( -- __0)
-        inst(BEFORE_WITH) {
-            PyObject *mgr = TOP();
-            PyObject *res;
+        inst(BEFORE_WITH, (mgr -- exit, res)) {
+            /* pop the context manager, push its __exit__ and the
+             * value returned from calling its __enter__
+             */
             PyObject *enter = _PyObject_LookupSpecial(mgr, &_Py_ID(__enter__));
             if (enter == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
@@ -2482,7 +2466,7 @@ dummy_func(
                 }
                 goto error;
             }
-            PyObject *exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__exit__));
+            exit = _PyObject_LookupSpecial(mgr, &_Py_ID(__exit__));
             if (exit == NULL) {
                 if (!_PyErr_Occurred(tstate)) {
                     _PyErr_Format(tstate, PyExc_TypeError,
@@ -2494,14 +2478,13 @@ dummy_func(
                 Py_DECREF(enter);
                 goto error;
             }
-            SET_TOP(exit);
-            Py_DECREF(mgr);
+            DECREF_INPUTS();
             res = _PyObject_CallNoArgs(enter);
             Py_DECREF(enter);
             if (res == NULL) {
-                goto error;
+                Py_DECREF(exit);
+                ERROR_IF(true, error);
             }
-            PUSH(res);
         }
 
         inst(WITH_EXCEPT_START, (exit_func, lasti, unused, val -- exit_func, lasti, unused, val, res)) {
@@ -2624,8 +2607,7 @@ dummy_func(
             GO_TO_INSTRUCTION(CALL_PY_EXACT_ARGS);
         }
 
-        // stack effect: ( -- )
-        inst(KW_NAMES) {
+        inst(KW_NAMES, (--)) {
             assert(kwnames == NULL);
             assert(oparg < PyTuple_GET_SIZE(consts));
             kwnames = GETITEM(consts, oparg);
@@ -3428,8 +3410,7 @@ dummy_func(
             PEEK(oparg) = top;
         }
 
-        // stack effect: ( -- )
-        inst(EXTENDED_ARG) {
+        inst(EXTENDED_ARG, (--)) {
             assert(oparg);
             assert(cframe.use_tracing == 0);
             opcode = _Py_OPCODE(*next_instr);
@@ -3438,8 +3419,7 @@ dummy_func(
             DISPATCH_GOTO();
         }
 
-        // stack effect: ( -- )
-        inst(CACHE) {
+        inst(CACHE, (--)) {
             Py_UNREACHABLE();
         }
 

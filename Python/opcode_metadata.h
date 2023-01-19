@@ -119,7 +119,7 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case PREP_RERAISE_STAR:
             return 2;
         case END_ASYNC_FOR:
-            return -1;
+            return 2;
         case CLEANUP_THROW:
             return -1;
         case LOAD_ASSERTION_ERROR:
@@ -271,9 +271,9 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case JUMP_IF_TRUE_OR_POP:
             return -1;
         case JUMP_BACKWARD_NO_INTERRUPT:
-            return -1;
+            return 0;
         case GET_LEN:
-            return -1;
+            return 1;
         case MATCH_CLASS:
             return 3;
         case MATCH_MAPPING:
@@ -283,7 +283,7 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case MATCH_KEYS:
             return 2;
         case GET_ITER:
-            return -1;
+            return 1;
         case GET_YIELD_FROM_ITER:
             return -1;
         case FOR_ITER:
@@ -301,9 +301,9 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case FOR_ITER_GEN:
             return -1;
         case BEFORE_ASYNC_WITH:
-            return -1;
+            return 1;
         case BEFORE_WITH:
-            return -1;
+            return 1;
         case WITH_EXCEPT_START:
             return 4;
         case PUSH_EXC_INFO:
@@ -317,7 +317,7 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return -1;
         case KW_NAMES:
-            return -1;
+            return 0;
         case CALL:
             return -1;
         case CALL_ADAPTIVE:
@@ -375,9 +375,9 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case SWAP:
             return -1;
         case EXTENDED_ARG:
-            return -1;
+            return 0;
         case CACHE:
-            return -1;
+            return 0;
         default:
             Py_UNREACHABLE();
     }
@@ -501,7 +501,7 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case PREP_RERAISE_STAR:
             return 1;
         case END_ASYNC_FOR:
-            return -1;
+            return 0;
         case CLEANUP_THROW:
             return -1;
         case LOAD_ASSERTION_ERROR:
@@ -653,9 +653,9 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case JUMP_IF_TRUE_OR_POP:
             return -1;
         case JUMP_BACKWARD_NO_INTERRUPT:
-            return -1;
+            return 0;
         case GET_LEN:
-            return -1;
+            return 2;
         case MATCH_CLASS:
             return 1;
         case MATCH_MAPPING:
@@ -665,7 +665,7 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case MATCH_KEYS:
             return 3;
         case GET_ITER:
-            return -1;
+            return 1;
         case GET_YIELD_FROM_ITER:
             return -1;
         case FOR_ITER:
@@ -683,9 +683,9 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case FOR_ITER_GEN:
             return -1;
         case BEFORE_ASYNC_WITH:
-            return -1;
+            return 2;
         case BEFORE_WITH:
-            return -1;
+            return 2;
         case WITH_EXCEPT_START:
             return 5;
         case PUSH_EXC_INFO:
@@ -699,7 +699,7 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return -1;
         case KW_NAMES:
-            return -1;
+            return 0;
         case CALL:
             return -1;
         case CALL_ADAPTIVE:
@@ -757,9 +757,9 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case SWAP:
             return -1;
         case EXTENDED_ARG:
-            return -1;
+            return 0;
         case CACHE:
-            return -1;
+            return 0;
         default:
             Py_UNREACHABLE();
     }
