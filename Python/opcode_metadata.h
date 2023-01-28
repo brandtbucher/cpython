@@ -240,13 +240,13 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 2;
         case COMPARE_OP_QUICK:
             return 2;
-        case COMPARE_AND_BRANCH:
+        case COMPARE_OP_ADAPTIVE:
             return 2;
-        case COMPARE_AND_BRANCH_FLOAT:
+        case COMPARE_OP_FLOAT:
             return 2;
-        case COMPARE_AND_BRANCH_INT:
+        case COMPARE_OP_INT:
             return 2;
-        case COMPARE_AND_BRANCH_STR:
+        case COMPARE_OP_STR:
             return 2;
         case IS_OP:
             return 2;
@@ -630,13 +630,13 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 1;
         case COMPARE_OP_QUICK:
             return 1;
-        case COMPARE_AND_BRANCH:
+        case COMPARE_OP_ADAPTIVE:
             return 0;
-        case COMPARE_AND_BRANCH_FLOAT:
+        case COMPARE_OP_FLOAT:
             return 0;
-        case COMPARE_AND_BRANCH_INT:
+        case COMPARE_OP_INT:
             return 0;
-        case COMPARE_AND_BRANCH_STR:
+        case COMPARE_OP_STR:
             return 0;
         case IS_OP:
             return 1;
@@ -907,10 +907,10 @@ struct opcode_metadata {
     [STORE_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [COMPARE_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [COMPARE_OP_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
-    [COMPARE_AND_BRANCH] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
-    [COMPARE_AND_BRANCH_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
-    [COMPARE_AND_BRANCH_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
-    [COMPARE_AND_BRANCH_STR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
+    [COMPARE_OP_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
+    [COMPARE_OP_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
+    [COMPARE_OP_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
+    [COMPARE_OP_STR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
     [IS_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CONTAINS_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CHECK_EG_MATCH] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },

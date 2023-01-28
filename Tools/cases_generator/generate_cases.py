@@ -548,7 +548,10 @@ class Analyzer:
             targets = set(instr.predictions)
             for line in instr.block_text:
                 if m := re.match(RE_PREDICTED, line):
-                    targets.add(m.group(1))
+                    target = m.group(1)
+                    if line.lstrip().startswith("DEOPT_IF("):
+                        target += "_ADAPTIVE"
+                    targets.add(target)
             for target in targets:
                 if target_instr := self.instrs.get(target):
                     target_instr.predicted = True

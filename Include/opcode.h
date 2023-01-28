@@ -159,10 +159,10 @@ extern "C" {
 #define CALL_NO_KW_TUPLE_1                      58
 #define CALL_NO_KW_TYPE_1                       59
 #define CALL_QUICK                              62
-#define COMPARE_AND_BRANCH                      63
-#define COMPARE_AND_BRANCH_FLOAT                64
-#define COMPARE_AND_BRANCH_INT                  65
-#define COMPARE_AND_BRANCH_STR                  66
+#define COMPARE_OP_ADAPTIVE                     63
+#define COMPARE_OP_FLOAT                        64
+#define COMPARE_OP_INT                          65
+#define COMPARE_OP_STR                          66
 #define COMPARE_OP_QUICK                        67
 #define FOR_ITER_ADAPTIVE                       70
 #define FOR_ITER_LIST                           72

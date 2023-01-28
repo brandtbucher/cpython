@@ -1894,7 +1894,7 @@ dummy_func(
                     if (opcode == POP_JUMP_IF_FALSE) {
                         mask = mask ^ 0xf;
                     }
-                    new_opcode = COMPARE_AND_BRANCH;
+                    new_opcode = COMPARE_OP_ADAPTIVE;
                     new_oparg = (oparg & 0xf0) | mask;
                     break;
                 default:
@@ -1916,14 +1916,14 @@ dummy_func(
             ERROR_IF(res == NULL, error);
         }
 
-        family(compare_and_branch) = {
-            COMPARE_AND_BRANCH,
-            COMPARE_AND_BRANCH_FLOAT,
-            COMPARE_AND_BRANCH_INT,
-            COMPARE_AND_BRANCH_STR,
+        family(compare_op) = {
+            COMPARE_OP_ADAPTIVE,
+            COMPARE_OP_FLOAT,
+            COMPARE_OP_INT,
+            COMPARE_OP_STR,
         };
 
-        inst(COMPARE_AND_BRANCH, (unused/2, left, right -- )) {
+        inst(COMPARE_OP_ADAPTIVE, (unused/2, left, right --)) {
             #if ENABLE_SPECIALIZATION
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1932,7 +1932,7 @@ dummy_func(
                 _Py_Specialize_CompareAndBranch(left, right, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(COMPARE_AND_BRANCH, deferred);
+            STAT_INC(COMPARE_OP, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             assert((oparg >> 4) <= Py_GE);
@@ -1954,11 +1954,11 @@ dummy_func(
             }
         }
 
-        inst(COMPARE_AND_BRANCH_FLOAT, (unused/2, left, right -- )) {
+        inst(COMPARE_OP_FLOAT, (unused/2, left, right -- )) {
             assert(cframe.use_tracing == 0);
-            DEOPT_IF(!PyFloat_CheckExact(left), COMPARE_AND_BRANCH);
-            DEOPT_IF(!PyFloat_CheckExact(right), COMPARE_AND_BRANCH);
-            STAT_INC(COMPARE_AND_BRANCH, hit);
+            DEOPT_IF(!PyFloat_CheckExact(left), COMPARE_OP);
+            DEOPT_IF(!PyFloat_CheckExact(right), COMPARE_OP);
+            STAT_INC(COMPARE_OP, hit);
             double dleft = PyFloat_AS_DOUBLE(left);
             double dright = PyFloat_AS_DOUBLE(right);
             // 1 if NaN, 2 if <, 4 if >, 8 if ==; this matches low four bits of the oparg
@@ -1971,14 +1971,14 @@ dummy_func(
             }
         }
 
-        // Similar to COMPARE_AND_BRANCH_FLOAT
-        inst(COMPARE_AND_BRANCH_INT, (unused/2, left, right -- )) {
+        // Similar to COMPARE_OP_FLOAT
+        inst(COMPARE_OP_INT, (unused/2, left, right -- )) {
             assert(cframe.use_tracing == 0);
-            DEOPT_IF(!PyLong_CheckExact(left), COMPARE_AND_BRANCH);
-            DEOPT_IF(!PyLong_CheckExact(right), COMPARE_AND_BRANCH);
-            DEOPT_IF((size_t)(Py_SIZE(left) + 1) > 2, COMPARE_AND_BRANCH);
-            DEOPT_IF((size_t)(Py_SIZE(right) + 1) > 2, COMPARE_AND_BRANCH);
-            STAT_INC(COMPARE_AND_BRANCH, hit);
+            DEOPT_IF(!PyLong_CheckExact(left), COMPARE_OP);
+            DEOPT_IF(!PyLong_CheckExact(right), COMPARE_OP);
+            DEOPT_IF((size_t)(Py_SIZE(left) + 1) > 2, COMPARE_OP);
+            DEOPT_IF((size_t)(Py_SIZE(right) + 1) > 2, COMPARE_OP);
+            STAT_INC(COMPARE_OP, hit);
             assert(Py_ABS(Py_SIZE(left)) <= 1 && Py_ABS(Py_SIZE(right)) <= 1);
             Py_ssize_t ileft = Py_SIZE(left) * ((PyLongObject *)left)->ob_digit[0];
             Py_ssize_t iright = Py_SIZE(right) * ((PyLongObject *)right)->ob_digit[0];
@@ -1992,12 +1992,12 @@ dummy_func(
             }
         }
 
-        // Similar to COMPARE_AND_BRANCH_FLOAT, but for ==, != only
-        inst(COMPARE_AND_BRANCH_STR, (unused/2, left, right -- )) {
+        // Similar to COMPARE_OP_FLOAT, but for ==, != only
+        inst(COMPARE_OP_STR, (unused/2, left, right -- )) {
             assert(cframe.use_tracing == 0);
-            DEOPT_IF(!PyUnicode_CheckExact(left), COMPARE_AND_BRANCH);
-            DEOPT_IF(!PyUnicode_CheckExact(right), COMPARE_AND_BRANCH);
-            STAT_INC(COMPARE_AND_BRANCH, hit);
+            DEOPT_IF(!PyUnicode_CheckExact(left), COMPARE_OP);
+            DEOPT_IF(!PyUnicode_CheckExact(right), COMPARE_OP);
+            STAT_INC(COMPARE_OP, hit);
             int res = _PyUnicode_Equal(left, right);
             assert((oparg >>4) == Py_EQ || (oparg >>4) == Py_NE);
             _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);

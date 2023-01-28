@@ -319,10 +319,10 @@ _specializations = {
         "CALL_QUICK",
     ],
     "COMPARE_OP": [
-        "COMPARE_AND_BRANCH",
-        "COMPARE_AND_BRANCH_FLOAT",
-        "COMPARE_AND_BRANCH_INT",
-        "COMPARE_AND_BRANCH_STR",
+        "COMPARE_OP_ADAPTIVE",
+        "COMPARE_OP_FLOAT",
+        "COMPARE_OP_INT",
+        "COMPARE_OP_STR",
         "COMPARE_OP_QUICK",
     ],
     "FOR_ITER": [
