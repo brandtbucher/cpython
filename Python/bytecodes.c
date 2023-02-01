@@ -1560,7 +1560,6 @@ dummy_func(
             LOAD_ATTR_METHOD_LAZY_DICT,
         };
 
-        // error: LOAD_ATTR has irregular stack effect
         inst(LOAD_ATTR, (unused/9, unused -- unused, unused if (oparg & 1))) {
             _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
             next_instr->cache = adaptive_counter_warmup();

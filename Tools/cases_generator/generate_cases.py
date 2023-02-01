@@ -1,4 +1,5 @@
 """Generate the main interpreter switch.
+
 Reads the instruction definitions from bytecodes.c.
 Writes the cases to generated_cases.c.h, which is #included in ceval.c.
 """
@@ -51,9 +52,12 @@ arg_parser.add_argument(
 
 def effect_size(effect: StackEffect) -> tuple[int, str]:
     """Return the 'size' impact of a stack effect.
+
     Returns a tuple (numeric, symbolic) where:
+
     - numeric is an int giving the statically analyzable size of the effect
     - symbolic is a string representing a variable effect (e.g. 'oparg*2')
+
     At most one of these will be non-zero / non-empty.
     """
     if effect.size:
@@ -67,6 +71,7 @@ def effect_size(effect: StackEffect) -> tuple[int, str]:
 
 def maybe_parenthesize(sym: str) -> str:
     """Add parentheses around a string if it contains an operator.
+
     An exception is made for '*' which is common and harmless
     in the context where the symbolic size is used.
     """
@@ -502,6 +507,7 @@ class Analyzer:
 
     def parse(self) -> None:
         """Parse the source text.
+
         We only want the parser to see the stuff between the
         begin and end markers.
         """
@@ -558,6 +564,7 @@ class Analyzer:
 
     def analyze(self) -> None:
         """Analyze the inputs.
+
         Raises SystemExit if there is an error.
         """
         self.analyze_register_instrs()
@@ -622,6 +629,7 @@ class Analyzer:
 
     def check_families(self) -> None:
         """Check each family:
+
         - Must have at least 2 members
         - All members must be known instructions
         - All members must have the same cache, input and output effects
@@ -776,7 +784,9 @@ class Analyzer:
         self, components: typing.Iterable[InstructionOrCacheEffect]
     ) -> tuple[list[StackEffect], int]:
         """Analyze a super-instruction or macro.
+
         Ignore cache effects.
+
         Return the list of variable names and the initial stack pointer.
         """
         lowest = current = highest = 0
