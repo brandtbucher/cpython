@@ -500,7 +500,7 @@ dummy_func(
             PREDICT(JUMP_BACKWARD);
         }
 
-        family(store_subscr) = {
+        family(store_subscr, INLINE_CACHE_ENTRIES_STORE_SUBSCR) = {
             STORE_SUBSCR,
             STORE_SUBSCR_ADAPTIVE,
             STORE_SUBSCR_DICT,
@@ -1036,7 +1036,7 @@ dummy_func(
             Py_DECREF(seq);
         }
 
-        family(store_attr) = {
+        family(store_attr, INLINE_CACHE_ENTRIES_STORE_ATTR) = {
             STORE_ATTR,
             STORE_ATTR_ADAPTIVE,
             STORE_ATTR_INSTANCE_VALUE,
@@ -1544,8 +1544,24 @@ dummy_func(
             PREDICT(JUMP_BACKWARD);
         }
 
+        family(load_attr, INLINE_CACHE_ENTRIES_LOAD_ATTR) = {
+            LOAD_ATTR,
+            LOAD_ATTR_ADAPTIVE,
+            LOAD_ATTR_QUICK,
+            LOAD_ATTR_INSTANCE_VALUE,
+            LOAD_ATTR_MODULE,
+            LOAD_ATTR_WITH_HINT,
+            LOAD_ATTR_SLOT,
+            LOAD_ATTR_CLASS,
+            LOAD_ATTR_PROPERTY,
+            LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN,
+            LOAD_ATTR_METHOD_WITH_VALUES,
+            LOAD_ATTR_METHOD_NO_DICT,
+            LOAD_ATTR_METHOD_LAZY_DICT,
+        };
+
         // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR, (unused/9 -- unused if (oparg & 1))) {
+        inst(LOAD_ATTR, (unused/9, unused -- unused, unused if (oparg & 1))) {
             _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
             next_instr->cache = adaptive_counter_warmup();
             GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
@@ -1604,64 +1620,43 @@ dummy_func(
             }
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_INSTANCE_VALUE) {
+        inst(LOAD_ATTR_INSTANCE_VALUE, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *owner = TOP();
-            PyObject *res;
             PyTypeObject *tp = Py_TYPE(owner);
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-            uint32_t type_version = read_u32(cache->version);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
             assert(tp->tp_dictoffset < 0);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
             PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
             DEOPT_IF(!_PyDictOrValues_IsValues(dorv), LOAD_ATTR);
-            res = _PyDictOrValues_GetValues(dorv)->values[cache->index];
+            res = _PyDictOrValues_GetValues(dorv)->values[index];
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
-            SET_TOP(NULL);
-            STACK_GROW((oparg & 1));
-            SET_TOP(res);
+            res2 = NULL;
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_MODULE) {
+        inst(LOAD_ATTR_MODULE, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *owner = TOP();
-            PyObject *res;
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             DEOPT_IF(!PyModule_CheckExact(owner), LOAD_ATTR);
             PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
             assert(dict != NULL);
-            DEOPT_IF(dict->ma_keys->dk_version != read_u32(cache->version),
-                LOAD_ATTR);
+            DEOPT_IF(dict->ma_keys->dk_version != type_version, LOAD_ATTR);
             assert(dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
-            assert(cache->index < dict->ma_keys->dk_nentries);
-            PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(dict->ma_keys) + cache->index;
+            assert(index < dict->ma_keys->dk_nentries);
+            PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(dict->ma_keys) + index;
             res = ep->me_value;
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
-            SET_TOP(NULL);
-            STACK_GROW((oparg & 1));
-            SET_TOP(res);
+            res2 = NULL;
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_WITH_HINT) {
+        inst(LOAD_ATTR_WITH_HINT, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *owner = TOP();
-            PyObject *res;
             PyTypeObject *tp = Py_TYPE(owner);
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-            uint32_t type_version = read_u32(cache->version);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
@@ -1671,7 +1666,7 @@ dummy_func(
             DEOPT_IF(dict == NULL, LOAD_ATTR);
             assert(PyDict_CheckExact((PyObject *)dict));
             PyObject *name = GETITEM(names, oparg>>1);
-            uint16_t hint = cache->index;
+            uint16_t hint = index;
             DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
             if (DK_IS_UNICODE(dict->ma_keys)) {
                 PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(dict->ma_keys) + hint;
@@ -1686,73 +1681,49 @@ dummy_func(
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
-            SET_TOP(NULL);
-            STACK_GROW((oparg & 1));
-            SET_TOP(res);
+            res2 = NULL;
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_SLOT) {
+        inst(LOAD_ATTR_SLOT, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *owner = TOP();
-            PyObject *res;
             PyTypeObject *tp = Py_TYPE(owner);
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-            uint32_t type_version = read_u32(cache->version);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
-            char *addr = (char *)owner + cache->index;
+            char *addr = (char *)owner + index;
             res = *(PyObject **)addr;
             DEOPT_IF(res == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(res);
-            SET_TOP(NULL);
-            STACK_GROW((oparg & 1));
-            SET_TOP(res);
+            res2 = NULL;
             Py_DECREF(owner);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_CLASS) {
+        inst(LOAD_ATTR_CLASS, (unused/1, type_version/2, unused/2, descr/4, cls -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
 
-            PyObject *cls = TOP();
             DEOPT_IF(!PyType_Check(cls), LOAD_ATTR);
-            uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(((PyTypeObject *)cls)->tp_version_tag != type_version,
                 LOAD_ATTR);
             assert(type_version != 0);
 
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
+            res2 = NULL;
+            res = descr;
             assert(res != NULL);
             Py_INCREF(res);
-            SET_TOP(NULL);
-            STACK_GROW((oparg & 1));
-            SET_TOP(res);
             Py_DECREF(cls);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_PROPERTY) {
+        inst(LOAD_ATTR_PROPERTY, (unused/1, type_version/2, func_version/2, fget/4, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
 
-            PyObject *owner = TOP();
             PyTypeObject *cls = Py_TYPE(owner);
-            uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
-            PyObject *fget = read_obj(cache->descr);
             assert(Py_IS_TYPE(fget, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)fget;
-            uint32_t func_version = read_u32(cache->keys_version);
             assert(func_version != 0);
             DEOPT_IF(f->func_version != func_version, LOAD_ATTR);
             PyCodeObject *code = (PyCodeObject *)f->func_code;
@@ -1761,6 +1732,7 @@ dummy_func(
             STAT_INC(LOAD_ATTR, hit);
             Py_INCREF(fget);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f, 1);
+            // Manipulate stack directly because we exit with DISPATCH_INLINED().
             SET_TOP(NULL);
             int shrink_stack = !(oparg & 1);
             STACK_SHRINK(shrink_stack);
@@ -1769,20 +1741,14 @@ dummy_func(
             DISPATCH_INLINED(new_frame);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
+        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/2, getattribute/4, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            PyObject *owner = TOP();
             PyTypeObject *cls = Py_TYPE(owner);
-            uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
-            PyObject *getattribute = read_obj(cache->descr);
             assert(Py_IS_TYPE(getattribute, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)getattribute;
-            uint32_t func_version = read_u32(cache->keys_version);
             assert(func_version != 0);
             DEOPT_IF(f->func_version != func_version, LOAD_ATTR);
             PyCodeObject *code = (PyCodeObject *)f->func_code;
@@ -1793,6 +1759,7 @@ dummy_func(
             PyObject *name = GETITEM(names, oparg >> 1);
             Py_INCREF(f);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f, 2);
+            // Manipulate stack directly because we exit with DISPATCH_INLINED().
             SET_TOP(NULL);
             int shrink_stack = !(oparg & 1);
             STACK_SHRINK(shrink_stack);
@@ -2528,14 +2495,10 @@ dummy_func(
 
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_METHOD_WITH_VALUES) {
+        inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, type_version/2, keys_version/2, descr/4, self -- res2 if (oparg & 1), res)) {
             /* Cached method object */
             assert(cframe.use_tracing == 0);
-            PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
             assert(type_version != 0);
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT);
@@ -2543,41 +2506,31 @@ dummy_func(
             DEOPT_IF(!_PyDictOrValues_IsValues(dorv), LOAD_ATTR);
             PyHeapTypeObject *self_heap_type = (PyHeapTypeObject *)self_cls;
             DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
-                     read_u32(cache->keys_version), LOAD_ATTR);
+                     keys_version, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            SET_TOP(Py_NewRef(res));
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            assert(descr != NULL);
+            res2 = Py_NewRef(descr);
+            assert(_PyType_HasFeature(Py_TYPE(res2), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            res = self;
+            assert(oparg & 1);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_METHOD_NO_DICT) {
+        inst(LOAD_ATTR_METHOD_NO_DICT, (unused/1, type_version/2, unused/2, descr/4, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(self_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            SET_TOP(Py_NewRef(res));
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            assert(descr != NULL);
+            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            res2 = Py_NewRef(descr);
+            res = self;
+            assert(oparg & 1);
         }
 
-        // error: LOAD_ATTR has irregular stack effect
-        inst(LOAD_ATTR_METHOD_LAZY_DICT) {
+        inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/1, type_version/2, unused/2, descr/4, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-            PyObject *self = TOP();
             PyTypeObject *self_cls = Py_TYPE(self);
-            _PyLoadMethodCache *cache = (_PyLoadMethodCache *)next_instr;
-            uint32_t type_version = read_u32(cache->type_version);
             DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             Py_ssize_t dictoffset = self_cls->tp_dictoffset;
             assert(dictoffset > 0);
@@ -2585,12 +2538,11 @@ dummy_func(
             /* This object has a __dict__, just not yet created */
             DEOPT_IF(dict != NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            PyObject *res = read_obj(cache->descr);
-            assert(res != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(res), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            SET_TOP(Py_NewRef(res));
-            PUSH(self);
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_ATTR);
+            assert(descr != NULL);
+            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            res2 = Py_NewRef(descr);
+            res = self;
+            assert(oparg & 1);
         }
 
         // stack effect: (__0, __array[oparg] -- )
@@ -3441,27 +3393,21 @@ dummy_func(
 
 // Future families go below this point //
 
-family(call) = {
-    CALL, CALL_ADAPTIVE, CALL_PY_EXACT_ARGS,
+family(call, INLINE_CACHE_ENTRIES_CALL) = {
+    CALL, CALL_PY_EXACT_ARGS,
     CALL_PY_WITH_DEFAULTS, CALL_BOUND_METHOD_EXACT_ARGS, CALL_BUILTIN_CLASS,
     CALL_BUILTIN_FAST_WITH_KEYWORDS, CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS, CALL_NO_KW_BUILTIN_FAST,
     CALL_NO_KW_BUILTIN_O, CALL_NO_KW_ISINSTANCE, CALL_NO_KW_LEN,
     CALL_NO_KW_LIST_APPEND, CALL_NO_KW_METHOD_DESCRIPTOR_FAST, CALL_NO_KW_METHOD_DESCRIPTOR_NOARGS,
     CALL_NO_KW_METHOD_DESCRIPTOR_O, CALL_NO_KW_STR_1, CALL_NO_KW_TUPLE_1,
     CALL_NO_KW_TYPE_1, CALL_QUICK };
-family(for_iter) = {
+family(for_iter, INLINE_CACHE_ENTRIES_FOR_ITER) = {
     FOR_ITER, FOR_ITER_ADAPTIVE, FOR_ITER_LIST,
     FOR_ITER_RANGE FOR_ITER_QUICK };
-family(load_attr) = {
-    LOAD_ATTR, LOAD_ATTR_ADAPTIVE, LOAD_ATTR_CLASS,
-    LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, LOAD_ATTR_INSTANCE_VALUE, LOAD_ATTR_MODULE,
-    LOAD_ATTR_PROPERTY, LOAD_ATTR_SLOT, LOAD_ATTR_WITH_HINT,
-    LOAD_ATTR_METHOD_LAZY_DICT, LOAD_ATTR_METHOD_NO_DICT,
-    LOAD_ATTR_METHOD_WITH_VALUES };
-family(load_global) = {
+family(load_global, INLINE_CACHE_ENTRIES_LOAD_GLOBAL) = {
     LOAD_GLOBAL, LOAD_GLOBAL_ADAPTIVE, LOAD_GLOBAL_BUILTIN,
     LOAD_GLOBAL_MODULE, LOAD_GLOBAL_QUICK };
 family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST STORE_FAST_QUICK };
-family(unpack_sequence) = {
+family(unpack_sequence, INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE) = {
     UNPACK_SEQUENCE, UNPACK_SEQUENCE_ADAPTIVE, UNPACK_SEQUENCE_LIST,
     UNPACK_SEQUENCE_QUICK, UNPACK_SEQUENCE_TUPLE, UNPACK_SEQUENCE_TWO_TUPLE };

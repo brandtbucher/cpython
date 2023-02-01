@@ -205,25 +205,25 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case MAP_ADD:
             return 2;
         case LOAD_ATTR:
-            return 0;
+            return 1;
         case LOAD_ATTR_ADAPTIVE:
             return 1;
         case LOAD_ATTR_QUICK:
             return 1;
         case LOAD_ATTR_INSTANCE_VALUE:
-            return -1;
+            return 1;
         case LOAD_ATTR_MODULE:
-            return -1;
+            return 1;
         case LOAD_ATTR_WITH_HINT:
-            return -1;
+            return 1;
         case LOAD_ATTR_SLOT:
-            return -1;
+            return 1;
         case LOAD_ATTR_CLASS:
-            return -1;
+            return 1;
         case LOAD_ATTR_PROPERTY:
-            return -1;
+            return 1;
         case LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN:
-            return -1;
+            return 1;
         case STORE_ATTR_INSTANCE_VALUE:
             return 2;
         case STORE_ATTR_WITH_HINT:
@@ -309,11 +309,11 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case PUSH_EXC_INFO:
             return -1;
         case LOAD_ATTR_METHOD_WITH_VALUES:
-            return -1;
+            return 1;
         case LOAD_ATTR_METHOD_NO_DICT:
-            return -1;
+            return 1;
         case LOAD_ATTR_METHOD_LAZY_DICT:
-            return -1;
+            return 1;
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return -1;
         case KW_NAMES:
@@ -587,25 +587,25 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case MAP_ADD:
             return 0;
         case LOAD_ATTR:
-            return ((oparg & 1) ? 1 : 0);
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_ADAPTIVE:
             return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_QUICK:
             return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_INSTANCE_VALUE:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_MODULE:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_WITH_HINT:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_SLOT:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_CLASS:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_PROPERTY:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case STORE_ATTR_INSTANCE_VALUE:
             return 0;
         case STORE_ATTR_WITH_HINT:
@@ -691,11 +691,11 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case PUSH_EXC_INFO:
             return -1;
         case LOAD_ATTR_METHOD_WITH_VALUES:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_METHOD_NO_DICT:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case LOAD_ATTR_METHOD_LAZY_DICT:
-            return -1;
+            return ((oparg & 1) ? 1 : 0) + 1;
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return -1;
         case KW_NAMES:
@@ -876,13 +876,13 @@ struct opcode_metadata {
     [LOAD_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
     [LOAD_ATTR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
     [LOAD_ATTR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
-    [LOAD_ATTR_INSTANCE_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_MODULE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_CLASS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_PROPERTY] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_ATTR_INSTANCE_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_MODULE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_CLASS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_PROPERTY] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
     [STORE_ATTR_INSTANCE_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [STORE_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
     [STORE_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
@@ -925,9 +925,9 @@ struct opcode_metadata {
     [BEFORE_WITH] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [WITH_EXCEPT_START] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [PUSH_EXC_INFO] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
-    [LOAD_ATTR_METHOD_WITH_VALUES] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
-    [LOAD_ATTR_METHOD_NO_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
-    [LOAD_ATTR_METHOD_LAZY_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_ATTR_METHOD_WITH_VALUES] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_METHOD_NO_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
+    [LOAD_ATTR_METHOD_LAZY_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC00000000 },
     [CALL_BOUND_METHOD_EXACT_ARGS] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [KW_NAMES] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CALL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
