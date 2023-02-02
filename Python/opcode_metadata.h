@@ -14,18 +14,24 @@ _PyOpcode_num_popped(int opcode, int oparg) {
             return 0;
         case LOAD_FAST_CHECK:
             return 0;
+        case LOAD_FAST:
+            return 0;
+        case LOAD_FAST_ADAPTIVE:
+            return 0;
         case LOAD_FAST_QUICK:
             return 0;
-        case LOAD_FAST:
-            return 0+0;
+        case LOAD_CONST:
+            return 0;
+        case LOAD_CONST_ADAPTIVE:
+            return 0;
         case LOAD_CONST_QUICK:
             return 0;
-        case LOAD_CONST:
-            return 0+0;
+        case STORE_FAST:
+            return 1;
+        case STORE_FAST_ADAPTIVE:
+            return 1;
         case STORE_FAST_QUICK:
             return 1;
-        case STORE_FAST:
-            return 0+1;
         case LOAD_FAST__LOAD_FAST:
             return 0+0;
         case LOAD_FAST__LOAD_CONST:
@@ -65,9 +71,11 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case BINARY_OP_ADD_INT:
             return 2;
         case BINARY_SUBSCR:
-            return 0+2;
+            return 2;
         case BINARY_SUBSCR_ADAPTIVE:
-            return 2+2;
+            return 2;
+        case BINARY_SUBSCR_QUICK:
+            return 2;
         case BINARY_SLICE:
             return 3;
         case STORE_SLICE:
@@ -85,9 +93,11 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case SET_ADD:
             return (oparg-1) + 2;
         case STORE_SUBSCR:
-            return 0+3;
+            return 3;
         case STORE_SUBSCR_ADAPTIVE:
-            return 2+3;
+            return 3;
+        case STORE_SUBSCR_QUICK:
+            return 3;
         case STORE_SUBSCR_LIST_INT:
             return 3;
         case STORE_SUBSCR_DICT:
@@ -145,9 +155,11 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case UNPACK_EX:
             return -1;
         case STORE_ATTR:
-            return 0+2;
+            return 2;
         case STORE_ATTR_ADAPTIVE:
-            return 1+2;
+            return 2;
+        case STORE_ATTR_QUICK:
+            return 2;
         case DELETE_ATTR:
             return 1;
         case STORE_GLOBAL:
@@ -231,6 +243,8 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case STORE_ATTR_SLOT:
             return 2;
         case COMPARE_OP:
+            return 2;
+        case COMPARE_OP_ADAPTIVE_PRE:
             return 2;
         case COMPARE_OP_QUICK:
             return 2;
@@ -369,9 +383,11 @@ _PyOpcode_num_popped(int opcode, int oparg) {
         case COPY:
             return -1;
         case BINARY_OP:
-            return 0+2;
+            return 2;
         case BINARY_OP_ADAPTIVE:
-            return 2+2;
+            return 2;
+        case BINARY_OP_QUICK:
+            return 2;
         case SWAP:
             return -1;
         case EXTENDED_ARG:
@@ -396,18 +412,24 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
             return 1;
         case LOAD_FAST_CHECK:
             return 1;
+        case LOAD_FAST:
+            return 1;
+        case LOAD_FAST_ADAPTIVE:
+            return 1;
         case LOAD_FAST_QUICK:
             return 1;
-        case LOAD_FAST:
-            return 0+1;
+        case LOAD_CONST:
+            return 1;
+        case LOAD_CONST_ADAPTIVE:
+            return 1;
         case LOAD_CONST_QUICK:
             return 1;
-        case LOAD_CONST:
-            return 0+1;
+        case STORE_FAST:
+            return 0;
+        case STORE_FAST_ADAPTIVE:
+            return 0;
         case STORE_FAST_QUICK:
             return 0;
-        case STORE_FAST:
-            return 0+0;
         case LOAD_FAST__LOAD_FAST:
             return 1+1;
         case LOAD_FAST__LOAD_CONST:
@@ -447,9 +469,11 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case BINARY_OP_ADD_INT:
             return 1;
         case BINARY_SUBSCR:
-            return 0+1;
+            return 1;
         case BINARY_SUBSCR_ADAPTIVE:
-            return 2+1;
+            return 1;
+        case BINARY_SUBSCR_QUICK:
+            return 1;
         case BINARY_SLICE:
             return 1;
         case STORE_SLICE:
@@ -467,9 +491,11 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case SET_ADD:
             return (oparg-1) + 1;
         case STORE_SUBSCR:
-            return 0+0;
+            return 0;
         case STORE_SUBSCR_ADAPTIVE:
-            return 2+0;
+            return 0;
+        case STORE_SUBSCR_QUICK:
+            return 0;
         case STORE_SUBSCR_LIST_INT:
             return 0;
         case STORE_SUBSCR_DICT:
@@ -527,9 +553,11 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case UNPACK_EX:
             return -1;
         case STORE_ATTR:
-            return 0+0;
+            return 0;
         case STORE_ATTR_ADAPTIVE:
-            return 1+0;
+            return 0;
+        case STORE_ATTR_QUICK:
+            return 0;
         case DELETE_ATTR:
             return 0;
         case STORE_GLOBAL:
@@ -613,6 +641,8 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case STORE_ATTR_SLOT:
             return 0;
         case COMPARE_OP:
+            return 1;
+        case COMPARE_OP_ADAPTIVE_PRE:
             return 1;
         case COMPARE_OP_QUICK:
             return 1;
@@ -751,9 +781,11 @@ _PyOpcode_num_pushed(int opcode, int oparg) {
         case COPY:
             return -1;
         case BINARY_OP:
-            return 0+1;
+            return 1;
         case BINARY_OP_ADAPTIVE:
-            return 2+1;
+            return 1;
+        case BINARY_OP_QUICK:
+            return 1;
         case SWAP:
             return -1;
         case EXTENDED_ARG:
@@ -778,12 +810,15 @@ struct opcode_metadata {
     [RESUME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_CLOSURE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST_CHECK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_FAST_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [LOAD_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_CONST_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [LOAD_CONST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [STORE_FAST_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [STORE_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [LOAD_FAST__LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [STORE_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
@@ -803,8 +838,9 @@ struct opcode_metadata {
     [BINARY_OP_INPLACE_ADD_UNICODE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [BINARY_OP_ADD_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [BINARY_OP_ADD_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
-    [BINARY_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
-    [BINARY_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
+    [BINARY_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
+    [BINARY_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
+    [BINARY_SUBSCR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [BINARY_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [STORE_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
     [BINARY_SUBSCR_LIST_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
@@ -813,8 +849,9 @@ struct opcode_metadata {
     [BINARY_SUBSCR_GETITEM] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [LIST_APPEND] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [SET_ADD] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
-    [STORE_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [STORE_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [STORE_SUBSCR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [STORE_SUBSCR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [STORE_SUBSCR_LIST_INT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [STORE_SUBSCR_DICT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [DELETE_SUBSCR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
@@ -843,8 +880,9 @@ struct opcode_metadata {
     [UNPACK_SEQUENCE_TUPLE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [UNPACK_SEQUENCE_LIST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [UNPACK_EX] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
+    [STORE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [STORE_ATTR_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
+    [STORE_ATTR_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
     [DELETE_ATTR] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [STORE_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [DELETE_GLOBAL] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
@@ -886,7 +924,8 @@ struct opcode_metadata {
     [STORE_ATTR_INSTANCE_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
     [STORE_ATTR_WITH_HINT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC000 },
     [STORE_ATTR_SLOT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC000 },
-    [COMPARE_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [COMPARE_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
+    [COMPARE_OP_ADAPTIVE_PRE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [COMPARE_OP_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [COMPARE_OP_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
     [COMPARE_OP_FLOAT] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC0 },
@@ -955,8 +994,9 @@ struct opcode_metadata {
     [BUILD_SLICE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [FORMAT_VALUE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [COPY] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [BINARY_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [BINARY_OP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IXC },
     [BINARY_OP_ADAPTIVE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
+    [BINARY_OP_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBC },
     [SWAP] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [EXTENDED_ARG] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [CACHE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },

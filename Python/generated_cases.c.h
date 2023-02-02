@@ -36,7 +36,31 @@
             DISPATCH();
         }
 
+        TARGET(LOAD_FAST) {
+            if (next_instr[-1].opcode == LOAD_FAST) {
+                next_instr[-1].opcode = LOAD_FAST_ADAPTIVE;
+            }
+            GO_TO_INSTRUCTION(LOAD_FAST_QUICK);
+        }
+
+        TARGET(LOAD_FAST_ADAPTIVE) {
+            switch (_PyOpcode_Deopt[next_instr->opcode]) {
+                case LOAD_CONST:
+                    next_instr[-1].opcode = LOAD_FAST__LOAD_CONST;
+                    GO_TO_INSTRUCTION(LOAD_FAST__LOAD_CONST);
+                case LOAD_FAST:
+                    next_instr[-1].opcode = LOAD_FAST__LOAD_FAST;
+                    GO_TO_INSTRUCTION(LOAD_FAST__LOAD_FAST);
+                default:
+                    next_instr[-1].opcode = LOAD_FAST_QUICK;
+                    GO_TO_INSTRUCTION(LOAD_FAST_QUICK);
+            }
+            STACK_GROW(1);
+            DISPATCH();
+        }
+
         TARGET(LOAD_FAST_QUICK) {
+            PREDICTED(LOAD_FAST_QUICK);
             PyObject *value;
             value = GETLOCAL(oparg);
             assert(value != NULL);
@@ -46,36 +70,29 @@
             DISPATCH();
         }
 
-        TARGET(LOAD_FAST) {
-            PyObject *_tmp_1;
-            {
-                int new;
-                switch (next_instr->opcode) {
-                    case LOAD_CONST:
-                        new = LOAD_FAST__LOAD_CONST;
-                        break;
-                    case LOAD_FAST:
-                        new = LOAD_FAST__LOAD_FAST;
-                        break;
-                    default:
-                        new = LOAD_FAST_QUICK;
-                        break;
-                }
-                _py_set_opcode(next_instr - 1, new);
+        TARGET(LOAD_CONST) {
+            PREDICTED(LOAD_CONST);
+            if (next_instr[-1].opcode == LOAD_CONST) {
+                next_instr[-1].opcode = LOAD_CONST_ADAPTIVE;
             }
-            {
-                PyObject *value;
-                value = GETLOCAL(oparg);
-                assert(value != NULL);
-                Py_INCREF(value);
-                _tmp_1 = value;
+            GO_TO_INSTRUCTION(LOAD_CONST_QUICK);
+        }
+
+        TARGET(LOAD_CONST_ADAPTIVE) {
+            switch (_PyOpcode_Deopt[next_instr->opcode]) {
+                case LOAD_FAST:
+                    next_instr[-1].opcode = LOAD_CONST__LOAD_FAST;
+                    GO_TO_INSTRUCTION(LOAD_CONST__LOAD_FAST);
+                default:
+                    next_instr[-1].opcode = LOAD_CONST_QUICK;
+                    GO_TO_INSTRUCTION(LOAD_CONST_QUICK);
             }
             STACK_GROW(1);
-            POKE(1, _tmp_1);
             DISPATCH();
         }
 
         TARGET(LOAD_CONST_QUICK) {
+            PREDICTED(LOAD_CONST_QUICK);
             PyObject *value;
             value = GETITEM(consts, oparg);
             Py_INCREF(value);
@@ -84,65 +101,39 @@
             DISPATCH();
         }
 
-        TARGET(LOAD_CONST) {
-            PREDICTED(LOAD_CONST);
-            PyObject *_tmp_1;
-            {
-                int new;
-                switch (next_instr->opcode) {
-                    case LOAD_FAST:
-                        new = LOAD_CONST__LOAD_FAST;
-                        break;
-                    default:
-                        new = LOAD_CONST_QUICK;
-                        break;
-                }
-                _py_set_opcode(next_instr - 1, new);
+        TARGET(STORE_FAST) {
+            if (next_instr[-1].opcode == STORE_FAST) {
+                next_instr[-1].opcode = STORE_FAST_ADAPTIVE;
             }
-            {
-                PyObject *value;
-                value = GETITEM(consts, oparg);
-                Py_INCREF(value);
-                _tmp_1 = value;
+            GO_TO_INSTRUCTION(STORE_FAST_QUICK);
+        }
+
+        TARGET(STORE_FAST_ADAPTIVE) {
+            switch (_PyOpcode_Deopt[next_instr->opcode]) {
+                case LOAD_FAST:
+                    next_instr[-1].opcode = STORE_FAST__LOAD_FAST;
+                    GO_TO_INSTRUCTION(STORE_FAST__LOAD_FAST);
+                case STORE_FAST:
+                    next_instr[-1].opcode = STORE_FAST__STORE_FAST;
+                    GO_TO_INSTRUCTION(STORE_FAST__STORE_FAST);
+                default:
+                    next_instr[-1].opcode = STORE_FAST_QUICK;
+                    GO_TO_INSTRUCTION(STORE_FAST_QUICK);
             }
-            STACK_GROW(1);
-            POKE(1, _tmp_1);
+            STACK_SHRINK(1);
             DISPATCH();
         }
 
         TARGET(STORE_FAST_QUICK) {
+            PREDICTED(STORE_FAST_QUICK);
             PyObject *value = PEEK(1);
             SETLOCAL(oparg, value);
             STACK_SHRINK(1);
             DISPATCH();
         }
 
-        TARGET(STORE_FAST) {
-            PyObject *_tmp_1 = PEEK(1);
-            {
-                int new;
-                switch (next_instr->opcode) {
-                    case LOAD_FAST:
-                        new = STORE_FAST__LOAD_FAST;
-                        break;
-                    case STORE_FAST:
-                        new = STORE_FAST__STORE_FAST;
-                        break;
-                    default:
-                        new = STORE_FAST_QUICK;
-                        break;
-                }
-                _py_set_opcode(next_instr - 1, new);
-            }
-            {
-                PyObject *value = _tmp_1;
-                SETLOCAL(oparg, value);
-            }
-            STACK_SHRINK(1);
-            DISPATCH();
-        }
-
         TARGET(LOAD_FAST__LOAD_FAST) {
+            PREDICTED(LOAD_FAST__LOAD_FAST);
             PyObject *_tmp_1;
             PyObject *_tmp_2;
             {
@@ -168,6 +159,7 @@
         }
 
         TARGET(LOAD_FAST__LOAD_CONST) {
+            PREDICTED(LOAD_FAST__LOAD_CONST);
             PyObject *_tmp_1;
             PyObject *_tmp_2;
             {
@@ -192,6 +184,7 @@
         }
 
         TARGET(STORE_FAST__LOAD_FAST) {
+            PREDICTED(STORE_FAST__LOAD_FAST);
             PyObject *_tmp_1 = PEEK(1);
             {
                 PyObject *value = _tmp_1;
@@ -211,6 +204,7 @@
         }
 
         TARGET(STORE_FAST__STORE_FAST) {
+            PREDICTED(STORE_FAST__STORE_FAST);
             PyObject *_tmp_1 = PEEK(1);
             PyObject *_tmp_2 = PEEK(2);
             {
@@ -228,6 +222,7 @@
         }
 
         TARGET(LOAD_CONST__LOAD_FAST) {
+            PREDICTED(LOAD_CONST__LOAD_FAST);
             PyObject *_tmp_1;
             PyObject *_tmp_2;
             {
@@ -483,63 +478,44 @@
         }
 
         TARGET(BINARY_SUBSCR) {
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                _py_set_opcode(next_instr - 1, BINARY_SUBSCR_ADAPTIVE);
-                next_instr->cache = adaptive_counter_warmup();
-            }
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                PyObject *res;
-                res = PyObject_GetItem(container, sub);
-                Py_DECREF(container);
-                Py_DECREF(sub);
-                if (res == NULL) goto pop_2_error;
-                _tmp_2 = res;
-            }
-            JUMPBY(4);
             static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 4, "incorrect cache size");
-            STACK_SHRINK(1);
-            POKE(1, _tmp_2);
-            DISPATCH();
+            if (next_instr[-1].opcode == BINARY_SUBSCR) {
+                next_instr[-1].opcode = BINARY_SUBSCR_ADAPTIVE;
+            }
+            GO_TO_INSTRUCTION(BINARY_SUBSCR_QUICK);
         }
 
         TARGET(BINARY_SUBSCR_ADAPTIVE) {
             PREDICTED(BINARY_SUBSCR_ADAPTIVE);
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                #if ENABLE_SPECIALIZATION
-                _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
-                if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
-                    assert(cframe.use_tracing == 0);
-                    next_instr--;
-                    _Py_Specialize_BinarySubscr(container, sub, next_instr);
-                    DISPATCH_SAME_OPARG();
-                }
-                STAT_INC(BINARY_SUBSCR, deferred);
-                DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-                #endif  /* ENABLE_SPECIALIZATION */
-                _tmp_2 = container;
-                _tmp_1 = sub;
+            PyObject *sub = PEEK(1);
+            PyObject *container = PEEK(2);
+            uint16_t counter = read_u16(&next_instr[0].cache);
+            #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+                assert(cframe.use_tracing == 0);
+                next_instr--;
+                _Py_Specialize_BinarySubscr(container, sub, next_instr);
+                DISPATCH_SAME_OPARG();
             }
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                PyObject *res;
-                res = PyObject_GetItem(container, sub);
-                Py_DECREF(container);
-                Py_DECREF(sub);
-                if (res == NULL) goto pop_2_error;
-                _tmp_2 = res;
-            }
-            JUMPBY(4);
+            _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
+            DECREMENT_ADAPTIVE_COUNTER(cache->counter);
+            #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(BINARY_SUBSCR_QUICK);
+        }
+
+        TARGET(BINARY_SUBSCR_QUICK) {
+            PREDICTED(BINARY_SUBSCR_QUICK);
+            PyObject *sub = PEEK(1);
+            PyObject *container = PEEK(2);
+            PyObject *res;
+            STAT_INC(BINARY_SUBSCR, deferred);
+            res = PyObject_GetItem(container, sub);
+            Py_DECREF(container);
+            Py_DECREF(sub);
+            if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
-            POKE(1, _tmp_2);
+            POKE(1, res);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -707,68 +683,47 @@
         }
 
         TARGET(STORE_SUBSCR) {
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            PyObject *_tmp_3 = PEEK(3);
-            {
-                _py_set_opcode(next_instr - 1, STORE_SUBSCR_ADAPTIVE);
-                next_instr->cache = adaptive_counter_warmup();
-            }
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                PyObject *v = _tmp_3;
-                /* container[sub] = v */
-                int err = PyObject_SetItem(container, sub, v);
-                Py_DECREF(v);
-                Py_DECREF(container);
-                Py_DECREF(sub);
-                if (err) goto pop_3_error;
-            }
-            JUMPBY(1);
             static_assert(INLINE_CACHE_ENTRIES_STORE_SUBSCR == 1, "incorrect cache size");
-            STACK_SHRINK(3);
-            DISPATCH();
+            if (next_instr[-1].opcode == STORE_SUBSCR) {
+                next_instr[-1].opcode = STORE_SUBSCR_ADAPTIVE;
+            }
+            GO_TO_INSTRUCTION(STORE_SUBSCR_QUICK);
         }
 
         TARGET(STORE_SUBSCR_ADAPTIVE) {
             PREDICTED(STORE_SUBSCR_ADAPTIVE);
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            PyObject *_tmp_3 = PEEK(3);
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                uint16_t counter = read_u16(&next_instr[0].cache);
-                #if ENABLE_SPECIALIZATION
-                if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
-                    assert(cframe.use_tracing == 0);
-                    next_instr--;
-                    _Py_Specialize_StoreSubscr(container, sub, next_instr);
-                    DISPATCH_SAME_OPARG();
-                }
-                STAT_INC(STORE_SUBSCR, deferred);
-                _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)next_instr;
-                DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-                #else
-                (void)counter;  // Unused.
-                #endif  /* ENABLE_SPECIALIZATION */
-                _tmp_2 = container;
-                _tmp_1 = sub;
+            PyObject *sub = PEEK(1);
+            PyObject *container = PEEK(2);
+            uint16_t counter = read_u16(&next_instr[0].cache);
+            #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+                assert(cframe.use_tracing == 0);
+                next_instr--;
+                _Py_Specialize_StoreSubscr(container, sub, next_instr);
+                DISPATCH_SAME_OPARG();
             }
-            {
-                PyObject *sub = _tmp_1;
-                PyObject *container = _tmp_2;
-                PyObject *v = _tmp_3;
-                /* container[sub] = v */
-                int err = PyObject_SetItem(container, sub, v);
-                Py_DECREF(v);
-                Py_DECREF(container);
-                Py_DECREF(sub);
-                if (err) goto pop_3_error;
-            }
-            JUMPBY(1);
+            _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)next_instr;
+            DECREMENT_ADAPTIVE_COUNTER(cache->counter);
+            #else
+            (void)counter;  // Unused.
+            #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(STORE_SUBSCR_QUICK);
+        }
+
+        TARGET(STORE_SUBSCR_QUICK) {
+            PREDICTED(STORE_SUBSCR_QUICK);
+            PyObject *sub = PEEK(1);
+            PyObject *container = PEEK(2);
+            PyObject *v = PEEK(3);
+            STAT_INC(STORE_SUBSCR, deferred);
+            /* container[sub] = v */
+            int err = PyObject_SetItem(container, sub, v);
+            Py_DECREF(v);
+            Py_DECREF(container);
+            Py_DECREF(sub);
+            if (err) goto pop_3_error;
             STACK_SHRINK(3);
+            JUMPBY(1);
             DISPATCH();
         }
 
@@ -1246,8 +1201,9 @@
         }
 
         TARGET(UNPACK_SEQUENCE) {
-            _py_set_opcode(next_instr - 1, UNPACK_SEQUENCE_ADAPTIVE);
-            next_instr->cache = adaptive_counter_warmup();
+            if (next_instr[-1].opcode == UNPACK_SEQUENCE) {
+                next_instr[-1].opcode = UNPACK_SEQUENCE_ADAPTIVE;
+            }
             GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
         }
 
@@ -1262,7 +1218,6 @@
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(UNPACK_SEQUENCE, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(UNPACK_SEQUENCE_QUICK);
@@ -1270,6 +1225,7 @@
 
         TARGET(UNPACK_SEQUENCE_QUICK) {
             PREDICTED(UNPACK_SEQUENCE_QUICK);
+            STAT_INC(UNPACK_SEQUENCE, deferred);
             PyObject *seq = POP();
             PyObject **top = stack_pointer + oparg;
             if (!unpack_iterable(tstate, seq, oparg, -1, top)) {
@@ -1338,61 +1294,45 @@
         }
 
         TARGET(STORE_ATTR) {
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                _py_set_opcode(next_instr - 1, STORE_ATTR_ADAPTIVE);
-                next_instr->cache = adaptive_counter_warmup();
-            }
-            {
-                PyObject *owner = _tmp_1;
-                PyObject *v = _tmp_2;
-                PyObject *name = GETITEM(names, oparg);
-                int err = PyObject_SetAttr(owner, name, v);
-                Py_DECREF(v);
-                Py_DECREF(owner);
-                if (err) goto pop_2_error;
-            }
-            JUMPBY(4);
             static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 4, "incorrect cache size");
-            STACK_SHRINK(2);
-            DISPATCH();
+            if (next_instr[-1].opcode == STORE_ATTR) {
+                next_instr[-1].opcode = STORE_ATTR_ADAPTIVE;
+            }
+            GO_TO_INSTRUCTION(STORE_ATTR_QUICK);
         }
 
         TARGET(STORE_ATTR_ADAPTIVE) {
             PREDICTED(STORE_ATTR_ADAPTIVE);
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                PyObject *owner = _tmp_1;
-                uint16_t counter = read_u16(&next_instr[0].cache);
-                #if ENABLE_SPECIALIZATION
-                if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
-                    assert(cframe.use_tracing == 0);
-                    PyObject *name = GETITEM(names, oparg);
-                    next_instr--;
-                    _Py_Specialize_StoreAttr(owner, next_instr, name);
-                    DISPATCH_SAME_OPARG();
-                }
-                STAT_INC(STORE_ATTR, deferred);
-                _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-                DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-                #else
-                (void)counter;  // Unused.
-                #endif  /* ENABLE_SPECIALIZATION */
-                _tmp_1 = owner;
-            }
-            {
-                PyObject *owner = _tmp_1;
-                PyObject *v = _tmp_2;
+            PyObject *owner = PEEK(1);
+            uint16_t counter = read_u16(&next_instr[0].cache);
+            #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+                assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg);
-                int err = PyObject_SetAttr(owner, name, v);
-                Py_DECREF(v);
-                Py_DECREF(owner);
-                if (err) goto pop_2_error;
+                next_instr--;
+                _Py_Specialize_StoreAttr(owner, next_instr, name);
+                DISPATCH_SAME_OPARG();
             }
-            JUMPBY(4);
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
+            DECREMENT_ADAPTIVE_COUNTER(cache->counter);
+            #else
+            (void)counter;  // Unused.
+            #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(STORE_ATTR_QUICK);
+        }
+
+        TARGET(STORE_ATTR_QUICK) {
+            PREDICTED(STORE_ATTR_QUICK);
+            PyObject *owner = PEEK(1);
+            PyObject *v = PEEK(2);
+            STAT_INC(STORE_ATTR, deferred);
+            PyObject *name = GETITEM(names, oparg);
+            int err = PyObject_SetAttr(owner, name, v);
+            Py_DECREF(v);
+            Py_DECREF(owner);
+            if (err) goto pop_2_error;
             STACK_SHRINK(2);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1497,8 +1437,9 @@
         }
 
         TARGET(LOAD_GLOBAL) {
-            _py_set_opcode(next_instr - 1, LOAD_GLOBAL_ADAPTIVE);
-            next_instr->cache = adaptive_counter_warmup();
+            if (next_instr[-1].opcode == LOAD_GLOBAL) {
+                next_instr[-1].opcode = LOAD_GLOBAL_ADAPTIVE;
+            }
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
         }
 
@@ -1513,7 +1454,6 @@
                 _Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(LOAD_GLOBAL, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
@@ -1521,6 +1461,7 @@
 
         TARGET(LOAD_GLOBAL_QUICK) {
             PREDICTED(LOAD_GLOBAL_QUICK);
+            STAT_INC(LOAD_GLOBAL, deferred);
             int push_null = oparg & 1;
             PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
@@ -1948,24 +1889,25 @@
 
         TARGET(LOAD_ATTR) {
             static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
-            _py_set_opcode(next_instr - 1, LOAD_ATTR_ADAPTIVE);
-            next_instr->cache = adaptive_counter_warmup();
+            if (next_instr[-1].opcode == LOAD_ATTR) {
+                next_instr[-1].opcode = LOAD_ATTR_ADAPTIVE;
+            }
             GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
         }
 
         TARGET(LOAD_ATTR_ADAPTIVE) {
             PREDICTED(LOAD_ATTR_ADAPTIVE);
             PyObject *owner = PEEK(1);
+            uint16_t counter = read_u16(&next_instr[0].cache);
             #if ENABLE_SPECIALIZATION
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg>>1);
                 next_instr--;
                 _Py_Specialize_LoadAttr(owner, next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(LOAD_ATTR, deferred);
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(LOAD_ATTR_QUICK);
@@ -1976,6 +1918,7 @@
             PyObject *owner = PEEK(1);
             PyObject *res2 = NULL;
             PyObject *res;
+            STAT_INC(LOAD_ATTR, deferred);
             PyObject *name = GETITEM(names, oparg >> 1);
             if (oparg & 1) {
                 /* Designed to work in tandem with CALL, pushes two values. */
@@ -2322,8 +2265,13 @@
         }
 
         TARGET(COMPARE_OP) {
-            int new_opcode;
-            int new_oparg;
+            if (next_instr[-1].opcode == COMPARE_OP) {
+                next_instr[-1].opcode = COMPARE_OP_ADAPTIVE_PRE;
+            }
+            GO_TO_INSTRUCTION(COMPARE_OP_QUICK);
+        }
+
+        TARGET(COMPARE_OP_ADAPTIVE_PRE) {
             int next_opcode = next_instr[INLINE_CACHE_ENTRIES_COMPARE_OP].opcode;
             switch (next_opcode) {
                 case POP_JUMP_IF_FALSE:
@@ -2333,18 +2281,16 @@
                     if (next_opcode == POP_JUMP_IF_FALSE) {
                         mask = mask ^ 0xf;
                     }
-                    new_opcode = COMPARE_OP_ADAPTIVE;
-                    new_oparg = (oparg & 0xf0) | mask;
-                    next_instr->cache = adaptive_counter_warmup();
-                    break;
+                    next_instr[-1].opcode = COMPARE_OP_ADAPTIVE;
+                    next_instr[-1].oparg = oparg = (oparg & 0xf0) | mask;  // XXX
+                    GO_TO_INSTRUCTION(COMPARE_OP_ADAPTIVE);
                 default:
-                    new_opcode = COMPARE_OP_QUICK;
-                    new_oparg = oparg;
-                    break;
+                    next_instr[-1].opcode = COMPARE_OP_QUICK;
+                    GO_TO_INSTRUCTION(COMPARE_OP_QUICK);
             }
-            next_instr[-1].opcode = new_opcode;
-            next_instr[-1].oparg = new_oparg;
-            GO_TO_INSTRUCTION(COMPARE_OP_QUICK);
+            STACK_SHRINK(1);
+            JUMPBY(1);
+            DISPATCH();
         }
 
         TARGET(COMPARE_OP_QUICK) {
@@ -2368,15 +2314,16 @@
             PREDICTED(COMPARE_OP_ADAPTIVE);
             PyObject *right = PEEK(1);
             PyObject *left = PEEK(2);
+            uint16_t counter = read_u16(&next_instr[0].cache);
             #if ENABLE_SPECIALIZATION
-            _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_CompareAndBranch(left, right, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(COMPARE_OP, deferred);
+            _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             assert((oparg >> 4) <= Py_GE);
@@ -2825,8 +2772,9 @@
         }
 
         TARGET(FOR_ITER) {
-            _py_set_opcode(next_instr - 1, FOR_ITER_ADAPTIVE);
-            next_instr->cache = adaptive_counter_warmup();
+            if (next_instr[-1].opcode == FOR_ITER) {
+                next_instr[-1].opcode = FOR_ITER_ADAPTIVE;
+            }
             GO_TO_INSTRUCTION(FOR_ITER_QUICK);
         }
 
@@ -2840,7 +2788,6 @@
                 _Py_Specialize_ForIter(TOP(), next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(FOR_ITER, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(FOR_ITER_QUICK);
@@ -2848,6 +2795,7 @@
 
         TARGET(FOR_ITER_QUICK) {
             PREDICTED(FOR_ITER_QUICK);
+            STAT_INC(FOR_ITER, deferred);
             /* before: [iter]; after: [iter, iter()] *or* [] */
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -3194,8 +3142,9 @@
         }
 
         TARGET(CALL) {
-            _py_set_opcode(next_instr - 1, CALL_ADAPTIVE);
-            next_instr->cache = adaptive_counter_warmup();
+            if (next_instr[-1].opcode == CALL) {
+                next_instr[-1].opcode = CALL_ADAPTIVE;
+            }
             GO_TO_INSTRUCTION(CALL_QUICK);
         }
 
@@ -3212,7 +3161,6 @@
                 _Py_Specialize_Call(callable, next_instr, nargs, kwnames);
                 DISPATCH_SAME_OPARG();
             }
-            STAT_INC(CALL, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(CALL_QUICK);
@@ -3220,6 +3168,7 @@
 
         TARGET(CALL_QUICK) {
             PREDICTED(CALL_QUICK);
+            STAT_INC(CALL, deferred);
             int total_args, is_meth;
             is_meth = is_method(stack_pointer, oparg);
             PyObject *function = PEEK(oparg + 1);
@@ -3952,69 +3901,47 @@
         }
 
         TARGET(BINARY_OP) {
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                _py_set_opcode(next_instr - 1, BINARY_OP_ADAPTIVE);
-                next_instr->cache = adaptive_counter_warmup();
-            }
-            {
-                PyObject *rhs = _tmp_1;
-                PyObject *lhs = _tmp_2;
-                PyObject *res;
-                assert(0 <= oparg);
-                assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-                assert(binary_ops[oparg]);
-                res = binary_ops[oparg](lhs, rhs);
-                Py_DECREF(lhs);
-                Py_DECREF(rhs);
-                if (res == NULL) goto pop_2_error;
-                _tmp_2 = res;
-            }
-            JUMPBY(1);
             static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1, "incorrect cache size");
-            STACK_SHRINK(1);
-            POKE(1, _tmp_2);
-            DISPATCH();
+            if (next_instr[-1].opcode == BINARY_OP) {
+                next_instr[-1].opcode = BINARY_OP_ADAPTIVE;
+            }
+            GO_TO_INSTRUCTION(BINARY_OP_QUICK);
         }
 
         TARGET(BINARY_OP_ADAPTIVE) {
             PREDICTED(BINARY_OP_ADAPTIVE);
-            PyObject *_tmp_1 = PEEK(1);
-            PyObject *_tmp_2 = PEEK(2);
-            {
-                PyObject *rhs = _tmp_1;
-                PyObject *lhs = _tmp_2;
-                #if ENABLE_SPECIALIZATION
-                _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
-                if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
-                    assert(cframe.use_tracing == 0);
-                    next_instr--;
-                    _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, &GETLOCAL(0));
-                    DISPATCH_SAME_OPARG();
-                }
-                STAT_INC(BINARY_OP, deferred);
-                DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-                #endif  /* ENABLE_SPECIALIZATION */
-                _tmp_2 = lhs;
-                _tmp_1 = rhs;
+            PyObject *rhs = PEEK(1);
+            PyObject *lhs = PEEK(2);
+            uint16_t counter = read_u16(&next_instr[0].cache);
+            #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+                assert(cframe.use_tracing == 0);
+                next_instr--;
+                _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, &GETLOCAL(0));
+                DISPATCH_SAME_OPARG();
             }
-            {
-                PyObject *rhs = _tmp_1;
-                PyObject *lhs = _tmp_2;
-                PyObject *res;
-                assert(0 <= oparg);
-                assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
-                assert(binary_ops[oparg]);
-                res = binary_ops[oparg](lhs, rhs);
-                Py_DECREF(lhs);
-                Py_DECREF(rhs);
-                if (res == NULL) goto pop_2_error;
-                _tmp_2 = res;
-            }
-            JUMPBY(1);
+            _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
+            DECREMENT_ADAPTIVE_COUNTER(cache->counter);
+            #endif  /* ENABLE_SPECIALIZATION */
+            GO_TO_INSTRUCTION(BINARY_OP_QUICK);
+        }
+
+        TARGET(BINARY_OP_QUICK) {
+            PREDICTED(BINARY_OP_QUICK);
+            PyObject *rhs = PEEK(1);
+            PyObject *lhs = PEEK(2);
+            PyObject *res;
+            STAT_INC(BINARY_OP, deferred);
+            assert(0 <= oparg);
+            assert((unsigned)oparg < Py_ARRAY_LENGTH(binary_ops));
+            assert(binary_ops[oparg]);
+            res = binary_ops[oparg](lhs, rhs);
+            Py_DECREF(lhs);
+            Py_DECREF(rhs);
+            if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
-            POKE(1, _tmp_2);
+            POKE(1, res);
+            JUMPBY(1);
             DISPATCH();
         }
 

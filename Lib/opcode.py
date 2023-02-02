@@ -285,6 +285,7 @@ _specializations = {
         "BINARY_OP_INPLACE_ADD_UNICODE",
         "BINARY_OP_MULTIPLY_FLOAT",
         "BINARY_OP_MULTIPLY_INT",
+        "BINARY_OP_QUICK",
         "BINARY_OP_SUBTRACT_FLOAT",
         "BINARY_OP_SUBTRACT_INT",
     ],
@@ -293,6 +294,7 @@ _specializations = {
         "BINARY_SUBSCR_DICT",
         "BINARY_SUBSCR_GETITEM",
         "BINARY_SUBSCR_LIST_INT",
+        "BINARY_SUBSCR_QUICK",
         "BINARY_SUBSCR_TUPLE_INT",
     ],
     "CALL": [
@@ -318,6 +320,7 @@ _specializations = {
     ],
     "COMPARE_OP": [
         "COMPARE_OP_ADAPTIVE",
+        "COMPARE_OP_ADAPTIVE_PRE",
         "COMPARE_OP_FLOAT",
         "COMPARE_OP_INT",
         "COMPARE_OP_STR",
@@ -349,11 +352,13 @@ _specializations = {
     ],
     "LOAD_CONST": [
         "LOAD_CONST__LOAD_FAST",
+        "LOAD_CONST_ADAPTIVE",
         "LOAD_CONST_QUICK",
     ],
     "LOAD_FAST": [
         "LOAD_FAST__LOAD_CONST",
         "LOAD_FAST__LOAD_FAST",
+        "LOAD_FAST_ADAPTIVE",
         "LOAD_FAST_QUICK",
     ],
     "LOAD_GLOBAL": [
@@ -365,18 +370,21 @@ _specializations = {
     "STORE_ATTR": [
         "STORE_ATTR_ADAPTIVE",
         "STORE_ATTR_INSTANCE_VALUE",
+        "STORE_ATTR_QUICK",
         "STORE_ATTR_SLOT",
         "STORE_ATTR_WITH_HINT",
     ],
     "STORE_FAST": [
         "STORE_FAST__LOAD_FAST",
         "STORE_FAST__STORE_FAST",
+        "STORE_FAST_ADAPTIVE",
         "STORE_FAST_QUICK",
     ],
     "STORE_SUBSCR": [
         "STORE_SUBSCR_ADAPTIVE",
         "STORE_SUBSCR_DICT",
         "STORE_SUBSCR_LIST_INT",
+        "STORE_SUBSCR_QUICK",
     ],
     "UNPACK_SEQUENCE": [
         "UNPACK_SEQUENCE_ADAPTIVE",

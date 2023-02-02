@@ -719,12 +719,12 @@ dis_load_test_quickened_code = """\
 %3d           0 RESUME                   0
 
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
-              4 LOAD_FAST_QUICK          1 (y)
+              4 LOAD_FAST_ADAPTIVE       1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
-              8 STORE_FAST__LOAD_FAST     2 (a)
+              8 STORE_FAST_ADAPTIVE      2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
-             12 LOAD_FAST_QUICK          3 (b)
+             12 LOAD_FAST_ADAPTIVE       3 (b)
              14 BUILD_TUPLE              2
              16 RETURN_VALUE
 """ % (load_test.__code__.co_firstlineno,
@@ -739,9 +739,9 @@ dis_loop_test_quickened_code = """\
 %3d        RESUME                   0
 
 %3d        BUILD_LIST               0
-           LOAD_CONST_QUICK         1 ((1, 2, 3))
+           LOAD_CONST_ADAPTIVE      1 ((1, 2, 3))
            LIST_EXTEND              1
-           LOAD_CONST_QUICK         2 (3)
+           LOAD_CONST_ADAPTIVE      2 (3)
            BINARY_OP_ADAPTIVE       5 (*)
            GET_ITER
         >> FOR_ITER_LIST           15 (to 50)
@@ -754,7 +754,7 @@ dis_loop_test_quickened_code = """\
            JUMP_BACKWARD           17 (to 16)
 
 %3d     >> END_FOR
-           LOAD_CONST_QUICK         0 (None)
+           LOAD_CONST_ADAPTIVE      0 (None)
            RETURN_VALUE
 """ % (loop_test.__code__.co_firstlineno,
        loop_test.__code__.co_firstlineno + 1,
@@ -1167,7 +1167,7 @@ class DisTests(DisTestBase):
     @cpython_only
     @requires_specialization
     def test_loop_quicken(self):
-        # Loop can trigger a quicken where the loop is located
+        loop_test.__code__ = loop_test.__code__.replace()
         self.code_quicken(loop_test, 1)
         got = self.get_disassembly(loop_test, adaptive=True)
         self.do_disassembly_compare(got, dis_loop_test_quickened_code)
