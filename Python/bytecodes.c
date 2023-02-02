@@ -827,10 +827,10 @@ dummy_func(
             Py_XSETREF(exc_info->exc_value, exc_value);
         }
 
-        // stack effect: (__0 -- )
-        inst(RERAISE) {
+        inst(RERAISE, (values[oparg], exc -- values[oparg])) {
+            assert(oparg >= 0 && oparg <= 2);
             if (oparg) {
-                PyObject *lasti = PEEK(oparg + 1);
+                PyObject *lasti = values[0];
                 if (PyLong_Check(lasti)) {
                     frame->prev_instr = _PyCode_CODE(frame->f_code) + PyLong_AsLong(lasti);
                     assert(!_PyErr_Occurred(tstate));
@@ -841,11 +841,11 @@ dummy_func(
                     goto error;
                 }
             }
-            PyObject *val = POP();
-            assert(val && PyExceptionInstance_Check(val));
-            PyObject *exc = Py_NewRef(PyExceptionInstance_Class(val));
-            PyObject *tb = PyException_GetTraceback(val);
-            _PyErr_Restore(tstate, exc, val, tb);
+            assert(exc && PyExceptionInstance_Check(exc));
+            Py_INCREF(exc);
+            PyObject *typ = Py_NewRef(PyExceptionInstance_Class(exc));
+            PyObject *tb = PyException_GetTraceback(exc);
+            _PyErr_Restore(tstate, typ, exc, tb);
             goto exception_unwind;
         }
 
@@ -872,18 +872,12 @@ dummy_func(
             }
         }
 
-        // stack effect: (__0, __1 -- )
-        inst(CLEANUP_THROW) {
+        inst(CLEANUP_THROW, (sub_iter, last_sent_val, exc_value -- value)) {
             assert(throwflag);
-            PyObject *exc_value = TOP();
             assert(exc_value && PyExceptionInstance_Check(exc_value));
             if (PyErr_GivenExceptionMatches(exc_value, PyExc_StopIteration)) {
-                PyObject *value = ((PyStopIterationObject *)exc_value)->value;
-                Py_INCREF(value);
-                Py_DECREF(POP());  // The StopIteration.
-                Py_DECREF(POP());  // The last sent value.
-                Py_DECREF(POP());  // The delegated sub-iterator.
-                PUSH(value);
+                value = Py_NewRef(((PyStopIterationObject *)exc_value)->value);
+                DECREF_INPUTS();
             }
             else {
                 PyObject *exc_type = Py_NewRef(Py_TYPE(exc_value));
@@ -1180,35 +1174,40 @@ dummy_func(
             }
         }
 
-        // error: LOAD_GLOBAL has irregular stack effect
-        inst(LOAD_GLOBAL) {
+        family(load_global, INLINE_CACHE_ENTRIES_LOAD_GLOBAL) = {
+            LOAD_GLOBAL,
+            LOAD_GLOBAL_ADAPTIVE,
+            LOAD_GLOBAL_MODULE,
+            LOAD_GLOBAL_BUILTIN,
+            LOAD_GLOBAL_QUICK,
+        };
+
+        inst(LOAD_GLOBAL, (unused/1, unused/1, unused/2, unused/1 -- unused if (oparg & 1), unused)) {
             if (next_instr[-1].opcode == LOAD_GLOBAL) {
                 next_instr[-1].opcode = LOAD_GLOBAL_ADAPTIVE;
             }
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
         }
 
-        inst(LOAD_GLOBAL_ADAPTIVE) {
+        inst(LOAD_GLOBAL_ADAPTIVE, (counter/1, unused/1, unused/2, unused/1 -- unused if (oparg & 1), unused)) {
             #if ENABLE_SPECIALIZATION
-            _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg>>1);
                 next_instr--;
                 _Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
+            _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             GO_TO_INSTRUCTION(LOAD_GLOBAL_QUICK);
         }
 
-        inst(LOAD_GLOBAL_QUICK) {
+        inst(LOAD_GLOBAL_QUICK, (unused/1, unused/1, unused/2, unused/1 -- null if (oparg & 1), v)) {
             STAT_INC(LOAD_GLOBAL, deferred);
-            int push_null = oparg & 1;
             PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
-            PyObject *v;
             if (PyDict_CheckExact(GLOBALS())
                 && PyDict_CheckExact(BUILTINS()))
             {
@@ -1222,7 +1221,7 @@ dummy_func(
                         format_exc_check_arg(tstate, PyExc_NameError,
                                              NAME_ERROR_MSG, name);
                     }
-                    goto error;
+                    ERROR_IF(true, error);
                 }
                 Py_INCREF(v);
             }
@@ -1232,9 +1231,7 @@ dummy_func(
                 /* namespace 1: globals */
                 v = PyObject_GetItem(GLOBALS(), name);
                 if (v == NULL) {
-                    if (!_PyErr_ExceptionMatches(tstate, PyExc_KeyError)) {
-                        goto error;
-                    }
+                    ERROR_IF(!_PyErr_ExceptionMatches(tstate, PyExc_KeyError), error);
                     _PyErr_Clear(tstate);
 
                     /* namespace 2: builtins */
@@ -1245,58 +1242,42 @@ dummy_func(
                                         tstate, PyExc_NameError,
                                         NAME_ERROR_MSG, name);
                         }
-                        goto error;
+                        ERROR_IF(true, error);
                     }
                 }
             }
-            /* Skip over inline cache */
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
-            STACK_GROW(push_null);
-            PUSH(v);
+            null = NULL;
         }
 
-        // error: LOAD_GLOBAL has irregular stack effect
-        inst(LOAD_GLOBAL_MODULE) {
+        inst(LOAD_GLOBAL_MODULE, (unused/1, index/1, version/2, unused/1 -- null if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyDict_CheckExact(GLOBALS()), LOAD_GLOBAL);
             PyDictObject *dict = (PyDictObject *)GLOBALS();
-            _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
-            uint32_t version = read_u32(cache->module_keys_version);
             DEOPT_IF(dict->ma_keys->dk_version != version, LOAD_GLOBAL);
             assert(DK_IS_UNICODE(dict->ma_keys));
             PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(dict->ma_keys);
-            PyObject *res = entries[cache->index].me_value;
+            res = entries[index].me_value;
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
-            int push_null = oparg & 1;
-            PEEK(0) = NULL;
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            Py_INCREF(res);
             STAT_INC(LOAD_GLOBAL, hit);
-            STACK_GROW(push_null+1);
-            SET_TOP(Py_NewRef(res));
+            null = NULL;
         }
 
-        // error: LOAD_GLOBAL has irregular stack effect
-        inst(LOAD_GLOBAL_BUILTIN) {
+        inst(LOAD_GLOBAL_BUILTIN, (unused/1, index/1, mod_version/2, bltn_version/1 -- null if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyDict_CheckExact(GLOBALS()), LOAD_GLOBAL);
             DEOPT_IF(!PyDict_CheckExact(BUILTINS()), LOAD_GLOBAL);
             PyDictObject *mdict = (PyDictObject *)GLOBALS();
             PyDictObject *bdict = (PyDictObject *)BUILTINS();
-            _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
-            uint32_t mod_version = read_u32(cache->module_keys_version);
-            uint16_t bltn_version = cache->builtin_keys_version;
             DEOPT_IF(mdict->ma_keys->dk_version != mod_version, LOAD_GLOBAL);
             DEOPT_IF(bdict->ma_keys->dk_version != bltn_version, LOAD_GLOBAL);
             assert(DK_IS_UNICODE(bdict->ma_keys));
             PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(bdict->ma_keys);
-            PyObject *res = entries[cache->index].me_value;
+            res = entries[index].me_value;
             DEOPT_IF(res == NULL, LOAD_GLOBAL);
-            int push_null = oparg & 1;
-            PEEK(0) = NULL;
-            JUMPBY(INLINE_CACHE_ENTRIES_LOAD_GLOBAL);
+            Py_INCREF(res);
             STAT_INC(LOAD_GLOBAL, hit);
-            STACK_GROW(push_null+1);
-            SET_TOP(Py_NewRef(res));
+            null = NULL;
         }
 
         inst(DELETE_FAST, (--)) {
@@ -2059,9 +2040,7 @@ dummy_func(
             CHECK_EVAL_BREAKER();
         }
 
-        // stack effect: (__0 -- )
-        inst(POP_JUMP_IF_FALSE) {
-            PyObject *cond = POP();
+        inst(POP_JUMP_IF_FALSE, (cond -- )) {
             if (Py_IsTrue(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
             }
@@ -2072,19 +2051,16 @@ dummy_func(
             else {
                 int err = PyObject_IsTrue(cond);
                 Py_DECREF(cond);
-                if (err > 0)
-                    ;
-                else if (err == 0) {
+                if (err == 0) {
                     JUMPBY(oparg);
                 }
-                else
-                    goto error;
+                else {
+                    ERROR_IF(err < 0, error);
+                }
             }
         }
 
-        // stack effect: (__0 -- )
-        inst(POP_JUMP_IF_TRUE) {
-            PyObject *cond = POP();
+        inst(POP_JUMP_IF_TRUE, (cond -- )) {
             if (Py_IsFalse(cond)) {
                 _Py_DECREF_NO_DEALLOC(cond);
             }
@@ -2098,25 +2074,23 @@ dummy_func(
                 if (err > 0) {
                     JUMPBY(oparg);
                 }
-                else if (err == 0)
-                    ;
-                else
-                    goto error;
+                else {
+                    ERROR_IF(err < 0, error);
+                }
             }
         }
 
-        // stack effect: (__0 -- )
-        inst(POP_JUMP_IF_NOT_NONE) {
-            PyObject *value = POP();
+        inst(POP_JUMP_IF_NOT_NONE, (value -- )) {
             if (!Py_IsNone(value)) {
+                Py_DECREF(value);
                 JUMPBY(oparg);
             }
-            Py_DECREF(value);
+            else {
+                _Py_DECREF_NO_DEALLOC(value);
+            }
         }
 
-        // stack effect: (__0 -- )
-        inst(POP_JUMP_IF_NONE) {
-            PyObject *value = POP();
+        inst(POP_JUMP_IF_NONE, (value -- )) {
             if (Py_IsNone(value)) {
                 _Py_DECREF_NO_DEALLOC(value);
                 JUMPBY(oparg);
@@ -2126,25 +2100,24 @@ dummy_func(
             }
         }
 
-        // error: JUMP_IF_FALSE_OR_POP stack effect depends on jump flag
-        inst(JUMP_IF_FALSE_OR_POP) {
-            PyObject *cond = TOP();
+        inst(JUMP_IF_FALSE_OR_POP, (cond -- cond if (jump))) {
+            bool jump = false;
             int err;
             if (Py_IsTrue(cond)) {
-                STACK_SHRINK(1);
                 _Py_DECREF_NO_DEALLOC(cond);
             }
             else if (Py_IsFalse(cond)) {
                 JUMPBY(oparg);
+                jump = true;
             }
             else {
                 err = PyObject_IsTrue(cond);
                 if (err > 0) {
-                    STACK_SHRINK(1);
                     Py_DECREF(cond);
                 }
                 else if (err == 0) {
                     JUMPBY(oparg);
+                    jump = true;
                 }
                 else {
                     goto error;
@@ -2152,24 +2125,23 @@ dummy_func(
             }
         }
 
-        // error: JUMP_IF_TRUE_OR_POP stack effect depends on jump flag
-        inst(JUMP_IF_TRUE_OR_POP) {
-            PyObject *cond = TOP();
+        inst(JUMP_IF_TRUE_OR_POP, (cond -- cond if (jump))) {
+            bool jump = false;
             int err;
             if (Py_IsFalse(cond)) {
-                STACK_SHRINK(1);
                 _Py_DECREF_NO_DEALLOC(cond);
             }
             else if (Py_IsTrue(cond)) {
                 JUMPBY(oparg);
+                jump = true;
             }
             else {
                 err = PyObject_IsTrue(cond);
                 if (err > 0) {
                     JUMPBY(oparg);
+                    jump = true;
                 }
                 else if (err == 0) {
-                    STACK_SHRINK(1);
                     Py_DECREF(cond);
                 }
                 else {
@@ -2493,22 +2465,16 @@ dummy_func(
             ERROR_IF(res == NULL, error);
         }
 
-        // stack effect: ( -- __0)
-        inst(PUSH_EXC_INFO) {
-            PyObject *value = TOP();
-
+        inst(PUSH_EXC_INFO, (new_exc -- prev_exc, new_exc)) {
             _PyErr_StackItem *exc_info = tstate->exc_info;
             if (exc_info->exc_value != NULL) {
-                SET_TOP(exc_info->exc_value);
+                prev_exc = exc_info->exc_value;
             }
             else {
-                SET_TOP(Py_NewRef(Py_None));
+                prev_exc = Py_NewRef(Py_None);
             }
-
-            PUSH(Py_NewRef(value));
-            assert(PyExceptionInstance_Check(value));
-            exc_info->exc_value = value;
-
+            assert(PyExceptionInstance_Check(new_exc));
+            exc_info->exc_value = Py_NewRef(new_exc);
         }
 
         inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, type_version/2, keys_version/2, descr/4, self -- res2 if (oparg & 1), res)) {
@@ -3420,11 +3386,8 @@ family(call, INLINE_CACHE_ENTRIES_CALL) = {
     CALL_NO_KW_TYPE_1, CALL_QUICK };
 family(for_iter, INLINE_CACHE_ENTRIES_FOR_ITER) = {
     FOR_ITER, FOR_ITER_ADAPTIVE, FOR_ITER_LIST,
-    FOR_ITER_RANGE FOR_ITER_QUICK };
-family(load_global, INLINE_CACHE_ENTRIES_LOAD_GLOBAL) = {
-    LOAD_GLOBAL, LOAD_GLOBAL_ADAPTIVE, LOAD_GLOBAL_BUILTIN,
-    LOAD_GLOBAL_MODULE, LOAD_GLOBAL_QUICK };
-family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST STROE_FAST_ADAPTIVE, STORE_FAST_QUICK };
+    FOR_ITER_RANGE, FOR_ITER_QUICK };
+family(store_fast) = { STORE_FAST, STORE_FAST__LOAD_FAST, STORE_FAST__STORE_FAST, STORE_FAST_ADAPTIVE, STORE_FAST_QUICK };
 family(unpack_sequence, INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE) = {
     UNPACK_SEQUENCE, UNPACK_SEQUENCE_ADAPTIVE, UNPACK_SEQUENCE_LIST,
     UNPACK_SEQUENCE_QUICK, UNPACK_SEQUENCE_TUPLE, UNPACK_SEQUENCE_TWO_TUPLE };
