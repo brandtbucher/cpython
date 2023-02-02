@@ -1206,7 +1206,6 @@ dummy_func(
 
         inst(LOAD_GLOBAL_QUICK, (unused/1, unused/1, unused/2, unused/1 -- null if (oparg & 1), v)) {
             STAT_INC(LOAD_GLOBAL, deferred);
-            PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
             if (PyDict_CheckExact(GLOBALS())
                 && PyDict_CheckExact(BUILTINS()))

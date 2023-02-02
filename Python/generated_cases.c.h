@@ -1472,7 +1472,6 @@
             PyObject *null = NULL;
             PyObject *v;
             STAT_INC(LOAD_GLOBAL, deferred);
-            PEEK(0) = NULL;
             PyObject *name = GETITEM(names, oparg>>1);
             if (PyDict_CheckExact(GLOBALS())
                 && PyDict_CheckExact(BUILTINS()))
