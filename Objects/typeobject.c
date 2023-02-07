@@ -26,24 +26,6 @@ class object "PyObject *" "&PyBaseObject_Type"
 
 #include "clinic/typeobject.c.h"
 
-/* Support type attribute lookup cache */
-
-/* The cache can keep references to the names alive for longer than
-   they normally would.  This is why the maximum size is limited to
-   MCACHE_MAX_ATTR_SIZE, since it might be a problem if very large
-   strings are used as attribute names. */
-#define MCACHE_MAX_ATTR_SIZE    100
-#define MCACHE_HASH(version, name_hash)                                 \
-        (((unsigned int)(version) ^ (unsigned int)(name_hash))          \
-         & ((1 << MCACHE_SIZE_EXP) - 1))
-
-#define MCACHE_HASH_METHOD(type, name)                                  \
-    MCACHE_HASH((type)->tp_version_tag, ((Py_ssize_t)(name)) >> 3)
-#define MCACHE_CACHEABLE_NAME(name)                             \
-        PyUnicode_CheckExact(name) &&                           \
-        PyUnicode_IS_READY(name) &&                             \
-        (PyUnicode_GET_LENGTH(name) <= MCACHE_MAX_ATTR_SIZE)
-
 #define next_version_tag (_PyRuntime.types.next_version_tag)
 
 typedef struct PySlot_Offset {

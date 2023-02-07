@@ -354,7 +354,6 @@ _PyCode_Quicken(PyCodeObject *code)
 #define SPEC_FAIL_ATTR_NOT_MANAGED_DICT 18
 #define SPEC_FAIL_ATTR_NON_STRING_OR_SPLIT 19
 #define SPEC_FAIL_ATTR_MODULE_ATTR_NOT_FOUND 20
-
 #define SPEC_FAIL_ATTR_SHADOWED 21
 #define SPEC_FAIL_ATTR_BUILTIN_CLASS_METHOD 22
 #define SPEC_FAIL_ATTR_CLASS_METHOD_OBJ 23
@@ -368,6 +367,7 @@ _PyCode_Quicken(PyCodeObject *code)
 #define SPEC_FAIL_ATTR_CLASS_ATTR_SIMPLE 31
 #define SPEC_FAIL_ATTR_CLASS_ATTR_DESCRIPTOR 32
 #define SPEC_FAIL_ATTR_BUILTIN_CLASS_METHOD_OBJ 33
+#define SPEC_FAIL_ATTR_NOT_HEAP_TYPE 34
 
 /* Binary subscr and store subscr */
 
@@ -773,7 +773,7 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             assert(type->tp_version_tag != 0);
             write_u32(lm_cache->type_version, type->tp_version_tag);
             /* borrowed */
-            write_obj(lm_cache->descr, fget);
+            write_obj(lm_cache->descr, fget);  // XXX
             _py_set_opcode(instr, LOAD_ATTR_PROPERTY);
             goto success;
         }
@@ -823,18 +823,25 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         {
             assert(type->tp_getattro == _Py_slot_tp_getattro);
             assert(Py_IS_TYPE(descr, &PyFunction_Type));
-            _PyLoadMethodCache *lm_cache = (_PyLoadMethodCache *)(instr + 1);
+            if (!(type->tp_flags & Py_TPFLAGS_HEAPTYPE)) {
+                SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_NOT_HEAP_TYPE);
+                goto fail;
+            }
             if (!function_check_args(descr, 2, LOAD_ATTR)) {
                 goto fail;
             }
+            assert(type->tp_version_tag != 0);
+            write_u32(cache->version, type->tp_version_tag);
             uint32_t version = function_get_version(descr, LOAD_ATTR);
             if (version == 0) {
                 goto fail;
             }
-            write_u32(lm_cache->keys_version, version);
-            /* borrowed */
-            write_obj(lm_cache->descr, descr);
-            write_u32(lm_cache->type_version, type->tp_version_tag);
+            if (version != (uint16_t)version) {
+                SPECIALIZATION_FAIL(LOAD_ATTR,  SPEC_FAIL_OUT_OF_RANGE);
+                goto fail;
+            }
+            cache->index = version;
+            ((PyHeapTypeObject *)type)->_spec_cache.getattribute = descr;
             _py_set_opcode(instr, LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN);
             goto success;
         }
@@ -1013,7 +1020,7 @@ static int
 specialize_class_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
                              PyObject *name)
 {
-    _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
+    _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     if (!PyType_CheckExact(owner) || _PyType_Lookup(Py_TYPE(owner), name)) {
         SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_ATTR_METACLASS_ATTRIBUTE);
         return -1;
@@ -1024,8 +1031,7 @@ specialize_class_load_attr(PyObject *owner, _Py_CODEUNIT *instr,
     switch (kind) {
         case METHOD:
         case NON_DESCRIPTOR:
-            write_u32(cache->type_version, ((PyTypeObject *)owner)->tp_version_tag);
-            write_obj(cache->descr, descr);
+            cache->index = MCACHE_HASH_METHOD((PyTypeObject*)owner, name);
             _py_set_opcode(instr, LOAD_ATTR_CLASS);
             return 0;
 #ifdef Py_STATS
@@ -1046,7 +1052,7 @@ static int
 specialize_attr_loadmethod(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name,
 PyObject *descr, DescriptorClassification kind)
 {
-    _PyLoadMethodCache *cache = (_PyLoadMethodCache *)(instr + 1);
+    _PyAttrCache *cache = (_PyAttrCache *)(instr + 1);
     PyTypeObject *owner_cls = Py_TYPE(owner);
 
     assert(kind == METHOD && descr != NULL);
@@ -1067,7 +1073,7 @@ PyObject *descr, DescriptorClassification kind)
             SPECIALIZATION_FAIL(LOAD_ATTR, SPEC_FAIL_OUT_OF_VERSIONS);
             return 0;
         }
-        write_u32(cache->keys_version, keys_version);
+        write_u32(cache->version, keys_version);
         _py_set_opcode(instr, LOAD_ATTR_METHOD_WITH_VALUES);
     }
     else {
@@ -1104,8 +1110,7 @@ PyObject *descr, DescriptorClassification kind)
     *  PyType_Modified usages in typeobject.c). The MCACHE has been
     *  working since Python 2.6 and it's battle-tested.
     */
-    write_u32(cache->type_version, owner_cls->tp_version_tag);
-    write_obj(cache->descr, descr);
+    cache->index = MCACHE_HASH_METHOD(owner_cls, name);
     return 1;
 }
 

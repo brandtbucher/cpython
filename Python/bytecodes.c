@@ -1536,22 +1536,23 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(LOAD_ATTR_CLASS, (unused/1, type_version/2, unused/2, descr/4, cls -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_CLASS, (unused/3, index/1, unused/5, cls -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
-
             DEOPT_IF(!PyType_Check(cls), LOAD_ATTR);
-            DEOPT_IF(((PyTypeObject *)cls)->tp_version_tag != type_version,
-                LOAD_ATTR);
-            assert(type_version != 0);
-
+            assert(index < (1 << MCACHE_SIZE_EXP));
+            struct type_cache *cache = &tstate->interp->types.type_cache;
+            struct type_cache_entry *entry = &cache->hashtable[index];
+            DEOPT_IF(entry->version != ((PyTypeObject *)cls)->tp_version_tag, LOAD_ATTR);
+            DEOPT_IF(entry->name != GETITEM(names, oparg >> 1), LOAD_ATTR);
+            DEOPT_IF(entry->value == NULL, LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
             res2 = NULL;
-            res = descr;
-            assert(res != NULL);
+            res = entry->value;
             Py_INCREF(res);
             Py_DECREF(cls);
         }
 
+        // XXX
         inst(LOAD_ATTR_PROPERTY, (unused/1, type_version/2, func_version/2, fget/4, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
@@ -1578,21 +1579,22 @@ dummy_func(
             DISPATCH_INLINED(new_frame);
         }
 
-        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/2, getattribute/4, owner -- unused if (oparg & 1), unused)) {
+        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/1, unused/5, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
             assert(type_version != 0);
+            assert(cls->tp_flags & Py_TPFLAGS_HEAPTYPE);
+            PyObject *getattribute = ((PyHeapTypeObject *)cls)->_spec_cache.getattribute;
             assert(Py_IS_TYPE(getattribute, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)getattribute;
-            assert(func_version != 0);
             DEOPT_IF(f->func_version != func_version, LOAD_ATTR);
+            assert(func_version != 0);
             PyCodeObject *code = (PyCodeObject *)f->func_code;
             assert(code->co_argcount == 2);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-
             PyObject *name = GETITEM(names, oparg >> 1);
             Py_INCREF(f);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f, 2);
@@ -2295,52 +2297,62 @@ dummy_func(
             exc_info->exc_value = Py_NewRef(new_exc);
         }
 
-        inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, type_version/2, keys_version/2, descr/4, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, version/2, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
             /* Cached method object */
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
-            assert(type_version != 0);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT);
+            DEOPT_IF((self_cls->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0, LOAD_ATTR);
             PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(self);
             DEOPT_IF(!_PyDictOrValues_IsValues(dorv), LOAD_ATTR);
             PyHeapTypeObject *self_heap_type = (PyHeapTypeObject *)self_cls;
-            DEOPT_IF(self_heap_type->ht_cached_keys->dk_version !=
-                     keys_version, LOAD_ATTR);
+            DEOPT_IF(self_heap_type->ht_cached_keys->dk_version != version, LOAD_ATTR);
+            assert(index < (1 << MCACHE_SIZE_EXP));
+            struct type_cache *cache = &tstate->interp->types.type_cache;
+            struct type_cache_entry *entry = &cache->hashtable[index];
+            DEOPT_IF(entry->version != self_cls->tp_version_tag, LOAD_ATTR);
+            DEOPT_IF(entry->name != GETITEM(names, oparg >> 1), LOAD_ATTR);
+            DEOPT_IF(entry->value == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(entry->value), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            res2 = Py_NewRef(descr);
-            assert(_PyType_HasFeature(Py_TYPE(res2), Py_TPFLAGS_METHOD_DESCRIPTOR));
+            res2 = Py_NewRef(entry->value);
             res = self;
             assert(oparg & 1);
         }
 
-        inst(LOAD_ATTR_METHOD_NO_DICT, (unused/1, type_version/2, unused/2, descr/4, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_NO_DICT, (unused/3, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(self_cls->tp_dictoffset == 0);
+            DEOPT_IF(self_cls->tp_dictoffset != 0, LOAD_ATTR);
+            assert(index < (1 << MCACHE_SIZE_EXP));
+            struct type_cache *cache = &tstate->interp->types.type_cache;
+            struct type_cache_entry *entry = &cache->hashtable[index];
+            DEOPT_IF(entry->version != self_cls->tp_version_tag, LOAD_ATTR);
+            DEOPT_IF(entry->name != GETITEM(names, oparg >> 1), LOAD_ATTR);
+            DEOPT_IF(entry->value == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(entry->value), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            res2 = Py_NewRef(descr);
+            res2 = Py_NewRef(entry->value);
             res = self;
             assert(oparg & 1);
         }
 
-        inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/1, type_version/2, unused/2, descr/4, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/3, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
-            DEOPT_IF(self_cls->tp_version_tag != type_version, LOAD_ATTR);
             Py_ssize_t dictoffset = self_cls->tp_dictoffset;
-            assert(dictoffset > 0);
+            DEOPT_IF(dictoffset <= 0, LOAD_ATTR);
             PyObject *dict = *(PyObject **)((char *)self + dictoffset);
             /* This object has a __dict__, just not yet created */
             DEOPT_IF(dict != NULL, LOAD_ATTR);
+            assert(index < (1 << MCACHE_SIZE_EXP));
+            struct type_cache *cache = &tstate->interp->types.type_cache;
+            struct type_cache_entry *entry = &cache->hashtable[index];
+            DEOPT_IF(entry->version != self_cls->tp_version_tag, LOAD_ATTR);
+            DEOPT_IF(entry->name != GETITEM(names, oparg >> 1), LOAD_ATTR);
+            DEOPT_IF(entry->value == NULL, LOAD_ATTR);
+            DEOPT_IF(!_PyType_HasFeature(Py_TYPE(entry->value), Py_TPFLAGS_METHOD_DESCRIPTOR), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            res2 = Py_NewRef(descr);
+            res2 = Py_NewRef(entry->value);
             res = self;
             assert(oparg & 1);
         }
