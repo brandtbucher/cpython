@@ -751,7 +751,6 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
         }
         case PROPERTY:
         {
-            _PyLoadMethodCache *lm_cache = (_PyLoadMethodCache *)(instr + 1);
             assert(Py_TYPE(descr) == &PyProperty_Type);
             PyObject *fget = ((_PyPropertyObject *)descr)->prop_get;
             if (fget == NULL) {
@@ -769,11 +768,8 @@ _Py_Specialize_LoadAttr(PyObject *owner, _Py_CODEUNIT *instr, PyObject *name)
             if (version == 0) {
                 goto fail;
             }
-            write_u32(lm_cache->keys_version, version);
-            assert(type->tp_version_tag != 0);
-            write_u32(lm_cache->type_version, type->tp_version_tag);
-            /* borrowed */
-            write_obj(lm_cache->descr, fget);  // XXX
+            write_u32(cache->version, version);
+            cache->index = MCACHE_HASH_METHOD(type, name);
             _py_set_opcode(instr, LOAD_ATTR_PROPERTY);
             goto success;
         }

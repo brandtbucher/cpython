@@ -1970,24 +1970,28 @@
 
         TARGET(LOAD_ATTR_PROPERTY) {
             PyObject *owner = PEEK(1);
-            uint32_t type_version = read_u32(&next_instr[1].cache);
-            uint32_t func_version = read_u32(&next_instr[3].cache);
-            PyObject *fget = read_obj(&next_instr[5].cache);
+            uint32_t version = read_u32(&next_instr[1].cache);
+            uint16_t index = read_u16(&next_instr[3].cache);
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
-
             PyTypeObject *cls = Py_TYPE(owner);
-            DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
-            assert(type_version != 0);
-            assert(Py_IS_TYPE(fget, &PyFunction_Type));
-            PyFunctionObject *f = (PyFunctionObject *)fget;
-            assert(func_version != 0);
-            DEOPT_IF(f->func_version != func_version, LOAD_ATTR);
+            assert(index < (1 << MCACHE_SIZE_EXP));
+            struct type_cache *cache = &tstate->interp->types.type_cache;
+            struct type_cache_entry *entry = &cache->hashtable[index];
+            DEOPT_IF(entry->version != cls->tp_version_tag, LOAD_ATTR);
+            DEOPT_IF(entry->name != GETITEM(names, oparg >> 1), LOAD_ATTR);
+            DEOPT_IF(entry->value == NULL, LOAD_ATTR);
+            _PyPropertyObject *property = (_PyPropertyObject *)entry->value;
+            DEOPT_IF(!Py_IS_TYPE(property, &PyProperty_Type), LOAD_ATTR);
+            PyFunctionObject *f = (PyFunctionObject *)property->prop_get;
+            DEOPT_IF(f == NULL, LOAD_ATTR);
+            DEOPT_IF(!Py_IS_TYPE(f, &PyFunction_Type), LOAD_ATTR);
+            DEOPT_IF(f->func_version != version, LOAD_ATTR);
             PyCodeObject *code = (PyCodeObject *)f->func_code;
             assert(code->co_argcount == 1);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize), LOAD_ATTR);
             STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(fget);
+            Py_INCREF(f);
             _PyInterpreterFrame *new_frame = _PyFrame_PushUnchecked(tstate, f, 1);
             // Manipulate stack directly because we exit with DISPATCH_INLINED().
             SET_TOP(NULL);
