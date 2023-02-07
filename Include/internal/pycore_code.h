@@ -59,16 +59,7 @@ typedef struct {
     uint16_t index;
 } _PyAttrCache;
 
-typedef struct {
-    uint16_t counter;
-    uint16_t type_version[2];
-    uint16_t keys_version[2];
-    uint16_t descr[4];
-} _PyLoadMethodCache;
-
-
-// MUST be the max(_PyAttrCache, _PyLoadMethodCache)
-#define INLINE_CACHE_ENTRIES_LOAD_ATTR CACHE_ENTRIES(_PyLoadMethodCache)
+#define INLINE_CACHE_ENTRIES_LOAD_ATTR CACHE_ENTRIES(_PyAttrCache)
 
 #define INLINE_CACHE_ENTRIES_STORE_ATTR CACHE_ENTRIES(_PyAttrCache)
 

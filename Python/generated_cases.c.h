@@ -1767,7 +1767,7 @@
 
         TARGET(LOAD_ATTR) {
             PREDICTED(LOAD_ATTR);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 4, "incorrect cache size");
             PyObject *owner = PEEK(1);
             PyObject *res2 = NULL;
             PyObject *res;
@@ -1820,7 +1820,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1847,7 +1847,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1874,7 +1874,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1915,7 +1915,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1939,7 +1939,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -1964,7 +1964,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -2925,7 +2925,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -2951,7 +2951,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 
@@ -2981,7 +2981,7 @@
             STACK_GROW(((oparg & 1) ? 1 : 0));
             POKE(1, res);
             if (oparg & 1) { POKE(1 + ((oparg & 1) ? 1 : 0), res2); }
-            JUMPBY(9);
+            JUMPBY(4);
             DISPATCH();
         }
 

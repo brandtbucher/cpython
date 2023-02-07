@@ -1409,7 +1409,7 @@ dummy_func(
             LOAD_ATTR_METHOD_LAZY_DICT,
         };
 
-        inst(LOAD_ATTR, (unused/9, owner -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR, (unused/4, owner -- res2 if (oparg & 1), res)) {
             #if ENABLE_SPECIALIZATION
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1458,7 +1458,7 @@ dummy_func(
             }
         }
 
-        inst(LOAD_ATTR_INSTANCE_VALUE, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_INSTANCE_VALUE, (unused/1, type_version/2, index/1, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
@@ -1475,7 +1475,7 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(LOAD_ATTR_MODULE, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_MODULE, (unused/1, type_version/2, index/1, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyModule_CheckExact(owner), LOAD_ATTR);
             PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
@@ -1492,7 +1492,7 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(LOAD_ATTR_WITH_HINT, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_WITH_HINT, (unused/1, type_version/2, index/1, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
@@ -1523,7 +1523,7 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(LOAD_ATTR_SLOT, (unused/1, type_version/2, index/1, unused/5, owner -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_SLOT, (unused/1, type_version/2, index/1, owner -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
@@ -1537,7 +1537,7 @@ dummy_func(
             Py_DECREF(owner);
         }
 
-        inst(LOAD_ATTR_CLASS, (unused/3, index/1, unused/5, cls -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_CLASS, (unused/3, index/1, cls -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyType_Check(cls), LOAD_ATTR);
             assert(index < (1 << MCACHE_SIZE_EXP));
@@ -1553,7 +1553,7 @@ dummy_func(
             Py_DECREF(cls);
         }
 
-        inst(LOAD_ATTR_PROPERTY, (unused/1, version/2, index/1, unused/5, owner -- unused if (oparg & 1), unused)) {
+        inst(LOAD_ATTR_PROPERTY, (unused/1, version/2, index/1, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
@@ -1584,7 +1584,7 @@ dummy_func(
             DISPATCH_INLINED(new_frame);
         }
 
-        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/1, unused/5, owner -- unused if (oparg & 1), unused)) {
+        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/1, owner -- unused if (oparg & 1), unused)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
@@ -2302,7 +2302,7 @@ dummy_func(
             exc_info->exc_value = Py_NewRef(new_exc);
         }
 
-        inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, version/2, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_WITH_VALUES, (unused/1, version/2, index/1, self -- res2 if (oparg & 1), res)) {
             /* Cached method object */
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
@@ -2324,7 +2324,7 @@ dummy_func(
             assert(oparg & 1);
         }
 
-        inst(LOAD_ATTR_METHOD_NO_DICT, (unused/3, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_NO_DICT, (unused/3, index/1, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
             DEOPT_IF(self_cls->tp_dictoffset != 0, LOAD_ATTR);
@@ -2341,7 +2341,7 @@ dummy_func(
             assert(oparg & 1);
         }
 
-        inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/3, index/1, unused/5, self -- res2 if (oparg & 1), res)) {
+        inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/3, index/1, self -- res2 if (oparg & 1), res)) {
             assert(cframe.use_tracing == 0);
             PyTypeObject *self_cls = Py_TYPE(self);
             Py_ssize_t dictoffset = self_cls->tp_dictoffset;
