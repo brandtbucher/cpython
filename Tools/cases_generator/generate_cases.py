@@ -369,16 +369,8 @@ class Instruction:
         for ceffect in self.cache_effects:
             if ceffect.name != UNUSED:
                 bits = ceffect.size * BITS_PER_CODE_UNIT
-                if bits == 64:
-                    # NOTE: We assume that 64-bit data in the cache
-                    # is always an object pointer.
-                    # If this becomes false, we need a way to specify
-                    # syntactically what type the cache data is.
-                    typ = "PyObject *"
-                    func = "read_obj"
-                else:
-                    typ = f"uint{bits}_t "
-                    func = f"read_u{bits}"
+                typ = f"uint{bits}_t "
+                func = f"read_u{bits}"
                 out.emit(
                     f"{typ}{ceffect.name} = {func}(&next_instr[{cache_offset}].cache);"
                 )
