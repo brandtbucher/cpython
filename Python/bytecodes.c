@@ -114,6 +114,8 @@ dummy_func(
             Py_INCREF(value);
         }
 
+        macro(LOAD_FAST_XXX) = LOAD_FAST;
+
         inst(LOAD_CONST, (-- value)) {
             value = GETITEM(consts, oparg);
             Py_INCREF(value);

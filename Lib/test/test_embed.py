@@ -364,6 +364,8 @@ class EmbeddingTests(EmbeddingTestsMixin, unittest.TestCase):
                         opname in opcode._specialized_instructions
                         # Exclude superinstructions:
                         and "__" not in opname
+                        # Exclude replicated instructions:
+                        and opname != "LOAD_FAST_XXX"
                     ):
                         return True
                 return False

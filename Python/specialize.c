@@ -279,6 +279,7 @@ _PyCode_Quicken(PyCodeObject *code)
 {
     #if ENABLE_SPECIALIZATION
     int opcode = 0;
+    bool replicate_load_fast = false;
     _Py_CODEUNIT *instructions = _PyCode_CODE(code);
     for (int i = 0; i < Py_SIZE(code); i++) {
         int previous_opcode = opcode;
@@ -288,6 +289,12 @@ _PyCode_Quicken(PyCodeObject *code)
             instructions[i + 1].cache = adaptive_counter_warmup();
             i += caches;
             continue;
+        }
+        if (opcode == LOAD_FAST) {
+            if (replicate_load_fast) {
+                instructions[i].opcode = LOAD_FAST_XXX;
+            }
+            replicate_load_fast = !replicate_load_fast;
         }
         switch (previous_opcode << 8 | opcode) {
             case LOAD_CONST << 8 | LOAD_FAST:

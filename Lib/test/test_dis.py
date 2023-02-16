@@ -705,12 +705,12 @@ dis_load_test_quickened_code = """\
 %3d           0 RESUME                   0
 
 %3d           2 LOAD_FAST__LOAD_FAST     0 (x)
-              4 LOAD_FAST                1 (y)
+              4 LOAD_FAST_XXX            1 (y)
               6 STORE_FAST__STORE_FAST     3 (b)
               8 STORE_FAST__LOAD_FAST     2 (a)
 
 %3d          10 LOAD_FAST__LOAD_FAST     2 (a)
-             12 LOAD_FAST                3 (b)
+             12 LOAD_FAST_XXX            3 (b)
              14 BUILD_TUPLE              2
              16 RETURN_VALUE
 """ % (load_test.__code__.co_firstlineno,
