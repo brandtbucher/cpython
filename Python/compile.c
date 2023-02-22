@@ -8558,6 +8558,49 @@ add_return_at_end_of_block(struct compiler *c, int addNone)
     return SUCCESS;
 }
 
+// Low bits for COMPARE_AND_BRANCH opargs:
+static int compare_masks[] = {
+    [Py_LT] = COMPARISON_LESS_THAN,
+    [Py_LE] = COMPARISON_LESS_THAN | COMPARISON_EQUALS,
+    [Py_EQ] = COMPARISON_EQUALS,
+    [Py_NE] = COMPARISON_NOT_EQUALS,
+    [Py_GT] = COMPARISON_GREATER_THAN,
+    [Py_GE] = COMPARISON_GREATER_THAN | COMPARISON_EQUALS,
+};
+
+static void
+maybe_use_compare_and_branch(basicblock *b)
+{
+    if (b->b_iused < 2) {
+        return;
+    }
+    struct instr *compare = &b->b_instr[b->b_iused - 2];
+    if (compare->i_opcode != COMPARE_OP) {
+        return;
+    }
+    int oparg = compare->i_oparg;
+    assert((oparg >> 4) <= Py_GE);
+    struct instr *branch = &b->b_instr[b->b_iused - 1];
+    int mask;
+    if (branch->i_opcode == POP_JUMP_IF_FALSE) {
+        mask = compare_masks[oparg >> 4] ^ 0xf;
+    }
+    else if (branch->i_opcode == POP_JUMP_IF_TRUE) {
+        mask = compare_masks[oparg >> 4];
+    }
+    else {
+        return;
+    }
+    if (0xFF < branch->i_oparg) {
+        return;
+    }
+    assert(instr_size(compare) == 1 + INLINE_CACHE_ENTRIES_COMPARE_OP);
+    compare->i_opcode = COMPARE_AND_BRANCH;
+    compare->i_oparg = (oparg & 0xf0) | mask;
+    assert(instr_size(compare) == 1 + INLINE_CACHE_ENTRIES_COMPARE_OP);
+    assert(instr_size(branch) == 1);
+}
+
 static PyCodeObject *
 assemble(struct compiler *c, int addNone)
 {
@@ -8658,8 +8701,12 @@ assemble(struct compiler *c, int addNone)
     assert(no_redundant_jumps(g));
     assert(opcode_metadata_is_sane(g));
 
-    /* Can't modify the bytecode after computing jump offsets. */
+    /* Can't modify the size of the bytecode after computing jump offsets. */
     assemble_jump_offsets(g->g_entryblock);
+
+    for (basicblock *b = g->g_entryblock; b != NULL; b = b->b_next) {
+        maybe_use_compare_and_branch(b);
+    }
 
     /* Create assembler */
     if (assemble_init(&a, c->u->u_firstlineno) < 0) {

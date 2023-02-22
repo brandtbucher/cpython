@@ -108,26 +108,68 @@ dummy_func(
             Py_INCREF(value);
         }
 
-        inst(LOAD_FAST, (-- value)) {
+        inst(LOAD_FAST, (-- unused)) {
+            if (cframe.use_tracing == 0) {
+                switch (_PyOpcode_Deopt[next_instr->op.code]) {
+                    case LOAD_FAST:
+                        next_instr[-1].op.code = LOAD_FAST__LOAD_FAST;
+                        GO_TO_INSTRUCTION(LOAD_FAST__LOAD_FAST);
+                    case LOAD_CONST:
+                        next_instr[-1].op.code = LOAD_FAST__LOAD_CONST;
+                        GO_TO_INSTRUCTION(LOAD_FAST__LOAD_CONST);
+                }
+                next_instr[-1].op.code = LOAD_FAST_QUICK;
+            }
+            GO_TO_INSTRUCTION(LOAD_FAST_QUICK);
+        }
+
+        inst(LOAD_FAST_QUICK, (-- value)) {
             value = GETLOCAL(oparg);
             assert(value != NULL);
             Py_INCREF(value);
         }
 
-        inst(LOAD_CONST, (-- value)) {
+        inst(LOAD_CONST, (-- unused)) {
+            if (cframe.use_tracing == 0) {
+                switch (_PyOpcode_Deopt[next_instr->op.code]) {
+                    case LOAD_FAST:
+                        next_instr[-1].op.code = LOAD_CONST__LOAD_FAST;
+                        GO_TO_INSTRUCTION(LOAD_CONST__LOAD_FAST);
+                }
+                next_instr[-1].op.code = LOAD_CONST_QUICK;
+            }
+            GO_TO_INSTRUCTION(LOAD_CONST_QUICK);
+        }
+
+        inst(LOAD_CONST_QUICK, (-- value)) {
             value = GETITEM(consts, oparg);
             Py_INCREF(value);
         }
 
-        inst(STORE_FAST, (value --)) {
+        inst(STORE_FAST, (unused --)) {
+            if (cframe.use_tracing == 0) {
+                switch (_PyOpcode_Deopt[next_instr->op.code]) {
+                    case LOAD_FAST:
+                        next_instr[-1].op.code = STORE_FAST__LOAD_FAST;
+                        GO_TO_INSTRUCTION(STORE_FAST__LOAD_FAST);
+                    case STORE_FAST:
+                        next_instr[-1].op.code = STORE_FAST__STORE_FAST;
+                        GO_TO_INSTRUCTION(STORE_FAST__STORE_FAST);
+                }
+                next_instr[-1].op.code = STORE_FAST_QUICK;
+            }
+            GO_TO_INSTRUCTION(STORE_FAST_QUICK);
+        }
+
+        inst(STORE_FAST_QUICK, (value --)) {
             SETLOCAL(oparg, value);
         }
 
-        super(LOAD_FAST__LOAD_FAST) = LOAD_FAST + LOAD_FAST;
-        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST + LOAD_CONST;
-        super(STORE_FAST__LOAD_FAST)  = STORE_FAST + LOAD_FAST;
-        super(STORE_FAST__STORE_FAST) = STORE_FAST + STORE_FAST;
-        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST + LOAD_FAST;
+        super(LOAD_FAST__LOAD_FAST) = LOAD_FAST_QUICK + LOAD_FAST_QUICK;
+        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST_QUICK + LOAD_CONST_QUICK;
+        super(STORE_FAST__LOAD_FAST)  = STORE_FAST_QUICK + LOAD_FAST_QUICK;
+        super(STORE_FAST__STORE_FAST) = STORE_FAST_QUICK + STORE_FAST_QUICK;
+        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST_QUICK + LOAD_FAST_QUICK;
 
         inst(POP_TOP, (value --)) {
             DECREF_INPUTS();
@@ -306,7 +348,10 @@ dummy_func(
         inst(BINARY_SUBSCR, (unused/4, container, sub -- res)) {
             #if ENABLE_SPECIALIZATION
             _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_BinarySubscr(container, sub, next_instr);
@@ -442,19 +487,20 @@ dummy_func(
             STORE_SUBSCR_LIST_INT,
         };
 
-        inst(STORE_SUBSCR, (counter/1, v, container, sub -- )) {
+        inst(STORE_SUBSCR, (unused/1, v, container, sub -- )) {
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)next_instr;
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_StoreSubscr(container, sub, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(STORE_SUBSCR, deferred);
-            _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)next_instr;
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-            #else
-            (void)counter;  // Unused.
             #endif  /* ENABLE_SPECIALIZATION */
             /* container[sub] = v */
             int err = PyObject_SetItem(container, sub, v);
@@ -695,7 +741,10 @@ dummy_func(
         inst(SEND, (unused/1, receiver, v -- receiver, retval)) {
             #if ENABLE_SPECIALIZATION
             _PySendCache *cache = (_PySendCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_Send(receiver, next_instr);
@@ -899,7 +948,10 @@ dummy_func(
         inst(UNPACK_SEQUENCE, (unused/1, seq -- unused[oparg])) {
             #if ENABLE_SPECIALIZATION
             _PyUnpackSequenceCache *cache = (_PyUnpackSequenceCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
@@ -961,9 +1013,13 @@ dummy_func(
             STORE_ATTR_WITH_HINT,
         };
 
-        inst(STORE_ATTR, (counter/1, unused/3, v, owner --)) {
+        inst(STORE_ATTR, (unused/1, unused/3, v, owner --)) {
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg);
                 next_instr--;
@@ -971,10 +1027,7 @@ dummy_func(
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(STORE_ATTR, deferred);
-            _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
-            #else
-            (void)counter;  // Unused.
             #endif  /* ENABLE_SPECIALIZATION */
             PyObject *name = GETITEM(names, oparg);
             int err = PyObject_SetAttr(owner, name, v);
@@ -1081,7 +1134,10 @@ dummy_func(
         inst(LOAD_GLOBAL, (unused/1, unused/1, unused/2, unused/1 -- null if (oparg & 1), v)) {
             #if ENABLE_SPECIALIZATION
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg>>1);
                 next_instr--;
@@ -1443,7 +1499,10 @@ dummy_func(
         inst(LOAD_ATTR, (unused/9, owner -- res2 if (oparg & 1), res)) {
             #if ENABLE_SPECIALIZATION
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 PyObject *name = GETITEM(names, oparg>>1);
                 next_instr--;
@@ -1734,7 +1793,10 @@ dummy_func(
         inst(COMPARE_AND_BRANCH, (unused/2, left, right -- )) {
             #if ENABLE_SPECIALIZATION
             _PyCompareOpCache *cache = (_PyCompareOpCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_CompareAndBranch(left, right, next_instr, oparg);
@@ -2100,7 +2162,10 @@ dummy_func(
         inst(FOR_ITER, (unused/1, iter -- iter, next)) {
             #if ENABLE_SPECIALIZATION
             _PyForIterCache *cache = (_PyForIterCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_ForIter(iter, next_instr, oparg);
@@ -2423,7 +2488,10 @@ dummy_func(
             }
             #if ENABLE_SPECIALIZATION
             _PyCallCache *cache = (_PyCallCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_Call(callable, next_instr, total_args, kwnames);
@@ -3092,7 +3160,10 @@ dummy_func(
         inst(BINARY_OP, (unused/1, lhs, rhs -- res)) {
             #if ENABLE_SPECIALIZATION
             _PyBinaryOpCache *cache = (_PyBinaryOpCache *)next_instr;
-            if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
+            if (cache->counter == 0) {
+                cache->counter = adaptive_counter_warmup();
+            }
+            else if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 assert(cframe.use_tracing == 0);
                 next_instr--;
                 _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, &GETLOCAL(0));

@@ -469,6 +469,7 @@ class SuperOrMacroInstruction:
     initial_sp: int
     final_sp: int
     instr_fmt: str
+    predicted: bool = dataclasses.field(default=False, init=False)
 
 
 @dataclasses.dataclass
@@ -589,9 +590,9 @@ class Analyzer:
 
         Raises SystemExit if there is an error.
         """
-        self.find_predictions()
         self.analyze_register_instrs()
         self.analyze_supers_and_macros()
+        self.find_predictions()
         self.map_families()
         self.check_families()
 
@@ -604,6 +605,10 @@ class Analyzer:
                     targets.add(m.group(1))
             for target in targets:
                 if target_instr := self.instrs.get(target):
+                    target_instr.predicted = True
+                elif target_instr := self.macro_instrs.get(target):
+                    target_instr.predicted = True
+                elif target_instr := self.super_instrs.get(target):
                     target_instr.predicted = True
                 else:
                     self.error(
@@ -1110,6 +1115,8 @@ class Analyzer:
         # outer block, rather than trusting the compiler to optimize it.
         self.out.emit("")
         with self.out.block(f"TARGET({up.name})"):
+            if up.predicted:
+                self.out.emit(f"PREDICTED({up.name});")
             for i, var in reversed(list(enumerate(up.stack))):
                 src = None
                 if i < up.initial_sp:

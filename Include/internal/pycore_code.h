@@ -402,12 +402,12 @@ write_location_entry_start(uint8_t *ptr, int code, int length)
 
 // A value of 52 means that we attempt to re-specialize after 53 misses (a prime
 // number, useful for avoiding artifacts if every nth value is a different type
-// or something). Setting the backoff to 0 means that the counter is reset to
-// the same state as a warming-up instruction (value == 1, backoff == 1) after
-// deoptimization. This isn't strictly necessary, but it is bit easier to reason
+// or something). Setting the backoff to 1 means that the counter is reset to
+// the same state (value == 3, backoff == 2) as an instruction that warmed up
+// and failed to specialize. This isn't strictly necessary, but it is bit easier to reason
 // about when thinking about the opcode transitions as a state machine:
 #define ADAPTIVE_COOLDOWN_VALUE 52
-#define ADAPTIVE_COOLDOWN_BACKOFF 0
+#define ADAPTIVE_COOLDOWN_BACKOFF 1
 
 #define MAX_BACKOFF_VALUE (16 - ADAPTIVE_BACKOFF_BITS)
 

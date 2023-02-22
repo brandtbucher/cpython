@@ -343,10 +343,12 @@ _specializations = {
     ],
     "LOAD_CONST": [
         "LOAD_CONST__LOAD_FAST",
+        "LOAD_CONST_QUICK",
     ],
     "LOAD_FAST": [
         "LOAD_FAST__LOAD_CONST",
         "LOAD_FAST__LOAD_FAST",
+        "LOAD_FAST_QUICK",
     ],
     "LOAD_GLOBAL": [
         "LOAD_GLOBAL_BUILTIN",
@@ -360,6 +362,7 @@ _specializations = {
     "STORE_FAST": [
         "STORE_FAST__LOAD_FAST",
         "STORE_FAST__STORE_FAST",
+        "STORE_FAST_QUICK",
     ],
     "STORE_SUBSCR": [
         "STORE_SUBSCR_DICT",

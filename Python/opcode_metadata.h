@@ -18,9 +18,15 @@ _PyOpcode_num_popped(int opcode, int oparg, bool jump) {
             return 0;
         case LOAD_FAST:
             return 0;
+        case LOAD_FAST_QUICK:
+            return 0;
         case LOAD_CONST:
             return 0;
+        case LOAD_CONST_QUICK:
+            return 0;
         case STORE_FAST:
+            return 1;
+        case STORE_FAST_QUICK:
             return 1;
         case LOAD_FAST__LOAD_FAST:
             return 0+0;
@@ -370,9 +376,15 @@ _PyOpcode_num_pushed(int opcode, int oparg, bool jump) {
             return 1;
         case LOAD_FAST:
             return 1;
+        case LOAD_FAST_QUICK:
+            return 1;
         case LOAD_CONST:
             return 1;
+        case LOAD_CONST_QUICK:
+            return 1;
         case STORE_FAST:
+            return 0;
+        case STORE_FAST_QUICK:
             return 0;
         case LOAD_FAST__LOAD_FAST:
             return 1+1;
@@ -724,9 +736,12 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[256] = {
     [RESUME] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_CLOSURE] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST_CHECK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
-    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [LOAD_CONST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
+    [STORE_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IX },
+    [STORE_FAST_QUICK] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IB },
     [LOAD_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [LOAD_FAST__LOAD_CONST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
     [STORE_FAST__LOAD_FAST] = { DIR_NONE, DIR_NONE, DIR_NONE, true, INSTR_FMT_IBIB },
