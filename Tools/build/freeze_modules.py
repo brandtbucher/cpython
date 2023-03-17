@@ -502,7 +502,7 @@ def regen_frozen(modules, frozen_modules: bool):
         orig_name = mod.source.id
         code_name = orig_name.replace(".", "_")
         get_code_name = "_Py_get_%s_toplevel" % code_name
-        externlines.append("extern PyObject *%s(void);" % get_code_name)
+        # externlines.append("extern PyObject *%s(void);" % get_code_name)
 
         symbol = mod.symbol
         pkg = 'true' if mod.ispkg else 'false'
@@ -510,8 +510,8 @@ def regen_frozen(modules, frozen_modules: bool):
             line = ('{"%s", NULL, 0, %s, GET_CODE(%s)},'
                 ) % (mod.name, pkg, code_name)
         else:
-            line = ('{"%s", %s, (int)sizeof(%s), %s, GET_CODE(%s)},'
-                ) % (mod.name, symbol, symbol, pkg, code_name)
+            line = ('{"%s", %s, (int)sizeof(%s), %s, NULL},'
+                ) % (mod.name, symbol, symbol, pkg)
         lines.append(line)
 
         if mod.isalias:
@@ -637,13 +637,13 @@ def regen_makefile(modules):
             rules,
             MAKEFILE,
         )
-        lines = replace_block(
-            lines,
-            "# BEGIN: deepfreeze modules",
-            "# END: deepfreeze modules",
-            deepfreezerules,
-            MAKEFILE,
-        )
+        # lines = replace_block(
+        #     lines,
+        #     "# BEGIN: deepfreeze modules",
+        #     "# END: deepfreeze modules",
+        #     deepfreezerules,
+        #     MAKEFILE,
+        # )
         outfile.writelines(lines)
 
 
@@ -719,7 +719,7 @@ def regen_pcbuild(modules):
 # the script
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--frozen-modules", action="store_true",
+parser.add_argument("--frozen-modules", action="store_false",
         help="Use both frozen and deepfrozen modules. (default: uses only deepfrozen modules)")
 
 def main():
