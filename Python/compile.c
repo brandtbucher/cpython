@@ -9186,6 +9186,37 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                         INSTR_SET_OP0(inst, NOP);
                         INSTR_SET_OP1(&bb->b_instr[++i], RETURN_CONST, oparg);
                         break;
+                    case BINARY_OP: {
+                        struct cfg_instr *binary_op = &bb->b_instr[i + 1];
+                        bool inplace;
+                        if (binary_op->i_oparg == NB_INPLACE_ADD) {
+                            inplace = true;
+                        }
+                        else if (binary_op->i_oparg == NB_ADD) {
+                            inplace = false;
+                        } 
+                        else {
+                            break;
+                        }
+                        cnt = get_const_value(inst->i_opcode, oparg, consts);
+                        if (cnt == NULL) {
+                            goto error;
+                        }
+                        if (!PyLong_CheckExact(cnt) || Py_ABS(Py_SIZE(cnt)) > 1)
+                        {
+                            break;
+                        }
+                        Py_ssize_t rhs = Py_SIZE(cnt) * 
+                            ((PyLongObject *)cnt)->long_value.ob_digit[0];
+                        if (rhs < -_PY_NSMALLNEGINTS || rhs > _PY_NSMALLPOSINTS)
+                        {
+                            break;
+                        }
+                        INSTR_SET_OP0(inst, NOP);
+                        int adjusted_rhs = rhs + _PY_NSMALLNEGINTS;
+                        int new_oparg =  (adjusted_rhs << 1) | inplace;
+                        INSTR_SET_OP1(binary_op, ADD_SMALL_INT, new_oparg);
+                    }
                 }
                 break;
             }

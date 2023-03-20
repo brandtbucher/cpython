@@ -41,6 +41,7 @@ JUMP_BACKWARD = opmap['JUMP_BACKWARD']
 FOR_ITER = opmap['FOR_ITER']
 SEND = opmap['SEND']
 LOAD_ATTR = opmap['LOAD_ATTR']
+ADD_SMALL_INT = opmap['ADD_SMALL_INT']
 
 CACHE = opmap["CACHE"]
 
@@ -502,6 +503,8 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
                                     if arg & (1<<i))
             elif deop == BINARY_OP:
                 _, argrepr = _nb_ops[arg]
+            elif deop == ADD_SMALL_INT:
+                argrepr = ("+= " if arg & 1 else "+ ") + str((arg >> 1) - 5)
         yield Instruction(_all_opname[op], op,
                           arg, argval, argrepr,
                           offset, starts_line, is_jump_target, positions)

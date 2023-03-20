@@ -16,6 +16,8 @@ extern "C" {
 
 
 // These would be in pycore_long.h if it weren't for an include cycle.
+// NOTE: These values affect the arg of ADD_SMALL_INT. If you change them, you
+// must also bump the magic number in Lib/importlib/_bootstrap_external.py!
 #define _PY_NSMALLPOSINTS           257
 #define _PY_NSMALLNEGINTS           5
 

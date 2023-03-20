@@ -168,9 +168,9 @@ dis_bug1333982 = """\
            GET_ITER
            CALL                     0
 
-%3d        LOAD_CONST               2 (1)
+%3d        NOP
 
-%3d        BINARY_OP                0 (+)
+%3d        ADD_SMALL_INT           12 (+ 1)
            CALL                     0
            RAISE_VARARGS            1
 """ % (bug1333982.__code__.co_firstlineno,
@@ -260,8 +260,7 @@ dis_expr_str = """\
   0        RESUME                   0
 
   1        LOAD_NAME                0 (x)
-           LOAD_CONST               0 (1)
-           BINARY_OP                0 (+)
+           ADD_SMALL_INT           12 (+ 1)
            RETURN_VALUE
 """
 
@@ -271,8 +270,7 @@ dis_simple_stmt_str = """\
   0        RESUME                   0
 
   1        LOAD_NAME                0 (x)
-           LOAD_CONST               0 (1)
-           BINARY_OP                0 (+)
+           ADD_SMALL_INT           12 (+ 1)
            STORE_NAME               0 (x)
            RETURN_CONST             1 (None)
 """
@@ -331,11 +329,10 @@ dis_compound_stmt_str = """\
   2        NOP
 
   3     >> LOAD_NAME                0 (x)
-           LOAD_CONST               1 (1)
-           BINARY_OP               13 (+=)
+           ADD_SMALL_INT           13 (+= 1)
            STORE_NAME               0 (x)
 
-  2        JUMP_BACKWARD            6 (to 8)
+  2        JUMP_BACKWARD            4 (to 8)
 """
 
 dis_traceback = """\
@@ -952,23 +949,22 @@ class DisTests(DisTestBase):
 ''' % (w, 0)]
             s += ['''\
            %*d LOAD_FAST                0 (x)
-           %*d LOAD_CONST               1 (1)
-           %*d BINARY_OP                0 (+)
+           %*d ADD_SMALL_INT           12 (+ 1)
            %*d STORE_FAST               0 (x)
-''' % (w, 10*i + 2, w, 10*i + 4, w, 10*i + 6, w, 10*i + 10)
+''' % (w, 6*i + 2, w, 6*i + 4, w, 6*i + 6)
                  for i in range(count)]
             s += ['''\
 
   3        %*d LOAD_FAST                0 (x)
            %*d RETURN_VALUE
-''' % (w, 10*count + 2, w, 10*count + 4)]
+''' % (w, 6*count + 2, w, 6*count + 4)]
             s[1] = '  2' + s[1][3:]
             return ''.join(s)
 
         for i in range(1, 5):
             self.do_disassembly_test(func(i), expected(i, 4), True)
-        self.do_disassembly_test(func(999), expected(999, 4), True)
-        self.do_disassembly_test(func(1000), expected(1000, 5), True)
+        self.do_disassembly_test(func(1665), expected(1665, 4), True)
+        self.do_disassembly_test(func(1666), expected(1666, 5), True)
 
     def test_disassemble_str(self):
         self.do_disassembly_test(expr_str, dis_expr_str)
@@ -1335,7 +1331,6 @@ Stack size:        \\d+
 Flags:             0x0
 Constants:
    0: 0
-   1: 1
 Names:
    0: x"""
 

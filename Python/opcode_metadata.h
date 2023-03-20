@@ -343,6 +343,8 @@ _PyOpcode_num_popped(int opcode, int oparg, bool jump) {
             return (oparg-1) + 1;
         case BINARY_OP:
             return 2;
+        case ADD_SMALL_INT:
+            return 1;
         case SWAP:
             return (oparg-2) + 2;
         case EXTENDED_ARG:
@@ -695,6 +697,8 @@ _PyOpcode_num_pushed(int opcode, int oparg, bool jump) {
             return (oparg-1) + 2;
         case BINARY_OP:
             return 1;
+        case ADD_SMALL_INT:
+            return 1;
         case SWAP:
             return (oparg-2) + 2;
         case EXTENDED_ARG:
@@ -884,6 +888,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[256] = {
     [FORMAT_VALUE] = { true, INSTR_FMT_IB },
     [COPY] = { true, INSTR_FMT_IB },
     [BINARY_OP] = { true, INSTR_FMT_IBC },
+    [ADD_SMALL_INT] = { true, INSTR_FMT_IB },
     [SWAP] = { true, INSTR_FMT_IB },
     [EXTENDED_ARG] = { true, INSTR_FMT_IB },
     [CACHE] = { true, INSTR_FMT_IX },

@@ -195,9 +195,8 @@ hasfree.append(139)
 jrel_op('JUMP_BACKWARD', 140)    # Number of words to skip (backwards)
 def_op('COMPARE_AND_BRANCH', 141)   # Comparison and jump
 hascompare.append(141)
-
 def_op('CALL_FUNCTION_EX', 142)  # Flags
-
+def_op('ADD_SMALL_INT', 143)
 def_op('EXTENDED_ARG', 144)
 EXTENDED_ARG = 144
 def_op('LIST_APPEND', 145)

@@ -3067,6 +3067,47 @@ dummy_func(
             ERROR_IF(res == NULL, error);
         }
 
+        inst(ADD_SMALL_INT, (lhs -- res)) {
+            assert((oparg >> 1) < (_PY_NSMALLPOSINTS + _PY_NSMALLNEGINTS));
+            if (PyFloat_CheckExact(lhs)) {
+                // RHS is a C double:
+                double rhs = (double)((oparg >> 1) - _PY_NSMALLNEGINTS);
+                if (Py_REFCNT(lhs) == 1) {
+                    // Case A... LHS is a float we can reuse:
+                    ((PyFloatObject *)lhs)->ob_fval += rhs;
+                    res = lhs;
+                }
+                else {
+                    // Case B... LHS is a float we can't reuse:
+                    res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(lhs) + rhs);
+                    _Py_DECREF_NO_DEALLOC(lhs);
+                    ERROR_IF(res == NULL, error);
+                }
+            }
+            else {
+                // RHS is a borrowed small int:
+                PyLongObject *rhs = &_PyLong_SMALL_INTS[oparg >> 1];
+                if (PyLong_CheckExact(lhs)) {
+                    // Case C... LHS is an int:
+                    res = _PyLong_Add((PyLongObject *)lhs, rhs);
+                    _Py_DECREF_SPECIALIZED(lhs, (destructor)PyObject_Free);
+                    ERROR_IF(res == NULL, error);
+                }
+                else if (oparg & 1) {
+                    // Case D... LHS is something else, in-place:
+                    res = PyNumber_InPlaceAdd(lhs, (PyObject *)rhs);
+                    Py_DECREF(lhs);
+                    ERROR_IF(res == NULL, error);
+                }
+                else {
+                    // Case D... LHS is something else, not in-place:
+                    res = PyNumber_Add(lhs, (PyObject *)rhs);
+                    Py_DECREF(lhs);
+                    ERROR_IF(res == NULL, error);
+                }
+            }
+        }
+
         inst(SWAP, (bottom, unused[oparg-2], top --
                     top, unused[oparg-2], bottom)) {
             assert(oparg >= 2);

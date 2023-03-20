@@ -97,6 +97,7 @@ extern "C" {
 #define JUMP_BACKWARD                          140
 #define COMPARE_AND_BRANCH                     141
 #define CALL_FUNCTION_EX                       142
+#define ADD_SMALL_INT                          143
 #define EXTENDED_ARG                           144
 #define LIST_APPEND                            145
 #define SET_ADD                                146
@@ -181,13 +182,13 @@ extern "C" {
 #define STORE_ATTR_SLOT                         87
 #define STORE_ATTR_WITH_HINT                    88
 #define STORE_FAST__LOAD_FAST                  113
-#define STORE_FAST__STORE_FAST                 143
-#define STORE_SUBSCR_DICT                      153
-#define STORE_SUBSCR_LIST_INT                  154
-#define UNPACK_SEQUENCE_LIST                   158
-#define UNPACK_SEQUENCE_TUPLE                  159
-#define UNPACK_SEQUENCE_TWO_TUPLE              160
-#define SEND_GEN                               161
+#define STORE_FAST__STORE_FAST                 153
+#define STORE_SUBSCR_DICT                      154
+#define STORE_SUBSCR_LIST_INT                  158
+#define UNPACK_SEQUENCE_LIST                   159
+#define UNPACK_SEQUENCE_TUPLE                  160
+#define UNPACK_SEQUENCE_TWO_TUPLE              161
+#define SEND_GEN                               166
 #define DO_TRACING                             255
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
