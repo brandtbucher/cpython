@@ -4323,75 +4323,52 @@
 
         TARGET(ADD_SMALL_INT) {
             PyObject *lhs = stack_pointer[-1];
-            PyObject *res;
+            PyObject *sum;
             #line 3071 "Python/bytecodes.c"
             assert((oparg >> 1) < (_PY_NSMALLPOSINTS + _PY_NSMALLNEGINTS));
-            if (PyFloat_CheckExact(lhs)) {
-                // RHS is a C double:
-                double rhs = (double)((oparg >> 1) - _PY_NSMALLNEGINTS);
-                if (Py_REFCNT(lhs) == 1) {
-                    // Case A... LHS is a float we can reuse:
-                    ((PyFloatObject *)lhs)->ob_fval += rhs;
-                    res = lhs;
-                }
-                else {
-                    // Case B... LHS is a float we can't reuse:
-                    res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(lhs) + rhs);
-                    _Py_DECREF_NO_DEALLOC(lhs);
-                    if (res == NULL) goto pop_1_error;
-                }
+            PyLongObject *rhs = &_PyLong_SMALL_INTS[oparg >> 1];
+            if (PyLong_CheckExact(lhs)) {
+                sum = _PyLong_Add((PyLongObject *)lhs, rhs);
+                _Py_DECREF_SPECIALIZED(lhs, (destructor)PyObject_Free);
+            }
+            else if (oparg & 1) {
+                sum = PyNumber_InPlaceAdd(lhs, (PyObject *)rhs);
+                Py_DECREF(lhs);
             }
             else {
-                // RHS is a borrowed small int:
-                PyLongObject *rhs = &_PyLong_SMALL_INTS[oparg >> 1];
-                if (PyLong_CheckExact(lhs)) {
-                    // Case C... LHS is an int:
-                    res = _PyLong_Add((PyLongObject *)lhs, rhs);
-                    _Py_DECREF_SPECIALIZED(lhs, (destructor)PyObject_Free);
-                    if (res == NULL) goto pop_1_error;
-                }
-                else if (oparg & 1) {
-                    // Case D... LHS is something else, in-place:
-                    res = PyNumber_InPlaceAdd(lhs, (PyObject *)rhs);
-                    Py_DECREF(lhs);
-                    if (res == NULL) goto pop_1_error;
-                }
-                else {
-                    // Case D... LHS is something else, not in-place:
-                    res = PyNumber_Add(lhs, (PyObject *)rhs);
-                    Py_DECREF(lhs);
-                    if (res == NULL) goto pop_1_error;
-                }
+                sum = PyNumber_Add(lhs, (PyObject *)rhs);
+                Py_DECREF(lhs);
             }
-            #line 4367 "Python/generated_cases.c.h"
-            stack_pointer[-1] = res;
+            if (sum == NULL) goto pop_1_error;
+            #line 4344 "Python/generated_cases.c.h"
+            stack_pointer[-1] = sum;
             DISPATCH();
         }
 
         TARGET(SWAP) {
             PyObject *top = stack_pointer[-1];
             PyObject *bottom = stack_pointer[-(2 + (oparg-2))];
-            #line 3113 "Python/bytecodes.c"
+            #line 3090 "Python/bytecodes.c"
             assert(oparg >= 2);
-            #line 4377 "Python/generated_cases.c.h"
+            #line 4354 "Python/generated_cases.c.h"
             stack_pointer[-1] = bottom;
             stack_pointer[-(2 + (oparg-2))] = top;
             DISPATCH();
         }
 
         TARGET(EXTENDED_ARG) {
-            #line 3117 "Python/bytecodes.c"
+            #line 3094 "Python/bytecodes.c"
             assert(oparg);
             assert(cframe.use_tracing == 0);
             opcode = next_instr->op.code;
             oparg = oparg << 8 | next_instr->op.arg;
             PRE_DISPATCH_GOTO();
             DISPATCH_GOTO();
-            #line 4391 "Python/generated_cases.c.h"
+            #line 4368 "Python/generated_cases.c.h"
         }
 
         TARGET(CACHE) {
-            #line 3126 "Python/bytecodes.c"
+            #line 3103 "Python/bytecodes.c"
             Py_UNREACHABLE();
-            #line 4397 "Python/generated_cases.c.h"
+            #line 4374 "Python/generated_cases.c.h"
         }
