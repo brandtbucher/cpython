@@ -66,8 +66,6 @@ extern "C" {
 #define IMPORT_NAME                            108
 #define IMPORT_FROM                            109
 #define JUMP_FORWARD                           110
-#define JUMP_IF_FALSE_OR_POP                   111
-#define JUMP_IF_TRUE_OR_POP                    112
 #define POP_JUMP_IF_FALSE                      114
 #define POP_JUMP_IF_TRUE                       115
 #define LOAD_GLOBAL                            116
@@ -95,7 +93,6 @@ extern "C" {
 #define STORE_DEREF                            138
 #define DELETE_DEREF                           139
 #define JUMP_BACKWARD                          140
-#define COMPARE_AND_BRANCH                     141
 #define CALL_FUNCTION_EX                       142
 #define EXTENDED_ARG                           144
 #define LIST_APPEND                            145
@@ -155,9 +152,9 @@ extern "C" {
 #define CALL_NO_KW_STR_1                        45
 #define CALL_NO_KW_TUPLE_1                      46
 #define CALL_NO_KW_TYPE_1                       47
-#define COMPARE_AND_BRANCH_FLOAT                48
-#define COMPARE_AND_BRANCH_INT                  56
-#define COMPARE_AND_BRANCH_STR                  57
+#define COMPARE_OP_FLOAT                        48
+#define COMPARE_OP_INT                          56
+#define COMPARE_OP_STR                          57
 #define FOR_ITER_LIST                           58
 #define FOR_ITER_TUPLE                          59
 #define FOR_ITER_RANGE                          62
@@ -180,17 +177,17 @@ extern "C" {
 #define LOAD_GLOBAL_BUILTIN                     86
 #define LOAD_GLOBAL_MODULE                      87
 #define STORE_ATTR_INSTANCE_VALUE               88
-#define STORE_ATTR_SLOT                        113
-#define STORE_ATTR_WITH_HINT                   143
-#define STORE_FAST__LOAD_FAST                  153
-#define STORE_FAST__STORE_FAST                 154
-#define STORE_FAST_QUICK                       158
-#define STORE_SUBSCR_DICT                      159
-#define STORE_SUBSCR_LIST_INT                  160
-#define UNPACK_SEQUENCE_LIST                   161
-#define UNPACK_SEQUENCE_TUPLE                  166
-#define UNPACK_SEQUENCE_TWO_TUPLE              167
-#define SEND_GEN                               168
+#define STORE_ATTR_SLOT                        111
+#define STORE_ATTR_WITH_HINT                   112
+#define STORE_FAST__LOAD_FAST                  113
+#define STORE_FAST__STORE_FAST                 141
+#define STORE_FAST_QUICK                       143
+#define STORE_SUBSCR_DICT                      153
+#define STORE_SUBSCR_LIST_INT                  154
+#define UNPACK_SEQUENCE_LIST                   158
+#define UNPACK_SEQUENCE_TUPLE                  159
+#define UNPACK_SEQUENCE_TWO_TUPLE              160
+#define SEND_GEN                               161
 #define DO_TRACING                             255
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
