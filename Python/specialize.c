@@ -484,13 +484,17 @@ static uint32_t function_get_version(PyObject *o, int opcode);
 static int
 insert_into_cache(PyTypeObject *type, PyObject *descr)
 {
+    assert(type->_tp_cache_used <= UINT16_MAX);
     for (unsigned int i = 0; i < type->_tp_cache_used; i++) {
         if (type->_tp_cache[i] == descr) {
             return i;
         }
     }
+    if (type->_tp_cache_used == UINT16_MAX) {
+        return -1;
+    }
     if (type->_tp_cache_used == type->_tp_cache_size) {
-        type->_tp_cache_size = Py_MAX(type->_tp_cache_size << 1, 8);
+        type->_tp_cache_size = Py_MAX(type->_tp_cache_size << 1, (1 << 4));
         PyMem_Resize(type->_tp_cache, PyObject *, type->_tp_cache_size);
         if (type->_tp_cache == NULL) {
             type->_tp_cache_size = 0;
