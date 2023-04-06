@@ -1110,15 +1110,15 @@ class TestSpecifics(unittest.TestCase):
         def aug():
             x[a:b] += y
 
-        check_op_count(load, "BINARY_SLICE", 3)
-        check_op_count(load, "BUILD_SLICE", 0)
-        check_op_count(store, "STORE_SLICE", 3)
-        check_op_count(store, "BUILD_SLICE", 0)
+        check_op_count(load, "BINARY_SUBSCR", 4)
+        check_op_count(load, "BUILD_SLICE", 3)
+        check_op_count(store, "STORE_SUBSCR", 4)
+        check_op_count(store, "BUILD_SLICE", 3)
         check_op_count(long_slice, "BUILD_SLICE", 1)
-        check_op_count(long_slice, "BINARY_SLICE", 0)
-        check_op_count(aug, "BINARY_SLICE", 1)
-        check_op_count(aug, "STORE_SLICE", 1)
-        check_op_count(aug, "BUILD_SLICE", 0)
+        check_op_count(long_slice, "BINARY_SUBSCR", 1)
+        check_op_count(aug, "BINARY_SUBSCR", 1)
+        check_op_count(aug, "STORE_SUBSCR", 1)
+        check_op_count(aug, "BUILD_SLICE", 1)
 
     def test_compare_positions(self):
         for opname_prefix, op in [

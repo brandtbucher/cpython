@@ -125,9 +125,7 @@ print_spec_stats(FILE *out, OpcodeStats *stats)
 {
     /* Mark some opcodes as specializable for stats,
      * even though we don't specialize them yet. */
-    fprintf(out, "opcode[%d].specializable : 1\n", BINARY_SLICE);
     fprintf(out, "opcode[%d].specializable : 1\n", COMPARE_OP);
-    fprintf(out, "opcode[%d].specializable : 1\n", STORE_SLICE);
     fprintf(out, "opcode[%d].specializable : 1\n", SEND);
     for (int i = 0; i < 256; i++) {
         if (_PyOpcode_Caches[i]) {

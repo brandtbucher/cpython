@@ -355,36 +355,6 @@ dummy_func(
             ERROR_IF(res == NULL, error);
         }
 
-        inst(BINARY_SLICE, (container, start, stop -- res)) {
-            PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
-            // Can't use ERROR_IF() here, because we haven't
-            // DECREF'ed container yet, and we still own slice.
-            if (slice == NULL) {
-                res = NULL;
-            }
-            else {
-                res = PyObject_GetItem(container, slice);
-                Py_DECREF(slice);
-            }
-            Py_DECREF(container);
-            ERROR_IF(res == NULL, error);
-        }
-
-        inst(STORE_SLICE, (v, container, start, stop -- )) {
-            PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
-            int err;
-            if (slice == NULL) {
-                err = 1;
-            }
-            else {
-                err = PyObject_SetItem(container, slice, v);
-                Py_DECREF(slice);
-            }
-            Py_DECREF(v);
-            Py_DECREF(container);
-            ERROR_IF(err, error);
-        }
-
         inst(BINARY_SUBSCR_LIST_INT, (unused/1, list, sub -- res)) {
             assert(cframe.use_tracing == 0);
             DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);

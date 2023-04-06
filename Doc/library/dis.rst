@@ -549,30 +549,6 @@ not have to be) the original ``STACK[-2]``.
       container = STACK.pop()
       del container[key]
 
-.. opcode:: BINARY_SLICE
-
-   Implements::
-
-      end = STACK.pop()
-      start = STACK.pop()
-      container = STACK.pop()
-      STACK.append(container[start:end])
-
-   .. versionadded:: 3.12
-
-
-.. opcode:: STORE_SLICE
-
-   Implements::
-
-      end = STACK.pop()
-      start = STACK.pop()
-      container = STACK.pop()
-      values = STACK.pop()
-      container[start:end] = value
-
-   .. versionadded:: 3.12
-
 
 **Coroutine opcodes**
 

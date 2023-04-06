@@ -63,10 +63,6 @@ _PyOpcode_num_popped(int opcode, int oparg, bool jump) {
             return 2;
         case BINARY_SUBSCR:
             return 2;
-        case BINARY_SLICE:
-            return 3;
-        case STORE_SLICE:
-            return 4;
         case BINARY_SUBSCR_LIST_INT:
             return 2;
         case BINARY_SUBSCR_TUPLE_INT:
@@ -409,10 +405,6 @@ _PyOpcode_num_pushed(int opcode, int oparg, bool jump) {
             return 1;
         case BINARY_SUBSCR:
             return 1;
-        case BINARY_SLICE:
-            return 1;
-        case STORE_SLICE:
-            return 0;
         case BINARY_SUBSCR_LIST_INT:
             return 1;
         case BINARY_SUBSCR_TUPLE_INT:
@@ -732,8 +724,6 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[256] = {
     [BINARY_OP_ADD_FLOAT] = { true, INSTR_FMT_IXC },
     [BINARY_OP_ADD_INT] = { true, INSTR_FMT_IXC },
     [BINARY_SUBSCR] = { true, INSTR_FMT_IXC },
-    [BINARY_SLICE] = { true, INSTR_FMT_IX },
-    [STORE_SLICE] = { true, INSTR_FMT_IX },
     [BINARY_SUBSCR_LIST_INT] = { true, INSTR_FMT_IXC },
     [BINARY_SUBSCR_TUPLE_INT] = { true, INSTR_FMT_IXC },
     [BINARY_SUBSCR_DICT] = { true, INSTR_FMT_IXC },
