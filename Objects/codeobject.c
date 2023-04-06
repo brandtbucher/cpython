@@ -2298,6 +2298,33 @@ _PyCode_ConstantKey(PyObject *op)
         Py_DECREF(set);
         return key;
     }
+    else if (PySlice_Check(op)) {
+        PySliceObject *slice = (PySliceObject *)op;
+        PyObject *key_start = _PyCode_ConstantKey(slice->start);
+        if (key_start == NULL) {
+            return NULL;
+        }
+        PyObject *key_stop = _PyCode_ConstantKey(slice->stop);
+        if (key_stop == NULL) {
+            Py_DECREF(key_start);
+            return NULL;
+        }
+        PyObject *key_step = _PyCode_ConstantKey(slice->step);
+        if (key_step == NULL) {
+            Py_DECREF(key_start);
+            Py_DECREF(key_stop);
+            return NULL;
+        }
+        PyObject *key_slice = PySlice_New(key_start, key_stop, key_step);
+        Py_DECREF(key_start);
+        Py_DECREF(key_stop);
+        Py_DECREF(key_step);
+        if (key_slice == NULL) {
+            return NULL;
+        }
+        key = PyTuple_Pack(2, key_slice, op);
+        Py_DECREF(key_slice);
+    }
     else {
         /* for other types, use the object identifier as a unique identifier
          * to ensure that they are seen as unequal. */

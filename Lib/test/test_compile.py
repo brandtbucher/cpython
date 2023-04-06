@@ -1110,9 +1110,9 @@ class TestSpecifics(unittest.TestCase):
         def aug():
             x[a:b] += y
 
-        check_op_count(load, "BINARY_SLICE", 4)
+        check_op_count(load, "BINARY_SLICE", 3)
         check_op_count(load, "BUILD_SLICE", 0)
-        check_op_count(store, "STORE_SLICE", 4)
+        check_op_count(store, "STORE_SLICE", 3)
         check_op_count(store, "BUILD_SLICE", 0)
         check_op_count(long_slice, "BUILD_SLICE", 1)
         check_op_count(long_slice, "BINARY_SLICE", 0)

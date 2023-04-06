@@ -371,6 +371,17 @@ class Printer:
         self.write("// TODO: The above tuple should be a frozenset")
         return ret
 
+    def generate_slice(self, name: str, s: slice) -> str:
+        start = self.generate(f"{name}_start", s.start)
+        stop = self.generate(f"{name}_stop", s.stop)
+        step = self.generate(f"{name}_step", s.step)
+        with self.block(f"static PySliceObject {name} =", ";"):
+            self.object_head("PySlice_Type")
+            self.write(f".start = {start},")
+            self.write(f".stop = {stop},")
+            self.write(f".step = {step},")
+        return f"&{name}.ob_base"
+
     def generate_file(self, module: str, code: object)-> None:
         module = module.replace(".", "_")
         self.generate(f"{module}_toplevel", code)
@@ -404,6 +415,8 @@ class Printer:
             val = self.generate_complex(name, obj)
         elif isinstance(obj, frozenset):
             val = self.generate_frozenset(name, obj)
+        elif isinstance(obj, slice):
+            val = self.generate_slice(name, obj)
         elif obj is builtins.Ellipsis:
             return "Py_Ellipsis"
         elif obj is None:

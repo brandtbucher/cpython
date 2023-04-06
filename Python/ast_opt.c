@@ -558,6 +558,30 @@ fold_tuple(expr_ty node, PyArena *arena, _PyASTOptimizeState *state)
 }
 
 static int
+fold_slice(expr_ty node, PyArena *arena, _PyASTOptimizeState *state)
+{
+    PyObject *args[3];
+    expr_ty parts[3] = {
+        node->v.Slice.lower,
+        node->v.Slice.upper,
+        node->v.Slice.step,
+    };
+    for (int i = 0; i < 3; i++) {
+        expr_ty part = parts[i];
+        if (part == NULL) {
+            args[i] = NULL;
+        }
+        else if (part->kind == Constant_kind) {
+            args[i] = part->v.Constant.value;
+        }
+        else {
+            return 1;
+        }
+    }
+    return make_const(node, PySlice_New(args[0], args[1], args[2]), arena);
+}
+
+static int
 fold_subscr(expr_ty node, PyArena *arena, _PyASTOptimizeState *state)
 {
     PyObject *newval;
@@ -803,6 +827,7 @@ astfold_expr(expr_ty node_, PyArena *ctx_, _PyASTOptimizeState *state)
         CALL_OPT(astfold_expr, expr_ty, node_->v.Slice.lower);
         CALL_OPT(astfold_expr, expr_ty, node_->v.Slice.upper);
         CALL_OPT(astfold_expr, expr_ty, node_->v.Slice.step);
+        CALL(fold_slice, expr_ty, node_);
         break;
     case List_kind:
         CALL_SEQ(astfold_expr, expr, node_->v.List.elts);

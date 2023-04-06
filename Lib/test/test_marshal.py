@@ -528,6 +528,11 @@ class InstancingTestCase(unittest.TestCase, HelperMixin):
         l = [obj, obj]
         l.append(l)
         self.helper3(l, recursive=True)
+    
+    def testSlice(self):
+        slice_obj = slice("Spam", None, -4 + 2j)
+        self.helper(slice_obj)
+        self.helper3(slice_obj)
 
 class CompatibilityTestCase(unittest.TestCase):
     def _test(self, version):
