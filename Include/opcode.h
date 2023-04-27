@@ -82,8 +82,6 @@ extern "C" {
 #define STORE_FAST                             125
 #define DELETE_FAST                            126
 #define LOAD_FAST_CHECK                        127
-#define POP_JUMP_IF_NOT_NONE                   128
-#define POP_JUMP_IF_NONE                       129
 #define RAISE_VARARGS                          130
 #define GET_AWAITABLE                          131
 #define MAKE_FUNCTION                          132
@@ -117,9 +115,7 @@ extern "C" {
 #define KW_NAMES                               172
 #define CALL_INTRINSIC_1                       173
 #define CALL_INTRINSIC_2                       174
-#define MIN_INSTRUMENTED_OPCODE                238
-#define INSTRUMENTED_POP_JUMP_IF_NONE          238
-#define INSTRUMENTED_POP_JUMP_IF_NOT_NONE      239
+#define MIN_INSTRUMENTED_OPCODE                240
 #define INSTRUMENTED_RESUME                    240
 #define INSTRUMENTED_CALL                      241
 #define INSTRUMENTED_RETURN_VALUE              242
@@ -202,14 +198,14 @@ extern "C" {
 #define STORE_ATTR_INSTANCE_VALUE              111
 #define STORE_ATTR_SLOT                        112
 #define STORE_ATTR_WITH_HINT                   113
-#define STORE_FAST__LOAD_FAST                  143
-#define STORE_FAST__STORE_FAST                 153
-#define STORE_SUBSCR_DICT                      154
-#define STORE_SUBSCR_LIST_INT                  158
-#define UNPACK_SEQUENCE_LIST                   159
-#define UNPACK_SEQUENCE_TUPLE                  160
-#define UNPACK_SEQUENCE_TWO_TUPLE              161
-#define SEND_GEN                               166
+#define STORE_FAST__LOAD_FAST                  128
+#define STORE_FAST__STORE_FAST                 129
+#define STORE_SUBSCR_DICT                      143
+#define STORE_SUBSCR_LIST_INT                  153
+#define UNPACK_SEQUENCE_LIST                   154
+#define UNPACK_SEQUENCE_TUPLE                  158
+#define UNPACK_SEQUENCE_TWO_TUPLE              159
+#define SEND_GEN                               160
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
     || ((op) == JUMP) \

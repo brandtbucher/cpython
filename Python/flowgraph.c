@@ -422,12 +422,6 @@ normalize_jumps_in_block(cfg_builder *g, basicblock *b) {
     }
     int reversed_opcode = 0;
     switch(last->i_opcode) {
-        case POP_JUMP_IF_NOT_NONE:
-            reversed_opcode = POP_JUMP_IF_NONE;
-            break;
-        case POP_JUMP_IF_NONE:
-            reversed_opcode = POP_JUMP_IF_NOT_NONE;
-            break;
         case POP_JUMP_IF_FALSE:
             reversed_opcode = POP_JUMP_IF_TRUE;
             break;
@@ -1108,6 +1102,38 @@ get_const_value(int opcode, int oparg, PyObject *co_consts)
     return Py_NewRef(constant);
 }
 
+
+static int
+new_const(PyObject *const_cache, cfg_instr *inst, PyObject *consts,
+          PyObject *newconst)
+{
+    if (_PyCompile_ConstCacheMergeOne(const_cache, &newconst) < 0) {
+        Py_DECREF(newconst);
+        return ERROR;
+    }
+
+    Py_ssize_t index;
+    for (index = 0; index < PyList_GET_SIZE(consts); index++) {
+        if (PyList_GET_ITEM(consts, index) == newconst) {
+            break;
+        }
+    }
+    if (index == PyList_GET_SIZE(consts)) {
+        if ((size_t)index >= (size_t)INT_MAX - 1) {
+            Py_DECREF(newconst);
+            PyErr_SetString(PyExc_OverflowError, "too many constants");
+            return ERROR;
+        }
+        if (PyList_Append(consts, newconst)) {
+            Py_DECREF(newconst);
+            return ERROR;
+        }
+    }
+    Py_DECREF(newconst);
+    INSTR_SET_OP1(inst, LOAD_CONST, (int)index);
+    return SUCCESS;
+}
+
 /* Replace LOAD_CONST c1, LOAD_CONST c2 ... LOAD_CONST cn, BUILD_TUPLE n
    with    LOAD_CONST (c1, c2, ... cn).
    The consts table must still be in list form so that the
@@ -1145,33 +1171,10 @@ fold_tuple_on_constants(PyObject *const_cache,
         }
         PyTuple_SET_ITEM(newconst, i, constant);
     }
-    if (_PyCompile_ConstCacheMergeOne(const_cache, &newconst) < 0) {
-        Py_DECREF(newconst);
-        return ERROR;
-    }
-
-    Py_ssize_t index;
-    for (index = 0; index < PyList_GET_SIZE(consts); index++) {
-        if (PyList_GET_ITEM(consts, index) == newconst) {
-            break;
-        }
-    }
-    if (index == PyList_GET_SIZE(consts)) {
-        if ((size_t)index >= (size_t)INT_MAX - 1) {
-            Py_DECREF(newconst);
-            PyErr_SetString(PyExc_OverflowError, "too many constants");
-            return ERROR;
-        }
-        if (PyList_Append(consts, newconst)) {
-            Py_DECREF(newconst);
-            return ERROR;
-        }
-    }
-    Py_DECREF(newconst);
+    RETURN_IF_ERROR(new_const(const_cache, &inst[n], consts, newconst));
     for (int i = 0; i < n; i++) {
         INSTR_SET_OP0(&inst[i], NOP);
     }
-    INSTR_SET_OP1(&inst[n], LOAD_CONST, (int)index);
     return SUCCESS;
 }
 
@@ -1400,20 +1403,18 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                             INSTR_SET_OP0(&bb->b_instr[i + 1], NOP);
                         }
                         break;
-                    case IS_OP:
+                    case UNARY_NOT:
                         cnt = get_const_value(opcode, oparg, consts);
                         if (cnt == NULL) {
                             goto error;
                         }
-                        int jump_op = i+2 < bb->b_iused ? bb->b_instr[i+2].i_opcode : 0;
-                        if (Py_IsNone(cnt) && (jump_op == POP_JUMP_IF_FALSE || jump_op == POP_JUMP_IF_TRUE)) {
-                            unsigned char nextarg = bb->b_instr[i+1].i_oparg;
-                            INSTR_SET_OP0(inst, NOP);
-                            INSTR_SET_OP0(&bb->b_instr[i + 1], NOP);
-                            bb->b_instr[i+2].i_opcode = nextarg ^ (jump_op == POP_JUMP_IF_FALSE) ?
-                                    POP_JUMP_IF_NOT_NONE : POP_JUMP_IF_NONE;
-                        }
+                        is_true = PyObject_IsTrue(cnt);
                         Py_DECREF(cnt);
+                        if (is_true == -1) {
+                            goto error;
+                        }
+                        INSTR_SET_OP0(inst, NOP);
+                        RETURN_IF_ERROR(new_const(const_cache, &bb->b_instr[i + 1], consts, is_true ? Py_False : Py_True));
                         break;
                     case RETURN_VALUE:
                         INSTR_SET_OP0(inst, NOP);
@@ -1444,13 +1445,6 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                     if (fold_tuple_on_constants(const_cache, inst-oparg, oparg, consts)) {
                         goto error;
                     }
-                }
-                break;
-            case POP_JUMP_IF_NOT_NONE:
-            case POP_JUMP_IF_NONE:
-                switch (target->i_opcode) {
-                    case JUMP:
-                        i -= jump_thread(inst, target, inst->i_opcode);
                 }
                 break;
             case POP_JUMP_IF_FALSE:

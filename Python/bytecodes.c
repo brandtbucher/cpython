@@ -2019,62 +2019,16 @@ dummy_func(
         }
 
         inst(POP_JUMP_IF_FALSE, (cond -- )) {
-            if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
+            assert(PyBool_Check(cond));
+            if (Py_IsFalse(cond)) {
                 JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                DECREF_INPUTS();
-                if (err == 0) {
-                    JUMPBY(oparg);
-                }
-                else {
-                    ERROR_IF(err < 0, error);
-                }
             }
         }
 
         inst(POP_JUMP_IF_TRUE, (cond -- )) {
-            if (Py_IsFalse(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
-            }
-            else if (Py_IsTrue(cond)) {
-                _Py_DECREF_NO_DEALLOC(cond);
+            assert(PyBool_Check(cond));
+            if (Py_IsTrue(cond)) {
                 JUMPBY(oparg);
-            }
-            else {
-                int err = PyObject_IsTrue(cond);
-                DECREF_INPUTS();
-                if (err > 0) {
-                    JUMPBY(oparg);
-                }
-                else {
-                    ERROR_IF(err < 0, error);
-                }
-            }
-        }
-
-        inst(POP_JUMP_IF_NOT_NONE, (value -- )) {
-            if (!Py_IsNone(value)) {
-                DECREF_INPUTS();
-                JUMPBY(oparg);
-            }
-            else {
-                _Py_DECREF_NO_DEALLOC(value);
-            }
-        }
-
-        inst(POP_JUMP_IF_NONE, (value -- )) {
-            if (Py_IsNone(value)) {
-                _Py_DECREF_NO_DEALLOC(value);
-                JUMPBY(oparg);
-            }
-            else {
-                DECREF_INPUTS();
             }
         }
 
@@ -3288,7 +3242,7 @@ dummy_func(
 
         inst(INSTRUMENTED_POP_JUMP_IF_TRUE, ( -- )) {
             PyObject *cond = POP();
-            int err = PyObject_IsTrue(cond);
+            int err = PyObject_IsTrue(cond);  // XXX
             Py_DECREF(cond);
             ERROR_IF(err < 0, error);
             _Py_CODEUNIT *here = next_instr-1;
@@ -3299,42 +3253,12 @@ dummy_func(
 
         inst(INSTRUMENTED_POP_JUMP_IF_FALSE, ( -- )) {
             PyObject *cond = POP();
-            int err = PyObject_IsTrue(cond);
+            int err = PyObject_IsTrue(cond);  // XXX
             Py_DECREF(cond);
             ERROR_IF(err < 0, error);
             _Py_CODEUNIT *here = next_instr-1;
             assert(err == 0 || err == 1);
             int offset = (1-err)*oparg;
-            INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
-        }
-
-        inst(INSTRUMENTED_POP_JUMP_IF_NONE, ( -- )) {
-            PyObject *value = POP();
-            _Py_CODEUNIT *here = next_instr-1;
-            int offset;
-            if (Py_IsNone(value)) {
-                _Py_DECREF_NO_DEALLOC(value);
-                offset = oparg;
-            }
-            else {
-                Py_DECREF(value);
-                offset = 0;
-            }
-            INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
-        }
-
-        inst(INSTRUMENTED_POP_JUMP_IF_NOT_NONE, ( -- )) {
-            PyObject *value = POP();
-            _Py_CODEUNIT *here = next_instr-1;
-            int offset;
-            if (Py_IsNone(value)) {
-                _Py_DECREF_NO_DEALLOC(value);
-                offset = 0;
-            }
-            else {
-                Py_DECREF(value);
-                 offset = oparg;
-            }
             INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 

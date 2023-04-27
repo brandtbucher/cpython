@@ -178,8 +178,7 @@ def_op('DELETE_FAST', 126)      # Local variable number
 haslocal.append(126)
 def_op('LOAD_FAST_CHECK', 127)  # Local variable number
 haslocal.append(127)
-jrel_op('POP_JUMP_IF_NOT_NONE', 128)
-jrel_op('POP_JUMP_IF_NONE', 129)
+
 def_op('RAISE_VARARGS', 130)    # Number of raise arguments (1, 2, or 3)
 def_op('GET_AWAITABLE', 131)
 def_op('MAKE_FUNCTION', 132)    # Flags
@@ -227,10 +226,8 @@ def_op('CALL_INTRINSIC_1', 173)
 def_op('CALL_INTRINSIC_2', 174)
 
 # Instrumented instructions
-MIN_INSTRUMENTED_OPCODE = 238
+MIN_INSTRUMENTED_OPCODE = 240
 
-def_op('INSTRUMENTED_POP_JUMP_IF_NONE', 238)
-def_op('INSTRUMENTED_POP_JUMP_IF_NOT_NONE', 239)
 def_op('INSTRUMENTED_RESUME', 240)
 def_op('INSTRUMENTED_CALL', 241)
 def_op('INSTRUMENTED_RETURN_VALUE', 242)
