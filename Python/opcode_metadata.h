@@ -29,13 +29,13 @@ _PyOpcode_num_popped(int opcode, int oparg, bool jump) {
             return 1;
         case LOAD_FAST__LOAD_FAST:
             return 0+0;
-        case LOAD_FAST__LOAD_CONST:
+        case LOAD_FAST__LOAD_CONST_IMMORTAL:
             return 0+0;
         case STORE_FAST__LOAD_FAST:
             return 1+0;
         case STORE_FAST__STORE_FAST:
             return 1+1;
-        case LOAD_CONST__LOAD_FAST:
+        case LOAD_CONST_IMMORTAL__LOAD_FAST:
             return 0+0;
         case POP_TOP:
             return 1;
@@ -419,13 +419,13 @@ _PyOpcode_num_pushed(int opcode, int oparg, bool jump) {
             return 0;
         case LOAD_FAST__LOAD_FAST:
             return 1+1;
-        case LOAD_FAST__LOAD_CONST:
+        case LOAD_FAST__LOAD_CONST_IMMORTAL:
             return 1+1;
         case STORE_FAST__LOAD_FAST:
             return 0+1;
         case STORE_FAST__STORE_FAST:
             return 0+0;
-        case LOAD_CONST__LOAD_FAST:
+        case LOAD_CONST_IMMORTAL__LOAD_FAST:
             return 1+1;
         case POP_TOP:
             return 0;
@@ -803,10 +803,10 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[256] = {
     [LOAD_CONST_IMMORTAL] = { true, INSTR_FMT_IB },
     [STORE_FAST] = { true, INSTR_FMT_IB },
     [LOAD_FAST__LOAD_FAST] = { true, INSTR_FMT_IBIB },
-    [LOAD_FAST__LOAD_CONST] = { true, INSTR_FMT_IBIB },
+    [LOAD_FAST__LOAD_CONST_IMMORTAL] = { true, INSTR_FMT_IBIB },
     [STORE_FAST__LOAD_FAST] = { true, INSTR_FMT_IBIB },
     [STORE_FAST__STORE_FAST] = { true, INSTR_FMT_IBIB },
-    [LOAD_CONST__LOAD_FAST] = { true, INSTR_FMT_IBIB },
+    [LOAD_CONST_IMMORTAL__LOAD_FAST] = { true, INSTR_FMT_IBIB },
     [POP_TOP] = { true, INSTR_FMT_IX },
     [PUSH_NULL] = { true, INSTR_FMT_IX },
     [END_FOR] = { true, INSTR_FMT_IB },

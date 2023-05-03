@@ -152,7 +152,7 @@
             DISPATCH();
         }
 
-        TARGET(LOAD_FAST__LOAD_CONST) {
+        TARGET(LOAD_FAST__LOAD_CONST_IMMORTAL) {
             PyObject *_tmp_1;
             PyObject *_tmp_2;
             {
@@ -167,9 +167,9 @@
             oparg = (next_instr++)->op.arg;
             {
                 PyObject *value;
-                #line 198 "Python/bytecodes.c"
+                #line 203 "Python/bytecodes.c"
                 value = GETITEM(frame->f_code->co_consts, oparg);
-                Py_INCREF(value);
+                assert(_Py_IsImmortal(value));
                 #line 174 "Python/generated_cases.c.h"
                 _tmp_1 = value;
             }
@@ -221,14 +221,14 @@
             DISPATCH();
         }
 
-        TARGET(LOAD_CONST__LOAD_FAST) {
+        TARGET(LOAD_CONST_IMMORTAL__LOAD_FAST) {
             PyObject *_tmp_1;
             PyObject *_tmp_2;
             {
                 PyObject *value;
-                #line 198 "Python/bytecodes.c"
+                #line 203 "Python/bytecodes.c"
                 value = GETITEM(frame->f_code->co_consts, oparg);
-                Py_INCREF(value);
+                assert(_Py_IsImmortal(value));
                 #line 233 "Python/generated_cases.c.h"
                 _tmp_2 = value;
             }

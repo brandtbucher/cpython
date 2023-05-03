@@ -57,8 +57,8 @@ extern "C" {
 
 #define IS_SUPERINSTRUCTION_OPCODE(opcode) \
         ((opcode) == LOAD_FAST__LOAD_FAST || \
-         (opcode) == LOAD_FAST__LOAD_CONST || \
-         (opcode) == LOAD_CONST__LOAD_FAST || \
+         (opcode) == LOAD_FAST__LOAD_CONST_IMMORTAL || \
+         (opcode) == LOAD_CONST_IMMORTAL__LOAD_FAST || \
          (opcode) == STORE_FAST__LOAD_FAST || \
          (opcode) == STORE_FAST__STORE_FAST)
 

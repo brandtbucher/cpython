@@ -1399,10 +1399,10 @@ update_instrumentation_data(PyCodeObject *code, PyInterpreterState *interp)
 
 static const uint8_t super_instructions[256] = {
     [LOAD_FAST__LOAD_FAST] = 1,
-    [LOAD_FAST__LOAD_CONST] = 1,
+    [LOAD_FAST__LOAD_CONST_IMMORTAL] = 1,
     [STORE_FAST__LOAD_FAST] = 1,
     [STORE_FAST__STORE_FAST] = 1,
-    [LOAD_CONST__LOAD_FAST] = 1,
+    [LOAD_CONST_IMMORTAL__LOAD_FAST] = 1,
 };
 
 /* Should use instruction metadata for this */

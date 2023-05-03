@@ -195,8 +195,8 @@ extern "C" {
 #define LOAD_ATTR_METHOD_LAZY_DICT              79
 #define LOAD_ATTR_METHOD_NO_DICT                80
 #define LOAD_ATTR_METHOD_WITH_VALUES            81
-#define LOAD_CONST__LOAD_FAST                   82
-#define LOAD_FAST__LOAD_CONST                   84
+#define LOAD_CONST_IMMORTAL__LOAD_FAST          82
+#define LOAD_FAST__LOAD_CONST_IMMORTAL          84
 #define LOAD_FAST__LOAD_FAST                    86
 #define LOAD_GLOBAL_BUILTIN                     87
 #define LOAD_GLOBAL_MODULE                      88

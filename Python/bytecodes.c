@@ -209,10 +209,10 @@ dummy_func(
         }
 
         super(LOAD_FAST__LOAD_FAST) = LOAD_FAST + LOAD_FAST;
-        super(LOAD_FAST__LOAD_CONST) = LOAD_FAST + LOAD_CONST;
+        super(LOAD_FAST__LOAD_CONST_IMMORTAL) = LOAD_FAST + LOAD_CONST_IMMORTAL;
         super(STORE_FAST__LOAD_FAST)  = STORE_FAST + LOAD_FAST;
         super(STORE_FAST__STORE_FAST) = STORE_FAST + STORE_FAST;
-        super(LOAD_CONST__LOAD_FAST) = LOAD_CONST + LOAD_FAST;
+        super(LOAD_CONST_IMMORTAL__LOAD_FAST) = LOAD_CONST_IMMORTAL + LOAD_FAST;
 
         inst(POP_TOP, (value --)) {
             DECREF_INPUTS();

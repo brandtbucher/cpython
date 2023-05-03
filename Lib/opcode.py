@@ -386,11 +386,11 @@ _specializations = {
         "LOAD_ATTR_METHOD_NO_DICT",
         "LOAD_ATTR_METHOD_WITH_VALUES",
     ],
-    "LOAD_CONST": [
-        "LOAD_CONST__LOAD_FAST",
+    "LOAD_CONST_IMMORTAL": [
+        "LOAD_CONST_IMMORTAL__LOAD_FAST",
     ],
     "LOAD_FAST": [
-        "LOAD_FAST__LOAD_CONST",
+        "LOAD_FAST__LOAD_CONST_IMMORTAL",
         "LOAD_FAST__LOAD_FAST",
     ],
     "LOAD_GLOBAL": [

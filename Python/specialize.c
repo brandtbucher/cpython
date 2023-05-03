@@ -283,11 +283,11 @@ _PyCode_Quicken(PyCodeObject *code)
             continue;
         }
         switch (previous_opcode << 8 | opcode) {
-            case LOAD_CONST << 8 | LOAD_FAST:
-                instructions[i - 1].op.code = LOAD_CONST__LOAD_FAST;
+            case LOAD_CONST_IMMORTAL << 8 | LOAD_FAST:
+                instructions[i - 1].op.code = LOAD_CONST_IMMORTAL__LOAD_FAST;
                 break;
-            case LOAD_FAST << 8 | LOAD_CONST:
-                instructions[i - 1].op.code = LOAD_FAST__LOAD_CONST;
+            case LOAD_FAST << 8 | LOAD_CONST_IMMORTAL:
+                instructions[i - 1].op.code = LOAD_FAST__LOAD_CONST_IMMORTAL;
                 break;
             case LOAD_FAST << 8 | LOAD_FAST:
                 instructions[i - 1].op.code = LOAD_FAST__LOAD_FAST;
