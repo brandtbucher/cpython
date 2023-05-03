@@ -199,6 +199,11 @@ dummy_func(
             Py_INCREF(value);
         }
 
+        inst(LOAD_CONST_IMMORTAL, (-- value)) {
+            value = GETITEM(frame->f_code->co_consts, oparg);
+            assert(_Py_IsImmortal(value));
+        }
+
         inst(STORE_FAST, (value --)) {
             SETLOCAL(oparg, value);
         }

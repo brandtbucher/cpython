@@ -105,7 +105,7 @@ class TestTranforms(BytecodeTestCase):
         for func, elem in ((f, None), (g, True), (h, False)):
             with self.subTest(func=func):
                 self.assertNotInBytecode(func, 'LOAD_GLOBAL')
-                self.assertInBytecode(func, 'LOAD_CONST', elem)
+                self.assertInBytecode(func, 'LOAD_CONST_IMMORTAL', elem)
                 self.check_lnotab(func)
 
         def f():
@@ -230,8 +230,6 @@ class TestTranforms(BytecodeTestCase):
     def test_folding_of_binops_on_constants(self):
         for line, elem in (
             ('a = 2+3+4', 9),                   # chained fold
-            ('"@"*4', '@@@@'),                  # check string ops
-            ('a="abc" + "def"', 'abcdef'),      # check string ops
             ('a = 3**4', 81),                   # binary power
             ('a = 3*4', 12),                    # binary multiply
             ('a = 13//4', 3),                   # binary floor divide
@@ -247,6 +245,17 @@ class TestTranforms(BytecodeTestCase):
             ):
             with self.subTest(line=line):
                 code = compile(line, '', 'single')
+                self.assertInBytecode(code, 'LOAD_CONST_IMMORTAL', elem)
+                for instr in dis.get_instructions(code):
+                    self.assertFalse(instr.opname.startswith('BINARY_'))
+                self.check_lnotab(code)
+
+        for line, elem in (
+            ('"@"*4', '@@@@'),                  # check string ops
+            ('a="abc" + "def"', 'abcdef'),      # check string ops
+            ):
+            with self.subTest(line=line):
+                code = compile(line, '', 'single')
                 self.assertInBytecode(code, 'LOAD_CONST', elem)
                 for instr in dis.get_instructions(code):
                     self.assertFalse(instr.opname.startswith('BINARY_'))
@@ -254,7 +263,7 @@ class TestTranforms(BytecodeTestCase):
 
         # Verify that unfoldables are skipped
         code = compile('a=2+"b"', '', 'single')
-        self.assertInBytecode(code, 'LOAD_CONST', 2)
+        self.assertInBytecode(code, 'LOAD_CONST_IMMORTAL', 2)
         self.assertInBytecode(code, 'LOAD_CONST', 'b')
         self.check_lnotab(code)
 
@@ -297,12 +306,21 @@ class TestTranforms(BytecodeTestCase):
 
     def test_folding_of_unaryops_on_constants(self):
         for line, elem in (
-            ('-0.5', -0.5),                     # unary negative
-            ('-0.0', -0.0),                     # -0.0
-            ('-(1.0-1.0)', -0.0),               # -0.0 after folding
             ('-0', 0),                          # -0
             ('~-2', 1),                         # unary invert
             ('+1', 1),                          # unary positive
+        ):
+            with self.subTest(line=line):
+                code = compile(line, '', 'single')
+                self.assertInBytecode(code, 'LOAD_CONST_IMMORTAL', elem)
+                for instr in dis.get_instructions(code):
+                    self.assertFalse(instr.opname.startswith('UNARY_'))
+                self.check_lnotab(code)
+
+        for line, elem in (
+            ('-0.5', -0.5),                     # unary negative
+            ('-0.0', -0.0),                     # -0.0
+            ('-(1.0-1.0)', -0.0),               # -0.0 after folding
         ):
             with self.subTest(line=line):
                 code = compile(line, '', 'single')
@@ -994,7 +1012,7 @@ class DirectiCfgOptimizerTests(CfgOptimizationTestCase):
         expected_insts = [
             ('LOAD_NAME', 1, 11),
             ('POP_JUMP_IF_TRUE', lbl := self.Label(), 12),
-            ('LOAD_CONST', 1, 13),
+            ('LOAD_CONST_IMMORTAL', 1, 13),
             lbl,
             ('RETURN_CONST', 2, 14),
         ]

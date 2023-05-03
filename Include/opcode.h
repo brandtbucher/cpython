@@ -97,6 +97,7 @@ extern "C" {
 #define JUMP_BACKWARD                          140
 #define LOAD_SUPER_ATTR                        141
 #define CALL_FUNCTION_EX                       142
+#define LOAD_CONST_IMMORTAL                    143
 #define EXTENDED_ARG                           144
 #define LIST_APPEND                            145
 #define SET_ADD                                146
@@ -202,14 +203,14 @@ extern "C" {
 #define STORE_ATTR_INSTANCE_VALUE              111
 #define STORE_ATTR_SLOT                        112
 #define STORE_ATTR_WITH_HINT                   113
-#define STORE_FAST__LOAD_FAST                  143
-#define STORE_FAST__STORE_FAST                 153
-#define STORE_SUBSCR_DICT                      154
-#define STORE_SUBSCR_LIST_INT                  158
-#define UNPACK_SEQUENCE_LIST                   159
-#define UNPACK_SEQUENCE_TUPLE                  160
-#define UNPACK_SEQUENCE_TWO_TUPLE              161
-#define SEND_GEN                               166
+#define STORE_FAST__LOAD_FAST                  153
+#define STORE_FAST__STORE_FAST                 154
+#define STORE_SUBSCR_DICT                      158
+#define STORE_SUBSCR_LIST_INT                  159
+#define UNPACK_SEQUENCE_LIST                   160
+#define UNPACK_SEQUENCE_TUPLE                  161
+#define UNPACK_SEQUENCE_TWO_TUPLE              166
+#define SEND_GEN                               167
 
 #define HAS_ARG(op) ((((op) >= HAVE_ARGUMENT) && (!IS_PSEUDO_OPCODE(op)))\
     || ((op) == JUMP) \
@@ -223,6 +224,7 @@ extern "C" {
 #define HAS_CONST(op) (false\
     || ((op) == LOAD_CONST) \
     || ((op) == RETURN_CONST) \
+    || ((op) == LOAD_CONST_IMMORTAL) \
     || ((op) == KW_NAMES) \
     )
 

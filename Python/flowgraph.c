@@ -4,6 +4,7 @@
 #include "Python.h"
 #include "pycore_flowgraph.h"
 #include "pycore_compile.h"
+#include "pycore_long.h"
 #include "pycore_pymem.h"         // _PyMem_IsPtrFreed()
 
 #include "pycore_opcode_utils.h"
@@ -1672,6 +1673,25 @@ fast_scan_many_locals(basicblock *entryblock, int nlocals)
     return SUCCESS;
 }
 
+static bool
+is_always_immortal(PyObject *o)
+{
+    if (!_Py_IsImmortal(o)) {
+        return false;
+    }
+    if (Py_IsNone(o) || PyBool_Check(o)) {
+        return true;
+    }
+    if (PyLong_CheckExact(o)) {
+        if (!_PyLong_IsCompact((PyLongObject *)o)) {
+            return false;
+        }
+        Py_ssize_t i = _PyLong_CompactValue((PyLongObject *)o);
+        return -_PY_NSMALLNEGINTS <= i && i < _PY_NSMALLPOSINTS;
+    }
+    return false;
+}
+
 static int
 remove_unused_consts(basicblock *entryblock, PyObject *consts)
 {
@@ -1683,6 +1703,7 @@ remove_unused_consts(basicblock *entryblock, PyObject *consts)
 
     Py_ssize_t *index_map = NULL;
     Py_ssize_t *reverse_index_map = NULL;
+    bool *immortal_map = NULL;
     int err = ERROR;
 
     index_map = PyMem_Malloc(nconsts * sizeof(Py_ssize_t));
@@ -1695,12 +1716,23 @@ remove_unused_consts(basicblock *entryblock, PyObject *consts)
     // The first constant may be docstring; keep it always.
     index_map[0] = 0;
 
+    immortal_map = PyMem_Malloc(nconsts * sizeof(bool));
+    if (immortal_map == NULL) {
+        goto end;
+    }
+    for (Py_ssize_t i = 0; i < nconsts; i++) {
+        immortal_map[i] = is_always_immortal(PyList_GET_ITEM(consts, i));
+    }
+
     /* mark used consts */
     for (basicblock *b = entryblock; b != NULL; b = b->b_next) {
         for (int i = 0; i < b->b_iused; i++) {
             if (HAS_CONST(b->b_instr[i].i_opcode)) {
                 int index = b->b_instr[i].i_oparg;
                 index_map[index] = index;
+                if (b->b_instr[i].i_opcode == LOAD_CONST && immortal_map[index]) {
+                    b->b_instr[i].i_opcode = LOAD_CONST_IMMORTAL;
+                }
             }
         }
     }
@@ -1764,6 +1796,7 @@ remove_unused_consts(basicblock *entryblock, PyObject *consts)
 end:
     PyMem_Free(index_map);
     PyMem_Free(reverse_index_map);
+    PyMem_Free(immortal_map);
     return err;
 }
 

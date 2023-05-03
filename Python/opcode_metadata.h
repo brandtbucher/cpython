@@ -23,6 +23,8 @@ _PyOpcode_num_popped(int opcode, int oparg, bool jump) {
             return 0;
         case LOAD_CONST:
             return 0;
+        case LOAD_CONST_IMMORTAL:
+            return 0;
         case STORE_FAST:
             return 1;
         case LOAD_FAST__LOAD_FAST:
@@ -411,6 +413,8 @@ _PyOpcode_num_pushed(int opcode, int oparg, bool jump) {
             return 1;
         case LOAD_CONST:
             return 1;
+        case LOAD_CONST_IMMORTAL:
+            return 1;
         case STORE_FAST:
             return 0;
         case LOAD_FAST__LOAD_FAST:
@@ -796,6 +800,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[256] = {
     [LOAD_FAST_CHECK] = { true, INSTR_FMT_IB },
     [LOAD_FAST] = { true, INSTR_FMT_IB },
     [LOAD_CONST] = { true, INSTR_FMT_IB },
+    [LOAD_CONST_IMMORTAL] = { true, INSTR_FMT_IB },
     [STORE_FAST] = { true, INSTR_FMT_IB },
     [LOAD_FAST__LOAD_FAST] = { true, INSTR_FMT_IBIB },
     [LOAD_FAST__LOAD_CONST] = { true, INSTR_FMT_IBIB },

@@ -45,7 +45,7 @@ dis_c_instance_method = """\
 %3d        RESUME                   0
 
 %3d        LOAD_FAST                1 (x)
-           LOAD_CONST               1 (1)
+           LOAD_CONST_IMMORTAL      1 (1)
            COMPARE_OP              40 (==)
            LOAD_FAST                0 (self)
            STORE_ATTR               0 (x)
@@ -55,7 +55,7 @@ dis_c_instance_method = """\
 dis_c_instance_method_bytes = """\
        RESUME                   0
        LOAD_FAST                1
-       LOAD_CONST               1
+       LOAD_CONST_IMMORTAL      1
        COMPARE_OP              40 (==)
        LOAD_FAST                0
        STORE_ATTR               0
@@ -66,7 +66,7 @@ dis_c_class_method = """\
 %3d        RESUME                   0
 
 %3d        LOAD_FAST                1 (x)
-           LOAD_CONST               1 (1)
+           LOAD_CONST_IMMORTAL      1 (1)
            COMPARE_OP              40 (==)
            LOAD_FAST                0 (cls)
            STORE_ATTR               0 (x)
@@ -77,7 +77,7 @@ dis_c_static_method = """\
 %3d        RESUME                   0
 
 %3d        LOAD_FAST                0 (x)
-           LOAD_CONST               1 (1)
+           LOAD_CONST_IMMORTAL      1 (1)
            COMPARE_OP              40 (==)
            STORE_FAST               0 (x)
            RETURN_CONST             0 (None)
@@ -132,9 +132,9 @@ dis_bug708901 = """\
 %3d        RESUME                   0
 
 %3d        LOAD_GLOBAL              1 (NULL + range)
-           LOAD_CONST               1 (1)
+           LOAD_CONST_IMMORTAL      1 (1)
 
-%3d        LOAD_CONST               2 (10)
+%3d        LOAD_CONST_IMMORTAL      2 (10)
 
 %3d        CALL                     2
            GET_ITER
@@ -168,7 +168,7 @@ dis_bug1333982 = """\
            GET_ITER
            CALL                     0
 
-%3d        LOAD_CONST               2 (1)
+%3d        LOAD_CONST_IMMORTAL      2 (1)
 
 %3d        BINARY_OP                0 (+)
            CALL                     0
@@ -237,9 +237,9 @@ dis_kw_names = """\
 %3d        RESUME                   0
 
 %3d        LOAD_GLOBAL              1 (NULL + func_w_kwargs)
-           LOAD_CONST               1 (1)
-           LOAD_CONST               2 (2)
-           LOAD_CONST               3 (5)
+           LOAD_CONST_IMMORTAL      1 (1)
+           LOAD_CONST_IMMORTAL      2 (2)
+           LOAD_CONST_IMMORTAL      3 (5)
            KW_NAMES                 4 (('c',))
            CALL                     3
            POP_TOP
@@ -250,7 +250,7 @@ dis_kw_names = """\
 dis_intrinsic_1_2 = """\
   0        RESUME                   0
 
-  1        LOAD_CONST               0 (0)
+  1        LOAD_CONST_IMMORTAL      0 (0)
            LOAD_CONST               1 (('*',))
            IMPORT_NAME              0 (math)
            CALL_INTRINSIC_1         2 (INTRINSIC_IMPORT_STAR)
@@ -309,7 +309,7 @@ dis_expr_str = """\
   0        RESUME                   0
 
   1        LOAD_NAME                0 (x)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_IMMORTAL      0 (1)
            BINARY_OP                0 (+)
            RETURN_VALUE
 """
@@ -320,7 +320,7 @@ dis_simple_stmt_str = """\
   0        RESUME                   0
 
   1        LOAD_NAME                0 (x)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_IMMORTAL      0 (1)
            BINARY_OP                0 (+)
            STORE_NAME               0 (x)
            RETURN_CONST             1 (None)
@@ -338,7 +338,7 @@ dis_annot_stmt_str = """\
   0        RESUME                   0
 
   2        SETUP_ANNOTATIONS
-           LOAD_CONST               0 (1)
+           LOAD_CONST_IMMORTAL      0 (1)
            STORE_NAME               0 (x)
            LOAD_NAME                1 (int)
            LOAD_NAME                2 (__annotations__)
@@ -347,17 +347,17 @@ dis_annot_stmt_str = """\
 
   3        PUSH_NULL
            LOAD_NAME                3 (fun)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_IMMORTAL      0 (1)
            CALL                     1
            LOAD_NAME                2 (__annotations__)
            LOAD_CONST               2 ('y')
            STORE_SUBSCR
 
-  4        LOAD_CONST               0 (1)
+  4        LOAD_CONST_IMMORTAL      0 (1)
            LOAD_NAME                4 (lst)
            PUSH_NULL
            LOAD_NAME                3 (fun)
-           LOAD_CONST               3 (0)
+           LOAD_CONST_IMMORTAL      3 (0)
            CALL                     1
            STORE_SUBSCR
            LOAD_NAME                1 (int)
@@ -374,13 +374,13 @@ while 1:
 dis_compound_stmt_str = """\
   0        RESUME                   0
 
-  1        LOAD_CONST               0 (0)
+  1        LOAD_CONST_IMMORTAL      0 (0)
            STORE_NAME               0 (x)
 
   2        NOP
 
   3     >> LOAD_NAME                0 (x)
-           LOAD_CONST               1 (1)
+           LOAD_CONST_IMMORTAL      1 (1)
            BINARY_OP               13 (+=)
            STORE_NAME               0 (x)
 
@@ -392,8 +392,8 @@ dis_traceback = """\
 
 %3d        NOP
 
-%3d        LOAD_CONST               1 (1)
-           LOAD_CONST               2 (0)
+%3d        LOAD_CONST_IMMORTAL      1 (1)
+           LOAD_CONST_IMMORTAL      2 (0)
     -->    BINARY_OP               11 (/)
            POP_TOP
 
@@ -410,13 +410,13 @@ dis_traceback = """\
            LOAD_ATTR                2 (__traceback__)
            STORE_FAST               1 (tb)
            POP_EXCEPT
-           LOAD_CONST               0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
            STORE_FAST               0 (e)
            DELETE_FAST              0 (e)
 
 %3d        LOAD_FAST                1 (tb)
            RETURN_VALUE
-        >> LOAD_CONST               0 (None)
+        >> LOAD_CONST_IMMORTAL      0 (None)
            STORE_FAST               0 (e)
            DELETE_FAST              0 (e)
            RERAISE                  1
@@ -471,16 +471,16 @@ dis_with = """\
            BEFORE_WITH
            POP_TOP
 
-%3d        LOAD_CONST               1 (1)
+%3d        LOAD_CONST_IMMORTAL      1 (1)
            STORE_FAST               1 (x)
 
-%3d        LOAD_CONST               0 (None)
-           LOAD_CONST               0 (None)
-           LOAD_CONST               0 (None)
+%3d        LOAD_CONST_IMMORTAL      0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
            CALL                     2
            POP_TOP
 
-%3d        LOAD_CONST               2 (2)
+%3d        LOAD_CONST_IMMORTAL      2 (2)
            STORE_FAST               2 (y)
            RETURN_CONST             0 (None)
 
@@ -493,7 +493,7 @@ dis_with = """\
            POP_TOP
            POP_TOP
 
-%3d        LOAD_CONST               2 (2)
+%3d        LOAD_CONST_IMMORTAL      2 (2)
            STORE_FAST               2 (y)
            RETURN_CONST             0 (None)
         >> COPY                     3
@@ -523,7 +523,7 @@ dis_asyncwith = """\
 %3d        LOAD_FAST                0 (c)
            BEFORE_ASYNC_WITH
            GET_AWAITABLE            1
-           LOAD_CONST               0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
         >> SEND                     3 (to 24)
            YIELD_VALUE              2
            RESUME                   3
@@ -531,15 +531,15 @@ dis_asyncwith = """\
         >> END_SEND
            POP_TOP
 
-%3d        LOAD_CONST               1 (1)
+%3d        LOAD_CONST_IMMORTAL      1 (1)
            STORE_FAST               1 (x)
 
-%3d        LOAD_CONST               0 (None)
-           LOAD_CONST               0 (None)
-           LOAD_CONST               0 (None)
+%3d        LOAD_CONST_IMMORTAL      0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
            CALL                     2
            GET_AWAITABLE            2
-           LOAD_CONST               0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
         >> SEND                     3 (to 60)
            YIELD_VALUE              2
            RESUME                   3
@@ -547,7 +547,7 @@ dis_asyncwith = """\
         >> END_SEND
            POP_TOP
 
-%3d        LOAD_CONST               2 (2)
+%3d        LOAD_CONST_IMMORTAL      2 (2)
            STORE_FAST               2 (y)
            RETURN_CONST             0 (None)
 
@@ -558,7 +558,7 @@ dis_asyncwith = """\
         >> PUSH_EXC_INFO
            WITH_EXCEPT_START
            GET_AWAITABLE            2
-           LOAD_CONST               0 (None)
+           LOAD_CONST_IMMORTAL      0 (None)
         >> SEND                     4 (to 98)
            YIELD_VALUE              3
            RESUME                   3
@@ -572,7 +572,7 @@ dis_asyncwith = """\
            POP_TOP
            POP_TOP
 
-%3d        LOAD_CONST               2 (2)
+%3d        LOAD_CONST_IMMORTAL      2 (2)
            STORE_FAST               2 (y)
            RETURN_CONST             0 (None)
         >> COPY                     3
@@ -774,7 +774,7 @@ dis_loop_test_quickened_code = """\
 %3d        BUILD_LIST               0
            LOAD_CONST               1 ((1, 2, 3))
            LIST_EXTEND              1
-           LOAD_CONST               2 (3)
+           LOAD_CONST_IMMORTAL      2 (3)
            BINARY_OP                5 (*)
            GET_ITER
         >> FOR_ITER_LIST           13 (to 46)
@@ -1020,7 +1020,7 @@ class DisTests(DisTestBase):
 ''' % (w, 0)]
             s += ['''\
            %*d LOAD_FAST                0 (x)
-           %*d LOAD_CONST               1 (1)
+           %*d LOAD_CONST_IMMORTAL      1 (1)
            %*d BINARY_OP                0 (+)
            %*d STORE_FAST               0 (x)
 ''' % (w, 10*i + 2, w, 10*i + 4, w, 10*i + 6, w, 10*i + 10)
@@ -1181,7 +1181,7 @@ class DisTests(DisTestBase):
   0           0 RESUME                   0
 
   1           2 LOAD_NAME                0 (a)
-              4 LOAD_CONST               0 (0)
+              4 LOAD_CONST_IMMORTAL      0 (0)
               6 %s
              10 RETURN_VALUE
 """
@@ -1218,7 +1218,7 @@ class DisTests(DisTestBase):
 
   1        PUSH_NULL
            LOAD_NAME                0 (str)
-           LOAD_CONST               0 (1)
+           LOAD_CONST_IMMORTAL      0 (1)
            CALL_NO_KW_STR_1         1
            RETURN_VALUE
 """
@@ -1594,7 +1594,7 @@ expected_opinfo_outer = [
   Instruction(opname='LOAD_DEREF', opcode=137, arg=0, argval='a', argrepr='a', offset=30, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_DEREF', opcode=137, arg=1, argval='b', argrepr='b', offset=32, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=2, argval='', argrepr="''", offset=34, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=1, argrepr='1', offset=36, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=3, argval=1, argrepr='1', offset=36, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='BUILD_LIST', opcode=103, arg=0, argval=0, argrepr='', offset=38, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='BUILD_MAP', opcode=105, arg=0, argval=0, argrepr='', offset=40, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_CONST', opcode=100, arg=4, argval='Hello world!', argrepr="'Hello world!'", offset=42, starts_line=None, is_jump_target=False, positions=None),
@@ -1647,7 +1647,7 @@ expected_opinfo_inner = [
 expected_opinfo_jumpy = [
   Instruction(opname='RESUME', opcode=151, arg=0, argval=0, argrepr='', offset=0, starts_line=1, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_GLOBAL', opcode=116, arg=1, argval='range', argrepr='NULL + range', offset=2, starts_line=3, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=1, argval=10, argrepr='10', offset=12, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=1, argval=10, argrepr='10', offset=12, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='CALL', opcode=171, arg=1, argval=1, argrepr='', offset=14, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='GET_ITER', opcode=68, arg=None, argval=None, argrepr='', offset=22, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='FOR_ITER', opcode=93, arg=26, argval=80, argrepr='to 80', offset=24, starts_line=None, is_jump_target=True, positions=None),
@@ -1657,12 +1657,12 @@ expected_opinfo_jumpy = [
   Instruction(opname='CALL', opcode=171, arg=1, argval=1, argrepr='', offset=42, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=50, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=52, starts_line=5, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=2, argval=4, argrepr='4', offset=54, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=2, argval=4, argrepr='4', offset=54, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='COMPARE_OP', opcode=107, arg=2, argval='<', argrepr='<', offset=56, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=64, argrepr='to 64', offset=60, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=20, argval=24, argrepr='to 24', offset=62, starts_line=6, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=64, starts_line=7, is_jump_target=True, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=6, argrepr='6', offset=66, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=3, argval=6, argrepr='6', offset=66, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='COMPARE_OP', opcode=107, arg=68, argval='>', argrepr='>', offset=68, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_TRUE', opcode=115, arg=1, argval=76, argrepr='to 76', offset=72, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=26, argval=24, argrepr='to 24', offset=74, starts_line=None, is_jump_target=False, positions=None),
@@ -1680,16 +1680,16 @@ expected_opinfo_jumpy = [
   Instruction(opname='CALL', opcode=171, arg=1, argval=1, argrepr='', offset=120, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=128, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=130, starts_line=13, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=5, argval=1, argrepr='1', offset=132, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=5, argval=1, argrepr='1', offset=132, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='BINARY_OP', opcode=122, arg=23, argval=23, argrepr='-=', offset=134, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='STORE_FAST', opcode=125, arg=0, argval='i', argrepr='i', offset=138, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=140, starts_line=14, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=3, argval=6, argrepr='6', offset=142, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=3, argval=6, argrepr='6', offset=142, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='COMPARE_OP', opcode=107, arg=68, argval='>', argrepr='>', offset=144, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=152, argrepr='to 152', offset=148, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_BACKWARD', opcode=140, arg=24, argval=104, argrepr='to 104', offset=150, starts_line=15, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=152, starts_line=16, is_jump_target=True, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=2, argval=4, argrepr='4', offset=154, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=2, argval=4, argrepr='4', offset=154, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='COMPARE_OP', opcode=107, arg=2, argval='<', argrepr='<', offset=156, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_JUMP_IF_FALSE', opcode=114, arg=1, argval=164, argrepr='to 164', offset=160, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='JUMP_FORWARD', opcode=110, arg=14, argval=192, argrepr='to 192', offset=162, starts_line=17, is_jump_target=False, positions=None),
@@ -1701,8 +1701,8 @@ expected_opinfo_jumpy = [
   Instruction(opname='CALL', opcode=171, arg=1, argval=1, argrepr='', offset=182, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=190, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='NOP', opcode=9, arg=None, argval=None, argrepr='', offset=192, starts_line=20, is_jump_target=True, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=5, argval=1, argrepr='1', offset=194, starts_line=21, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=7, argval=0, argrepr='0', offset=196, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=5, argval=1, argrepr='1', offset=194, starts_line=21, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=7, argval=0, argrepr='0', offset=196, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='BINARY_OP', opcode=122, arg=11, argval=11, argrepr='/', offset=198, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=202, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_FAST', opcode=124, arg=0, argval='i', argrepr='i', offset=204, starts_line=25, is_jump_target=False, positions=None),
@@ -1712,9 +1712,9 @@ expected_opinfo_jumpy = [
   Instruction(opname='LOAD_CONST', opcode=100, arg=8, argval='Never reach this', argrepr="'Never reach this'", offset=220, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='CALL', opcode=171, arg=1, argval=1, argrepr='', offset=222, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=230, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=0, argval=None, argrepr='None', offset=232, starts_line=25, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=0, argval=None, argrepr='None', offset=234, starts_line=None, is_jump_target=False, positions=None),
-  Instruction(opname='LOAD_CONST', opcode=100, arg=0, argval=None, argrepr='None', offset=236, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=0, argval=None, argrepr='None', offset=232, starts_line=25, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=0, argval=None, argrepr='None', offset=234, starts_line=None, is_jump_target=False, positions=None),
+  Instruction(opname='LOAD_CONST_IMMORTAL', opcode=143, arg=0, argval=None, argrepr='None', offset=236, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='CALL', opcode=171, arg=2, argval=2, argrepr='', offset=238, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='POP_TOP', opcode=1, arg=None, argval=None, argrepr='', offset=246, starts_line=None, is_jump_target=False, positions=None),
   Instruction(opname='LOAD_GLOBAL', opcode=116, arg=3, argval='print', argrepr='NULL + print', offset=248, starts_line=28, is_jump_target=True, positions=None),
@@ -1948,20 +1948,20 @@ class BytecodeTests(InstructionTestCase, DisTestBase):
 class TestBytecodeTestCase(BytecodeTestCase):
     def test_assert_not_in_with_op_not_in_bytecode(self):
         code = compile("a = 1", "<string>", "exec")
-        self.assertInBytecode(code, "LOAD_CONST", 1)
+        self.assertInBytecode(code, "LOAD_CONST_IMMORTAL", 1)
         self.assertNotInBytecode(code, "LOAD_NAME")
         self.assertNotInBytecode(code, "LOAD_NAME", "a")
 
     def test_assert_not_in_with_arg_not_in_bytecode(self):
         code = compile("a = 1", "<string>", "exec")
-        self.assertInBytecode(code, "LOAD_CONST")
-        self.assertInBytecode(code, "LOAD_CONST", 1)
+        self.assertInBytecode(code, "LOAD_CONST_IMMORTAL")
+        self.assertInBytecode(code, "LOAD_CONST_IMMORTAL", 1)
         self.assertNotInBytecode(code, "LOAD_CONST", 2)
 
     def test_assert_not_in_with_arg_in_bytecode(self):
         code = compile("a = 1", "<string>", "exec")
         with self.assertRaises(AssertionError):
-            self.assertNotInBytecode(code, "LOAD_CONST", 1)
+            self.assertNotInBytecode(code, "LOAD_CONST_IMMORTAL", 1)
 
 class TestFinderMethods(unittest.TestCase):
     def test__find_imports(self):
