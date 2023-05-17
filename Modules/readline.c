@@ -98,11 +98,21 @@ static readlinestate _global_readline_state;
 static inline readlinestate*
 get_readline_state()
 {
-    if (PyInterpreterState_Get() != PyInterpreterState_Main()) {
-        PyErr_SetString(PyExc_RuntimeError, "Blah blah main interpreter...");
-        return NULL;
+    assert(PyGILState_Check());
+    if (PyInterpreterState_Get() == PyInterpreterState_Main()) {
+        return &_global_readline_state;
     }
-    return &_global_readline_state;
+    return NULL;
+}
+
+static inline readlinestate*
+get_readline_state_or_raise()
+{
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Blah blah main interpreter...");
+    }
+    return readlinestate_global;
 }
 
 /*[clinic input]
@@ -113,18 +123,15 @@ module readline
 static int
 readline_clear(PyObject *m)
 {
-   readlinestate *state = get_readline_state();
-   if (state == NULL) {
-        // Not the main interpreter, so we don't own this stuff:
-       PyErr_Clear();
-       return 0;
+    readlinestate *state = get_readline_state();
+    if (state) {
+        Py_CLEAR(state->completion_display_matches_hook);
+        Py_CLEAR(state->startup_hook);
+        Py_CLEAR(state->pre_input_hook);
+        Py_CLEAR(state->completer);
+        Py_CLEAR(state->begidx);
+        Py_CLEAR(state->endidx);
    }
-   Py_CLEAR(state->completion_display_matches_hook);
-   Py_CLEAR(state->startup_hook);
-   Py_CLEAR(state->pre_input_hook);
-   Py_CLEAR(state->completer);
-   Py_CLEAR(state->begidx);
-   Py_CLEAR(state->endidx);
    return 0;
 }
 
@@ -132,17 +139,14 @@ static int
 readline_traverse(PyObject *m, visitproc visit, void *arg)
 {
     readlinestate *state = get_readline_state();
-   if (state == NULL) {
-        // Not the main interpreter, so we don't own this stuff:
-       PyErr_Clear();
-       return 0;
-   }
-    Py_VISIT(state->completion_display_matches_hook);
-    Py_VISIT(state->startup_hook);
-    Py_VISIT(state->pre_input_hook);
-    Py_VISIT(state->completer);
-    Py_VISIT(state->begidx);
-    Py_VISIT(state->endidx);
+    if (state) {
+        Py_VISIT(state->completion_display_matches_hook);
+        Py_VISIT(state->startup_hook);
+        Py_VISIT(state->pre_input_hook);
+        Py_VISIT(state->completer);
+        Py_VISIT(state->begidx);
+        Py_VISIT(state->endidx);
+    }
     return 0;
 }
 
@@ -440,7 +444,7 @@ readline_set_completion_display_matches_hook_impl(PyObject *module,
                                                   PyObject *function)
 /*[clinic end generated code: output=516e5cb8db75a328 input=4f0bfd5ab0179a26]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -478,7 +482,7 @@ static PyObject *
 readline_set_startup_hook_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=02cd0e0c4fa082ad input=7783b4334b26d16d]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -507,7 +511,7 @@ static PyObject *
 readline_set_pre_input_hook_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=fe1a96505096f464 input=4f3eaeaf7ce1fdbe]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -544,7 +548,7 @@ static PyObject *
 readline_get_begidx_impl(PyObject *module)
 /*[clinic end generated code: output=362616ee8ed1b2b1 input=e083b81c8eb4bac3]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -563,7 +567,7 @@ static PyObject *
 readline_get_endidx_impl(PyObject *module)
 /*[clinic end generated code: output=7f763350b12d7517 input=d4c7e34a625fd770]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -794,7 +798,7 @@ static PyObject *
 readline_set_completer_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=171a2a60f81d3204 input=51e81e13118eb877]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -811,7 +815,7 @@ static PyObject *
 readline_get_completer_impl(PyObject *module)
 /*[clinic end generated code: output=6e6bbd8226d14475 input=6457522e56d70d13]*/
 {
-    readlinestate *readlinestate_global = get_readline_state();
+    readlinestate *readlinestate_global = get_readline_state_or_raise();
     if (readlinestate_global == NULL) {
         return NULL;
     }
@@ -1052,13 +1056,10 @@ on_startup_hook(void)
 on_startup_hook()
 #endif
 {
-    int r;
+    int r = 0;
     PyGILState_STATE gilstate = PyGILState_Ensure();
     readlinestate *readlinestate_global = get_readline_state();
-    if (readlinestate_global == NULL) {
-        PyErr_Clear();
-    }
-    else {
+    if (readlinestate_global) {
         r = on_hook(readlinestate_global->startup_hook);
     }
     PyGILState_Release(gilstate);
@@ -1073,13 +1074,10 @@ on_pre_input_hook(void)
 on_pre_input_hook()
 #endif
 {
-    int r;
+    int r = 0;
     PyGILState_STATE gilstate = PyGILState_Ensure();
     readlinestate *readlinestate_global = get_readline_state();
-    if (readlinestate_global == NULL) {
-        PyErr_Clear();
-    }
-    else {
+    if (readlinestate_global) {
         r = on_hook(readlinestate_global->pre_input_hook);
     }
     PyGILState_Release(gilstate);
@@ -1100,7 +1098,8 @@ on_completion_display_matches_hook(char **matches,
     PyGILState_STATE gilstate = PyGILState_Ensure();
     readlinestate *readlinestate_global = get_readline_state();
     if (readlinestate_global == NULL) {
-        goto error;
+        PyGILState_Release(gilstate);
+        return;
     }
     m = PyList_New(num_matches);
     if (m == NULL)
@@ -1156,17 +1155,14 @@ readline_sigwinch_handler(int signum)
 
 /* C function to call the Python completer. */
 
-// XXX helpful comment
-
 static char *
-on_completion_main_interpreter(const char *text, int state)
+on_completion(const char *text, int state)
 {
     char *result = NULL;
     PyObject *r = NULL, *t;
     PyGILState_STATE gilstate = PyGILState_Ensure();
     readlinestate *readlinestate_global = get_readline_state();
-    assert(readlinestate_global);
-    if (readlinestate_global->completer != NULL) {
+    if (readlinestate_global && readlinestate_global->completer) {
         rl_attempted_completion_over = 1;
         t = decode(text);
         r = PyObject_CallFunction(readlinestate_global->completer, "Ni", t, state);
@@ -1191,12 +1187,6 @@ error:
 done:
     PyGILState_Release(gilstate);
     return result;
-}
-
-static char *
-on_completion_sub_interpreter(const char *text, int state)
-{
-    return NULL;
 }
 
 
@@ -1237,15 +1227,10 @@ flex_complete(const char *text, int start, int end)
     start = (int)start_size;
     end = start + (int)end_size;
 
-done:;
-    char *(*on_completion)(const char *, int);
+done:
+    ;  // Load-bearing semicolon.
     readlinestate *readlinestate_global = get_readline_state();
-    if (readlinestate_global == NULL) {
-        on_completion = on_completion_sub_interpreter;
-        PyErr_Clear();
-    }
-    else {
-        on_completion = on_completion_main_interpreter;
+    if (readlinestate_global) {
         Py_XDECREF(readlinestate_global->begidx);
         Py_XDECREF(readlinestate_global->endidx);
         readlinestate_global->begidx = PyLong_FromLong((long) start);
