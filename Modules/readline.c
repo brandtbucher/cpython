@@ -66,11 +66,11 @@ extern char **completion_matches(char *, CPFunction *);
  * - Note that replace_history and remove_history use a 0-based index
  *   with both implementations.
  */
-static int using_libedit_emulation = 0;
+static int using_libedit_emulation = 0;  // XXX
 static const char libedit_version_tag[] = "EditLine wrapper";
 
-static int8_t libedit_history_start = 0;
-static int8_t libedit_append_replace_history_offset = 0;
+static int8_t libedit_history_start = 0;  // XXX
+static int8_t libedit_append_replace_history_offset = 0;  // XXX
 
 #ifdef HAVE_RL_COMPLETION_DISPLAY_MATCHES_HOOK
 static void
@@ -80,7 +80,7 @@ on_completion_display_matches_hook(char **matches,
 
 /* Memory allocated for rl_completer_word_break_characters
    (see issue #17289 for the motivation). */
-static char *completer_word_break_characters;
+static char *completer_word_break_characters;  // XXX
 
 typedef struct {
   /* Specify hook functions in Python */
@@ -93,12 +93,16 @@ typedef struct {
   PyObject *endidx;
 } readlinestate;
 
+static readlinestate _global_readline_state;
+
 static inline readlinestate*
-get_readline_state(PyObject *module)
+get_readline_state()
 {
-    void *state = PyModule_GetState(module);
-    assert(state != NULL);
-    return (readlinestate *)state;
+    if (PyInterpreterState_Get() != PyInterpreterState_Main()) {
+        PyErr_SetString(PyExc_RuntimeError, "Blah blah main interpreter...");
+        return NULL;
+    }
+    return &_global_readline_state;
 }
 
 /*[clinic input]
@@ -109,7 +113,12 @@ module readline
 static int
 readline_clear(PyObject *m)
 {
-   readlinestate *state = get_readline_state(m);
+   readlinestate *state = get_readline_state();
+   if (state == NULL) {
+        // Not the main interpreter, so we don't own this stuff:
+       PyErr_Clear();
+       return 0;
+   }
    Py_CLEAR(state->completion_display_matches_hook);
    Py_CLEAR(state->startup_hook);
    Py_CLEAR(state->pre_input_hook);
@@ -122,7 +131,12 @@ readline_clear(PyObject *m)
 static int
 readline_traverse(PyObject *m, visitproc visit, void *arg)
 {
-    readlinestate *state = get_readline_state(m);
+    readlinestate *state = get_readline_state();
+   if (state == NULL) {
+        // Not the main interpreter, so we don't own this stuff:
+       PyErr_Clear();
+       return 0;
+   }
     Py_VISIT(state->completion_display_matches_hook);
     Py_VISIT(state->startup_hook);
     Py_VISIT(state->pre_input_hook);
@@ -137,11 +151,6 @@ readline_free(void *m)
 {
     readline_clear((PyObject *)m);
 }
-
-static PyModuleDef readlinemodule;
-
-#define readlinestate_global ((readlinestate *)PyModule_GetState(PyState_FindModule(&readlinemodule)))
-
 
 /* Convert to/from multibyte C strings */
 
@@ -273,7 +282,7 @@ readline_read_history_file_impl(PyObject *module, PyObject *filename_obj)
     Py_RETURN_NONE;
 }
 
-static int _history_length = -1; /* do not truncate history by default */
+static int _history_length = -1; /* do not truncate history by default */ // XXX
 
 /* Exported function to save a readline history file */
 
@@ -431,6 +440,10 @@ readline_set_completion_display_matches_hook_impl(PyObject *module,
                                                   PyObject *function)
 /*[clinic end generated code: output=516e5cb8db75a328 input=4f0bfd5ab0179a26]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     PyObject *result = set_hook("completion_display_matches_hook",
                     &readlinestate_global->completion_display_matches_hook,
                     function);
@@ -465,6 +478,10 @@ static PyObject *
 readline_set_startup_hook_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=02cd0e0c4fa082ad input=7783b4334b26d16d]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     return set_hook("startup_hook", &readlinestate_global->startup_hook,
             function);
 }
@@ -490,6 +507,10 @@ static PyObject *
 readline_set_pre_input_hook_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=fe1a96505096f464 input=4f3eaeaf7ce1fdbe]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     return set_hook("pre_input_hook", &readlinestate_global->pre_input_hook,
             function);
 }
@@ -523,6 +544,10 @@ static PyObject *
 readline_get_begidx_impl(PyObject *module)
 /*[clinic end generated code: output=362616ee8ed1b2b1 input=e083b81c8eb4bac3]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     return Py_NewRef(readlinestate_global->begidx);
 }
 
@@ -538,6 +563,10 @@ static PyObject *
 readline_get_endidx_impl(PyObject *module)
 /*[clinic end generated code: output=7f763350b12d7517 input=d4c7e34a625fd770]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     return Py_NewRef(readlinestate_global->endidx);
 }
 
@@ -708,7 +737,7 @@ readline_add_history(PyObject *module, PyObject *string)
     Py_RETURN_NONE;
 }
 
-static int should_auto_add_history = 1;
+static int should_auto_add_history = 1;  // XXX
 
 /* Enable or disable automatic history */
 
@@ -765,6 +794,10 @@ static PyObject *
 readline_set_completer_impl(PyObject *module, PyObject *function)
 /*[clinic end generated code: output=171a2a60f81d3204 input=51e81e13118eb877]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     return set_hook("completer", &readlinestate_global->completer, function);
 }
 
@@ -778,6 +811,10 @@ static PyObject *
 readline_get_completer_impl(PyObject *module)
 /*[clinic end generated code: output=6e6bbd8226d14475 input=6457522e56d70d13]*/
 {
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        return NULL;
+    }
     if (readlinestate_global->completer == NULL) {
         Py_RETURN_NONE;
     }
@@ -1017,7 +1054,13 @@ on_startup_hook()
 {
     int r;
     PyGILState_STATE gilstate = PyGILState_Ensure();
-    r = on_hook(readlinestate_global->startup_hook);
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        PyErr_Clear();
+    }
+    else {
+        r = on_hook(readlinestate_global->startup_hook);
+    }
     PyGILState_Release(gilstate);
     return r;
 }
@@ -1032,7 +1075,13 @@ on_pre_input_hook()
 {
     int r;
     PyGILState_STATE gilstate = PyGILState_Ensure();
-    r = on_hook(readlinestate_global->pre_input_hook);
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        PyErr_Clear();
+    }
+    else {
+        r = on_hook(readlinestate_global->pre_input_hook);
+    }
     PyGILState_Release(gilstate);
     return r;
 }
@@ -1049,6 +1098,10 @@ on_completion_display_matches_hook(char **matches,
     int i;
     PyObject *sub, *m=NULL, *s=NULL, *r=NULL;
     PyGILState_STATE gilstate = PyGILState_Ensure();
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        goto error;
+    }
     m = PyList_New(num_matches);
     if (m == NULL)
         goto error;
@@ -1082,8 +1135,8 @@ on_completion_display_matches_hook(char **matches,
 #endif
 
 #ifdef HAVE_RL_RESIZE_TERMINAL
-static volatile sig_atomic_t sigwinch_received;
-static PyOS_sighandler_t sigwinch_ohandler;
+static volatile sig_atomic_t sigwinch_received;  // XXX
+static PyOS_sighandler_t sigwinch_ohandler;  // XXX
 
 static void
 readline_sigwinch_handler(int signum)
@@ -1103,13 +1156,17 @@ readline_sigwinch_handler(int signum)
 
 /* C function to call the Python completer. */
 
+// XXX helpful comment
+
 static char *
-on_completion(const char *text, int state)
+on_completion_main_interpreter(const char *text, int state)
 {
     char *result = NULL;
+    PyObject *r = NULL, *t;
+    PyGILState_STATE gilstate = PyGILState_Ensure();
+    readlinestate *readlinestate_global = get_readline_state();
+    assert(readlinestate_global);
     if (readlinestate_global->completer != NULL) {
-        PyObject *r = NULL, *t;
-        PyGILState_STATE gilstate = PyGILState_Ensure();
         rl_attempted_completion_over = 1;
         t = decode(text);
         r = PyObject_CallFunction(readlinestate_global->completer, "Ni", t, state);
@@ -1126,15 +1183,20 @@ on_completion(const char *text, int state)
             Py_DECREF(encoded);
         }
         Py_DECREF(r);
-        goto done;
-      error:
-        PyErr_Clear();
-        Py_XDECREF(r);
-      done:
-        PyGILState_Release(gilstate);
-        return result;
     }
+    goto done;
+error:
+    PyErr_Clear();
+    Py_XDECREF(r);
+done:
+    PyGILState_Release(gilstate);
     return result;
+}
+
+static char *
+on_completion_sub_interpreter(const char *text, int state)
+{
+    return NULL;
 }
 
 
@@ -1175,11 +1237,20 @@ flex_complete(const char *text, int start, int end)
     start = (int)start_size;
     end = start + (int)end_size;
 
-done:
-    Py_XDECREF(readlinestate_global->begidx);
-    Py_XDECREF(readlinestate_global->endidx);
-    readlinestate_global->begidx = PyLong_FromLong((long) start);
-    readlinestate_global->endidx = PyLong_FromLong((long) end);
+done:;
+    char *(*on_completion)(const char *, int);
+    readlinestate *readlinestate_global = get_readline_state();
+    if (readlinestate_global == NULL) {
+        on_completion = on_completion_sub_interpreter;
+        PyErr_Clear();
+    }
+    else {
+        on_completion = on_completion_main_interpreter;
+        Py_XDECREF(readlinestate_global->begidx);
+        Py_XDECREF(readlinestate_global->endidx);
+        readlinestate_global->begidx = PyLong_FromLong((long) start);
+        readlinestate_global->endidx = PyLong_FromLong((long) end);
+    }
     result = completion_matches((char *)text, *on_completion);
     PyGILState_Release(gilstate);
     return result;
@@ -1294,7 +1365,17 @@ setup_readline(readlinestate *mod_state)
 
 /* Wrapper around GNU readline that handles signals differently. */
 
-static char *completed_input_string;
+// The current usage of completed_input_string is thread-safe. This is because
+// call_readline, readline_until_enter_or_signal, and rlhandler are all only
+// called by each other, when protected by _PyOS_ReadlineLock in PyOS_Readline.
+// The call stack looks something like this:
+// - PyOS_Readline
+// - call_readline
+// - readline_until_enter_or_signal
+// - rl_callback_read_char
+// - rlhandler
+
+static char *completed_input_string;  // XXX
 static void
 rlhandler(char *text)
 {
