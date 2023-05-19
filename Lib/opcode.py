@@ -81,7 +81,6 @@ def_op('CACHE', 0)
 def_op('POP_TOP', 1)
 def_op('PUSH_NULL', 2)
 def_op('INTERPRETER_EXIT', 3)
-
 def_op('END_FOR', 4)
 def_op('END_SEND', 5)
 
@@ -132,6 +131,8 @@ def_op('RETURN_VALUE', 83)
 
 def_op('SETUP_ANNOTATIONS', 85)
 
+def_op('LOAD_LOCALS', 87)
+
 def_op('POP_EXCEPT', 89)
 
 HAVE_ARGUMENT = 90             # real opcodes from here have an argument:
@@ -159,6 +160,9 @@ hascompare.append(107)
 name_op('IMPORT_NAME', 108)     # Index in name list
 name_op('IMPORT_FROM', 109)     # Index in name list
 jrel_op('JUMP_FORWARD', 110)    # Number of words to skip
+def_op('LOAD_CONST_IMMORTAL', 111)
+hasconst.append(111)
+
 jrel_op('POP_JUMP_IF_FALSE', 114)
 jrel_op('POP_JUMP_IF_TRUE', 115)
 name_op('LOAD_GLOBAL', 116)     # Index in name list
@@ -198,14 +202,13 @@ hasfree.append(139)
 jrel_op('JUMP_BACKWARD', 140)    # Number of words to skip (backwards)
 name_op('LOAD_SUPER_ATTR', 141)
 def_op('CALL_FUNCTION_EX', 142)  # Flags
-def_op('LOAD_CONST_IMMORTAL', 143)
-hasconst.append(143)
+def_op('LOAD_FAST_AND_CLEAR', 143)  # Local variable number
+haslocal.append(143)
 def_op('EXTENDED_ARG', 144)
 EXTENDED_ARG = 144
 def_op('LIST_APPEND', 145)
 def_op('SET_ADD', 146)
 def_op('MAP_ADD', 147)
-def_op('LOAD_CLASSDEREF', 148)
 hasfree.append(148)
 def_op('COPY_FREE_VARS', 149)
 def_op('YIELD_VALUE', 150)
@@ -226,10 +229,14 @@ def_op('KW_NAMES', 172)
 hasconst.append(172)
 def_op('CALL_INTRINSIC_1', 173)
 def_op('CALL_INTRINSIC_2', 174)
+name_op('LOAD_FROM_DICT_OR_GLOBALS', 175)
+def_op('LOAD_FROM_DICT_OR_DEREF', 176)
+hasfree.append(176)
 
 # Instrumented instructions
-MIN_INSTRUMENTED_OPCODE = 238
+MIN_INSTRUMENTED_OPCODE = 237
 
+def_op('INSTRUMENTED_LOAD_SUPER_ATTR', 237)
 def_op('INSTRUMENTED_POP_JUMP_IF_NONE', 238)
 def_op('INSTRUMENTED_POP_JUMP_IF_NOT_NONE', 239)
 def_op('INSTRUMENTED_RESUME', 240)
@@ -268,6 +275,8 @@ pseudo_op('LOAD_METHOD', 262, ['LOAD_ATTR'])
 pseudo_op('LOAD_SUPER_METHOD', 263, ['LOAD_SUPER_ATTR'])
 pseudo_op('LOAD_ZERO_SUPER_METHOD', 264, ['LOAD_SUPER_ATTR'])
 pseudo_op('LOAD_ZERO_SUPER_ATTR', 265, ['LOAD_SUPER_ATTR'])
+
+pseudo_op('STORE_FAST_MAYBE_NULL', 266, ['STORE_FAST'])
 
 MAX_PSEUDO_OPCODE = MIN_PSEUDO_OPCODE + len(_pseudo_ops) - 1
 
@@ -315,12 +324,20 @@ _intrinsic_1_descs = [
     "INTRINSIC_ASYNC_GEN_WRAP",
     "INTRINSIC_UNARY_POSITIVE",
     "INTRINSIC_LIST_TO_TUPLE",
+    "INTRINSIC_TYPEVAR",
+    "INTRINSIC_PARAMSPEC",
+    "INTRINSIC_TYPEVARTUPLE",
+    "INTRINSIC_SUBSCRIPT_GENERIC",
+    "INTRINSIC_TYPEALIAS",
 ]
 
 _intrinsic_2_descs = [
-    'INTRINSIC_2_INVALID',
-    'INTRINSIC_PREP_RERAISE_STAR',
-    ]
+    "INTRINSIC_2_INVALID",
+    "INTRINSIC_PREP_RERAISE_STAR",
+    "INTRINSIC_TYPEVAR_WITH_BOUND",
+    "INTRINSIC_TYPEVAR_WITH_CONSTRAINTS",
+    "INTRINSIC_SET_FUNCTION_TYPE_PARAMS",
+]
 
 _specializations = {
     "BINARY_OP": [
@@ -370,6 +387,7 @@ _specializations = {
         "FOR_ITER_GEN",
     ],
     "LOAD_SUPER_ATTR": [
+        "LOAD_SUPER_ATTR_ATTR",
         "LOAD_SUPER_ATTR_METHOD",
     ],
     "LOAD_ATTR": [
@@ -447,9 +465,6 @@ _cache_format = {
     },
     "LOAD_SUPER_ATTR": {
         "counter": 1,
-        "class_version": 2,
-        "self_type_version": 2,
-        "method": 4,
     },
     "LOAD_ATTR": {
         "counter": 1,

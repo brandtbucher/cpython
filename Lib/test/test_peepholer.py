@@ -989,13 +989,14 @@ class TestMarkingVariablesAsUnKnown(BytecodeTestCase):
         self.assertNotInBytecode(f, "LOAD_FAST_CHECK")
 
 
-class DirectiCfgOptimizerTests(CfgOptimizationTestCase):
+class DirectCfgOptimizerTests(CfgOptimizationTestCase):
 
     def cfg_optimization_test(self, insts, expected_insts,
-                              consts=None, expected_consts=None):
+                              consts=None, expected_consts=None,
+                              nlocals=0):
         if expected_consts is None:
             expected_consts = consts
-        opt_insts, opt_consts = self.get_optimized(insts, consts)
+        opt_insts, opt_consts = self.get_optimized(insts, consts, nlocals)
         expected_insts = self.normalize_insts(expected_insts)
         self.assertInstructionsMatch(opt_insts, expected_insts)
         self.assertEqual(opt_consts, expected_consts)
@@ -1076,6 +1077,19 @@ class DirectiCfgOptimizerTests(CfgOptimizationTestCase):
         ]
         self.cfg_optimization_test(insts, expected_insts, consts=list(range(5)))
 
+    def test_no_unsafe_static_swap(self):
+        # We can't change order of two stores to the same location
+        insts = [
+            ('LOAD_CONST', 0, 1),
+            ('LOAD_CONST', 0, 2),
+            ('LOAD_CONST', 0, 3),
+            ('SWAP', 3, 4),
+            ('STORE_FAST', 1, 4),
+            ('STORE_FAST', 1, 4),
+            ('POP_TOP', 0, 4),
+            ('RETURN_VALUE', 5)
+        ]
+        self.cfg_optimization_test(insts, insts, consts=["Spam"], nlocals=1)
 
 if __name__ == "__main__":
     unittest.main()
