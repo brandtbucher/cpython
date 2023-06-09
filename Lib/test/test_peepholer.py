@@ -72,8 +72,8 @@ class TestTranforms(BytecodeTestCase):
         def unot(x):
             if not x == 2:
                 del x
-        self.assertNotInBytecode(unot, 'POP_JUMP_IF_TRUE')
-        self.assertInBytecode(unot, 'POP_JUMP_IF_FALSE')
+        self.assertNotInBytecode(unot, 'POP_JUMP_IF_FALSE')
+        self.assertInBytecode(unot, 'POP_JUMP_IF_TRUE')
         self.check_lnotab(unot)
 
     def test_elim_inversion_of_is_or_in(self):

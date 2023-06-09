@@ -1487,6 +1487,18 @@ optimize_basic_block(PyObject *const_cache, basicblock *bb, PyObject *consts)
                 }
                 break;
             }
+            case COMPARE_OP:
+                if (nextop == UNARY_NOT) {
+                    int jump_op = i + 2 < bb->b_iused ? bb->b_instr[i + 2].i_opcode : 0;
+                    if (jump_op == POP_JUMP_IF_TRUE || jump_op == POP_JUMP_IF_FALSE) {
+                        INSTR_SET_OP0(inst, NOP);
+                        INSTR_SET_OP1(&bb->b_instr[i + 1], COMPARE_OP, oparg | 16);
+                        bb->b_instr[i + 2].i_opcode = (jump_op == POP_JUMP_IF_TRUE) 
+                            ? POP_JUMP_IF_FALSE : POP_JUMP_IF_TRUE;
+                        continue;
+                    }
+                }
+                break;
             case IS_OP:
             case CONTAINS_OP:
                 if (nextop == UNARY_NOT) {

@@ -1304,8 +1304,8 @@ class TestSourcePositions(unittest.TestCase):
         self.assertOpcodeSourcePositionIs(compiled_code, 'COMPARE_OP',
             line=4, end_line=4, column=8, end_column=13, occurrence=1)
         # jump if comparison it True
-        self.assertOpcodeSourcePositionIs(compiled_code, 'POP_JUMP_IF_FALSE',
-            line=4, end_line=4, column=8, end_column=13, occurrence=2)
+        self.assertOpcodeSourcePositionIs(compiled_code, 'POP_JUMP_IF_TRUE',
+            line=4, end_line=4, column=8, end_column=13, occurrence=3)
 
     def test_multiline_assert(self):
         snippet = textwrap.dedent("""\

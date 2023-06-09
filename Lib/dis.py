@@ -496,8 +496,10 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
             elif deop in haslocal or deop in hasfree:
                 argval, argrepr = _get_name_info(arg, varname_from_oparg)
             elif deop in hascompare:
-                argval = cmp_op[arg>>4]
+                argval = cmp_op[arg >> 5]
                 argrepr = argval
+                if arg & 16:
+                    argrepr = f"bool({argrepr})"
             elif deop == FORMAT_VALUE:
                 argval, argrepr = FORMAT_VALUE_CONVERTERS[arg & 0x3]
                 argval = (argval, bool(arg & 0x4))
