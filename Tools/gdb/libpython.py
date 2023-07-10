@@ -70,7 +70,6 @@ def _type_unsigned_int_ptr():
 def _sizeof_void_p():
     return gdb.lookup_type('void').pointer().sizeof
 
-
 Py_TPFLAGS_MANAGED_DICT      = (1 << 4)
 Py_TPFLAGS_HEAPTYPE          = (1 << 9)
 Py_TPFLAGS_LONG_SUBCLASS     = (1 << 24)
@@ -490,6 +489,8 @@ class HeapTypeObjectPtr(PyObjectPtr):
         char_ptr = ptr.dereference()
         if (int(char_ptr) & 1) == 0:
             return None
+        if (int(char_ptr) & 2) == 0:
+            char_ptr += 2
         char_ptr += 1
         values_ptr = char_ptr.cast(gdb.lookup_type("PyDictValues").pointer())
         values = values_ptr['values']

@@ -2014,12 +2014,15 @@ dummy_func(
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, STORE_ATTR);
             assert(tp->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-            PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
-            DEOPT_IF(!_PyDictOrValues_IsValues(dorv), STORE_ATTR);
+            PyDictOrValues *dorv = _PyObject_DictOrValuesPointer(owner);
+            DEOPT_IF(!_PyDictOrValues_IsValues(*dorv), STORE_ATTR);
             STAT_INC(STORE_ATTR, hit);
-            PyDictValues *values = _PyDictOrValues_GetValues(dorv);
+            PyDictValues *values = _PyDictOrValues_GetValues(*dorv);
             PyObject *old_value = values->values[index];
             values->values[index] = value;
+            if (_PyObject_GC_MAY_BE_TRACKED(value)) {
+                _PyDictOrValues_Track(dorv);
+            }
             if (old_value == NULL) {
                 _PyDictValues_AddToInsertionOrder(values, index);
             }

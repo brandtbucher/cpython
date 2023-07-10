@@ -5582,10 +5582,12 @@ _PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg)
     assert(tp->tp_dictoffset);
     PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(obj);
     if (_PyDictOrValues_IsValues(dorv)) {
-        PyDictValues *values = _PyDictOrValues_GetValues(dorv);
-        PyDictKeysObject *keys = CACHED_KEYS(tp);
-        for (Py_ssize_t i = 0; i < keys->dk_nentries; i++) {
-            Py_VISIT(values->values[i]);
+        if (_PyDictOrValues_IsTracked(dorv)) {
+            PyDictValues *values = _PyDictOrValues_GetValues(dorv);
+            PyDictKeysObject *keys = CACHED_KEYS(tp);
+            for (Py_ssize_t i = 0; i < keys->dk_nentries; i++) {
+                Py_VISIT(values->values[i]);
+            }
         }
     }
     else {

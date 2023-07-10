@@ -383,11 +383,26 @@ _PyDictOrValues_IsValues(PyDictOrValues dorv)
     return ((uintptr_t)dorv.values) & 1;
 }
 
+static inline int
+_PyDictOrValues_IsTracked(PyDictOrValues dorv)
+{
+    assert(_PyDictOrValues_IsValues(dorv));
+    return ((uintptr_t)dorv.values) & 2;
+}
+
+static inline void
+_PyDictOrValues_Track(PyDictOrValues *ptr)
+{
+    assert(_PyDictOrValues_IsValues(*ptr));
+    ptr->values = (char *)((uintptr_t)ptr->values | 2);
+    assert(_PyDictOrValues_IsTracked(*ptr));
+}
+
 static inline PyDictValues *
 _PyDictOrValues_GetValues(PyDictOrValues dorv)
 {
     assert(_PyDictOrValues_IsValues(dorv));
-    return (PyDictValues *)(dorv.values + 1);
+    return (PyDictValues *)(((uintptr_t)dorv.values | 2) + 1);
 }
 
 static inline PyObject *
@@ -400,7 +415,8 @@ _PyDictOrValues_GetDict(PyDictOrValues dorv)
 static inline void
 _PyDictOrValues_SetValues(PyDictOrValues *ptr, PyDictValues *values)
 {
-    ptr->values = ((char *)values) - 1;
+    ptr->values = ((char *)values) - 3;
+    assert(!_PyDictOrValues_IsTracked(*ptr));
 }
 
 #define MANAGED_WEAKREF_OFFSET (((Py_ssize_t)sizeof(PyObject *))*-4)

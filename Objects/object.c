@@ -1539,6 +1539,9 @@ _PyObject_GenericSetAttrWithDict(PyObject *obj, PyObject *name,
         if ((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT)) {
             PyDictOrValues *dorv_ptr = _PyObject_DictOrValuesPointer(obj);
             if (_PyDictOrValues_IsValues(*dorv_ptr)) {
+                if (value && _PyObject_GC_MAY_BE_TRACKED(value)) {
+                    _PyDictOrValues_Track(dorv_ptr);
+                }
                 res = _PyObject_StoreInstanceAttribute(
                     obj, _PyDictOrValues_GetValues(*dorv_ptr), name, value);
                 goto error_check;
