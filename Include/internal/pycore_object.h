@@ -394,6 +394,9 @@ static inline void
 _PyDictOrValues_Track(PyDictOrValues *ptr)
 {
     assert(_PyDictOrValues_IsValues(*ptr));
+    if (!_PyDictOrValues_IsTracked(*ptr)) {
+        OBJECT_STAT_INC(tracked_values);
+    }
     ptr->values = (char *)((uintptr_t)ptr->values | 2);
     assert(_PyDictOrValues_IsTracked(*ptr));
 }
