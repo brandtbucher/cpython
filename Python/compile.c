@@ -3592,7 +3592,9 @@ compiler_try_star_except(struct compiler *c, stmt_ty s)
             VISIT(c, expr, handler->v.ExceptHandler.type);
             ADDOP(c, loc, CHECK_EG_MATCH);
             ADDOP_I(c, loc, COPY, 1);
-            ADDOP_JUMP(c, loc, POP_JUMP_IF_NONE, no_match);
+            ADDOP_LOAD_CONST(c, loc, Py_None);
+            ADDOP_COMPARE(c, loc, Is);
+            ADDOP_JUMP(c, loc, POP_JUMP_IF_TRUE, no_match);
         }
 
         NEW_JUMP_TARGET_LABEL(c, cleanup_end);
@@ -3677,7 +3679,9 @@ compiler_try_star_except(struct compiler *c, stmt_ty s)
     USE_LABEL(c, reraise_star);
     ADDOP_I(c, NO_LOCATION, CALL_INTRINSIC_2, INTRINSIC_PREP_RERAISE_STAR);
     ADDOP_I(c, NO_LOCATION, COPY, 1);
-    ADDOP_JUMP(c, NO_LOCATION, POP_JUMP_IF_NOT_NONE, reraise);
+    ADDOP_LOAD_CONST(c, NO_LOCATION, Py_None);
+    ADDOP_COMPARE(c, NO_LOCATION, Is);
+    ADDOP_JUMP(c, NO_LOCATION, POP_JUMP_IF_FALSE, reraise);
 
     /* Nothing to reraise */
     ADDOP(c, NO_LOCATION, POP_TOP);

@@ -2282,22 +2282,6 @@ dummy_func(
             JUMPBY(oparg * Py_IsTrue(cond));
         }
 
-        inst(POP_JUMP_IF_NOT_NONE, (value -- )) {
-            if (!Py_IsNone(value)) {
-                DECREF_INPUTS();
-                JUMPBY(oparg);
-            }
-        }
-
-        inst(POP_JUMP_IF_NONE, (value -- )) {
-            if (Py_IsNone(value)) {
-                JUMPBY(oparg);
-            }
-            else {
-                DECREF_INPUTS();
-            }
-        }
-
         inst(JUMP_BACKWARD_NO_INTERRUPT, (--)) {
             /* This bytecode is used in the `yield from` or `await` loop.
              * If there is an interrupt, we want it handled in the innermost
@@ -3624,34 +3608,6 @@ dummy_func(
             assert(PyBool_Check(cond));
             _Py_CODEUNIT *here = next_instr - 1;
             int offset = Py_IsFalse(cond) * oparg;
-            INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
-        }
-
-        inst(INSTRUMENTED_POP_JUMP_IF_NONE, ( -- )) {
-            PyObject *value = POP();
-            _Py_CODEUNIT *here = next_instr-1;
-            int offset;
-            if (Py_IsNone(value)) {
-                offset = oparg;
-            }
-            else {
-                Py_DECREF(value);
-                offset = 0;
-            }
-            INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
-        }
-
-        inst(INSTRUMENTED_POP_JUMP_IF_NOT_NONE, ( -- )) {
-            PyObject *value = POP();
-            _Py_CODEUNIT *here = next_instr-1;
-            int offset;
-            if (Py_IsNone(value)) {
-                offset = 0;
-            }
-            else {
-                Py_DECREF(value);
-                offset = oparg;
-            }
             INSTRUMENTED_JUMP(here, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 
