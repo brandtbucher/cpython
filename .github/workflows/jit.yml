@@ -94,7 +94,8 @@ jobs:
             echo "::group::Install LLVM"
             apt update --yes
             apt install --yes build-essential gnupg lsb-release sudo software-properties-common wget zlib1g-dev
-            bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }} all
+            bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }}
+            ${{ matrix.llvm == 14 && 'apt install --yes libclang-rt-14-dev' }}
             echo "::endgroup::"
           run: |
             echo "::group::Configure Python"
@@ -111,7 +112,8 @@ jobs:
         if: runner.os == 'Linux' && matrix.architecture == 'x86_64'
         run: |
           echo "::group::Install LLVM"
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }} all
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }}
+          ${{ matrix.llvm == 14 && 'sudo apt install --yes libclang-rt-14-dev' }}
           echo "::endgroup::"
           echo "::group::Configure Python"
           ./configure ${{ matrix.debug && '--with-pydebug' || '--enable-optimizations --with-lto' }}
