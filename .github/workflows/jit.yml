@@ -55,25 +55,34 @@ jobs:
             runner: ubuntu-latest
             compiler: gcc
             tier: 2
-            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_socket test_subprocess
+            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
           - target: aarch64-unknown-linux-gnu/clang
             architecture: aarch64
             runner: ubuntu-latest
             compiler: clang
             tier: 2
-            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_socket test_subprocess
+            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
           - target: powerpc64le-unknown-linux-gnu/gcc
             architecture: ppc64le
             runner: ubuntu-latest
             compiler: gcc
             tier: 2
-            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_posix test_socket test_subprocess
+            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_posix test_signal test_socket test_subprocess test_tools
           - target: x86_64-unknown-linux-gnu/clang
             architecture: x86_64
             runner: ubuntu-latest
             compiler: clang
             tier: 2
             exclude: test_tools
+        exclude:
+          # Can't find libclang-rt-14-dev:
+          - target: powerpc64le-unknown-linux-gnu/gcc
+            compiler: clang
+            debug: false
+            llvm: 14
+          # Can't find LLVM 16:
+          - target: powerpc64le-unknown-linux-gnu/gcc
+            llvm: 16
     env:
       CC: ${{ matrix.compiler }}
       PYTHON_LLVM_VERSION: ${{ matrix.llvm }}
@@ -95,7 +104,7 @@ jobs:
             apt update --yes
             apt install --yes build-essential gnupg lsb-release sudo software-properties-common wget zlib1g-dev
             bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }}
-            ${{ matrix.llvm == 14 && 'apt install --yes libclang-rt-14-dev' || '' }}
+            ${{ matrix.debug == false && matrix.llvm == 14 && matrix.compiler == 'clang' && 'apt install --yes libclang-rt-14-dev' || '' }}
             echo "::endgroup::"
           run: |
             echo "::group::Configure Python"
@@ -113,9 +122,10 @@ jobs:
         run: |
           echo "::group::Install LLVM"
           sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" ./llvm.sh ${{ matrix.llvm }}
-          ${{ matrix.llvm == 14 && 'sudo apt install --yes libclang-rt-14-dev' || '' }}
+          ${{ matrix.debug == false && matrix.llvm == 14 && matrix.compiler == 'clang' && 'sudo apt install --yes libclang-rt-14-dev' || '' }}
           echo "::endgroup::"
           echo "::group::Configure Python"
+          export PATH="$(llvm-config-${{ matrix.llvm }} --bindir):$PATH"
           ./configure ${{ matrix.debug && '--with-pydebug' || '--enable-optimizations --with-lto' }}
           echo "::endgroup::"
           echo "::group::Build Python"
