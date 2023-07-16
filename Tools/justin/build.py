@@ -174,6 +174,7 @@ def get_llvm_tool_version(name: str) -> int | None:
 def find_llvm_tool(tool: str) -> tuple[str, int]:
     versions = {14, 15, 16}
     forced_version = os.getenv("PYTHON_LLVM_VERSION")
+    print(versions, forced_version)  # XXX
     if forced_version:
         versions &= {int(forced_version)}
     # Unversioned executables:
@@ -184,6 +185,7 @@ def find_llvm_tool(tool: str) -> tuple[str, int]:
     for version in sorted(versions, reverse=True):
         # Versioned executables:
         path = f"{tool}-{version}"
+        print(path, get_llvm_tool_version(path))  # XXX
         if get_llvm_tool_version(path) == version:
             return path, version
         # My homebrew homies:
@@ -1087,7 +1089,8 @@ class Compiler:
 if __name__ == "__main__":
     # Clang internal error with musttail + ghccc + aarch64:
     ghccc = platform.machine() not in {"aarch64", "arm64"}
-    engine = Compiler(verbose=True, ghccc=ghccc)
+    print(f"{platform.machine() = }")
+    engine = Compiler(verbose=True, ghccc=False)#ghccc)  # XXX: powerpc64le
     asyncio.run(engine.build())
     with open(sys.argv[2], "w") as file:
         file.write(engine.dump())
