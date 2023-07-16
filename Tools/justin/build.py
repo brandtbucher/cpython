@@ -287,6 +287,7 @@ def handle_relocations(
     body: bytearray,
     relocations: typing.Sequence[tuple[int, typing.Mapping[str, typing.Any]]],
 ) -> typing.Generator[Hole, None, None]:
+    missed = []
     for i, (base, relocation) in enumerate(relocations):
         match relocation:
             # aarch64-apple-darwin:
@@ -668,7 +669,12 @@ def handle_relocations(
                 symbol = symbol.removeprefix("_")
                 yield Hole("PATCH_ABS_64", symbol, offset, addend)
             case _:
-                raise NotImplementedError(relocation)
+                missed.append(relocation)
+                # raise NotImplementedError(relocation)
+    for relocation in missed:
+        print(relocation)
+    if missed:
+        raise NotImplementedError(missed)
 
 
 class ObjectParserCOFF(ObjectParser):

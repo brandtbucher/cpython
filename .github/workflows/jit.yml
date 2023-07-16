@@ -8,72 +8,72 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - i686-pc-windows-msvc/msvc
-          - x86_64-pc-windows-msvc/msvc
-          - x86_64-apple-darwin/clang
-          - x86_64-unknown-linux-gnu/gcc
+          # - i686-pc-windows-msvc/msvc
+          # - x86_64-pc-windows-msvc/msvc
+          # - x86_64-apple-darwin/clang
+          # - x86_64-unknown-linux-gnu/gcc
           # - aarch64-apple-darwin/clang
-          - aarch64-unknown-linux-gnu/gcc
-          - aarch64-unknown-linux-gnu/clang
-          # - powerpc64le-unknown-linux-gnu/gcc
-          - x86_64-unknown-linux-gnu/clang
+          # - aarch64-unknown-linux-gnu/gcc
+          # - aarch64-unknown-linux-gnu/clang
+          - powerpc64le-unknown-linux-gnu/gcc
+          # - x86_64-unknown-linux-gnu/clang
         debug:
           - true
-          - false
+          # - false
         llvm:
           - 14
-          - 15
-          - 16
+          # - 15
+          # - 16
         include:
-          - target: i686-pc-windows-msvc/msvc
-            architecture: Win32
-            runner: windows-latest
-            compiler: msvc
-            tier: 1
-          - target: x86_64-pc-windows-msvc/msvc
-            architecture: x64
-            runner: windows-latest
-            compiler: msvc
-            tier: 1
-          - target: x86_64-apple-darwin/clang
-            architecture: x86_64
-            runner: macos-latest
-            compiler: clang
-            tier: 1
-          - target: x86_64-unknown-linux-gnu/gcc
-            architecture: x86_64
-            runner: ubuntu-latest
-            compiler: gcc
-            tier: 1
+          # - target: i686-pc-windows-msvc/msvc
+          #   architecture: Win32
+          #   runner: windows-latest
+          #   compiler: msvc
+          #   tier: 1
+          # - target: x86_64-pc-windows-msvc/msvc
+          #   architecture: x64
+          #   runner: windows-latest
+          #   compiler: msvc
+          #   tier: 1
+          # - target: x86_64-apple-darwin/clang
+          #   architecture: x86_64
+          #   runner: macos-latest
+          #   compiler: clang
+          #   tier: 1
+          # - target: x86_64-unknown-linux-gnu/gcc
+          #   architecture: x86_64
+          #   runner: ubuntu-latest
+          #   compiler: gcc
+          #   tier: 1
           # - target: aarch64-apple-darwin/clang
           #   architecture: aarch64
           #   runner: macos-latest
           #   compiler: clang
           #   tier: 2
-          - target: aarch64-unknown-linux-gnu/gcc
-            architecture: aarch64
-            runner: ubuntu-latest
-            compiler: gcc
-            tier: 2
-            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
-          - target: aarch64-unknown-linux-gnu/clang
-            architecture: aarch64
-            runner: ubuntu-latest
-            compiler: clang
-            tier: 2
-            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
-          # - target: powerpc64le-unknown-linux-gnu/gcc
-          #   architecture: ppc64le
+          # - target: aarch64-unknown-linux-gnu/gcc
+          #   architecture: aarch64
           #   runner: ubuntu-latest
           #   compiler: gcc
           #   tier: 2
-          #   exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_posix test_signal test_socket test_subprocess test_tools
-          - target: x86_64-unknown-linux-gnu/clang
-            architecture: x86_64
+          #   exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
+          # - target: aarch64-unknown-linux-gnu/clang
+          #   architecture: aarch64
+          #   runner: ubuntu-latest
+          #   compiler: clang
+          #   tier: 2
+          #   exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_perf_profiler test_posix test_signal test_socket test_subprocess test_tools
+          - target: powerpc64le-unknown-linux-gnu/gcc
+            architecture: ppc64le
             runner: ubuntu-latest
-            compiler: clang
+            compiler: gcc
             tier: 2
-            exclude: test_tools
+            exclude: test_cmd_line test_concurrent_futures test_eintr test_faulthandler test_os test_posix test_signal test_socket test_subprocess test_tools
+          # - target: x86_64-unknown-linux-gnu/clang
+          #   architecture: x86_64
+          #   runner: ubuntu-latest
+          #   compiler: clang
+          #   tier: 2
+          #   exclude: test_tools
         # exclude:
         #   # Can't find LLVM 16:
         #   - target: powerpc64le-unknown-linux-gnu/gcc
