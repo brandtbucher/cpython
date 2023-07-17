@@ -105,7 +105,6 @@ jobs:
           run: |
             echo "::group::Configure Python"
             export PATH="$(llvm-config-${{ matrix.llvm }} --bindir):$PATH"
-            ls "$(llvm-config-${{ matrix.llvm }} --bindir)"
             ./configure ${{ matrix.debug && '--with-pydebug' || '--enable-optimizations --with-lto' }}
             echo "::endgroup::"
             echo "::group::Build Python"
