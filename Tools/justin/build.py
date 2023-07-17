@@ -169,7 +169,7 @@ def get_llvm_tool_version(name: str) -> int | None:
     except FileNotFoundError:
         return None
     print(name, process.stdout)  # XXX
-    match = re.search(br"version\s+(\d+)\.\d+\.\d+\s+", process.stdout)
+    match = re.search(br"version\s+(\d+)\.\d+\.\d+", process.stdout)
     return match and int(match.group(1))
 
 def find_llvm_tool(tool: str) -> tuple[str, int]:
