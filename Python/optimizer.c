@@ -378,13 +378,12 @@ static PyTypeObject UOpExecutor_Type = {
 static int
 translate_bytecode_to_trace(
     PyCodeObject *code,
+    _Py_CODEUNIT *initial_instr,
     _Py_CODEUNIT *instr,
+    int trace_length,
     _PyUOpInstruction *trace,
     int buffer_size)
 {
-    _Py_CODEUNIT *initial_instr = instr;
-    int trace_length = 0;
-    int max_length = buffer_size;
     int reserved = 0;
 
 #ifdef Py_DEBUG
@@ -408,7 +407,7 @@ translate_bytecode_to_trace(
             uop_name(OPCODE), \
             (OPARG), \
             (uint64_t)(OPERAND)); \
-    assert(trace_length < max_length); \
+    assert(trace_length < buffer_size); \
     assert(reserved > 0); \
     reserved--; \
     trace[trace_length].opcode = (OPCODE); \
@@ -433,9 +432,9 @@ translate_bytecode_to_trace(
 
 // Reserve space for n uops
 #define RESERVE_RAW(n, opname) \
-    if (trace_length + (n) > max_length) { \
+    if (trace_length + (n) > buffer_size) { \
         DPRINTF(2, "No room for %s (need %d, got %d)\n", \
-                (opname), (n), max_length - trace_length); \
+                (opname), (n), buffer_size - trace_length); \
         goto done; \
     } \
     reserved = (n);  // Keep ADD_TO_TRACE / ADD_TO_STUB honest
@@ -495,17 +494,19 @@ translate_bytecode_to_trace(
             case POP_JUMP_IF_TRUE:
             {
 pop_jump_if_bool:
-                // Assume jump unlikely (TODO: handle jump likely case)
                 RESERVE(1, 2);
                 _Py_CODEUNIT *target_instr =
                     instr + 1 + _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + oparg;
-                max_length -= 2;  // Really the start of the stubs
                 uint32_t uopcode = opcode == POP_JUMP_IF_TRUE ?
                     _POP_JUMP_IF_TRUE : _POP_JUMP_IF_FALSE;
-                ADD_TO_TRACE(uopcode, max_length, 0);
-                ADD_TO_STUB(max_length, SAVE_IP, INSTR_IP(target_instr, code), 0);
-                ADD_TO_STUB(max_length + 1, EXIT_TRACE, 0, 0);
-                break;
+                int new_trace_length = translate_bytecode_to_trace(
+                    code, initial_instr, instr + 1 + _PyOpcode_Caches[_PyOpcode_Deopt[opcode]],
+                    trace_length + 1, trace, buffer_size - 2);
+                assert(trace_length + 3 <= new_trace_length);
+                ADD_TO_TRACE(uopcode, new_trace_length, 0);
+                trace_length = new_trace_length;
+                instr = target_instr;
+                continue;
             }
 
             case JUMP_BACKWARD:
@@ -556,16 +557,18 @@ pop_jump_if_bool:
                 // Assume jump unlikely (can a for-loop exit be likely?)
                 _Py_CODEUNIT *target_instr =  // +1 at the end skips over END_FOR
                     instr + 1 + _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + oparg + 1;
-                max_length -= 3;  // Really the start of the stubs
                 ADD_TO_TRACE(check_op, 0, 0);
                 ADD_TO_TRACE(exhausted_op, 0, 0);
-                ADD_TO_TRACE(_POP_JUMP_IF_TRUE, max_length, 0);
+                int new_trace_length = translate_bytecode_to_trace(
+                    code, initial_instr, instr + 1 + _PyOpcode_Caches[_PyOpcode_Deopt[opcode]],
+                    trace_length + 2, trace, buffer_size - 3);
+                assert(trace_length + 4 <= new_trace_length);
+                ADD_TO_TRACE(_POP_JUMP_IF_TRUE, new_trace_length, 0);
                 ADD_TO_TRACE(next_op, 0, 0);
-
-                ADD_TO_STUB(max_length + 0, POP_TOP, 0, 0);
-                ADD_TO_STUB(max_length + 1, SAVE_IP, INSTR_IP(target_instr, code), 0);
-                ADD_TO_STUB(max_length + 2, EXIT_TRACE, 0, 0);
-                break;
+                trace_length = new_trace_length;
+                ADD_TO_TRACE(POP_TOP, 0, 0);
+                instr = target_instr;
+                continue;
             }
 
             default:
@@ -632,51 +635,15 @@ pop_jump_if_bool:
     }  // End for (;;)
 
 done:
-    // Skip short traces like SAVE_IP, LOAD_FAST, SAVE_IP, EXIT_TRACE
-    if (trace_length > 3) {
-        ADD_TO_TRACE(EXIT_TRACE, 0, 0);
-        DPRINTF(1,
-                "Created a trace for %s (%s:%d) at byte offset %d -- length %d\n",
-                PyUnicode_AsUTF8(code->co_qualname),
-                PyUnicode_AsUTF8(code->co_filename),
-                code->co_firstlineno,
-                2 * INSTR_IP(initial_instr, code),
-                trace_length);
-        if (max_length < buffer_size && trace_length < max_length) {
-            // Move the stubs back to be immediately after the main trace
-            // (which ends at trace_length)
-            DPRINTF(2,
-                    "Moving %d stub uops back by %d\n",
-                    buffer_size - max_length,
-                    max_length - trace_length);
-            memmove(trace + trace_length,
-                    trace + max_length,
-                    (buffer_size - max_length) * sizeof(_PyUOpInstruction));
-            // Patch up the jump targets
-            for (int i = 0; i < trace_length; i++) {
-                if (trace[i].opcode == _POP_JUMP_IF_FALSE ||
-                    trace[i].opcode == _POP_JUMP_IF_TRUE)
-                {
-                    int target = trace[i].oparg;
-                    if (target >= max_length) {
-                        target += trace_length - max_length;
-                        trace[i].oparg = target;
-                    }
-                }
-            }
-        }
-        trace_length += buffer_size - max_length;
-        return trace_length;
-    }
-    else {
-        DPRINTF(4,
-                "No trace for %s (%s:%d) at byte offset %d\n",
-                PyUnicode_AsUTF8(code->co_qualname),
-                PyUnicode_AsUTF8(code->co_filename),
-                code->co_firstlineno,
-                2 * INSTR_IP(initial_instr, code));
-    }
-    return 0;
+    ADD_TO_TRACE(EXIT_TRACE, 0, 0);
+    DPRINTF(1,
+            "Created a trace for %s (%s:%d) at byte offset %d -- length %d\n",
+            PyUnicode_AsUTF8(code->co_qualname),
+            PyUnicode_AsUTF8(code->co_filename),
+            code->co_firstlineno,
+            2 * INSTR_IP(initial_instr, code),
+            trace_length);
+    return trace_length;
 
 #undef RESERVE
 #undef RESERVE_RAW
@@ -693,10 +660,13 @@ uop_optimize(
     _PyExecutorObject **exec_ptr)
 {
     _PyUOpInstruction trace[_Py_UOP_MAX_TRACE_LENGTH];
-    int trace_length = translate_bytecode_to_trace(code, instr, trace, _Py_UOP_MAX_TRACE_LENGTH);
+    int trace_length = translate_bytecode_to_trace(code, instr, instr, 0, trace, _Py_UOP_MAX_TRACE_LENGTH);
     if (trace_length <= 0) {
         // Error or nothing translated
         return trace_length;
+    }
+    if (trace_length < _Py_UOP_MIN_TRACE_LENGTH) {
+        return 0;
     }
     OBJECT_STAT_INC(optimization_traces_created);
     _PyUOpExecutorObject *executor = PyObject_New(_PyUOpExecutorObject, &UOpExecutor_Type);
