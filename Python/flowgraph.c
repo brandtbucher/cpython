@@ -1755,6 +1755,16 @@ insert_superinstructions(cfg_builder *g)
                     if (nextop == LOAD_FAST) {
                         make_super_instruction(inst, &b->b_instr[i + 1], LOAD_FAST_LOAD_FAST);
                     }
+                    if (nextop == PUSH_NULL) {
+                        // Don't use make_super_instruction since we don't split
+                        // the oparg:
+                        int line1 = inst->i_loc.lineno;
+                        int line2 = b->b_instr[i + 1].i_loc.lineno;
+                        if (line1 < 0 || line2 < 0 || line1 == line2) {
+                            INSTR_SET_OP1(inst, LOAD_FAST_PUSH_NULL, inst->i_oparg);
+                            INSTR_SET_OP0(&b->b_instr[i + 1], NOP);
+                        }
+                    }
                     break;
                 case STORE_FAST:
                     switch (nextop) {

@@ -402,6 +402,11 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     next_stack = push_value(next_stack, Null);
                     stacks[next_i] = next_stack;
                     break;
+                case LOAD_FAST_PUSH_NULL:
+                    next_stack = push_value(next_stack, Object);
+                    next_stack = push_value(next_stack, Null);
+                    stacks[next_i] = next_stack;
+                    break;
                 case LOAD_GLOBAL:
                 {
                     int j = oparg;

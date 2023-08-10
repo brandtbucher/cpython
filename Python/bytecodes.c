@@ -245,6 +245,12 @@ dummy_func(
             res = NULL;
         }
 
+        inst(LOAD_FAST_PUSH_NULL, (-- value, null)) {
+            value = GETLOCAL(oparg);
+            Py_INCREF(value);
+            null = NULL;
+        }
+
         macro(END_FOR) = POP_TOP + POP_TOP;
 
         inst(INSTRUMENTED_END_FOR, (receiver, value --)) {
