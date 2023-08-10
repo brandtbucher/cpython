@@ -22,6 +22,13 @@
             break;
         }
 
+        case LOAD_FAST_PUSH_NULL: {
+            STACK_GROW(2);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-2)), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
+            break;
+        }
+
         case END_SEND: {
             STACK_SHRINK(1);
             PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);

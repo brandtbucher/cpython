@@ -159,6 +159,18 @@
             DISPATCH();
         }
 
+        TARGET(LOAD_FAST_PUSH_NULL) {
+            PyObject *value;
+            PyObject *null;
+            value = GETLOCAL(oparg);
+            Py_INCREF(value);
+            null = NULL;
+            STACK_GROW(2);
+            stack_pointer[-2] = value;
+            stack_pointer[-1] = null;
+            DISPATCH();
+        }
+
         TARGET(END_FOR) {
             PyObject *value;
             // POP_TOP

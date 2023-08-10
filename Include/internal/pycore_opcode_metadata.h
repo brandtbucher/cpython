@@ -104,6 +104,8 @@ int _PyOpcode_num_popped(int opcode, int oparg, bool jump)  {
             return 1;
         case PUSH_NULL:
             return 0;
+        case LOAD_FAST_PUSH_NULL:
+            return 0;
         case END_FOR:
             return 2;
         case INSTRUMENTED_END_FOR:
@@ -634,6 +636,8 @@ int _PyOpcode_num_pushed(int opcode, int oparg, bool jump)  {
             return 0;
         case PUSH_NULL:
             return 1;
+        case LOAD_FAST_PUSH_NULL:
+            return 2;
         case END_FOR:
             return 0;
         case INSTRUMENTED_END_FOR:
@@ -1208,6 +1212,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[OPCODE_METADATA_SIZE] = {
     [STORE_FAST_STORE_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG },
     [POP_TOP] = { true, INSTR_FMT_IX, 0 },
     [PUSH_NULL] = { true, INSTR_FMT_IX, 0 },
+    [LOAD_FAST_PUSH_NULL] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG },
     [END_FOR] = { true, INSTR_FMT_IX, 0 },
     [INSTRUMENTED_END_FOR] = { true, INSTR_FMT_IX, 0 },
     [END_SEND] = { true, INSTR_FMT_IX, 0 },
@@ -1427,6 +1432,7 @@ const struct opcode_macro_expansion _PyOpcode_macro_expansion[OPCODE_MACRO_EXPAN
     [STORE_FAST_STORE_FAST] = { .nuops = 2, .uops = { { STORE_FAST, 5, 0 }, { STORE_FAST, 6, 0 } } },
     [POP_TOP] = { .nuops = 1, .uops = { { POP_TOP, 0, 0 } } },
     [PUSH_NULL] = { .nuops = 1, .uops = { { PUSH_NULL, 0, 0 } } },
+    [LOAD_FAST_PUSH_NULL] = { .nuops = 1, .uops = { { LOAD_FAST_PUSH_NULL, 0, 0 } } },
     [END_FOR] = { .nuops = 2, .uops = { { POP_TOP, 0, 0 }, { POP_TOP, 0, 0 } } },
     [END_SEND] = { .nuops = 1, .uops = { { END_SEND, 0, 0 } } },
     [UNARY_NEGATIVE] = { .nuops = 1, .uops = { { UNARY_NEGATIVE, 0, 0 } } },
@@ -1754,6 +1760,7 @@ const char *const _PyOpcode_OpName[268] = {
     [LOAD_FAST_AND_CLEAR] = "LOAD_FAST_AND_CLEAR",
     [LOAD_FAST_CHECK] = "LOAD_FAST_CHECK",
     [LOAD_FAST_LOAD_FAST] = "LOAD_FAST_LOAD_FAST",
+    [LOAD_FAST_PUSH_NULL] = "LOAD_FAST_PUSH_NULL",
     [LOAD_FROM_DICT_OR_DEREF] = "LOAD_FROM_DICT_OR_DEREF",
     [LOAD_FROM_DICT_OR_GLOBALS] = "LOAD_FROM_DICT_OR_GLOBALS",
     [LOAD_GLOBAL] = "LOAD_GLOBAL",
@@ -1983,6 +1990,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [LOAD_FAST_AND_CLEAR] = LOAD_FAST_AND_CLEAR,
     [LOAD_FAST_CHECK] = LOAD_FAST_CHECK,
     [LOAD_FAST_LOAD_FAST] = LOAD_FAST_LOAD_FAST,
+    [LOAD_FAST_PUSH_NULL] = LOAD_FAST_PUSH_NULL,
     [LOAD_FROM_DICT_OR_DEREF] = LOAD_FROM_DICT_OR_DEREF,
     [LOAD_FROM_DICT_OR_GLOBALS] = LOAD_FROM_DICT_OR_GLOBALS,
     [LOAD_GLOBAL] = LOAD_GLOBAL,
@@ -2058,7 +2066,6 @@ const uint8_t _PyOpcode_Deopt[256] = {
 #endif // NEED_OPCODE_METADATA
 
 #define EXTRA_CASES \
-    case 187: \
     case 188: \
     case 189: \
     case 190: \
