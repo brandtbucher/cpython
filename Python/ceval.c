@@ -662,6 +662,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     entry_frame.frame_obj = (PyFrameObject*)0xaaa2;
     entry_frame.f_globals = (PyObject*)0xaaa3;
     entry_frame.f_builtins = (PyObject*)0xaaa4;
+    entry_frame.kwnames = (PyFrameObject*)0xaaa5;
 #endif
     entry_frame.f_executable = Py_None;
     entry_frame.prev_instr = (_Py_CODEUNIT *)_Py_INTERPRETER_TRAMPOLINE_INSTRUCTIONS;

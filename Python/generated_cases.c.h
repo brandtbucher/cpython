@@ -3679,7 +3679,7 @@
         TARGET(KW_NAMES) {
             ASSERT_KWNAMES_IS_NULL();
             assert(oparg < PyTuple_GET_SIZE(FRAME_CO_CONSTS));
-            kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
+            frame->kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
             DISPATCH();
         }
 
@@ -3717,7 +3717,7 @@
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 next_instr--;
-                _Py_Specialize_Call(callable, next_instr, total_args, kwnames);
+                _Py_Specialize_Call(callable, next_instr, total_args, frame->kwnames);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(CALL, deferred);
@@ -3743,9 +3743,9 @@
                 PyObject *locals = code_flags & CO_OPTIMIZED ? NULL : Py_NewRef(PyFunction_GET_GLOBALS(callable));
                 _PyInterpreterFrame *new_frame = _PyEvalFramePushAndInit(
                     tstate, (PyFunctionObject *)callable, locals,
-                    args, positional_args, kwnames
+                    args, positional_args, frame->kwnames
                 );
-                kwnames = NULL;
+                frame->kwnames = NULL;
                 // Manipulate stack directly since we leave using DISPATCH_INLINED().
                 STACK_SHRINK(oparg + 2);
                 // The frame has stolen all the arguments from the stack,
@@ -3761,7 +3761,7 @@
             res = PyObject_Vectorcall(
                 callable, args,
                 positional_args | PY_VECTORCALL_ARGUMENTS_OFFSET,
-                kwnames);
+                frame->kwnames);
             if (opcode == INSTRUMENTED_CALL) {
                 PyObject *arg = total_args == 0 ?
                     &_PyInstrumentation_MISSING : args[0];
@@ -3779,7 +3779,7 @@
                     }
                 }
             }
-            kwnames = NULL;
+            frame->kwnames = NULL;
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             Py_DECREF(callable);
             for (int i = 0; i < total_args; i++) {
@@ -4180,8 +4180,8 @@
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
             res = tp->tp_vectorcall((PyObject *)tp, args,
-                                    total_args - kwnames_len, kwnames);
-            kwnames = NULL;
+                                    total_args - kwnames_len, frame->kwnames);
+            frame->kwnames = NULL;
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
                 Py_DECREF(args[i]);
@@ -4300,7 +4300,7 @@
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            /* res = func(self, args, nargs, kwnames) */
+            /* res = func(self, args, nargs, frame->kwnames) */
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))
                 PyCFunction_GET_FUNCTION(callable);
@@ -4308,10 +4308,10 @@
                 PyCFunction_GET_SELF(callable),
                 args,
                 total_args - KWNAMES_LEN(),
-                kwnames
+                frame->kwnames
             );
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
+            frame->kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
@@ -4499,9 +4499,9 @@
             int nargs = total_args - 1;
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))meth->ml_meth;
-            res = cfunc(self, args + 1, nargs - KWNAMES_LEN(), kwnames);
+            res = cfunc(self, args + 1, nargs - KWNAMES_LEN(), frame->kwnames);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
+            frame->kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {

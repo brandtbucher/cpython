@@ -74,7 +74,6 @@ dummy_func(
     unsigned int oparg,
     _Py_CODEUNIT *next_instr,
     PyObject **stack_pointer,
-    PyObject *kwnames,
     int throwflag,
     PyObject *args[]
 )
@@ -2812,7 +2811,7 @@ dummy_func(
         inst(KW_NAMES, (--)) {
             ASSERT_KWNAMES_IS_NULL();
             assert(oparg < PyTuple_GET_SIZE(FRAME_CO_CONSTS));
-            kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
+            frame->kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
         }
 
         inst(INSTRUMENTED_CALL, ( -- )) {
@@ -2857,7 +2856,7 @@ dummy_func(
         //   [NULL, callable, arg1, arg2, ...]
         // or
         //   [method, self, arg1, arg2, ...]
-        // (Some args may be keywords, see KW_NAMES, which sets 'kwnames'.)
+        // (Some args may be keywords, see KW_NAMES, which sets 'frame->kwnames'.)
         // On exit, the stack is [result].
         // When calling Python, inline the call using DISPATCH_INLINED().
         inst(CALL, (unused/1, unused/2, callable, self_or_null, args[oparg] -- res)) {
@@ -2870,7 +2869,7 @@ dummy_func(
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
                 next_instr--;
-                _Py_Specialize_Call(callable, next_instr, total_args, kwnames);
+                _Py_Specialize_Call(callable, next_instr, total_args, frame->kwnames);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(CALL, deferred);
@@ -2896,9 +2895,9 @@ dummy_func(
                 PyObject *locals = code_flags & CO_OPTIMIZED ? NULL : Py_NewRef(PyFunction_GET_GLOBALS(callable));
                 _PyInterpreterFrame *new_frame = _PyEvalFramePushAndInit(
                     tstate, (PyFunctionObject *)callable, locals,
-                    args, positional_args, kwnames
+                    args, positional_args, frame->kwnames
                 );
-                kwnames = NULL;
+                frame->kwnames = NULL;
                 // Manipulate stack directly since we leave using DISPATCH_INLINED().
                 STACK_SHRINK(oparg + 2);
                 // The frame has stolen all the arguments from the stack,
@@ -2914,7 +2913,7 @@ dummy_func(
             res = PyObject_Vectorcall(
                 callable, args,
                 positional_args | PY_VECTORCALL_ARGUMENTS_OFFSET,
-                kwnames);
+                frame->kwnames);
             if (opcode == INSTRUMENTED_CALL) {
                 PyObject *arg = total_args == 0 ?
                     &_PyInstrumentation_MISSING : args[0];
@@ -2932,7 +2931,7 @@ dummy_func(
                     }
                 }
             }
-            kwnames = NULL;
+            frame->kwnames = NULL;
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             Py_DECREF(callable);
             for (int i = 0; i < total_args; i++) {
@@ -3184,8 +3183,8 @@ dummy_func(
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
             res = tp->tp_vectorcall((PyObject *)tp, args,
-                                    total_args - kwnames_len, kwnames);
-            kwnames = NULL;
+                                    total_args - kwnames_len, frame->kwnames);
+            frame->kwnames = NULL;
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
                 Py_DECREF(args[i]);
@@ -3268,7 +3267,7 @@ dummy_func(
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
-            /* res = func(self, args, nargs, kwnames) */
+            /* res = func(self, args, nargs, frame->kwnames) */
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))
                 PyCFunction_GET_FUNCTION(callable);
@@ -3276,10 +3275,10 @@ dummy_func(
                 PyCFunction_GET_SELF(callable),
                 args,
                 total_args - KWNAMES_LEN(),
-                kwnames
+                frame->kwnames
             );
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
+            frame->kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
@@ -3412,9 +3411,9 @@ dummy_func(
             int nargs = total_args - 1;
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))meth->ml_meth;
-            res = cfunc(self, args + 1, nargs - KWNAMES_LEN(), kwnames);
+            res = cfunc(self, args + 1, nargs - KWNAMES_LEN(), frame->kwnames);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
+            frame->kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {

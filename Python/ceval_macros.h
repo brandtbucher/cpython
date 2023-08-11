@@ -312,7 +312,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
 #define NAME_ERROR_MSG "name '%.200s' is not defined"
 
 #define KWNAMES_LEN() \
-    (kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(kwnames)))
+    (frame->kwnames == NULL ? 0 : ((int)PyTuple_GET_SIZE(frame->kwnames)))
 
 #define DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dval, result) \
 do { \

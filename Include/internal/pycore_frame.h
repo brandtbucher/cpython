@@ -57,6 +57,7 @@ typedef struct _PyInterpreterFrame {
     PyObject *f_globals; /* Borrowed reference. Only valid if not on C stack */
     PyObject *f_builtins; /* Borrowed reference. Only valid if not on C stack */
     PyObject *f_locals; /* Strong reference, may be NULL. Only valid if not on C stack */
+    PyObject *kwnames; /* Borrowed reference. Only non-NULL between KW_NAMES and CALL. */
     PyFrameObject *frame_obj; /* Strong reference, may be NULL. Only valid if not on C stack */
     // NOTE: This is not necessarily the last instruction started in the given
     // frame. Rather, it is the code unit *prior to* the *next* instruction. For
@@ -133,6 +134,7 @@ _PyFrame_Initialize(
     frame->f_globals = func->func_globals;
     frame->f_locals = locals;
     frame->stacktop = code->co_nlocalsplus;
+    frame->kwnames = NULL;
     frame->frame_obj = NULL;
     frame->prev_instr = _PyCode_CODE(code) - 1;
     frame->return_offset = 0;
@@ -296,6 +298,7 @@ _PyFrame_PushTrampolineUnchecked(PyThreadState *tstate, PyCodeObject *code, int 
 #endif
     frame->f_locals = NULL;
     frame->stacktop = code->co_nlocalsplus + stackdepth;
+    frame->kwnames = NULL;
     frame->frame_obj = NULL;
     frame->prev_instr = _PyCode_CODE(code) + prev_instr;
     frame->owner = FRAME_OWNED_BY_THREAD;
