@@ -651,7 +651,6 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
 #endif
 
     _PyInterpreterFrame  entry_frame;
-    PyObject *kwnames = NULL; // Borrowed reference. Reset by CALL instructions.
 
 
 
@@ -662,7 +661,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
     entry_frame.frame_obj = (PyFrameObject*)0xaaa2;
     entry_frame.f_globals = (PyObject*)0xaaa3;
     entry_frame.f_builtins = (PyObject*)0xaaa4;
-    entry_frame.kwnames = (PyFrameObject*)0xaaa5;
+    entry_frame.kwnames = (PyObject*)0xaaa5;
 #endif
     entry_frame.f_executable = Py_None;
     entry_frame.prev_instr = (_Py_CODEUNIT *)_Py_INTERPRETER_TRAMPOLINE_INSTRUCTIONS;
@@ -830,7 +829,7 @@ pop_2_error:
 pop_1_error:
     STACK_SHRINK(1);
 error:
-        kwnames = NULL;
+        frame->kwnames = NULL;
         /* Double-check exception status. */
 #ifdef NDEBUG
         if (!_PyErr_Occurred(tstate)) {
