@@ -107,6 +107,8 @@ struct _ts {
 
     /* Pointer to currently executing frame. */
     struct _PyInterpreterFrame *current_frame;
+    // Borrowed reference, only non-NULL between KW_NAMES and CALL:
+    PyObject *kwnames;
 
     Py_tracefunc c_profilefunc;
     Py_tracefunc c_tracefunc;

@@ -74,7 +74,6 @@ dummy_func(
     unsigned int oparg,
     _Py_CODEUNIT *next_instr,
     PyObject **stack_pointer,
-    PyObject *kwnames,
     int throwflag,
     PyObject *args[]
 )
@@ -2812,7 +2811,7 @@ dummy_func(
         inst(KW_NAMES, (--)) {
             ASSERT_KWNAMES_IS_NULL();
             assert(oparg < PyTuple_GET_SIZE(FRAME_CO_CONSTS));
-            kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
+            tstate->kwnames = GETITEM(FRAME_CO_CONSTS, oparg);
         }
 
         inst(INSTRUMENTED_CALL, ( -- )) {
@@ -2821,9 +2820,12 @@ dummy_func(
             PyObject *function = PEEK(oparg + 2);
             PyObject *arg = total_args == 0 ?
                 &_PyInstrumentation_MISSING : PEEK(total_args);
+            PyObject *kwnames = tstate->kwnames;
+            tstate->kwnames = NULL;
             int err = _Py_call_instrumentation_2args(
                     tstate, PY_MONITORING_EVENT_CALL,
                     frame, next_instr-1, function, arg);
+            tstate->kwnames = kwnames;
             ERROR_IF(err, error);
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             INCREMENT_ADAPTIVE_COUNTER(cache->counter);
@@ -2857,7 +2859,7 @@ dummy_func(
         //   [NULL, callable, arg1, arg2, ...]
         // or
         //   [method, self, arg1, arg2, ...]
-        // (Some args may be keywords, see KW_NAMES, which sets 'kwnames'.)
+        // (Some args may be keywords, see KW_NAMES, which sets 'tstate->kwnames'.)
         // On exit, the stack is [result].
         // When calling Python, inline the call using DISPATCH_INLINED().
         inst(CALL, (unused/1, unused/2, callable, self_or_null, args[oparg] -- res)) {
@@ -2866,6 +2868,7 @@ dummy_func(
                 args--;
                 total_args++;
             }
+            PyObject *kwnames = tstate->kwnames;
             #if ENABLE_SPECIALIZATION
             _PyCallCache *cache = (_PyCallCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -2876,6 +2879,7 @@ dummy_func(
             STAT_INC(CALL, deferred);
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
+            tstate->kwnames = NULL;
             if (self_or_null == NULL && Py_TYPE(callable) == &PyMethod_Type) {
                 args--;
                 total_args++;
@@ -2898,7 +2902,6 @@ dummy_func(
                     tstate, (PyFunctionObject *)callable, locals,
                     args, positional_args, kwnames
                 );
-                kwnames = NULL;
                 // Manipulate stack directly since we leave using DISPATCH_INLINED().
                 STACK_SHRINK(oparg + 2);
                 // The frame has stolen all the arguments from the stack,
@@ -2932,7 +2935,6 @@ dummy_func(
                     }
                 }
             }
-            kwnames = NULL;
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             Py_DECREF(callable);
             for (int i = 0; i < total_args; i++) {
@@ -3178,14 +3180,15 @@ dummy_func(
                 args--;
                 total_args++;
             }
+            PyObject *kwnames = tstate->kwnames;
             int kwnames_len = KWNAMES_LEN();
             DEOPT_IF(!PyType_Check(callable), CALL);
             PyTypeObject *tp = (PyTypeObject *)callable;
             DEOPT_IF(tp->tp_vectorcall == NULL, CALL);
             STAT_INC(CALL, hit);
+            tstate->kwnames = NULL;
             res = tp->tp_vectorcall((PyObject *)tp, args,
                                     total_args - kwnames_len, kwnames);
-            kwnames = NULL;
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
                 Py_DECREF(args[i]);
@@ -3264,10 +3267,12 @@ dummy_func(
                 args--;
                 total_args++;
             }
+            PyObject *kwnames = tstate->kwnames;
             DEOPT_IF(!PyCFunction_CheckExact(callable), CALL);
             DEOPT_IF(PyCFunction_GET_FLAGS(callable) !=
                 (METH_FASTCALL | METH_KEYWORDS), CALL);
             STAT_INC(CALL, hit);
+            tstate->kwnames = NULL;
             /* res = func(self, args, nargs, kwnames) */
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))
@@ -3279,7 +3284,6 @@ dummy_func(
                 kwnames
             );
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {
@@ -3401,6 +3405,7 @@ dummy_func(
                 args--;
                 total_args++;
             }
+            PyObject *kwnames = tstate->kwnames;
             PyMethodDescrObject *method = (PyMethodDescrObject *)callable;
             DEOPT_IF(!Py_IS_TYPE(method, &PyMethodDescr_Type), CALL);
             PyMethodDef *meth = method->d_method;
@@ -3409,12 +3414,12 @@ dummy_func(
             PyObject *self = args[0];
             DEOPT_IF(!Py_IS_TYPE(self, d_type), CALL);
             STAT_INC(CALL, hit);
+            tstate->kwnames = NULL;
             int nargs = total_args - 1;
             _PyCFunctionFastWithKeywords cfunc =
                 (_PyCFunctionFastWithKeywords)(void(*)(void))meth->ml_meth;
             res = cfunc(self, args + 1, nargs - KWNAMES_LEN(), kwnames);
             assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            kwnames = NULL;
 
             /* Free the arguments. */
             for (int i = 0; i < total_args; i++) {

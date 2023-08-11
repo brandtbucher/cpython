@@ -1311,6 +1311,7 @@ init_threadstate(PyThreadState *tstate,
     tstate->gilstate_counter = 1;
 
     tstate->current_frame = NULL;
+    tstate->kwnames = NULL;
     tstate->datastack_chunk = NULL;
     tstate->datastack_top = NULL;
     tstate->datastack_limit = NULL;
@@ -1492,6 +1493,7 @@ PyThreadState_Clear(PyThreadState *tstate)
           "PyThreadState_Clear: warning: thread still has a generator\n");
     }
 
+    tstate->kwnames = NULL;
     if (tstate->c_profilefunc != NULL) {
         tstate->interp->sys_profiling_threads--;
         tstate->c_profilefunc = NULL;

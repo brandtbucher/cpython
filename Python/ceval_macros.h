@@ -356,7 +356,7 @@ static const convertion_func_ptr CONVERSION_FUNCTIONS[4] = {
     [FVC_ASCII] = PyObject_ASCII
 };
 
-#define ASSERT_KWNAMES_IS_NULL() assert(kwnames == NULL)
+#define ASSERT_KWNAMES_IS_NULL() assert(tstate->kwnames == NULL)
 
 // GH-89279: Force inlining by using a macro.
 #if defined(_MSC_VER) && SIZEOF_INT == 4
