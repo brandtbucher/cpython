@@ -273,9 +273,11 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     for (int i = 0; i < size; i++) {
         offsets[i] = nbytes;
         _PyUOpInstruction *instruction = &trace[i];
-        const Stencil *stencil = &stencils[instruction->opcode];
-        // XXX: Assert this once we support everything, and move initialization
-        // to interpreter startup. Then we can only fail due to memory stuff:
+        if (OPARG_MAX < instruction->oparg) {
+            PyMem_Free(offsets);
+            return NULL;
+        }
+        const Stencil *stencil = &stencils[instruction->opcode][instruction->oparg];
         if (stencil->nbytes == 0) {
             PyMem_Free(offsets);
             return NULL;
@@ -314,14 +316,12 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     // Then, all of the stencils:
     for (int i = 0; i < size; i++) {
         _PyUOpInstruction *instruction = &trace[i];
-        const Stencil *stencil = &stencils[instruction->opcode];
+        const Stencil *stencil = &stencils[instruction->opcode][instruction->oparg];
         patches[HOLE_base] = (uintptr_t)head;
         patches[HOLE_branch] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HOLE_continue] = (uintptr_t)head + stencil->nbytes;
         patches[HOLE_loop] = (uintptr_t)memory + trampoline_stencil.nbytes;
-        patches[HOLE_oparg_plus_one] = instruction->oparg + 1;
         patches[HOLE_operand_plus_one] = instruction->operand + 1;
-        patches[HOLE_pc_plus_one] = i + 1;
         copy_and_patch(head, stencil, patches);
         head += stencil->nbytes;
     };

@@ -680,6 +680,9 @@ pop_jump_if_bool:
                                         expansion->uops[i].offset);
                                 Py_FatalError("garbled expansion");
                         }
+                        if (!OPCODE_HAS_ARG(expansion->uops[i].uop)) {
+                            oparg = 0;
+                        }
                         ADD_TO_TRACE(expansion->uops[i].uop, oparg, operand);
                         if (expansion->uops[i].uop == _POP_FRAME) {
                             TRACE_STACK_POP();

@@ -39,9 +39,7 @@ extern _PyInterpreterFrame *_jit_loop(_PyInterpreterFrame *frame,
                                       PyObject **stack_pointer,
                                       PyThreadState *tstate);
 // The address of an extern can't be 0:
-extern void _jit_oparg_plus_one;
 extern void _jit_operand_plus_one;
-extern _Py_CODEUNIT _jit_pc_plus_one;
 
 _PyInterpreterFrame *
 _jit_entry(_PyInterpreterFrame *frame, PyObject **stack_pointer,
@@ -49,7 +47,7 @@ _jit_entry(_PyInterpreterFrame *frame, PyObject **stack_pointer,
 {
     // Locals that the instruction implementations expect to exist:
     uint32_t opcode = _JIT_OPCODE;
-    int32_t oparg = (uintptr_t)&_jit_oparg_plus_one - 1;
+    int32_t oparg = _JIT_OPARG;
     uint64_t operand = (uintptr_t)&_jit_operand_plus_one - 1;
     int pc = -1;  // XXX
     switch (opcode) {
@@ -91,7 +89,6 @@ error:
     return NULL;
 deoptimize:
     frame->prev_instr--;
-exit_trace:
     _PyFrame_SetStackPointer(frame, stack_pointer);
     return frame;
 }

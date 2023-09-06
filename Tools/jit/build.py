@@ -1,6 +1,7 @@
 """A template JIT for CPython 3.13, based on copy-and-patch."""
 
 import asyncio
+import collections
 import dataclasses
 import functools
 import itertools
@@ -25,6 +26,75 @@ TOOLS = ROOT / "Tools"
 TOOLS_JIT = TOOLS / "jit"
 TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
+
+OPARGS = collections.defaultdict(
+    lambda: range(1),
+    {
+        "BINARY_OP": range(26),
+        "BUILD_CONST_KEY_MAP": range(4),
+        "BUILD_LIST": range(6),
+        "BUILD_MAP": range(4),
+        "BUILD_SET": range(3),
+        "BUILD_SLICE": range(2, 4),
+        "BUILD_STRING": range(9),
+        "BUILD_TUPLE": range(11),
+        "CALL_INTRINSIC_1": range(12),
+        "CALL_NO_KW_BUILTIN_FAST": range(4),
+        "CALL_NO_KW_BUILTIN_O": range(1, 2),
+        "CALL_NO_KW_ISINSTANCE": range(2, 3),
+        "CALL_NO_KW_LEN": range(1, 2),
+        "CALL_NO_KW_METHOD_DESCRIPTOR_FAST": range(3),
+        "CALL_NO_KW_METHOD_DESCRIPTOR_O": range(1, 2),
+        "CALL_NO_KW_STR_1": range(1, 2),
+        "CALL_NO_KW_TUPLE_1": range(1, 2),
+        "CALL_NO_KW_TYPE_1": range(1, 2),
+        "COMPARE_OP": [2, 18, 42, 58, 72, 88, 103, 119, 132, 148, 172, 188],
+        "COMPARE_OP_FLOAT": [2, 18, 42, 58, 72, 88, 103, 119, 132, 148, 172, 188],
+        "COMPARE_OP_INT": [2, 18, 42, 58, 72, 88, 103, 119, 132, 148, 172, 188],
+        "COMPARE_OP_STR": [72, 88, 103, 119],
+        "CONTAINS_OP": range(2),
+        "CONVERT_VALUE": range(1, 4),
+        "COPY": range(1, 3),
+        "COPY_FREE_VARS": range(13),
+        "DELETE_ATTR": range(8),
+        "DICT_MERGE": range(1, 2),
+        "IS_OP": range(2),
+        "LIST_APPEND": range(1, 5),
+        "LIST_EXTEND": range(1, 2),
+        "LOAD_ATTR": range(98),
+        "LOAD_CONST": range(185),
+        "LOAD_DEREF": range(34),
+        "LOAD_FAST": range(260),
+        "LOAD_FAST_AND_CLEAR": range(18),
+        "LOAD_FAST_CHECK": range(260),
+        "LOAD_GLOBAL": range(140),
+        "LOAD_SUPER_ATTR_METHOD": range(52),
+        "MAP_ADD": range(1, 4),
+        "SET_ADD": range(1, 4),
+        "SET_FUNCTION_ATTRIBUTE": [1, 2, 4, 8],
+        "STORE_ATTR": range(31),
+        "STORE_DEREF": range(28),
+        "STORE_FAST": range(260),
+        "STORE_NAME": range(172),
+        "SWAP": range(2, 4),
+        "UNPACK_EX": range(257),  # XXX
+        "UNPACK_SEQUENCE": range(8),
+        "UNPACK_SEQUENCE_LIST": range(5),
+        "UNPACK_SEQUENCE_TUPLE": range(13),
+        "UNPACK_SEQUENCE_TWO_TUPLE": range(2, 3),
+        "_CHECK_CALL_BOUND_METHOD_EXACT_ARGS": range(4),
+        "_CHECK_FUNCTION_EXACT_ARGS": range(11),
+        "_CHECK_STACK_SPACE": range(11),
+        "_INIT_CALL_BOUND_METHOD_EXACT_ARGS": range(4),
+        "_INIT_CALL_PY_EXACT_ARGS": range(11),
+        "_LOAD_ATTR_INSTANCE_VALUE": range(75),
+        "_LOAD_FROM_DICT_OR_GLOBALS": range(173),
+        "_LOAD_GLOBAL_BUILTINS": range(140),
+        "_LOAD_GLOBAL_MODULE": range(133),
+        "_POP_JUMP_IF_FALSE": range(53),
+        "_POP_JUMP_IF_TRUE": range(60),
+    }
+)
 
 def batched(iterable, n):
     """Batch an iterable into lists of size n."""
@@ -208,6 +278,13 @@ def find_llvm_tool(tool: str) -> tuple[str, int]:
 
 # TODO: Divide into read-only data and writable/executable text.
 
+async def run(*args, **kwargs) -> tuple[bytes | None, bytes | None]:
+    process = await asyncio.create_subprocess_exec(*args, **kwargs)
+    stdout, stderr = await process.communicate()
+    if process.returncode:
+        raise RuntimeError(f"{args[0]} exited with {process.returncode}")
+    return stdout, stderr
+
 class ObjectParser:
 
     _ARGS = [
@@ -235,11 +312,9 @@ class ObjectParser:
 
     async def parse(self):
         # subprocess.run([find_llvm_tool("llvm-objdump")[0], self.path, "-dr"], check=True)  # XXX
-        process = await asyncio.create_subprocess_exec(self.reader, *self._ARGS, self.path, stdout=subprocess.PIPE)
-        stdout, stderr = await process.communicate()
+        stdout, stderr = await run(self.reader, *self._ARGS, self.path, stdout=subprocess.PIPE)
+        assert stdout is not None, stdout
         assert stderr is None, stderr
-        if process.returncode:
-            raise RuntimeError(f"{self.reader} exited with {process.returncode}")
         output = stdout
         output = output.replace(b"PrivateExtern\n", b"\n")  # XXX: MachO
         output = output.replace(b"Extern\n", b"\n")  # XXX: MachO
@@ -862,38 +937,33 @@ class Compiler:
             assert ir != before, ir
             ll.write_text(ir)
 
-    async def _compile(self, opname, c) -> None:
-        defines = [f"-D_JIT_OPCODE={opname}"]
+    async def _compile(self, opname, oparg, c) -> None:
+        defines = [f"-D_JIT_OPCODE={opname}", f"-D_JIT_OPARG={oparg}"]
         with tempfile.TemporaryDirectory() as tempdir:
-            ll = pathlib.Path(tempdir, f"{opname}.ll").resolve()
-            o = pathlib.Path(tempdir, f"{opname}.o").resolve()
+            ll = pathlib.Path(tempdir, f"{opname}_{oparg}.ll").resolve()
+            o = pathlib.Path(tempdir, f"{opname}_{oparg}.o").resolve()
             async with self._semaphore:
-                self._stderr(f"Compiling {opname}...")
-                process = await asyncio.create_subprocess_exec(self._clang, *CFLAGS, "-emit-llvm", "-S", *defines, "-o", ll, c)
-                stdout, stderr = await process.communicate()
+                self._stderr(f"Compiling {opname}({oparg})...")
+                stdout, stderr = await run(self._clang, *CFLAGS, "-emit-llvm", "-S", *defines, "-o", ll, c)
                 assert stdout is None, stdout
                 assert stderr is None, stderr
-                if process.returncode:
-                    raise RuntimeError(f"{self._clang} exited with {process.returncode}")
                 self._use_ghccc(ll)
-                self._stderr(f"Recompiling {opname}...")
-                process = await asyncio.create_subprocess_exec(self._clang, *CFLAGS, "-c", "-o", o, ll)
-                stdout, stderr = await process.communicate()
+                self._stderr(f"Recompiling {opname}({oparg})...")
+                stdout, stderr = await run(self._clang, *CFLAGS, "-c", "-o", o, ll)
                 assert stdout is None, stdout
                 assert stderr is None, stderr
-                if process.returncode:
-                    raise RuntimeError(f"{self._clang} exited with {process.returncode}")
-                self._stderr(f"Parsing {opname}...")
-                self._stencils_built[opname] = await ObjectParserDefault(o, self._readobj).parse()
-        self._stderr(f"Built {opname}!")
+                self._stderr(f"Parsing {opname}({oparg})...")
+                self._stencils_built[opname, oparg] = await ObjectParserDefault(o, self._readobj).parse()
+        self._stderr(f"Built {opname}({oparg})!")
 
     async def build(self) -> None:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
-        opnames = sorted(set(re.findall(r"\n {8}case (\w+): \{\n", generated_cases)) - {"SET_FUNCTION_ATTRIBUTE"}) # XXX: 32-bit Windows...
+        opnames = sorted(re.findall(r"\n {8}case (\w+): \{\n", generated_cases))
         await asyncio.gather(
-            self._compile("trampoline", TOOLS_JIT_TRAMPOLINE),
-            *[self._compile(opname, TOOLS_JIT_TEMPLATE) for opname in opnames],
+            self._compile("trampoline", 0, TOOLS_JIT_TRAMPOLINE),
+            *[self._compile(opname, oparg, TOOLS_JIT_TEMPLATE) for opname in opnames for oparg in OPARGS[opname]],
         )
+        self._stderr(f"Built {sum(map(len, OPARGS.values()))} stencils ({len({stencil.body for stencil in self._stencils_built.values()})} unique)!")
 
     def dump(self) -> str:
         # XXX: Rework these to use Enums:
@@ -916,12 +986,12 @@ class Compiler:
             "HOLE_continue",
             "HOLE_loop",
             "HOLE_next_trace",
-            "HOLE_oparg_plus_one",
             "HOLE_operand_plus_one",
-            "HOLE_pc_plus_one",
         }
         lines = []
         lines.append(f"// Don't be scared... this entire file is generated by {__file__}!")
+        lines.append(f"")
+        lines.append(f"#define OPARG_MAX {max(map(max, filter(None, OPARGS.values())))}")  # XXX
         lines.append(f"")
         lines.append(f"typedef enum {{")
         for kind in sorted(kinds):
@@ -956,18 +1026,18 @@ class Compiler:
         lines.append(f"    const SymbolLoad * const loads;")
         lines.append(f"}} Stencil;")
         lines.append(f"")
-        opnames = []
+        opnames = collections.defaultdict(set)
         symbols = set()
         for stencil in self._stencils_built.values():
             for hole in stencil.holes:
                 if not hole.symbol.startswith("_jit_"):
                     symbols.add(hole.symbol)
         symbols = sorted(symbols)
-        for opname, stencil in sorted(self._stencils_built.items()):
-            opnames.append(opname)
-            lines.append(f"// {opname}")
-            assert stencil.body
-            lines.append(f"static const unsigned char {opname}_stencil_bytes[] = {{")
+        for (opname, oparg), stencil in sorted(self._stencils_built.items()):
+            opnames[opname].add(oparg)
+            lines.append(f"// {opname}({oparg})")
+            assert stencil.body, (opname, oparg)
+            lines.append(f"static const unsigned char {opname}_{oparg}_stencil_bytes[] = {{")
             for chunk in batched(stencil.body, 8):
                 lines.append(f"    {', '.join(f'0x{byte:02X}' for byte in chunk)},")
             lines.append(f"}};")
@@ -981,12 +1051,12 @@ class Compiler:
                     holes.append(f"    {{.kind = {hole.kind}, .offset = {hole.offset:4}, .addend = {hole.addend % (1 << 64):4}, .value = {value}}},")
                 else:
                     loads.append(f"    {{.kind = {hole.kind}, .offset = {hole.offset:4}, .addend = {hole.addend % (1 << 64):4}, .symbol = {symbols.index(hole.symbol):3}}},  // {hole.symbol}")
-            lines.append(f"static const Hole {opname}_stencil_holes[] = {{")
+            lines.append(f"static const Hole {opname}_{oparg}_stencil_holes[] = {{")
             for hole in holes:
                 lines.append(hole)
             lines.append(f"    {{.kind =            0, .offset =    0, .addend =    0, .value = 0}},")
             lines.append(f"}};")
-            lines.append(f"static const SymbolLoad {opname}_stencil_loads[] = {{")
+            lines.append(f"static const SymbolLoad {opname}_{oparg}_stencil_loads[] = {{")
             for  load in loads:
                 lines.append(load)
             lines.append(f"    {{.kind =            0, .offset =    0, .addend =    0, .symbol =   0}},")
@@ -1000,21 +1070,24 @@ class Compiler:
         lines.append(f"")
         lines.append(f"static uintptr_t symbol_addresses[{len(symbols)}];")
         lines.append(f"")
-        lines.append(f"#define INIT_STENCIL(OP) {{                             \\")
-        lines.append(f"    .nbytes = Py_ARRAY_LENGTH(OP##_stencil_bytes),     \\")
-        lines.append(f"    .bytes = OP##_stencil_bytes,                       \\")
-        lines.append(f"    .nholes = Py_ARRAY_LENGTH(OP##_stencil_holes) - 1, \\")
-        lines.append(f"    .holes = OP##_stencil_holes,                       \\")
-        lines.append(f"    .nloads = Py_ARRAY_LENGTH(OP##_stencil_loads) - 1, \\")
-        lines.append(f"    .loads = OP##_stencil_loads,                       \\")
+        lines.append(f"#define INIT_STENCIL(OPCODE, OPARG) {{                                \\")
+        lines.append(f"    .nbytes = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_stencil_bytes),     \\")
+        lines.append(f"    .bytes = OPCODE##_##OPARG##_stencil_bytes,                       \\")
+        lines.append(f"    .nholes = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_stencil_holes) - 1, \\")
+        lines.append(f"    .holes = OPCODE##_##OPARG##_stencil_holes,                       \\")
+        lines.append(f"    .nloads = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_stencil_loads) - 1, \\")
+        lines.append(f"    .loads = OPCODE##_##OPARG##_stencil_loads,                       \\")
         lines.append(f"}}")
         lines.append(f"")
-        lines.append(f"static const Stencil trampoline_stencil = INIT_STENCIL(trampoline);")
+        lines.append(f"static const Stencil trampoline_stencil = INIT_STENCIL(trampoline, 0);")
         lines.append(f"")
-        lines.append(f"static const Stencil stencils[512] = {{")
-        assert opnames[-1] == "trampoline"
-        for opname in opnames[:-1]:
-            lines.append(f"    [{opname}] = INIT_STENCIL({opname}),")
+        lines.append(f"static const Stencil stencils[512][OPARG_MAX + 1] = {{")
+        del opnames["trampoline"]
+        for opname, opargs in opnames.items():
+            lines.append(f"    [{opname}] = {{")
+            for oparg in sorted(opargs):
+                lines.append(f"        [{oparg}] = INIT_STENCIL({opname}, {oparg}),")
+            lines.append(f"    }},")
         lines.append(f"}};")
         lines.append(f"")
         lines.append(f"#define INIT_HOLE(NAME) [HOLE_##NAME] = (uintptr_t)0xBAD0BAD0BAD0BAD0")
