@@ -17,6 +17,7 @@
 #include "pycore_sliceobject.h"
 #include "pycore_uops.h"
 
+#define TIER_TWO 2
 #include "ceval_macros.h"
 
 
@@ -62,7 +63,6 @@ _PyUopExecute(_PyExecutorObject *executor, _PyInterpreterFrame *frame, PyObject 
     CHECK_EVAL_BREAKER();
 
     OBJECT_STAT_INC(optimization_traces_executed);
-    _Py_CODEUNIT *ip_offset = (_Py_CODEUNIT *)_PyFrame_GetCode(frame)->co_code_adaptive;
     int pc = 0;
     int opcode;
     int oparg;
@@ -83,7 +83,6 @@ _PyUopExecute(_PyExecutorObject *executor, _PyInterpreterFrame *frame, PyObject 
         OBJECT_STAT_INC(optimization_uops_executed);
         switch (opcode) {
 
-#define TIER_TWO 2
 #include "executor_cases.c.h"
 
             default:
@@ -109,7 +108,6 @@ pop_3_error:
 pop_2_error:
     STACK_SHRINK(1);
 pop_1_error:
-pop_1_exit_unwind:
     STACK_SHRINK(1);
 error:
     // On ERROR_IF we return NULL as the frame.
