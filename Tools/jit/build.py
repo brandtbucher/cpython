@@ -957,7 +957,7 @@ class Compiler:
         lines.append(f"    const SymbolLoad * const loads;")
         lines.append(f"}} Stencil;")
         lines.append(f"")
-        opnames = set()
+        opnames = {}
         symbols = set()
         for stencil in self._stencils_built.values():
             for hole in stencil.holes:
@@ -965,9 +965,10 @@ class Compiler:
                     symbols.add(hole.symbol)
         symbols = sorted(symbols)
         for (opname, stack_level), stencil in sorted(self._stencils_built.items()):
-            opnames.add(opname)
+            if not stencil.body:
+                continue
+            opnames.setdefault(opname, set()).add(stack_level)
             lines.append(f"// {opname} @ {stack_level}")
-            assert stencil.body
             lines.append(f"static const unsigned char {opname}_{stack_level}_stencil_bytes[] = {{")
             for chunk in batched(stencil.body, 8):
                 lines.append(f"    {', '.join(f'0x{byte:02X}' for byte in chunk)},")
@@ -1013,11 +1014,11 @@ class Compiler:
         lines.append(f"static const Stencil trampoline_stencil = INIT_STENCIL(trampoline, 0);")
         lines.append(f"")
         lines.append(f"static const Stencil stencils[512][MAX_STACK_LEVEL + 1] = {{")
-        opnames.remove("trampoline")
-        for opname in sorted(opnames):
+        del opnames["trampoline"]
+        for opname, stack_levels in sorted(opnames.items()):
             lines.append(f"    [{opname}] = {{")
-            for stack_level in range(MAX_STACK_LEVEL + 1):
-                lines.append(f"        INIT_STENCIL({opname}, {stack_level}),")
+            for stack_level in sorted(stack_levels):
+                lines.append(f"        [{stack_level}] = INIT_STENCIL({opname}, {stack_level}),")
             lines.append(f"    }},")
         lines.append(f"}};")
         lines.append(f"")

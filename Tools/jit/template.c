@@ -44,17 +44,37 @@ extern void _jit_operand_plus_one;
 #define STACK_LEVEL() ((int)(stack_pointer - _stack_base))
 
 #undef STORE_SP  // XXX
-#define STORE_SP()                                                                           \
-    do {                                                                                     \
-        _PyFrame_SetStackPointer(frame, _PyFrame_Stackbase(frame) + STACK_LEVEL());          \
-        memmove(_PyFrame_Stackbase(frame), _stack_base, sizeof(PyObject *) * STACK_LEVEL()); \
+#define STORE_SP()                                                                                 \
+    do {                                                                                           \
+        _PyFrame_SetStackPointer(frame, _PyFrame_Stackbase(frame) + STACK_LEVEL());                \
+        /* memmove(_PyFrame_Stackbase(frame), _stack_base, sizeof(PyObject *) * STACK_LEVEL()); */ \
+        switch (STACK_LEVEL()) { \
+            case 6: _PyFrame_Stackbase(frame)[5] = _stack_base[5]; \
+            case 5: _PyFrame_Stackbase(frame)[4] = _stack_base[4]; \
+            case 4: _PyFrame_Stackbase(frame)[3] = _stack_base[3]; \
+            case 3: _PyFrame_Stackbase(frame)[2] = _stack_base[2]; \
+            case 2: _PyFrame_Stackbase(frame)[1] = _stack_base[1]; \
+            case 1: _PyFrame_Stackbase(frame)[0] = _stack_base[0]; \
+            case 0: break; \
+            default: Py_UNREACHABLE(); \
+        } \
     } while (0)
 
 #undef LOAD_SP  // XXX
 #define LOAD_SP()                                                                                  \
     do {                                                                                           \
         stack_pointer = &_stack_base[_PyFrame_GetStackPointer(frame) - _PyFrame_Stackbase(frame)]; \
-        memmove(_stack_base, _PyFrame_Stackbase(frame), sizeof(PyObject *) * STACK_LEVEL());       \
+        /* memmove(_stack_base, _PyFrame_Stackbase(frame), sizeof(PyObject *) * STACK_LEVEL()); */ \
+        switch (STACK_LEVEL()) { \
+            case 6: _stack_base[5] = _PyFrame_Stackbase(frame)[5]; \
+            case 5: _stack_base[4] = _PyFrame_Stackbase(frame)[4]; \
+            case 4: _stack_base[3] = _PyFrame_Stackbase(frame)[3]; \
+            case 3: _stack_base[2] = _PyFrame_Stackbase(frame)[2]; \
+            case 2: _stack_base[1] = _PyFrame_Stackbase(frame)[1]; \
+            case 1: _stack_base[0] = _PyFrame_Stackbase(frame)[0]; \
+            case 0: break; \
+            default: Py_UNREACHABLE(); \
+        } \
     } while (0)
 
 _PyInterpreterFrame *
