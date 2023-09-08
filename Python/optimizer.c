@@ -889,7 +889,7 @@ uop_optimize(
         trace_length = _Py_uop_analyze_and_optimize(code, trace, trace_length, curr_stackentries);
     }
     trace_length = remove_unneeded_uops(trace, trace_length);
-    _PyJITFunction execute = _PyJIT_CompileTrace(trace, trace_length);
+    _PyJITFunction execute = _PyJIT_CompileTrace(trace, trace_length, curr_stackentries);
     if (execute == NULL) {
         if (PyErr_Occurred()) {
             return -1;

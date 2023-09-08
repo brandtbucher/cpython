@@ -223,7 +223,7 @@ copy_and_patch(unsigned char *memory, const Stencil *stencil, uintptr_t patches[
 
 // The world's smallest compiler?
 _PyJITFunction
-_PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
+_PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
 {
     if (initialized < 0) {
         return NULL;
@@ -263,28 +263,85 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
         initialized = 1;
     }
     assert(initialized > 0);
-    int *offsets = PyMem_Malloc(size * sizeof(int));
-    if (offsets == NULL) {
+    int *stack_levels = PyMem_Malloc((size + 1) * sizeof(int));
+    if (stack_levels == NULL) {
         PyErr_NoMemory();
         return NULL;
     }
+    int *offsets = PyMem_Malloc(size * sizeof(int));
+    if (offsets == NULL) {
+        PyMem_Free(stack_levels);
+        PyErr_NoMemory();
+        return NULL;
+    }
+    // XXX: Maybe make this one-pass?
     // First, loop over everything once to find the total compiled size:
     size_t nbytes = trampoline_stencil.nbytes;
+    memset(stack_levels, -1, (size + 1) * sizeof(int));
+    stack_levels[0] = stack_level;
     for (int i = 0; i < size; i++) {
+        assert(0 <= stack_levels[i]);
         offsets[i] = nbytes;
         _PyUOpInstruction *instruction = &trace[i];
-        const Stencil *stencil = &stencils[instruction->opcode];
+        // printf("XXX:\t%i\t%i\t%s\t%d\t%p\n", i, stack_levels[i], instruction->opcode < 256 ? _PyOpcode_OpName[instruction->opcode] : _PyOpcode_uop_name[instruction->opcode], instruction->oparg, instruction->operand);
+        if (MAX_STACK_LEVEL < stack_levels[i]) {
+            // PyErr_WarnFormat(PyExc_RuntimeWarning, 0, "JIT can't handle stack level %d", stack_levels[i]);
+            PyMem_Free(stack_levels);
+            PyMem_Free(offsets);
+            return NULL;
+        }
+        const Stencil *stencil = &stencils[instruction->opcode][stack_levels[i]];
+        // XXX: Clean up how these are propagated? Maybe speial cases for EXIT_TRACE and JUMP_TO_TOP?
+        // XXX: Broken for generators and coroutines:
+        if (instruction->opcode == _PUSH_FRAME) {  // XXX
+            stack_levels[i + 1] = 0;
+            for (int j = i + 1, depth = 1; j < size; j++) {
+                _PyUOpInstruction *instruction = &trace[j];
+                // XXX: Break on EXIT_TRACE, JUMP_TO_TOP:
+                depth += instruction->opcode == _PUSH_FRAME;
+                depth -= instruction->opcode == _POP_FRAME;
+                if (depth == 0) {
+                    assert(stack_levels[j + 1] < 0);
+                    stack_levels[j + 1] = stack_levels[i];
+                    break;
+                }
+            }
+        }
+        else if (instruction->opcode == _POP_FRAME) {  // XXX
+            assert(stack_levels[i] == 1);
+            assert(1 <= stack_levels[i + 1]);
+        }
+        else if (stack_levels[i + 1] < 0) {
+            stack_levels[i + 1] = (
+                stack_levels[i]
+                - _PyOpcode_num_popped(instruction->opcode, instruction->oparg, false)
+                + _PyOpcode_num_pushed(instruction->opcode, instruction->oparg, false)
+            );
+
+        }
+        if (instruction->opcode == _POP_JUMP_IF_FALSE ||
+            instruction->opcode == _POP_JUMP_IF_TRUE)
+        {
+            stack_levels[instruction->oparg] = (
+                stack_levels[i]
+                - _PyOpcode_num_popped(instruction->opcode, instruction->oparg, true)
+                + _PyOpcode_num_pushed(instruction->opcode, instruction->oparg, true)
+            );
+        }
         // XXX: Assert this once we support everything, and move initialization
         // to interpreter startup. Then we can only fail due to memory stuff:
         if (stencil->nbytes == 0) {
+            PyMem_Free(stack_levels);
             PyMem_Free(offsets);
             return NULL;
         }
         nbytes += stencil->nbytes;
     };
+    assert(0 <= stack_levels[size] && stack_levels[size] <= MAX_STACK_LEVEL);
     unsigned char *memory = alloc(nbytes);
     if (memory == NULL) {
         PyErr_WarnEx(PyExc_RuntimeWarning, "JIT out of memory", 0);
+        PyMem_Free(stack_levels);
         PyMem_Free(offsets);
         return NULL;
     }
@@ -300,6 +357,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
 #endif
         const char *w = "JIT unable to map writable memory (%d)";
         PyErr_WarnFormat(PyExc_RuntimeWarning, 0, w, code);
+        PyMem_Free(stack_levels);
         PyMem_Free(offsets);
         return NULL;
     }
@@ -313,18 +371,19 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     head += stencil->nbytes;
     // Then, all of the stencils:
     for (int i = 0; i < size; i++) {
+        assert(0 <= stack_levels[i] && stack_levels[i] <= MAX_STACK_LEVEL);
         _PyUOpInstruction *instruction = &trace[i];
-        const Stencil *stencil = &stencils[instruction->opcode];
+        const Stencil *stencil = &stencils[instruction->opcode][stack_levels[i]];
         patches[HOLE_base] = (uintptr_t)head;
         patches[HOLE_branch] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HOLE_continue] = (uintptr_t)head + stencil->nbytes;
         patches[HOLE_loop] = (uintptr_t)memory + trampoline_stencil.nbytes;
         patches[HOLE_oparg_plus_one] = instruction->oparg + 1;
         patches[HOLE_operand_plus_one] = instruction->operand + 1;
-        patches[HOLE_pc_plus_one] = i + 1;
         copy_and_patch(head, stencil, patches);
         head += stencil->nbytes;
     };
+    PyMem_Free(stack_levels);
     PyMem_Free(offsets);
 #ifdef MS_WINDOWS
     if (!FlushInstructionCache(GetCurrentProcess(), memory, nbytes) ||
