@@ -48,15 +48,18 @@ extern void _jit_operand_plus_one;
     do {                                                                                           \
         _PyFrame_SetStackPointer(frame, _PyFrame_Stackbase(frame) + STACK_LEVEL());                \
         /* memmove(_PyFrame_Stackbase(frame), _stack_base, sizeof(PyObject *) * STACK_LEVEL()); */ \
-        switch (STACK_LEVEL()) { \
-            case 6: _PyFrame_Stackbase(frame)[5] = _stack_base[5]; \
-            case 5: _PyFrame_Stackbase(frame)[4] = _stack_base[4]; \
-            case 4: _PyFrame_Stackbase(frame)[3] = _stack_base[3]; \
-            case 3: _PyFrame_Stackbase(frame)[2] = _stack_base[2]; \
-            case 2: _PyFrame_Stackbase(frame)[1] = _stack_base[1]; \
-            case 1: _PyFrame_Stackbase(frame)[0] = _stack_base[0]; \
+        switch (STACK_LEVEL()) {                                                                   \
+            case 10: _PyFrame_Stackbase(frame)[9] = _stack_base[9];                                \
+            case 9: _PyFrame_Stackbase(frame)[8] = _stack_base[8];                                 \
+            case 8: _PyFrame_Stackbase(frame)[7] = _stack_base[7];                                 \
+            case 7: _PyFrame_Stackbase(frame)[6] = _stack_base[6];                                 \
+            case 6: _PyFrame_Stackbase(frame)[5] = _stack_base[5];                                 \
+            case 5: _PyFrame_Stackbase(frame)[4] = _stack_base[4];                                 \
+            case 4: _PyFrame_Stackbase(frame)[3] = _stack_base[3];                                 \
+            case 3: _PyFrame_Stackbase(frame)[2] = _stack_base[2];                                 \
+            case 2: _PyFrame_Stackbase(frame)[1] = _stack_base[1];                                 \
+            case 1: _PyFrame_Stackbase(frame)[0] = _stack_base[0];                                 \
             case 0: break; \
-            default: Py_UNREACHABLE(); \
         } \
     } while (0)
 
@@ -65,16 +68,19 @@ extern void _jit_operand_plus_one;
     do {                                                                                           \
         stack_pointer = &_stack_base[_PyFrame_GetStackPointer(frame) - _PyFrame_Stackbase(frame)]; \
         /* memmove(_stack_base, _PyFrame_Stackbase(frame), sizeof(PyObject *) * STACK_LEVEL()); */ \
-        switch (STACK_LEVEL()) { \
-            case 6: _stack_base[5] = _PyFrame_Stackbase(frame)[5]; \
-            case 5: _stack_base[4] = _PyFrame_Stackbase(frame)[4]; \
-            case 4: _stack_base[3] = _PyFrame_Stackbase(frame)[3]; \
-            case 3: _stack_base[2] = _PyFrame_Stackbase(frame)[2]; \
-            case 2: _stack_base[1] = _PyFrame_Stackbase(frame)[1]; \
-            case 1: _stack_base[0] = _PyFrame_Stackbase(frame)[0]; \
-            case 0: break; \
-            default: Py_UNREACHABLE(); \
-        } \
+        switch (STACK_LEVEL()) {                                                                   \
+            case 10: _stack_base[9] = _PyFrame_Stackbase(frame)[9];                                \
+            case 9: _stack_base[8] = _PyFrame_Stackbase(frame)[8];                                 \
+            case 8: _stack_base[7] = _PyFrame_Stackbase(frame)[7];                                 \
+            case 7: _stack_base[6] = _PyFrame_Stackbase(frame)[6];                                 \
+            case 6: _stack_base[5] = _PyFrame_Stackbase(frame)[5];                                 \
+            case 5: _stack_base[4] = _PyFrame_Stackbase(frame)[4];                                 \
+            case 4: _stack_base[3] = _PyFrame_Stackbase(frame)[3];                                 \
+            case 3: _stack_base[2] = _PyFrame_Stackbase(frame)[2];                                 \
+            case 2: _stack_base[1] = _PyFrame_Stackbase(frame)[1];                                 \
+            case 1: _stack_base[0] = _PyFrame_Stackbase(frame)[0];                                 \
+            case 0: break;                                                                         \
+        }                                                                                          \
     } while (0)
 
 _PyInterpreterFrame *
@@ -85,8 +91,21 @@ _jit_entry(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
     int32_t oparg = (uintptr_t)&_jit_oparg_plus_one - 1;
     uint64_t operand = (uintptr_t)&_jit_operand_plus_one - 1;
     int pc = -1;  // XXX
-    PyObject *_stack_base[MAX_STACK_LEVEL] = {BUILD_STACK};
+    PyObject *_stack_base[MAX_STACK_LEVEL];
     PyObject **stack_pointer = &_stack_base[_JIT_STACK_LEVEL];
+    switch (STACK_LEVEL()) {
+        case 10: _stack_base[9] = _9;
+        case 9: _stack_base[8] = _8;
+        case 8: _stack_base[7] = _7;
+        case 7: _stack_base[6] = _6;
+        case 6: _stack_base[5] = _5;
+        case 5: _stack_base[4] = _4;
+        case 4: _stack_base[3] = _3;
+        case 3: _stack_base[2] = _2;
+        case 2: _stack_base[1] = _1;
+        case 1: _stack_base[0] = _0;
+        case 0: break;
+    }
     switch (opcode) {
         // Now, the actual instruction definitions (only one will be used):
 #include "Python/executor_cases.c.h"

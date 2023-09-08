@@ -26,7 +26,7 @@ TOOLS_JIT = TOOLS / "jit"
 TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
 
-MAX_STACK_LEVEL = 6
+MAX_STACK_LEVEL = 10
 
 def batched(iterable, n):
     """Batch an iterable into lists of size n."""
