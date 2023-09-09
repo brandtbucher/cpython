@@ -857,12 +857,14 @@ class Compiler:
 
     def _use_ghccc(self, ll: pathlib.Path) -> None:
         if self._ghccc:
-            ir = before = ll.read_text()
-            for name in ["_jit_branch", "_jit_continue", "_jit_entry", "_jit_loop"]:
-                for ptr in ["ptr", "%struct._PyInterpreterFrame*"]:
-                    ir = ir.replace(f"{ptr} @{name}", f"ghccc {ptr} @{name}")
-            assert ir != before, ir
-            ll.write_text(ir)
+            before = ll.read_text()
+            after = re.sub(
+                r"((?:noalias |nonnull )*(?:ptr|%struct._PyInterpreterFrame\*) @_jit_(?:branch|continue|entry|loop))",
+                r"ghccc \1",
+                before,
+            )
+            assert before != after, after
+            ll.write_text(after)
 
     async def _compile(self, opname, stack_level, c) -> None:
         defines = [f"-D_JIT_OPCODE={opname}", f"-D_JIT_STACK_LEVEL={stack_level}"]
