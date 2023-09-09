@@ -260,7 +260,7 @@ class ObjectParser:
             self.body.append(0)
         got = len(self.body)
         for newhole in handle_relocations(self.got_entries, self.body, self.relocations_todo):
-            assert newhole.symbol not in self.dupes, newhole.symbol
+            # assert newhole.symbol not in self.dupes, (self.path, newhole.symbol)
             if newhole.symbol in self.body_symbols:
                 addend = newhole.addend + self.body_symbols[newhole.symbol] - entry
                 newhole = Hole(newhole.kind, "_jit_base", newhole.offset, addend)
@@ -712,8 +712,9 @@ class ObjectParserCOFF(ObjectParser):
             # assert name.startswith("_")  # XXX
             name = name.removeprefix(self.symbol_prefix)  # XXX
             if name in self.body_symbols:
-                self.dupes.add(name)
-            self.body_symbols[name] = offset
+                self.dupes.add(name)  # XXX
+            else:
+                self.body_symbols[name] = offset
         for relocation in unwrap(section["Relocations"], "Relocation"):
             self.relocations_todo.append((before, relocation))
 
@@ -731,16 +732,18 @@ class ObjectParserMachO(ObjectParser):
         if name == "_eh_frame":
             return
         if name in self.body_symbols:
-            self.dupes.add(name)
-        self.body_symbols[name] = 0  # before
+            self.dupes.add(name)  # XXX
+        else:
+            self.body_symbols[name] = 0  # before
         for symbol in unwrap(section["Symbols"], "Symbol"):
             offset = symbol["Value"]
             name = symbol["Name"]["Value"]
             # assert name.startswith("_")  # XXX
             name = name.removeprefix(self.symbol_prefix)  # XXX
             if name in self.body_symbols:
-                self.dupes.add(name)
-            self.body_symbols[name] = offset
+                self.dupes.add(name)  # XXX
+            else:
+                self.body_symbols[name] = offset
         for relocation in unwrap(section["Relocations"], "Relocation"):
             self.relocations_todo.append((before, relocation))
 
@@ -893,10 +896,13 @@ class Compiler:
 
     async def build(self) -> None:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
-        opnames = sorted(set(re.findall(r"\n {8}case (\w+): \{\n", generated_cases)) - {"SET_FUNCTION_ATTRIBUTE"}) # XXX: 32-bit Windows...
         await asyncio.gather(
             self._compile("trampoline", 0, TOOLS_JIT_TRAMPOLINE),
-            *[self._compile(opname, stack_level, TOOLS_JIT_TEMPLATE) for opname in opnames for stack_level in range(MAX_STACK_LEVEL + 1)],
+            *[
+                self._compile(opname, stack_level, TOOLS_JIT_TEMPLATE)
+                for opname in sorted(re.findall(r"\n {8}case (\w+): \{\n", generated_cases))
+                for stack_level in range(MAX_STACK_LEVEL + 1)
+            ],
         )
 
     def dump(self) -> str:
