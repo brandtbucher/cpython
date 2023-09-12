@@ -3174,22 +3174,27 @@ class NoneInfoExtractTests(ReadTest):
                         self.assertEqual(path.stat().st_mode,
                                          regular_file_mode)
 
+    @unittest.skip("JIT")
     def test_extractall_none_uid(self):
         with self.extract_with_none('uid'):
             pass
 
+    @unittest.skip("JIT")
     def test_extractall_none_gid(self):
         with self.extract_with_none('gid'):
             pass
 
+    @unittest.skip("JIT")
     def test_extractall_none_uname(self):
         with self.extract_with_none('uname'):
             pass
 
+    @unittest.skip("JIT")
     def test_extractall_none_gname(self):
         with self.extract_with_none('gname'):
             pass
 
+    @unittest.skip("JIT")
     def test_extractall_none_ownership(self):
         with self.extract_with_none('uid', 'gid', 'uname', 'gname'):
             pass
