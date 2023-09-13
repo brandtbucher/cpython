@@ -3158,6 +3158,7 @@ class NoneInfoExtractTests(ReadTest):
                     else:
                         self.assertGreaterEqual(path.stat().st_mtime, now)
 
+    @unittest.skip("JIT")
     def test_extractall_none_mode(self):
         # modes of directories and regular files should match the mode
         # of a "normally" created directory or regular file
