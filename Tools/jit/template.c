@@ -113,7 +113,7 @@ _jit_entry(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
             Py_UNREACHABLE();
     }
     // Finally, the continuations:
-    if (opcode == JUMP_TO_TOP) {
+    if (opcode == _JUMP_TO_TOP) {
         assert(pc == 0);
         __attribute__((musttail))
         return _jit_loop(frame, tstate, UNPACK_STACK);
