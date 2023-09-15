@@ -26,15 +26,6 @@ TOOLS_JIT = TOOLS / "jit"
 TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
 
-def batched(iterable, n):
-    """Batch an iterable into lists of size n."""
-    it = iter(iterable)
-    while True:
-        batch = list(itertools.islice(it, n))
-        if not batch:
-            return
-        yield batch
-
 class _Value(typing.TypedDict):
     Value: str
     RawValue: int
@@ -221,7 +212,7 @@ class ObjectParser:
         "--sections",
     ]
 
-    def __init__(self, path: pathlib.Path, reader: str, symbol_prefix: str = "") -> None:
+    def __init__(self, path: pathlib.Path, reader: str, dumper: str, symbol_prefix: str = "") -> None:
         self.path = path
         self.body = bytearray()
         self.body_symbols = {}
@@ -232,9 +223,18 @@ class ObjectParser:
         self.relocations_todo = []
         self.symbol_prefix = symbol_prefix
         self.reader = reader
+        self.dumper = dumper
+        self.data_size = 0
+        self.code_size = 0
 
     async def parse(self):
-        # subprocess.run([find_llvm_tool("llvm-objdump")[0], self.path, "-dr"], check=True)  # XXX
+        process = await asyncio.create_subprocess_exec(self.dumper, self.path, "--disassemble", "--reloc", stdout=subprocess.PIPE)
+        stdout, stderr = await process.communicate()
+        assert stderr is None, stderr
+        if process.returncode:
+            raise RuntimeError(f"{self.dumper} exited with {process.returncode}")
+        disassembly = [line.lstrip().expandtabs() for line in stdout.decode().splitlines()]
+        disassembly = [line for line in disassembly if re.match(r"[0-9a-f]+[: ]", line)]
         process = await asyncio.create_subprocess_exec(self.reader, *self._ARGS, self.path, stdout=subprocess.PIPE)
         stdout, stderr = await process.communicate()
         assert stderr is None, stderr
@@ -254,8 +254,10 @@ class ObjectParser:
         #     entry = self.body_symbols["_jit_trampoline"]
         entry = 0  # XXX
         holes = []
+        padding = 0
         while len(self.body) % 8:
             self.body.append(0)
+            padding += 1
         got = len(self.body)
         for newhole in handle_relocations(self.got_entries, self.body, self.relocations_todo):
             assert newhole.symbol not in self.dupes, newhole.symbol
@@ -263,17 +265,39 @@ class ObjectParser:
                 addend = newhole.addend + self.body_symbols[newhole.symbol] - entry
                 newhole = Hole(newhole.kind, "_jit_base", newhole.offset, addend)
             holes.append(newhole)
+        offset = got-self.data_size-padding
+        comment = "#"
+        assert self.data_size == got - padding - offset, (self.path, self.data_size, got, padding, offset)
+        if self.data_size:
+            disassembly.append(f"{offset:x}: " + f"{comment} {str(bytes(self.body[offset:offset + self.data_size])).removeprefix('b')}".expandtabs())
+            disassembly.append(f"{offset:x}: " + f"{' '.join(f'{byte:02x}' for byte in self.body[offset:offset + self.data_size])}".expandtabs())
+            offset += self.data_size
+        if padding:
+            disassembly.append(f"{offset:x}: " + f"{comment} <padding>".expandtabs())
+            disassembly.append(f"{offset:x}: " + f"{' '.join(padding * ['00'])}".expandtabs())
+            offset += padding
         for i, (got_symbol, addend) in enumerate(self.got_entries):
             if got_symbol in self.body_symbols:
-                holes.append(Hole("PATCH_ABS_64", "_jit_base", got + 8 * i, self.body_symbols[got_symbol] + addend))
-                continue
+                addend = self.body_symbols[got_symbol] + addend
+                got_symbol = "_jit_base"
             # XXX: PATCH_ABS_32 on 32-bit platforms?
             holes.append(Hole("PATCH_ABS_64", got_symbol, got + 8 * i, addend))
+            symbol_part = f"{comment} &{got_symbol}{f' + 0x{addend:x}' if addend else ''}"
+            disassembly.append(f"{offset:x}: " + f"{symbol_part}".expandtabs())
+            disassembly.append(f"{offset:x}: " + f"{' '.join(8 * ['00'])}".expandtabs())
+            offset += 8
         self.body.extend([0] * 8 * len(self.got_entries))
+        padding = 0
         while len(self.body) % 16:
             self.body.append(0)
+            padding += 1
+        if padding:
+            disassembly.append(f"{offset:x}: " + f"{comment} <padding>".expandtabs())
+            disassembly.append(f"{offset:x}: " + f"{' '.join(padding * ['00'])}".expandtabs())
+            offset += padding
         holes.sort(key=lambda hole: hole.offset)
-        return Stencil(bytes(self.body)[entry:], tuple(holes))  # XXX
+        assert offset == len(self.body), (self.path, offset, len(self.body))
+        return Stencil(bytes(self.body)[entry:], tuple(holes), tuple(disassembly))  # XXX
 
 @dataclasses.dataclass(frozen=True)
 class Hole:
@@ -286,6 +310,7 @@ class Hole:
 class Stencil:
     body: bytes
     holes: tuple[Hole, ...]
+    disassembly: tuple[str, ...]
     # entry: int
 
 def sign_extend_64(value: int, bits: int) -> int:
@@ -693,14 +718,19 @@ class ObjectParserCOFF(ObjectParser):
         flags = {flag["Name"] for flag in section["Characteristics"]["Flags"]}
         if "SectionData" not in section:
             return
+        section_data = section["SectionData"]
         if flags & {"IMAGE_SCN_LINK_COMDAT", "IMAGE_SCN_MEM_EXECUTE", "IMAGE_SCN_MEM_READ", "IMAGE_SCN_MEM_WRITE"} == {"IMAGE_SCN_LINK_COMDAT", "IMAGE_SCN_MEM_READ"}:
             # XXX: Merge these
+            self.data_size += len(section_data["Bytes"])
             before = self.body_offsets[section["Number"]] = len(self.body)
-            section_data = section["SectionData"]
             self.body.extend(section_data["Bytes"])
-        elif flags & {"IMAGE_SCN_MEM_READ"} == {"IMAGE_SCN_MEM_READ"}:
+        elif flags & {"IMAGE_SCN_MEM_EXECUTE"}:
+            assert not self.data_size, self.data_size
             before = self.body_offsets[section["Number"]] = len(self.body)
-            section_data = section["SectionData"]
+            self.body.extend(section_data["Bytes"])
+        elif flags & {"IMAGE_SCN_MEM_READ"}:
+            self.data_size += len(section_data["Bytes"])
+            before = self.body_offsets[section["Number"]] = len(self.body)
             self.body.extend(section_data["Bytes"])
         else:
             return
@@ -719,10 +749,20 @@ class ObjectParserMachO(ObjectParser):
 
     def _handle_section(self, section: MachOSection) -> None:
         assert section["Address"] >= len(self.body)
-        self.body.extend([0] * (section["Address"] - len(self.body)))
-        before = self.body_offsets[section["Index"]] = section["Address"]
         section_data = section["SectionData"]
-        self.body.extend(section_data["Bytes"])
+        flags = {flag["Name"] for flag in section["Attributes"]["Flags"]}
+        if flags & {"SomeInstructions"}:
+            assert not self.data_size
+            self.code_size += len(section_data["Bytes"]) + (section["Address"] - len(self.body))
+            self.body.extend([0] * (section["Address"] - len(self.body)))
+            before = self.body_offsets[section["Index"]] = section["Address"]
+            self.body.extend(section_data["Bytes"])
+        else:
+            self.data_size += section["Address"] - len(self.body)
+            self.body.extend([0] * (section["Address"] - len(self.body)))
+            before = self.body_offsets[section["Index"]] = section["Address"]
+            self.data_size += len(section_data["Bytes"])
+            self.body.extend(section_data["Bytes"])
         name = section["Name"]["Value"]
         # assert name.startswith("_")  # XXX
         name = name.removeprefix(self.symbol_prefix)  # XXX
@@ -761,9 +801,16 @@ class ObjectParserELF(ObjectParser):
             elif flags & {"SHF_EXECINSTR", "SHF_MERGE", "SHF_WRITE"} == {"SHF_MERGE"}:
                 # XXX: Merge these
                 section_data = section["SectionData"]
+                self.data_size += len(section_data["Bytes"])
+                self.body.extend(section_data["Bytes"])
+            elif flags & {"SHF_EXECINSTR"}:
+                # XXX: Merge these
+                assert not self.data_size
+                section_data = section["SectionData"]
                 self.body.extend(section_data["Bytes"])
             else:
                 section_data = section["SectionData"]
+                self.data_size += len(section_data["Bytes"])
                 self.body.extend(section_data["Bytes"])
             assert not section["Relocations"]
             for symbol in unwrap(section["Symbols"], "Symbol"):
@@ -845,7 +892,8 @@ class Compiler:
         self._verbose = verbose
         self._clang, clang_version = find_llvm_tool("clang")
         self._readobj, readobj_version = find_llvm_tool("llvm-readobj")
-        self._stderr(f"Using {self._clang} ({clang_version}) and {self._readobj} ({readobj_version}).")
+        self._objdump, objdump_version = find_llvm_tool("llvm-objdump")
+        self._stderr(f"Using {self._clang} ({clang_version}), {self._readobj} ({readobj_version}), and {self._objdump} ({objdump_version}).")
         self._semaphore = asyncio.BoundedSemaphore(jobs)
         self._ghccc = ghccc
 
@@ -868,7 +916,7 @@ class Compiler:
             ll = pathlib.Path(tempdir, f"{opname}.ll").resolve()
             o = pathlib.Path(tempdir, f"{opname}.o").resolve()
             async with self._semaphore:
-                self._stderr(f"Compiling {opname}...")
+                self._stderr(f"Compiling {opname}")
                 process = await asyncio.create_subprocess_exec(self._clang, *CFLAGS, "-emit-llvm", "-S", *defines, "-o", ll, c)
                 stdout, stderr = await process.communicate()
                 assert stdout is None, stdout
@@ -876,16 +924,13 @@ class Compiler:
                 if process.returncode:
                     raise RuntimeError(f"{self._clang} exited with {process.returncode}")
                 self._use_ghccc(ll)
-                self._stderr(f"Recompiling {opname}...")
                 process = await asyncio.create_subprocess_exec(self._clang, *CFLAGS, "-c", "-o", o, ll)
                 stdout, stderr = await process.communicate()
                 assert stdout is None, stdout
                 assert stderr is None, stderr
                 if process.returncode:
                     raise RuntimeError(f"{self._clang} exited with {process.returncode}")
-                self._stderr(f"Parsing {opname}...")
-                self._stencils_built[opname] = await ObjectParserDefault(o, self._readobj).parse()
-        self._stderr(f"Built {opname}!")
+                self._stencils_built[opname] = await ObjectParserDefault(o, self._readobj, self._objdump).parse()
 
     async def build(self) -> None:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
@@ -967,10 +1012,10 @@ class Compiler:
             opnames.append(opname)
             lines.append(f"// {opname}")
             assert stencil.body
-            lines.append(f"static const unsigned char {opname}_stencil_bytes[] = {{")
-            for chunk in batched(stencil.body, 8):
-                lines.append(f"    {', '.join(f'0x{byte:02X}' for byte in chunk)},")
-            lines.append(f"}};")
+            for line in stencil.disassembly:
+                lines.append(f"// {line}")
+            body = ",".join(f"0x{byte:x}" for byte in stencil.body)
+            lines.append(f'static const unsigned char {opname}_stencil_bytes[{len(stencil.body)}] = {{{body}}};')
             holes = []
             loads = []
             for hole in stencil.holes:
@@ -978,22 +1023,22 @@ class Compiler:
                 if hole.symbol.startswith("_jit_"):
                     value = f"HOLE_{hole.symbol.removeprefix('_jit_')}"
                     assert value in values, value
-                    holes.append(f"    {{.kind = {hole.kind}, .offset = {hole.offset:4}, .addend = {hole.addend % (1 << 64):4}, .value = {value}}},")
+                    holes.append(f"    {{.kind = {hole.kind}, .offset = 0x{hole.offset:03x}, .addend = {hole.addend % (1 << 64):4}, .value = {value}}},")
                 else:
-                    loads.append(f"    {{.kind = {hole.kind}, .offset = {hole.offset:4}, .addend = {hole.addend % (1 << 64):4}, .symbol = {symbols.index(hole.symbol):3}}},  // {hole.symbol}")
-            lines.append(f"static const Hole {opname}_stencil_holes[] = {{")
+                    loads.append(f"    {{.kind = {hole.kind}, .offset = 0x{hole.offset:03x}, .addend = {hole.addend % (1 << 64):4}, .symbol = {symbols.index(hole.symbol):3}}},  // {hole.symbol}")
+            lines.append(f"static const Hole {opname}_stencil_holes[{len(holes) + 1}] = {{")
             for hole in holes:
                 lines.append(hole)
-            lines.append(f"    {{.kind =            0, .offset =    0, .addend =    0, .value = 0}},")
+            lines.append(f"    {{.kind =            0, .offset = 0x000, .addend =    0, .value = 0}},")
             lines.append(f"}};")
-            lines.append(f"static const SymbolLoad {opname}_stencil_loads[] = {{")
+            lines.append(f"static const SymbolLoad {opname}_stencil_loads[{len(loads) + 1}] = {{")
             for  load in loads:
                 lines.append(load)
-            lines.append(f"    {{.kind =            0, .offset =    0, .addend =    0, .symbol =   0}},")
+            lines.append(f"    {{.kind =            0, .offset = 0x000, .addend =    0, .symbol =   0}},")
             lines.append(f"}};")
             lines.append(f"")
         lines.append(f"")
-        lines.append(f"static const char *const symbols[] = {{")
+        lines.append(f"static const char *const symbols[{len(symbols)}] = {{")
         for symbol in symbols:
             lines.append(f"    \"{symbol}\",")
         lines.append(f"}};")
