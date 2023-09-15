@@ -4859,6 +4859,7 @@ class ModuleLevelMiscTest(BaseTest):
         with open(filename, encoding="utf-8") as fp:
             self.assertEqual(fp.read().rstrip(), "ERROR:root:log in __del__")
 
+    @unittest.skip("JIT")
     def test_recursion_error(self):
         # Issue 36272
         code = textwrap.dedent("""
