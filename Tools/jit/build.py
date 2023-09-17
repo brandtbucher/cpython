@@ -3,6 +3,7 @@
 import asyncio
 import dataclasses
 import functools
+import itertools
 import json
 import os
 import pathlib
@@ -469,6 +470,18 @@ def handle_relocations(
                 addend = what
                 body[where] = [0] * 8
                 yield Hole("PATCH_ABS_64", symbol, offset, addend)
+            case {
+                "Offset": int(offset),
+                "Symbol": str(symbol),
+                "Type": {"Value": "IMAGE_REL_AMD64_REL32"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                # assert not what, what
+                addend = what
+                body[where] = [0] * 4
+                yield Hole("PATCH_REL_32", symbol, offset, addend - 4)
             # i686-pc-windows-msvc:
             case {
                 "Offset": int(offset),
@@ -484,6 +497,20 @@ def handle_relocations(
                 # assert symbol.startswith("_")
                 symbol = symbol.removeprefix("_")
                 yield Hole("PATCH_ABS_32", symbol, offset, addend)
+            case {
+                "Offset": int(offset),
+                "Symbol": str(symbol),
+                "Type": {"Value": "IMAGE_REL_I386_REL32"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                # assert not what, what
+                addend = what
+                body[where] = [0] * 4
+                # assert symbol.startswith("_")
+                symbol = symbol.removeprefix("_")
+                yield Hole("PATCH_REL_32", symbol, offset, addend - 4)
             # aarch64-unknown-linux-gnu:
             case {
                 "Addend": int(addend),
@@ -662,6 +689,20 @@ def handle_relocations(
                 "Addend": int(addend),
                 "Offset": int(offset),
                 "Symbol": {"Value": str(symbol)},
+                "Type": {"Value": "R_X86_64_GOTPCREL" | "R_X86_64_GOTPCRELX" | "R_X86_64_REX_GOTPCRELX"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                assert not what, what
+                if (symbol, 0) not in got_entries:
+                    got_entries.append((symbol, 0))
+                addend += len(body) + got_entries.index((symbol, 0)) * 8 - offset
+                body[where] = (addend % (1 << 32)).to_bytes(4, sys.byteorder)
+            case {
+                "Addend": int(addend),
+                "Offset": int(offset),
+                "Symbol": {"Value": str(symbol)},
                 "Type": {"Value": "R_X86_64_GOTOFF64"},
             }:
                 offset += base
@@ -670,6 +711,18 @@ def handle_relocations(
                 assert not what, what
                 addend += offset - len(body)
                 yield Hole("PATCH_REL_64", symbol, offset, addend)
+            case {
+                "Addend": int(addend),
+                "Offset": int(offset),
+                "Symbol": {"Value": "_GLOBAL_OFFSET_TABLE_"},
+                "Type": {"Value": "R_X86_64_GOTPC32"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                assert not what, what
+                addend += len(body) - offset
+                body[where] = (addend % (1 << 32)).to_bytes(4, sys.byteorder)
             case {
                 "Addend": int(addend),
                 "Offset": int(offset),
@@ -686,7 +739,7 @@ def handle_relocations(
                 "Addend": int(addend),
                 "Offset": int(offset),
                 "Symbol": {"Value": str(symbol)},
-                "Type": {"Value": "R_X86_64_PC32"},
+                "Type": {"Value": "R_X86_64_PC32" | "R_X86_64_PLT32"},
             }:
                 offset += base
                 where = slice(offset, offset + 4)
