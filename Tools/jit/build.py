@@ -3,7 +3,6 @@
 import asyncio
 import dataclasses
 import functools
-import itertools
 import json
 import os
 import pathlib
@@ -514,6 +513,44 @@ def handle_relocations(
                     got_entries.append((symbol, addend))
                 addend = len(body) + got_entries.index((symbol, addend)) * 8
                 yield Hole("PATCH_REL_21", "_jit_base", offset, addend)
+            case {
+                "Addend": int(addend),
+                "Offset": int(offset),
+                "Symbol": {'Value': str(symbol)},
+                "Type": {"Value": "R_AARCH64_ADD_ABS_LO12_NC"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], "little", signed=False)
+                # XXX: This nonsense...
+                assert what & 0x3B000000 == 0x39000000 or what & 0x11C00000 == 0x11000000, what
+                addend += (what & 0x003FFC00) >> 10
+                implicit_shift = 0
+                if what & 0x3B000000 == 0x39000000:
+                    implicit_shift = (what >> 30) & 0x3
+                    if implicit_shift == 0:
+                        if what & 0x04800000 == 0x04800000:
+                            implicit_shift = 4
+                addend <<= implicit_shift
+                # assert symbol.startswith("_"), symbol
+                symbol = symbol.removeprefix("_")
+                yield Hole("PATCH_ABS_12", symbol, offset, addend)
+            case {
+                "Addend": int(addend),
+                "Offset": int(offset),
+                "Symbol": {'Value': str(symbol)},
+                "Type": {"Value": "R_AARCH64_ADR_PREL_PG_HI21"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], "little", signed=False)
+                # XXX: This nonsense...
+                assert what & 0x9F000000 == 0x90000000, what
+                addend += ((what & 0x60000000) >> 29) | ((what & 0x01FFFFE0) >> 3) << 12
+                addend = sign_extend_64(addend, 33)
+                # assert symbol.startswith("_"), symbol
+                symbol = symbol.removeprefix("_")
+                yield Hole("PATCH_REL_21", symbol, offset, addend)
             case {
                 "Addend": 0,
                 "Offset": int(offset),
@@ -1121,7 +1158,12 @@ class Compiler:
 
 if __name__ == "__main__":
     # Clang internal error with musttail + ghccc + aarch64:
-    ghccc = platform.machine() not in {"aarch64", "arm64"}
+    if platform.machine() in {"aarch64", "arm64"}:
+        CFLAGS += ["-mcmodel=small"]
+        ghccc = False
+    else:
+        CFLAGS += ["-mcmodel=medium"]
+        ghccc = True
     engine = Compiler(verbose=True, ghccc=ghccc)
     asyncio.run(engine.build())
     with PYTHON_JIT_STENCILS_H.open("w") as file:
