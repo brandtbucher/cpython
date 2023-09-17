@@ -661,13 +661,29 @@ def handle_relocations(
                 "Length": 2,
                 "Offset": int(offset),
                 "PCRel": 1,
+                "Symbol": {"Value": str(section)},
+                "Type": {"Value": "X86_64_RELOC_BRANCH"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                # assert not what, what
+                addend = what
+                body[where] = [0] * 4
+                assert section.startswith("_")
+                section = section.removeprefix("_")
+                yield Hole("PATCH_REL_32", section, offset, addend - 4)
+            case {
+                "Length": 2,
+                "Offset": int(offset),
+                "PCRel": 1,
                 "Symbol": {"Value": str(symbol)},
-                "Type": {"Value": "X86_64_RELOC_GOT_LOAD"},
+                "Type": {"Value": "X86_64_RELOC_GOT" | "X86_64_RELOC_GOT_LOAD"},
             }:
                 offset += base
                 where = slice(offset, offset + 4)
                 what = int.from_bytes(body[where], "little", signed=False)
-                assert not what, what
+                # assert not what, what
                 addend = what
                 body[where] = [0] * 4
                 assert symbol.startswith("_"), symbol
@@ -676,6 +692,38 @@ def handle_relocations(
                     got_entries.append((symbol, addend))
                 addend = len(body) + got_entries.index((symbol, addend)) * 8 - offset - 4
                 body[where] = addend.to_bytes(4, sys.byteorder)
+            case {
+                "Length": 2,
+                "Offset": int(offset),
+                "PCRel": 1,
+                "Section": {"Value": str(section)},
+                "Type": {"Value": "X86_64_RELOC_SIGNED"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                # assert not what, what
+                addend = what
+                body[where] = [0] * 4
+                assert section.startswith("_")
+                section = section.removeprefix("_")
+                yield Hole("PATCH_REL_32", section, offset, addend - 4)
+            case {
+                "Length": 2,
+                "Offset": int(offset),
+                "PCRel": 1,
+                "Symbol": {"Value": str(symbol)},
+                "Type": {"Value": "X86_64_RELOC_SIGNED"},
+            }:
+                offset += base
+                where = slice(offset, offset + 4)
+                what = int.from_bytes(body[where], sys.byteorder)
+                # assert not what, what
+                addend = what
+                body[where] = [0] * 4
+                assert symbol.startswith("_")
+                section = symbol.removeprefix("_")
+                yield Hole("PATCH_REL_32", section, offset, addend - 4)
             case {
                 "Length": 3,
                 "Offset": int(offset),
@@ -850,8 +898,6 @@ CFLAGS = [
     f"-fomit-frame-pointer",  # XXX
     # # Disable debug info:
     # f"-g0",  # XXX
-    # Need this to leave room for patching our 64-bit pointers:
-    f"-mcmodel=large",  # XXX
 ]
 
 if sys.platform == "darwin":
