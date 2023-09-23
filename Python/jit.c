@@ -269,7 +269,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
         return NULL;
     }
     // First, loop over everything once to find the total compiled size:
-    size_t nbytes = trampoline_stencil.nbytes;
+    size_t nbytes = deoptimize_stencil.nbytes + error_stencil.nbytes + trampoline_stencil.nbytes;
     for (int i = 0; i < size; i++) {
         offsets[i] = nbytes;
         _PyUOpInstruction *instruction = &trace[i];
@@ -305,8 +305,18 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     }
     unsigned char *head = memory;
     uintptr_t patches[] = GET_PATCHES();
-    // First, the trampoline:
-    const Stencil *stencil = &trampoline_stencil;
+    // First, the deoptimiziation:
+    const Stencil *stencil = &deoptimize_stencil;
+    patches[HoleValue_BASE] = (uintptr_t)head;
+    copy_and_patch(head, stencil, patches);
+    head += stencil->nbytes;
+    // Then, the error:
+    stencil = &error_stencil;
+    patches[HoleValue_BASE] = (uintptr_t)head;
+    copy_and_patch(head, stencil, patches);
+    head += stencil->nbytes;
+    // Then, the trampoline:
+    stencil = &trampoline_stencil;
     patches[HoleValue_BASE] = (uintptr_t)head;
     patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
     copy_and_patch(head, stencil, patches);
@@ -318,6 +328,8 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
         patches[HoleValue_BASE] = (uintptr_t)head;
         patches[HoleValue_JUMP] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
+        patches[HoleValue_DEOPTIMIZE] = (uintptr_t)memory;
+        patches[HoleValue_ERROR] = (uintptr_t)memory + deoptimize_stencil.nbytes;
         patches[HoleValue_OPARG_PLUS_ONE] = instruction->oparg + 1;
         patches[HoleValue_OPERAND_PLUS_ONE] = instruction->operand + 1;
         copy_and_patch(head, stencil, patches);
@@ -340,5 +352,5 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     }
     // Wow, done already?
     assert(memory + nbytes == head);
-    return (_PyJITFunction)memory;
+    return (_PyJITFunction)memory + deoptimize_stencil.nbytes + error_stencil.nbytes;
 }

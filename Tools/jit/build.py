@@ -25,6 +25,8 @@ PYTHON = ROOT / "Python"
 PYTHON_EXECUTOR_CASES_C_H = PYTHON / "executor_cases.c.h"
 PYTHON_JIT_STENCILS_H = PYTHON / "jit_stencils.h"
 TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
+TOOLS_JIT_DEOPTIMIZE = TOOLS_JIT / "deoptimize.c"
+TOOLS_JIT_ERROR = TOOLS_JIT / "error.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
 
 
@@ -241,7 +243,6 @@ async def run(*args: str | os.PathLike, capture: bool = False) -> bytes | None:
 
 
 class Engine:
-
     SYMBOL_PREFIX = ""
 
     _ARGS = [
@@ -377,6 +378,8 @@ class HoleKind(CEnum):
 class HoleValue(CEnum):
     BASE = enum.auto()
     CONTINUE = enum.auto()
+    DEOPTIMIZE = enum.auto()
+    ERROR = enum.auto()
     JUMP = enum.auto()
     OPARG_PLUS_ONE = enum.auto()
     OPERAND_PLUS_ONE = enum.auto()
@@ -1031,9 +1034,16 @@ class Compiler:
     def _use_ghccc(self, ll: pathlib.Path) -> None:
         if self._ghccc:
             ir = before = ll.read_text()
-            for name in ["_JIT_CONTINUE", "_JIT_ENTRY", "_JIT_JUMP"]:
+            for name in [
+                "_JIT_CONTINUE",
+                "_JIT_DEOPTIMIZE",
+                "_JIT_ENTRY",
+                "_JIT_ERROR",
+                "_JIT_JUMP",
+            ]:
                 for ptr in ["ptr", "%struct._PyInterpreterFrame*"]:
                     ir = ir.replace(f"{ptr} @{name}", f"ghccc {ptr} @{name}")
+            ir = ir.replace("noalias ghccc", "ghccc noalias")
             assert ir != before, ir
             ll.write_text(ir)
 
@@ -1057,6 +1067,8 @@ class Compiler:
 
         with tempfile.TemporaryDirectory() as tempdir:
             await asyncio.gather(
+                self._compile("deoptimize", TOOLS_JIT_DEOPTIMIZE, tempdir),
+                self._compile("error", TOOLS_JIT_ERROR, tempdir),
                 self._compile("trampoline", TOOLS_JIT_TRAMPOLINE, tempdir),
                 *[
                     self._compile(opname, TOOLS_JIT_TEMPLATE, tempdir)
@@ -1161,12 +1173,18 @@ class Compiler:
         lines.append(f"}}")
         lines.append(f"")
         lines.append(
+            f"static const Stencil deoptimize_stencil = INIT_STENCIL(deoptimize);"
+        )
+        lines.append(f"")
+        lines.append(f"static const Stencil error_stencil = INIT_STENCIL(error);")
+        lines.append(f"")
+        lines.append(
             f"static const Stencil trampoline_stencil = INIT_STENCIL(trampoline);"
         )
         lines.append(f"")
         lines.append(f"static const Stencil stencils[512] = {{")
-        assert opnames[-1] == "trampoline"
-        for opname in opnames[:-1]:
+        assert opnames[-3:] == ["deoptimize", "error", "trampoline"]
+        for opname in opnames[:-3]:
             lines.append(f"    [{opname}] = INIT_STENCIL({opname}),")
         lines.append(f"}};")
         lines.append(f"")
@@ -1189,7 +1207,6 @@ def main(host: str) -> None:
         (x86_64_pc_windows_msvc, True, [f"-I{PC}"]),
         (x86_64_unknown_linux_gnu, True, [f"-I{ROOT}"]),
     ]:
-
         if engine.pattern.fullmatch(host):
             break
     else:

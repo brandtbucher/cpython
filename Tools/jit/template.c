@@ -29,19 +29,25 @@
 #define ENABLE_SPECIALIZATION 0
 
 // Stuff that will be patched at "JIT time":
-extern _PyInterpreterFrame *_JIT_CONTINUE(_PyInterpreterFrame *frame,
-                                          PyObject **stack_pointer,
-                                          PyThreadState *tstate);
-extern _PyInterpreterFrame *_JIT_JUMP(_PyInterpreterFrame *frame,
-                                      PyObject **stack_pointer,
-                                      PyThreadState *tstate);
+extern _PyInterpreterFrame *_JIT_CONTINUE(PyThreadState *tstate,
+                                          _PyInterpreterFrame *frame,
+                                          PyObject **stack_pointer);
+extern _PyInterpreterFrame *_JIT_DEOPTIMIZE(PyThreadState *tstate,
+                                            _PyInterpreterFrame *frame,
+                                            PyObject **stack_pointer);
+extern _PyInterpreterFrame *_JIT_ERROR(PyThreadState *tstate,
+                                       _PyInterpreterFrame *frame,
+                                       PyObject **stack_pointer);
+extern _PyInterpreterFrame *_JIT_JUMP(PyThreadState *tstate,
+                                      _PyInterpreterFrame *frame,
+                                      PyObject **stack_pointer);
 // The address of an extern can't be 0:
 extern void _JIT_OPARG_PLUS_ONE;
 extern void _JIT_OPERAND_PLUS_ONE;
 
 _PyInterpreterFrame *
-_JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer,
-           PyThreadState *tstate)
+_JIT_ENTRY(PyThreadState *tstate, _PyInterpreterFrame *frame,
+           PyObject **stack_pointer)
 {
     // Locals that the instruction implementations expect to exist:
     uint32_t opcode = _JIT_OPCODE;
@@ -61,10 +67,10 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer,
                opcode == _POP_JUMP_IF_FALSE ||
                opcode == _POP_JUMP_IF_TRUE);
         __attribute__((musttail))
-        return _JIT_JUMP(frame, stack_pointer, tstate);
+        return _JIT_JUMP(tstate, frame, stack_pointer);
     }
     __attribute__((musttail))
-    return _JIT_CONTINUE(frame, stack_pointer, tstate);
+    return _JIT_CONTINUE(tstate, frame, stack_pointer);
     // Labels that the instruction implementations expect to exist:
 unbound_local_error:
     _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError,
@@ -81,10 +87,11 @@ pop_2_error:
 pop_1_error:
     STACK_SHRINK(1);
 error:
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    ;
+    __attribute__((musttail))
+    return _JIT_ERROR(tstate, frame, stack_pointer);
 deoptimize:
-    frame->prev_instr--;
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return frame;
+    ;
+    __attribute__((musttail))
+    return _JIT_DEOPTIMIZE(tstate, frame, stack_pointer);
 }
