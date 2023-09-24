@@ -352,5 +352,5 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size)
     }
     // Wow, done already?
     assert(memory + nbytes == head);
-    return (_PyJITFunction)memory + deoptimize_stencil.nbytes + error_stencil.nbytes;
+    return (_PyJITFunction)(memory + deoptimize_stencil.nbytes + error_stencil.nbytes);
 }
