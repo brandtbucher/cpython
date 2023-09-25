@@ -13,7 +13,7 @@ _JIT_TRAMPOLINE(_PyExecutorObject *executor, _PyInterpreterFrame *frame,
                 PyObject **stack_pointer)
 {
     PyThreadState *tstate = PyThreadState_Get();
-    PyObject *_stack_base[MAX_STACK_LEVEL];
+    PyObject *_stack_base[MAX_STACK_LEVEL] = {NULL};
     // memmove(_stack_base, _PyFrame_Stackbase(frame), sizeof(PyObject *) * _JIT_STACK_LEVEL);
     switch (_JIT_STACK_LEVEL) {
         case 10: _stack_base[9] = _PyFrame_Stackbase(frame)[9];

@@ -25,6 +25,7 @@ PYTHON = ROOT / "Python"
 PYTHON_EXECUTOR_CASES_C_H = PYTHON / "executor_cases.c.h"
 PYTHON_JIT_STENCILS_H = PYTHON / "jit_stencils.h"
 TOOLS_JIT_DEOPT = TOOLS_JIT / "deopt.c"
+TOOLS_JIT_ERROR = TOOLS_JIT / "error.c"
 TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
 
@@ -380,6 +381,7 @@ class HoleValue(CEnum):
     BASE = enum.auto()
     CONTINUE = enum.auto()
     DEOPT = enum.auto()
+    ERROR = enum.auto()
     JUMP = enum.auto()
     OPARG_PLUS_ONE = enum.auto()
     OPERAND_PLUS_ONE = enum.auto()
@@ -1035,7 +1037,7 @@ class Compiler:
         if self._ghccc:
             before = ll.read_text()
             after = re.sub(
-                r"((?:noalias |nonnull )*(?:ptr|%struct._PyInterpreterFrame\*) @_JIT_(?:CONTINUE|DEOPT|ENTRY|JUMP))",
+                r"((?:noalias |nonnull )*(?:ptr|%struct._PyInterpreterFrame\*) @_JIT_(?:CONTINUE|DEOPT|ENTRY|ERROR|JUMP))",
                 r"ghccc \1",
                 before,
             )
@@ -1059,6 +1061,10 @@ class Compiler:
             await asyncio.gather(
                 *[
                     self._compile("deopt", stack_level, TOOLS_JIT_DEOPT, tempdir)
+                    for stack_level in range(MAX_STACK_LEVEL + 1)
+                ],
+                *[
+                    self._compile("error", stack_level, TOOLS_JIT_ERROR, tempdir)
                     for stack_level in range(MAX_STACK_LEVEL + 1)
                 ],
                 *[
@@ -1174,13 +1180,18 @@ class Compiler:
             lines.append(f"        [{stack_level}] = INIT_STENCIL(deopt, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
+        lines.append(f"static const Stencil error_stencils[MAX_STACK_LEVEL + 1] = {{")
+        for stack_level in sorted(opnames["error"]):
+            lines.append(f"        [{stack_level}] = INIT_STENCIL(error, {stack_level}),")
+        lines.append(f"}};")
+        lines.append(f"")
         lines.append(f"static const Stencil trampoline_stencils[MAX_STACK_LEVEL + 1] = {{")
         for stack_level in sorted(opnames["trampoline"]):
             lines.append(f"        [{stack_level}] = INIT_STENCIL(trampoline, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
         lines.append(f"static const Stencil stencils[512][MAX_STACK_LEVEL + 1] = {{")
-        del opnames["deopt"], opnames["trampoline"]
+        del opnames["deopt"], opnames["error"], opnames["trampoline"]
         for opname, stack_levels in sorted(opnames.items()):
             lines.append(f"    [{opname}] = {{")
             for stack_level in sorted(stack_levels):

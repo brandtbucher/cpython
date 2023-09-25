@@ -41,6 +41,7 @@ static size_t pool_head;
 static size_t page_size;
 
 static unsigned char *deopt_stubs[MAX_STACK_LEVEL + 1];
+static unsigned char *error_stubs[MAX_STACK_LEVEL + 1];
 
 static unsigned char *
 alloc(size_t size)
@@ -263,8 +264,12 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         assert(mapped == pool + pool_head);
 #endif
         size_t nbytes = 0;
-        for (int i = 0; i < Py_ARRAY_LENGTH(deopt_stencils); i++) {
+        for (int i = 0; i < (int)Py_ARRAY_LENGTH(deopt_stencils); i++) {
             const Stencil *stencil = &deopt_stencils[i];
+            nbytes += stencil->nbytes;
+        }
+        for (int i = 0; i < (int)Py_ARRAY_LENGTH(error_stencils); i++) {
+            const Stencil *stencil = &error_stencils[i];
             nbytes += stencil->nbytes;
         }
         unsigned char *memory = alloc(nbytes);
@@ -284,11 +289,18 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         }
         unsigned char *head = memory;
         uintptr_t patches[] = GET_PATCHES();
-        for (int i = 0; i < Py_ARRAY_LENGTH(deopt_stencils); i++) {
+        for (int i = 0; i < (int)Py_ARRAY_LENGTH(deopt_stencils); i++) {
             const Stencil *stencil = &deopt_stencils[i];
             patches[HoleValue_BASE] = (uintptr_t)head;
             copy_and_patch(head, stencil, patches);
             deopt_stubs[i] = head;
+            head += stencil->nbytes;
+        }
+        for (int i = 0; i < (int)Py_ARRAY_LENGTH(error_stencils); i++) {
+            const Stencil *stencil = &error_stencils[i];
+            patches[HoleValue_BASE] = (uintptr_t)head;
+            copy_and_patch(head, stencil, patches);
+            error_stubs[i] = head;
             head += stencil->nbytes;
         }
     #ifdef MS_WINDOWS
@@ -423,6 +435,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         patches[HoleValue_JUMP] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
         patches[HoleValue_DEOPT] = (uintptr_t)deopt_stubs[stack_levels[i]];
+        patches[HoleValue_ERROR] = (uintptr_t)error_stubs[0];
         patches[HoleValue_OPARG_PLUS_ONE] = instruction->oparg + 1;
         patches[HoleValue_OPERAND_PLUS_ONE] = instruction->operand + 1;
         copy_and_patch(head, stencil, patches);
