@@ -40,6 +40,8 @@ static unsigned char pool[JIT_POOL_SIZE];
 static size_t pool_head;
 static size_t page_size;
 
+static unsigned char *deopt_stubs[MAX_STACK_LEVEL + 1];
+
 static unsigned char *
 alloc(size_t size)
 {
@@ -260,6 +262,49 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         }
         assert(mapped == pool + pool_head);
 #endif
+        size_t nbytes = 0;
+        for (int i = 0; i < Py_ARRAY_LENGTH(deopt_stencils); i++) {
+            const Stencil *stencil = &deopt_stencils[i];
+            nbytes += stencil->nbytes;
+        }
+        unsigned char *memory = alloc(nbytes);
+        unsigned char *page = (unsigned char *)((uintptr_t)memory & ~(page_size - 1));
+        size_t page_nbytes = memory + nbytes - page;
+    #ifdef MS_WINDOWS
+        DWORD old;
+        if (!VirtualProtect(page, page_nbytes, PAGE_READWRITE, &old)) {
+            int code = GetLastError();
+    #else
+        if (mprotect(page, page_nbytes, PROT_READ | PROT_WRITE)) {
+            int code = errno;
+    #endif
+            const char *w = "JIT unable to map writable memory (%d)";
+            PyErr_WarnFormat(PyExc_RuntimeWarning, 0, w, code);
+            return NULL;
+        }
+        unsigned char *head = memory;
+        uintptr_t patches[] = GET_PATCHES();
+        for (int i = 0; i < Py_ARRAY_LENGTH(deopt_stencils); i++) {
+            const Stencil *stencil = &deopt_stencils[i];
+            patches[HoleValue_BASE] = (uintptr_t)head;
+            copy_and_patch(head, stencil, patches);
+            deopt_stubs[i] = head;
+            head += stencil->nbytes;
+        }
+    #ifdef MS_WINDOWS
+        if (!FlushInstructionCache(GetCurrentProcess(), memory, nbytes) ||
+            !VirtualProtect(page, page_nbytes, PAGE_EXECUTE_READ, &old))
+        {
+            int code = GetLastError();
+    #else
+        __builtin___clear_cache((char *)memory, (char *)memory + nbytes);
+        if (mprotect(page, page_nbytes, PROT_EXEC | PROT_READ)) {
+            int code = errno;
+    #endif
+            const char *w = "JIT unable to map executable memory (%d)";
+            PyErr_WarnFormat(PyExc_RuntimeWarning, 0, w, code);
+            return NULL;
+        }
         initialized = 1;
     }
     assert(initialized > 0);
@@ -336,7 +381,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
             return NULL;
         }
         nbytes += stencil->nbytes;
-    };
+    }
     assert(0 <= stack_levels[size] && stack_levels[size] <= MAX_STACK_LEVEL);
     unsigned char *memory = alloc(nbytes);
     if (memory == NULL) {
@@ -377,11 +422,12 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         patches[HoleValue_BASE] = (uintptr_t)head;
         patches[HoleValue_JUMP] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
+        patches[HoleValue_DEOPT] = (uintptr_t)deopt_stubs[stack_levels[i]];
         patches[HoleValue_OPARG_PLUS_ONE] = instruction->oparg + 1;
         patches[HoleValue_OPERAND_PLUS_ONE] = instruction->operand + 1;
         copy_and_patch(head, stencil, patches);
         head += stencil->nbytes;
-    };
+    }
     PyMem_Free(stack_levels);
     PyMem_Free(offsets);
 #ifdef MS_WINDOWS

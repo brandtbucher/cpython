@@ -32,6 +32,8 @@
 // Stuff that will be patched at "JIT time":
 extern _PyInterpreterFrame *_JIT_CONTINUE(_PyInterpreterFrame *frame,
                                           PyThreadState *tstate, PACK_STACK);
+extern _PyInterpreterFrame *_JIT_DEOPT(_PyInterpreterFrame *frame,
+                                       PyThreadState *tstate, PACK_STACK);
 extern _PyInterpreterFrame *_JIT_JUMP(_PyInterpreterFrame *frame,
                                       PyThreadState *tstate, PACK_STACK);
 // The address of an extern can't be 0:
@@ -140,7 +142,7 @@ error:
     STORE_SP();
     return NULL;
 deoptimize:
-    frame->prev_instr--;
-    STORE_SP();
-    return frame;
+    ;
+    __attribute__((musttail))
+    return _JIT_DEOPT(frame, tstate, UNPACK_STACK);
 }
