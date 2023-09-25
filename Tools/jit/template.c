@@ -93,21 +93,8 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
     int32_t oparg = (uintptr_t)&_JIT_OPARG_PLUS_ONE - 1;
     uint64_t operand = (uintptr_t)&_JIT_OPERAND_PLUS_ONE - 1;
     int pc = -1;  // XXX
-    PyObject *_stack_base[MAX_STACK_LEVEL] = {NULL};
+    PyObject *_stack_base[MAX_STACK_LEVEL] = {_0, _1, _2, _3, _4, _5, _6, _7, _8, _9};
     PyObject **stack_pointer = &_stack_base[_JIT_STACK_LEVEL];
-    switch (STACK_LEVEL()) {
-        case 10: _stack_base[9] = _9;
-        case  9: _stack_base[8] = _8;
-        case  8: _stack_base[7] = _7;
-        case  7: _stack_base[6] = _6;
-        case  6: _stack_base[5] = _5;
-        case  5: _stack_base[4] = _4;
-        case  4: _stack_base[3] = _3;
-        case  3: _stack_base[2] = _2;
-        case  2: _stack_base[1] = _1;
-        case  1: _stack_base[0] = _0;
-        case  0: break;
-    }
     switch (opcode) {
         // Now, the actual instruction definitions (only one will be used):
 #include "executor_cases.c.h"
