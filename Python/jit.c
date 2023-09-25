@@ -276,7 +276,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
     }
     // XXX: Maybe make this one-pass?
     // First, loop over everything once to find the total compiled size:
-    size_t nbytes = trampoline_stencil.nbytes;
+    size_t nbytes = trampoline_stencils[stack_level].nbytes;
     memset(stack_levels, -1, (size + 1) * sizeof(int));
     stack_levels[0] = stack_level;
     for (int i = 0; i < size; i++) {
@@ -364,7 +364,7 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
     unsigned char *head = memory;
     uintptr_t patches[] = GET_PATCHES();
     // First, the trampoline:
-    const Stencil *stencil = &trampoline_stencil;
+    const Stencil *stencil = &trampoline_stencils[stack_level];
     patches[HoleValue_BASE] = (uintptr_t)head;
     patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
     copy_and_patch(head, stencil, patches);

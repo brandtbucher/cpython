@@ -1055,7 +1055,10 @@ class Compiler:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
         with tempfile.TemporaryDirectory() as tempdir:
             await asyncio.gather(
-                self._compile("trampoline", 0, TOOLS_JIT_TRAMPOLINE, tempdir),
+                *[
+                    self._compile("trampoline", stack_level, TOOLS_JIT_TRAMPOLINE, tempdir)
+                    for stack_level in range(MAX_STACK_LEVEL + 1)
+                ],
                 *[
                     self._compile(opname, stack_level, TOOLS_JIT_TEMPLATE, tempdir)
                     for opname in sorted(re.findall(r"\n {8}case (\w+): \{\n", generated_cases))
@@ -1160,9 +1163,10 @@ class Compiler:
         lines.append(f"    .loads = OPCODE##_##STACK_LEVEL##_stencil_loads,                       \\")
         lines.append(f"}}")
         lines.append(f"")
-        lines.append(
-            f"static const Stencil trampoline_stencil = INIT_STENCIL(trampoline, 0);"
-        )
+        lines.append(f"static const Stencil trampoline_stencils[MAX_STACK_LEVEL + 1] = {{")
+        for stack_level in sorted(opnames["trampoline"]):
+            lines.append(f"        [{stack_level}] = INIT_STENCIL(trampoline, {stack_level}),")
+        lines.append(f"}};")
         lines.append(f"")
         lines.append(f"static const Stencil stencils[512][MAX_STACK_LEVEL + 1] = {{")
         del opnames["trampoline"]
