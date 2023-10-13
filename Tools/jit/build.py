@@ -533,7 +533,7 @@ def get_target(host: str) -> Target:
 
 
 CFLAGS = [
-    "-O2",
+    "-Os",
     "-Wno-override-module",
     # Keep library calls from sneaking in:
     "-ffreestanding",  # XXX
