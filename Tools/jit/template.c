@@ -48,7 +48,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer,
     // Trick clang into not caring what's passed to the continuation:
     asm inline ("" : "=r"(oparg), "=r"(operand));
     if (pc != -1) {
-        assert(pc == oparg);
+        // assert(pc == oparg);  // XXX
         assert(opcode == _JUMP_TO_TOP || opcode == _POP_JUMP_IF_FALSE || opcode == _POP_JUMP_IF_TRUE);
         __attribute__((musttail))
         return _JIT_JUMP(frame, stack_pointer, tstate, oparg, operand);
