@@ -6770,68 +6770,6 @@ if test x$MULTIARCH != x; then
 fi
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for PEP 11 support tier" >&5
-printf %s "checking for PEP 11 support tier... " >&6; }
-case $host/$ac_cv_cc_name in #(
-  x86_64-*-linux-gnu/gcc) :
-    PY_SUPPORT_TIER=1 ;; #(
-    x86_64-apple-darwin*/clang) :
-    PY_SUPPORT_TIER=1 ;; #(
-    i686-pc-windows-msvc/msvc) :
-    PY_SUPPORT_TIER=1 ;; #(
-    x86_64-pc-windows-msvc/msvc) :
-    PY_SUPPORT_TIER=1 ;; #(
-
-  aarch64-apple-darwin*/clang) :
-    PY_SUPPORT_TIER=2 ;; #(
-    aarch64-*-linux-gnu/gcc) :
-    PY_SUPPORT_TIER=2 ;; #(
-    aarch64-*-linux-gnu/clang) :
-    PY_SUPPORT_TIER=2 ;; #(
-  powerpc64le-*-linux-gnu/gcc) :
-    PY_SUPPORT_TIER=2 ;; #(
-    x86_64-*-linux-gnu/clang) :
-    PY_SUPPORT_TIER=2 ;; #(
-
-  aarch64-pc-windows-msvc/msvc) :
-    PY_SUPPORT_TIER=3 ;; #(
-    armv7l-*-linux-gnueabihf/gcc) :
-    PY_SUPPORT_TIER=3 ;; #(
-    powerpc64le-*-linux-gnu/clang) :
-    PY_SUPPORT_TIER=3 ;; #(
-    s390x-*-linux-gnu/gcc) :
-    PY_SUPPORT_TIER=3 ;; #(
-    wasm32-unknown-emscripten/clang) :
-    PY_SUPPORT_TIER=3 ;; #(
-    wasm32-unknown-wasi/clang) :
-    PY_SUPPORT_TIER=3 ;; #(
-    x86_64-*-freebsd*/clang) :
-    PY_SUPPORT_TIER=3 ;; #(
-  *) :
-      PY_SUPPORT_TIER=0
- ;;
-esac
-
-case $PY_SUPPORT_TIER in #(
-  1) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 1 (supported)" >&5
-printf "%s\n" "$host/$ac_cv_cc_name has tier 1 (supported)" >&6; } ;; #(
-  2) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 2 (supported)" >&5
-printf "%s\n" "$host/$ac_cv_cc_name has tier 2 (supported)" >&6; } ;; #(
-  3) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 3 (partially supported)" >&5
-printf "%s\n" "$host/$ac_cv_cc_name has tier 3 (partially supported)" >&6; } ;; #(
-  *) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $host/$ac_cv_cc_name is not supported" >&5
-printf "%s\n" "$as_me: WARNING: $host/$ac_cv_cc_name is not supported" >&2;}
- ;;
-esac
-
-
-printf "%s\n" "#define PY_SUPPORT_TIER $PY_SUPPORT_TIER" >>confdefs.h
-
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for -Wl,--no-as-needed" >&5
 printf %s "checking for -Wl,--no-as-needed... " >&6; }
 if test ${ac_cv_wl_no_as_needed+y}
@@ -9866,45 +9804,53 @@ printf "%s\n" "$CC" >&6; }
                UNIVERSAL_ARCH_FLAGS="-arch ppc -arch i386"
                LIPO_32BIT_FLAGS=""
                ARCH_RUN_32BIT=""
+               host="unknown-apple-darwin"
                ;;
             64-bit)
                UNIVERSAL_ARCH_FLAGS="-arch ppc64 -arch x86_64"
                LIPO_32BIT_FLAGS=""
                ARCH_RUN_32BIT="true"
+               host="unknown-apple-darwin"
                ;;
             all)
                UNIVERSAL_ARCH_FLAGS="-arch i386 -arch ppc -arch ppc64 -arch x86_64"
                LIPO_32BIT_FLAGS="-extract ppc7400 -extract i386"
                ARCH_RUN_32BIT="/usr/bin/arch -i386 -ppc"
+               host="unknown-apple-darwin"
                ;;
             universal2)
                UNIVERSAL_ARCH_FLAGS="-arch arm64 -arch x86_64"
                LIPO_32BIT_FLAGS=""
                LIPO_INTEL64_FLAGS="-extract x86_64"
                ARCH_RUN_32BIT="true"
+               host="unknown-apple-darwin"
                ;;
             intel)
                UNIVERSAL_ARCH_FLAGS="-arch i386 -arch x86_64"
                LIPO_32BIT_FLAGS="-extract i386"
                ARCH_RUN_32BIT="/usr/bin/arch -i386"
+               host="unknown-apple-darwin"
                ;;
             intel-32)
                UNIVERSAL_ARCH_FLAGS="-arch i386"
                LIPO_32BIT_FLAGS=""
                ARCH_RUN_32BIT=""
+               host="i386-apple-darwin"
                ;;
             intel-64)
                UNIVERSAL_ARCH_FLAGS="-arch x86_64"
                LIPO_32BIT_FLAGS=""
                ARCH_RUN_32BIT="true"
+               host="x86_64-apple-darwin"
                ;;
             3-way)
                UNIVERSAL_ARCH_FLAGS="-arch i386 -arch ppc -arch x86_64"
                LIPO_32BIT_FLAGS="-extract ppc7400 -extract i386"
                ARCH_RUN_32BIT="/usr/bin/arch -i386 -ppc"
+               host="unknown-apple-darwin"
                ;;
             *)
-               as_fn_error $? "proper usage is --with-universal-arch=universal2|32-bit|64-bit|all|intel|3-way" "$LINENO" 5
+               as_fn_error $? "proper usage is --with-universal-arch=universal2|32-bit|64-bit|all|intel|intel-32|intel-64|3-way" "$LINENO" 5
                ;;
             esac
 
@@ -10015,6 +9961,68 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     esac
     ;;
 esac
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for PEP 11 support tier" >&5
+printf %s "checking for PEP 11 support tier... " >&6; }
+case $host/$ac_cv_cc_name in #(
+  x86_64-*-linux-gnu/gcc) :
+    PY_SUPPORT_TIER=1 ;; #(
+    x86_64-apple-darwin*/clang) :
+    PY_SUPPORT_TIER=1 ;; #(
+    i686-pc-windows-msvc/msvc) :
+    PY_SUPPORT_TIER=1 ;; #(
+    x86_64-pc-windows-msvc/msvc) :
+    PY_SUPPORT_TIER=1 ;; #(
+
+  aarch64-apple-darwin*/clang) :
+    PY_SUPPORT_TIER=2 ;; #(
+    aarch64-*-linux-gnu/gcc) :
+    PY_SUPPORT_TIER=2 ;; #(
+    aarch64-*-linux-gnu/clang) :
+    PY_SUPPORT_TIER=2 ;; #(
+  powerpc64le-*-linux-gnu/gcc) :
+    PY_SUPPORT_TIER=2 ;; #(
+    x86_64-*-linux-gnu/clang) :
+    PY_SUPPORT_TIER=2 ;; #(
+
+  aarch64-pc-windows-msvc/msvc) :
+    PY_SUPPORT_TIER=3 ;; #(
+    armv7l-*-linux-gnueabihf/gcc) :
+    PY_SUPPORT_TIER=3 ;; #(
+    powerpc64le-*-linux-gnu/clang) :
+    PY_SUPPORT_TIER=3 ;; #(
+    s390x-*-linux-gnu/gcc) :
+    PY_SUPPORT_TIER=3 ;; #(
+    wasm32-unknown-emscripten/clang) :
+    PY_SUPPORT_TIER=3 ;; #(
+    wasm32-unknown-wasi/clang) :
+    PY_SUPPORT_TIER=3 ;; #(
+    x86_64-*-freebsd*/clang) :
+    PY_SUPPORT_TIER=3 ;; #(
+  *) :
+      PY_SUPPORT_TIER=0
+ ;;
+esac
+
+case $PY_SUPPORT_TIER in #(
+  1) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 1 (supported)" >&5
+printf "%s\n" "$host/$ac_cv_cc_name has tier 1 (supported)" >&6; } ;; #(
+  2) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 2 (supported)" >&5
+printf "%s\n" "$host/$ac_cv_cc_name has tier 2 (supported)" >&6; } ;; #(
+  3) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $host/$ac_cv_cc_name has tier 3 (partially supported)" >&5
+printf "%s\n" "$host/$ac_cv_cc_name has tier 3 (partially supported)" >&6; } ;; #(
+  *) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $host/$ac_cv_cc_name is not supported" >&5
+printf "%s\n" "$as_me: WARNING: $host/$ac_cv_cc_name is not supported" >&2;}
+ ;;
+esac
+
+
+printf "%s\n" "#define PY_SUPPORT_TIER $PY_SUPPORT_TIER" >>confdefs.h
+
 
 case "$CC_BASENAME" in
 *mpicc*)
