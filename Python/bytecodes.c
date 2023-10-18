@@ -390,9 +390,15 @@ dummy_func(
             BINARY_OP_MULTIPLY_INT,
             BINARY_OP_ADD_INT,
             BINARY_OP_SUBTRACT_INT,
-            BINARY_OP_MULTIPLY_FLOAT,
-            BINARY_OP_ADD_FLOAT,
-            BINARY_OP_SUBTRACT_FLOAT,
+            BINARY_OP_MULTIPLY_FLOAT_LHS,
+            BINARY_OP_MULTIPLY_FLOAT_RHS,
+            BINARY_OP_MULTIPLY_FLOAT_NEW,
+            BINARY_OP_ADD_FLOAT_LHS,
+            BINARY_OP_ADD_FLOAT_RHS,
+            BINARY_OP_ADD_FLOAT_NEW,
+            BINARY_OP_SUBTRACT_FLOAT_LHS,
+            BINARY_OP_SUBTRACT_FLOAT_RHS,
+            BINARY_OP_SUBTRACT_FLOAT_NEW,
             BINARY_OP_ADD_UNICODE,
             // BINARY_OP_INPLACE_ADD_UNICODE,  // See comments at that opcode.
         };
@@ -438,36 +444,98 @@ dummy_func(
             DEOPT_IF(!PyFloat_CheckExact(right));
         }
 
-        op(_BINARY_OP_MULTIPLY_FLOAT, (unused/1, left, right -- res)) {
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+        op(_GUARD_REUSE_LHS, (left, right -- left, right)) {
+            DEOPT_IF(Py_REFCNT(left) != 1);
         }
 
-        op(_BINARY_OP_ADD_FLOAT, (unused/1, left, right -- res)) {
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+        op(_GUARD_REUSE_RHS, (left, right -- left, right)) {
+            DEOPT_IF(Py_REFCNT(left) == 1);
+            DEOPT_IF(Py_REFCNT(right) != 1);
         }
 
-        op(_BINARY_OP_SUBTRACT_FLOAT, (unused/1, left, right -- res)) {
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval -
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+        op(_GUARD_REUSE_NEITHER, (left, right -- left, right)) {
+            DEOPT_IF(Py_REFCNT(left) == 1);
+            DEOPT_IF(Py_REFCNT(right) == 1);
         }
 
-        macro(BINARY_OP_MULTIPLY_FLOAT) =
-            _GUARD_BOTH_FLOAT + _BINARY_OP_MULTIPLY_FLOAT;
-        macro(BINARY_OP_ADD_FLOAT) =
-            _GUARD_BOTH_FLOAT + _BINARY_OP_ADD_FLOAT;
-        macro(BINARY_OP_SUBTRACT_FLOAT) =
-            _GUARD_BOTH_FLOAT + _BINARY_OP_SUBTRACT_FLOAT;
+        op(_BINARY_OP_MULTIPLY_FLOAT_LHS, (unused/1, left, right -- left)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+        }
+
+        op(_BINARY_OP_MULTIPLY_FLOAT_RHS, (unused/1, left, right -- right)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+        }
+
+        op(_BINARY_OP_MULTIPLY_FLOAT_NEW, (unused/1, left, right -- res)) {
+            STAT_INC(BINARY_OP, hit);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            ERROR_IF(res == NULL, error);
+        }
+
+        op(_BINARY_OP_ADD_FLOAT_LHS, (unused/1, left, right -- left)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+        }
+
+        op(_BINARY_OP_ADD_FLOAT_RHS, (unused/1, left, right -- right)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+        }
+
+        op(_BINARY_OP_ADD_FLOAT_NEW, (unused/1, left, right -- res)) {
+            STAT_INC(BINARY_OP, hit);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            ERROR_IF(res == NULL, error);
+        }
+
+        op(_BINARY_OP_SUBTRACT_FLOAT_LHS, (unused/1, left, right -- left)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+        }
+
+        op(_BINARY_OP_SUBTRACT_FLOAT_RHS, (unused/1, left, right -- right)) {
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+        }
+
+        op(_BINARY_OP_SUBTRACT_FLOAT_NEW, (unused/1, left, right -- res)) {
+            STAT_INC(BINARY_OP, hit);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            ERROR_IF(res == NULL, error);
+        }
+
+        macro(BINARY_OP_MULTIPLY_FLOAT_LHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_LHS + _BINARY_OP_MULTIPLY_FLOAT_LHS;
+        macro(BINARY_OP_MULTIPLY_FLOAT_RHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_RHS + _BINARY_OP_MULTIPLY_FLOAT_RHS;
+        macro(BINARY_OP_MULTIPLY_FLOAT_NEW) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_NEITHER + _BINARY_OP_MULTIPLY_FLOAT_NEW;
+        macro(BINARY_OP_ADD_FLOAT_LHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_LHS + _BINARY_OP_ADD_FLOAT_LHS;
+        macro(BINARY_OP_ADD_FLOAT_RHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_RHS + _BINARY_OP_ADD_FLOAT_RHS;
+        macro(BINARY_OP_ADD_FLOAT_NEW) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_NEITHER + _BINARY_OP_ADD_FLOAT_NEW;
+        macro(BINARY_OP_SUBTRACT_FLOAT_LHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_LHS + _BINARY_OP_SUBTRACT_FLOAT_LHS;
+        macro(BINARY_OP_SUBTRACT_FLOAT_RHS) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_RHS + _BINARY_OP_SUBTRACT_FLOAT_RHS;
+        macro(BINARY_OP_SUBTRACT_FLOAT_NEW) =
+            _GUARD_BOTH_FLOAT + _GUARD_REUSE_NEITHER + _BINARY_OP_SUBTRACT_FLOAT_NEW;
 
         op(_GUARD_BOTH_UNICODE, (left, right -- left, right)) {
             DEOPT_IF(!PyUnicode_CheckExact(left));

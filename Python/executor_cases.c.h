@@ -299,49 +299,153 @@
             break;
         }
 
-        case _BINARY_OP_MULTIPLY_FLOAT: {
+        case _GUARD_REUSE_LHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            DEOPT_IF(Py_REFCNT(left) != 1, _GUARD_REUSE_LHS);
+            break;
+        }
+
+        case _GUARD_REUSE_RHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            DEOPT_IF(Py_REFCNT(left) == 1, _GUARD_REUSE_RHS);
+            DEOPT_IF(Py_REFCNT(right) != 1, _GUARD_REUSE_RHS);
+            break;
+        }
+
+        case _GUARD_REUSE_NEITHER: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            DEOPT_IF(Py_REFCNT(left) == 1, _GUARD_REUSE_NEITHER);
+            DEOPT_IF(Py_REFCNT(right) == 1, _GUARD_REUSE_NEITHER);
+            break;
+        }
+
+        case _BINARY_OP_MULTIPLY_FLOAT_LHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_MULTIPLY_FLOAT_RHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+            STACK_SHRINK(1);
+            stack_pointer[-1] = right;
+            break;
+        }
+
+        case _BINARY_OP_MULTIPLY_FLOAT_NEW: {
             PyObject *right;
             PyObject *left;
             PyObject *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             stack_pointer[-1] = res;
             break;
         }
 
-        case _BINARY_OP_ADD_FLOAT: {
+        case _BINARY_OP_ADD_FLOAT_LHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_ADD_FLOAT_RHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+            STACK_SHRINK(1);
+            stack_pointer[-1] = right;
+            break;
+        }
+
+        case _BINARY_OP_ADD_FLOAT_NEW: {
             PyObject *right;
             PyObject *left;
             PyObject *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             stack_pointer[-1] = res;
             break;
         }
 
-        case _BINARY_OP_SUBTRACT_FLOAT: {
+        case _BINARY_OP_SUBTRACT_FLOAT_LHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)left)->ob_fval = PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_SUBTRACT_FLOAT_RHS: {
+            PyObject *right;
+            PyObject *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            STAT_INC(BINARY_OP, hit);
+            ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right);
+            _Py_DECREF_NO_DEALLOC(left);
+            STACK_SHRINK(1);
+            stack_pointer[-1] = right;
+            break;
+        }
+
+        case _BINARY_OP_SUBTRACT_FLOAT_NEW: {
             PyObject *right;
             PyObject *left;
             PyObject *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval -
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+            res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right));
+            _Py_DECREF_NO_DEALLOC(left);
+            _Py_DECREF_NO_DEALLOC(right);
+            if (res == NULL) goto pop_2_error;
             STACK_SHRINK(1);
             stack_pointer[-1] = res;
             break;

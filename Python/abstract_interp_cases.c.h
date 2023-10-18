@@ -85,19 +85,64 @@
             break;
         }
 
-        case _BINARY_OP_MULTIPLY_FLOAT: {
+        case _GUARD_REUSE_LHS: {
+            break;
+        }
+
+        case _GUARD_REUSE_RHS: {
+            break;
+        }
+
+        case _GUARD_REUSE_NEITHER: {
+            break;
+        }
+
+        case _BINARY_OP_MULTIPLY_FLOAT_LHS: {
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_MULTIPLY_FLOAT_RHS: {
             STACK_SHRINK(1);
             PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
             break;
         }
 
-        case _BINARY_OP_ADD_FLOAT: {
+        case _BINARY_OP_MULTIPLY_FLOAT_NEW: {
             STACK_SHRINK(1);
             PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
             break;
         }
 
-        case _BINARY_OP_SUBTRACT_FLOAT: {
+        case _BINARY_OP_ADD_FLOAT_LHS: {
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_ADD_FLOAT_RHS: {
+            STACK_SHRINK(1);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
+            break;
+        }
+
+        case _BINARY_OP_ADD_FLOAT_NEW: {
+            STACK_SHRINK(1);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
+            break;
+        }
+
+        case _BINARY_OP_SUBTRACT_FLOAT_LHS: {
+            STACK_SHRINK(1);
+            break;
+        }
+
+        case _BINARY_OP_SUBTRACT_FLOAT_RHS: {
+            STACK_SHRINK(1);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
+            break;
+        }
+
+        case _BINARY_OP_SUBTRACT_FLOAT_NEW: {
             STACK_SHRINK(1);
             PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1)), true);
             break;

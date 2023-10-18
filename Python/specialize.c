@@ -2092,7 +2092,15 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                instr->op.code = BINARY_OP_ADD_FLOAT;
+                if (Py_REFCNT(lhs) == 1) {
+                    instr->op.code = BINARY_OP_ADD_FLOAT_LHS;
+                }
+                else if (Py_REFCNT(rhs) == 1) {
+                    instr->op.code = BINARY_OP_ADD_FLOAT_RHS;
+                }
+                else {
+                    instr->op.code = BINARY_OP_ADD_FLOAT_NEW;
+                }
                 goto success;
             }
             break;
@@ -2106,7 +2114,15 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                instr->op.code = BINARY_OP_MULTIPLY_FLOAT;
+                if (Py_REFCNT(lhs) == 1) {
+                    instr->op.code = BINARY_OP_MULTIPLY_FLOAT_LHS;
+                }
+                else if (Py_REFCNT(rhs) == 1) {
+                    instr->op.code = BINARY_OP_MULTIPLY_FLOAT_RHS;
+                }
+                else {
+                    instr->op.code = BINARY_OP_MULTIPLY_FLOAT_NEW;
+                }
                 goto success;
             }
             break;
@@ -2120,7 +2136,15 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
                 goto success;
             }
             if (PyFloat_CheckExact(lhs)) {
-                instr->op.code = BINARY_OP_SUBTRACT_FLOAT;
+                if (Py_REFCNT(lhs) == 1) {
+                    instr->op.code = BINARY_OP_SUBTRACT_FLOAT_LHS;
+                }
+                else if (Py_REFCNT(rhs) == 1) {
+                    instr->op.code = BINARY_OP_SUBTRACT_FLOAT_RHS;
+                }
+                else {
+                    instr->op.code = BINARY_OP_SUBTRACT_FLOAT_NEW;
+                }
                 goto success;
             }
             break;
