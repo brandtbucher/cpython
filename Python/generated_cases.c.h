@@ -498,14 +498,13 @@
             }
             // _GUARD_REUSE_RHS
             {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
                 DEOPT_IF(Py_REFCNT(right) != 1, BINARY_OP);
             }
             // _BINARY_OP_MULTIPLY_FLOAT_RHS
             {
                 STAT_INC(BINARY_OP, hit);
                 ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right);
-                _Py_DECREF_NO_DEALLOC(left);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
             }
             STACK_SHRINK(1);
             stack_pointer[-1] = right;
@@ -524,17 +523,12 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
-            // _GUARD_REUSE_NEITHER
-            {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
-                DEOPT_IF(Py_REFCNT(right) == 1, BINARY_OP);
-            }
             // _BINARY_OP_MULTIPLY_FLOAT_NEW
             {
                 STAT_INC(BINARY_OP, hit);
                 res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) * PyFloat_AS_DOUBLE(right));
-                _Py_DECREF_NO_DEALLOC(left);
-                _Py_DECREF_NO_DEALLOC(right);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
                 if (res == NULL) goto pop_2_error;
             }
             STACK_SHRINK(1);
@@ -580,14 +574,13 @@
             }
             // _GUARD_REUSE_RHS
             {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
                 DEOPT_IF(Py_REFCNT(right) != 1, BINARY_OP);
             }
             // _BINARY_OP_ADD_FLOAT_RHS
             {
                 STAT_INC(BINARY_OP, hit);
                 ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right);
-                _Py_DECREF_NO_DEALLOC(left);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
             }
             STACK_SHRINK(1);
             stack_pointer[-1] = right;
@@ -606,17 +599,12 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
-            // _GUARD_REUSE_NEITHER
-            {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
-                DEOPT_IF(Py_REFCNT(right) == 1, BINARY_OP);
-            }
             // _BINARY_OP_ADD_FLOAT_NEW
             {
                 STAT_INC(BINARY_OP, hit);
                 res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) + PyFloat_AS_DOUBLE(right));
-                _Py_DECREF_NO_DEALLOC(left);
-                _Py_DECREF_NO_DEALLOC(right);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
                 if (res == NULL) goto pop_2_error;
             }
             STACK_SHRINK(1);
@@ -662,14 +650,13 @@
             }
             // _GUARD_REUSE_RHS
             {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
                 DEOPT_IF(Py_REFCNT(right) != 1, BINARY_OP);
             }
             // _BINARY_OP_SUBTRACT_FLOAT_RHS
             {
                 STAT_INC(BINARY_OP, hit);
                 ((PyFloatObject *)right)->ob_fval = PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right);
-                _Py_DECREF_NO_DEALLOC(left);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
             }
             STACK_SHRINK(1);
             stack_pointer[-1] = right;
@@ -688,17 +675,12 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
-            // _GUARD_REUSE_NEITHER
-            {
-                DEOPT_IF(Py_REFCNT(left) == 1, BINARY_OP);
-                DEOPT_IF(Py_REFCNT(right) == 1, BINARY_OP);
-            }
             // _BINARY_OP_SUBTRACT_FLOAT_NEW
             {
                 STAT_INC(BINARY_OP, hit);
                 res = PyFloat_FromDouble(PyFloat_AS_DOUBLE(left) - PyFloat_AS_DOUBLE(right));
-                _Py_DECREF_NO_DEALLOC(left);
-                _Py_DECREF_NO_DEALLOC(right);
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
                 if (res == NULL) goto pop_2_error;
             }
             STACK_SHRINK(1);

@@ -93,10 +93,6 @@
             break;
         }
 
-        case _GUARD_REUSE_NEITHER: {
-            break;
-        }
-
         case _BINARY_OP_MULTIPLY_FLOAT_LHS: {
             STACK_SHRINK(1);
             break;
