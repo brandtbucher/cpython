@@ -962,7 +962,6 @@ frozenset2({0,
  [0, 1, 2, 3, 4]]"""
         self.assertEqual(pprint.pformat(o, width=47, compact=True), expected)
 
-    @unittest.skip("JIT")
     def test_compact_width(self):
         levels = 20
         number = 10

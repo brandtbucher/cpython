@@ -2,7 +2,8 @@ typedef _PyInterpreterFrame *(*_PyJITFunction)(_PyExecutorObject *executor, _PyI
 
 PyAPI_FUNC(_PyJITFunction) _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level);
 
-#define MAX_STACK_LEVEL (10)
+#define MAX_STACK_LEVEL 10
+#define MAX_OPARG 189
 
 #define PACK_STACK                                          \
     PyObject *_0, PyObject *_1, PyObject *_2, PyObject *_3, \

@@ -3150,7 +3150,6 @@ class NoneInfoExtractTests(ReadTest):
             self.check_files_present(DIR)
             yield DIR
 
-    @unittest.skip("JIT")
     def test_extractall_none_mtime(self):
         # mtimes of extracted files should be later than 'now' -- the mtime
         # of a previously created directory.
@@ -3167,7 +3166,6 @@ class NoneInfoExtractTests(ReadTest):
                     else:
                         self.assertGreaterEqual(path.stat().st_mtime, now)
 
-    @unittest.skip("JIT")
     def test_extractall_none_mode(self):
         # modes of directories and regular files should match the mode
         # of a "normally" created directory or regular file
@@ -3184,27 +3182,22 @@ class NoneInfoExtractTests(ReadTest):
                         self.assertEqual(path.stat().st_mode,
                                          regular_file_mode)
 
-    @unittest.skip("JIT")
     def test_extractall_none_uid(self):
         with self.extract_with_none('uid'):
             pass
 
-    @unittest.skip("JIT")
     def test_extractall_none_gid(self):
         with self.extract_with_none('gid'):
             pass
 
-    @unittest.skip("JIT")
     def test_extractall_none_uname(self):
         with self.extract_with_none('uname'):
             pass
 
-    @unittest.skip("JIT")
     def test_extractall_none_gname(self):
         with self.extract_with_none('gname'):
             pass
 
-    @unittest.skip("JIT")
     def test_extractall_none_ownership(self):
         with self.extract_with_none('uid', 'gid', 'uname', 'gname'):
             pass

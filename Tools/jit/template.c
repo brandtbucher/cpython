@@ -39,7 +39,6 @@ extern _PyInterpreterFrame *_JIT_ERROR(_PyInterpreterFrame *frame,
 extern _PyInterpreterFrame *_JIT_JUMP(_PyInterpreterFrame *frame,
                                       PyThreadState *tstate, PACK_STACK);
 // The address of an extern can't be 0:
-extern void _JIT_OPARG_PLUS_ONE;
 extern void _JIT_OPERAND_PLUS_ONE;
 
 #undef STACK_LEVEL  // XXX
@@ -90,7 +89,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
 {
     // Locals that the instruction implementations expect to exist:
     uint32_t opcode = _JIT_OPCODE;
-    int32_t oparg = (uintptr_t)&_JIT_OPARG_PLUS_ONE - 1;
+    int32_t oparg = _JIT_OPARG;
     uint64_t operand = (uintptr_t)&_JIT_OPERAND_PLUS_ONE - 1;
     int pc = -1;  // XXX
     PyObject *_stack_base[MAX_STACK_LEVEL];
@@ -113,6 +112,19 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
 #include "executor_cases.c.h"
         default:
             Py_UNREACHABLE();
+    }
+    switch (STACK_LEVEL()) {
+        case  0: _stack_base[0] = NULL;
+        case  1: _stack_base[1] = NULL;
+        case  2: _stack_base[2] = NULL;
+        case  3: _stack_base[3] = NULL;
+        case  4: _stack_base[4] = NULL;
+        case  5: _stack_base[5] = NULL;
+        case  6: _stack_base[6] = NULL;
+        case  7: _stack_base[7] = NULL;
+        case  8: _stack_base[8] = NULL;
+        case  9: _stack_base[9] = NULL;
+        case 10: break;
     }
     // Finally, the continuations:
     if (pc != -1) {
@@ -142,16 +154,16 @@ pop_1_error:
     STACK_SHRINK(1);
 error:
     switch (STACK_LEVEL()) {
-        case 0: _stack_base[0] = NULL;
-        case 1: _stack_base[1] = NULL;
-        case 2: _stack_base[2] = NULL;
-        case 3: _stack_base[3] = NULL;
-        case 4: _stack_base[4] = NULL;
-        case 5: _stack_base[5] = NULL;
-        case 6: _stack_base[6] = NULL;
-        case 7: _stack_base[7] = NULL;
-        case 8: _stack_base[8] = NULL;
-        case 9: _stack_base[9] = NULL;
+        case  0: _stack_base[0] = NULL;
+        case  1: _stack_base[1] = NULL;
+        case  2: _stack_base[2] = NULL;
+        case  3: _stack_base[3] = NULL;
+        case  4: _stack_base[4] = NULL;
+        case  5: _stack_base[5] = NULL;
+        case  6: _stack_base[6] = NULL;
+        case  7: _stack_base[7] = NULL;
+        case  8: _stack_base[8] = NULL;
+        case  9: _stack_base[9] = NULL;
         case 10: break;
     }
     _PyFrame_SetStackPointer(frame, _PyFrame_Stackbase(frame) + STACK_LEVEL());

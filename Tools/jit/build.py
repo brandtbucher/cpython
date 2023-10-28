@@ -30,6 +30,94 @@ TOOLS_JIT_TEMPLATE = TOOLS_JIT / "template.c"
 TOOLS_JIT_TRAMPOLINE = TOOLS_JIT / "trampoline.c"
 
 MAX_STACK_LEVEL = 10
+MAX_OPARG = 189
+
+OPARGS = {
+    "BUILD_CONST_KEY_MAP": lambda sl: range(sl),
+    "BUILD_LIST": lambda sl: range(sl + 1),
+    "BUILD_MAP": lambda sl: range(sl // 2 + 1),
+    "BUILD_SET": lambda sl: range(sl + 1),
+    "BUILD_SLICE": lambda sl: range(2, 4),
+    "BUILD_STRING": lambda sl: range(sl + 1),
+    "BUILD_TUPLE": lambda sl: range(sl + 1),
+    "CALL_BUILTIN_CLASS": lambda sl: range(sl - 1),
+    "CALL_BUILTIN_FAST": lambda sl: range(sl - 1),
+    "CALL_BUILTIN_FAST_WITH_KEYWORDS": lambda sl: range(sl - 1),
+    "CALL_BUILTIN_O": lambda sl: range(2),
+    "CALL_ISINSTANCE": lambda sl: range(1, 3),
+    "CALL_LEN": lambda sl: range(2),
+    "CALL_METHOD_DESCRIPTOR_FAST": lambda sl: range(sl - 1),
+    "CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS": lambda sl: range(sl - 1),
+    "CALL_METHOD_DESCRIPTOR_NOARGS": lambda sl: range(2),
+    "CALL_METHOD_DESCRIPTOR_O": lambda sl: range(2),
+    "CALL_STR_1": lambda sl: range(1, 2),
+    "CALL_TUPLE_1": lambda sl: range(1, 2),
+    "CALL_TYPE_1": lambda sl: range(1, 2),
+    "COPY": lambda sl: range(sl + 1),
+    "DICT_MERGE": lambda sl: range(1, sl - 3),
+    "DICT_UPDATE": lambda sl: range(1, sl),
+    "INSERT": lambda sl: range(sl),
+    "LIST_APPEND": lambda sl: range(1, sl),
+    "LIST_EXTEND": lambda sl: range(1, sl),
+    "LOAD_ATTR": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_GLOBAL": lambda sl: range(MAX_OPARG + 1),
+    "MAP_ADD": lambda sl: range(1, sl - 1),
+    "SET_ADD": lambda sl: range(1, sl),
+    "SET_UPDATE": lambda sl: range(1, sl),
+    "SWAP": lambda sl: range(2, sl + 1),
+    "UNPACK_EX": lambda sl: range(MAX_STACK_LEVEL - sl + 1),
+    "UNPACK_SEQUENCE": lambda sl: range(MAX_STACK_LEVEL - sl + 2),
+    "UNPACK_SEQUENCE_TUPLE": lambda sl: range(MAX_STACK_LEVEL - sl + 2),
+    "UNPACK_SEQUENCE_TWO_TUPLE": lambda sl: range(2, 3),
+    "UNPACK_SEQUENCE_LIST": lambda sl: range(MAX_STACK_LEVEL - sl + 2),
+    "_CHECK_CALL_BOUND_METHOD_EXACT_ARGS": lambda sl: range(sl - 1),
+    "_CHECK_FUNCTION_EXACT_ARGS": lambda sl: range(sl - 1),
+    "_CHECK_STACK_SPACE": lambda sl: range(sl - 1),
+    "_INIT_CALL_BOUND_METHOD_EXACT_ARGS": lambda sl: range(sl - 1),
+    "_INIT_CALL_PY_EXACT_ARGS": lambda sl: range(sl - 1),
+    "_LOAD_ATTR_INSTANCE_VALUE": lambda sl: range(MAX_OPARG + 1),
+    "_LOAD_ATTR_SLOT": lambda sl: range(MAX_OPARG + 1),
+    "_LOAD_GLOBAL_BUILTINS": lambda sl: range(MAX_OPARG + 1),
+    "_LOAD_GLOBAL_MODULE": lambda sl: range(MAX_OPARG + 1),
+
+    "LOAD_FAST_CHECK": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_FAST": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_FAST_AND_CLEAR": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_CONST": lambda sl: range(MAX_OPARG + 1),
+    "STORE_FAST": lambda sl: range(MAX_OPARG + 1),
+    "CALL_INTRINSIC_1": lambda sl: range(12),
+    "CALL_INTRINSIC_2": lambda sl: range(5),
+    "GET_AWAITABLE": lambda sl: range(1, 3),
+    "STORE_NAME": lambda sl: range(MAX_OPARG + 1),
+    "DELETE_NAME": lambda sl: range(MAX_OPARG + 1),
+    "STORE_ATTR": lambda sl: range(MAX_OPARG + 1),
+    "DELETE_ATTR": lambda sl: range(MAX_OPARG + 1),
+    "STORE_GLOBAL": lambda sl: range(MAX_OPARG + 1),
+    "DELETE_GLOBAL": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_FROM_DICT_OR_GLOBALS": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_NAME": lambda sl: range(MAX_OPARG + 1),
+    "DELETE_FAST": lambda sl: range(MAX_OPARG + 1),
+    "DELETE_DEREF": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_FROM_DICT_OR_DEREF": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_DEREF": lambda sl: range(MAX_OPARG + 1),
+    "STORE_DEREF": lambda sl: range(MAX_OPARG + 1),
+    "COPY_FREE_VARS": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_SUPER_ATTR_ATTR": lambda sl: range(MAX_OPARG + 1),
+    "LOAD_SUPER_ATTR_METHOD": lambda sl: range(MAX_OPARG + 1),
+    "COMPARE_OP_FLOAT": lambda sl: range(MAX_OPARG + 1),  # XXX: range(189)
+    "COMPARE_OP_INT": lambda sl: range(MAX_OPARG + 1),  # XXX: range(189)
+    "COMPARE_OP_STR": lambda sl: range(MAX_OPARG + 1),  # XXX: range(189)
+    "IS_OP": lambda sl: range(2),
+    "CONTAINS_OP": lambda sl: range(2),
+    "MATCH_CLASS": lambda sl: range(MAX_OPARG + 1),
+    "_LOAD_ATTR_METHOD_WITH_VALUES": lambda sl: range(MAX_OPARG + 1),
+    "_LOAD_ATTR_METHOD_NO_DICT": lambda sl: range(MAX_OPARG + 1),
+    "SET_FUNCTION_ATTRIBUTE": lambda sl: range(9), # XXX: [1, 2, 4, 8]
+    "CONVERT_VALUE": lambda sl: range(1, 4),
+    "BINARY_OP": lambda sl: range(26),
+    "_POP_JUMP_IF_FALSE": lambda sl: range(MAX_OPARG + 1),
+    "_POP_JUMP_IF_TRUE": lambda sl: range(MAX_OPARG + 1),
+}
 
 class _Value(typing.TypedDict):
     Value: str
@@ -383,7 +471,6 @@ class HoleValue(CEnum):
     DEOPT = enum.auto()
     ERROR = enum.auto()
     JUMP = enum.auto()
-    OPARG_PLUS_ONE = enum.auto()
     OPERAND_PLUS_ONE = enum.auto()
 
 
@@ -1044,14 +1131,14 @@ class Compiler:
             assert before != after, after
             ll.write_text(after)
 
-    async def _compile(self, opname, stack_level, c, tempdir) -> None:
-        defines = [f"-D_JIT_OPCODE={opname}", f"-D_JIT_STACK_LEVEL={stack_level}"]
-        ll = pathlib.Path(tempdir, f"{opname}_{stack_level}.ll").resolve()
-        o = pathlib.Path(tempdir, f"{opname}_{stack_level}.o").resolve()
+    async def _compile(self, opname, oparg, stack_level, c, tempdir) -> None:
+        defines = [f"-D_JIT_OPCODE={opname}", f"-D_JIT_OPARG={oparg}", f"-D_JIT_STACK_LEVEL={stack_level}"]
+        ll = pathlib.Path(tempdir, f"{opname}_{oparg}_{stack_level}.ll").resolve()
+        o = pathlib.Path(tempdir, f"{opname}_{oparg}_{stack_level}.o").resolve()
         await run(self._clang, *CFLAGS, "-emit-llvm", "-S", *defines, "-o", ll, c)
         self._use_ghccc(ll)
         await run(self._clang, *CFLAGS, "-c", "-o", o, ll)
-        self._stencils_built[opname, stack_level] = await self._parser(
+        self._stencils_built[opname, oparg, stack_level] = await self._parser(
             o, self._readobj, self._objdump
         ).parse()
 
@@ -1060,21 +1147,22 @@ class Compiler:
         with tempfile.TemporaryDirectory() as tempdir:
             await asyncio.gather(
                 *[
-                    self._compile("deopt", stack_level, TOOLS_JIT_DEOPT, tempdir)
+                    self._compile("deopt", 0, stack_level, TOOLS_JIT_DEOPT, tempdir)
                     for stack_level in range(MAX_STACK_LEVEL + 1)
                 ],
                 *[
-                    self._compile("error", stack_level, TOOLS_JIT_ERROR, tempdir)
+                    self._compile("error", 0, stack_level, TOOLS_JIT_ERROR, tempdir)
                     for stack_level in range(MAX_STACK_LEVEL + 1)
                 ],
                 *[
-                    self._compile("trampoline", stack_level, TOOLS_JIT_TRAMPOLINE, tempdir)
+                    self._compile("trampoline", 0, stack_level, TOOLS_JIT_TRAMPOLINE, tempdir)
                     for stack_level in range(MAX_STACK_LEVEL + 1)
                 ],
                 *[
-                    self._compile(opname, stack_level, TOOLS_JIT_TEMPLATE, tempdir)
+                    self._compile(opname, oparg, stack_level, TOOLS_JIT_TEMPLATE, tempdir)
                     for opname in sorted(re.findall(r"\n {8}case (\w+): \{\n", generated_cases))
                     for stack_level in range(MAX_STACK_LEVEL + 1)
+                    for oparg in OPARGS.get(opname, lambda sl: range(1))(stack_level)
                 ],
             )
 
@@ -1116,16 +1204,16 @@ class Compiler:
                 if not hole.symbol.startswith("_JIT_"):
                     symbols.add(hole.symbol)
         symbols = sorted(symbols)
-        for (opname, stack_level), stencil in sorted(self._stencils_built.items()):
+        for (opname, oparg, stack_level), stencil in sorted(self._stencils_built.items()):
             if not stencil.body:
                 continue
-            opnames.setdefault(opname, set()).add(stack_level)
-            lines.append(f"// {opname} @ {stack_level}")
+            opnames.setdefault(opname, set()).add((oparg, stack_level))
+            lines.append(f"// {opname}({oparg}) @ {stack_level}")
             for line in stencil.disassembly:
                 lines.append(f"// {line}")
             body = ",".join(f"0x{byte:02x}" for byte in stencil.body)
             lines.append(
-                f"static const unsigned char {opname}_{stack_level}_stencil_bytes[{len(stencil.body)}] = {{{body}}};"
+                f"static const unsigned char {opname}_{oparg}_{stack_level}_stencil_bytes[{len(stencil.body)}] = {{{body}}};"
             )
             holes = []
             loads = []
@@ -1140,7 +1228,7 @@ class Compiler:
                         f"    {{.kind = {hole.kind}, .offset = 0x{hole.offset:03x}, .addend = 0x{hole.addend % (1 << 64):03x}, .symbol = {symbols.index(hole.symbol):3}}},  // {hole.symbol}"
                     )
             lines.append(
-                f"static const Hole {opname}_{stack_level}_stencil_holes[{len(holes) + 1}] = {{"
+                f"static const Hole {opname}_{oparg}_{stack_level}_stencil_holes[{len(holes) + 1}] = {{"
             )
             for hole in holes:
                 lines.append(hole)
@@ -1149,7 +1237,7 @@ class Compiler:
             )
             lines.append(f"}};")
             lines.append(
-                f"static const SymbolLoad {opname}_{stack_level}_stencil_loads[{len(loads) + 1}] = {{"
+                f"static const SymbolLoad {opname}_{oparg}_{stack_level}_stencil_loads[{len(loads) + 1}] = {{"
             )
             for load in loads:
                 lines.append(load)
@@ -1166,37 +1254,35 @@ class Compiler:
         lines.append(f"")
         lines.append(f"static uintptr_t symbol_addresses[{len(symbols)}];")
         lines.append(f"")
-        lines.append(f"#define INIT_STENCIL(OPCODE, STACK_LEVEL) {{                             \\")
-        lines.append(f"    .nbytes = Py_ARRAY_LENGTH(OPCODE##_##STACK_LEVEL##_stencil_bytes),     \\")
-        lines.append(f"    .bytes = OPCODE##_##STACK_LEVEL##_stencil_bytes,                       \\")
-        lines.append(f"    .nholes = Py_ARRAY_LENGTH(OPCODE##_##STACK_LEVEL##_stencil_holes) - 1, \\")
-        lines.append(f"    .holes = OPCODE##_##STACK_LEVEL##_stencil_holes,                       \\")
-        lines.append(f"    .nloads = Py_ARRAY_LENGTH(OPCODE##_##STACK_LEVEL##_stencil_loads) - 1, \\")
-        lines.append(f"    .loads = OPCODE##_##STACK_LEVEL##_stencil_loads,                       \\")
+        lines.append(f"#define INIT_STENCIL(OPCODE, OPARG, STACK_LEVEL) {{                                  \\")
+        lines.append(f"    .nbytes = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_bytes),     \\")
+        lines.append(f"    .bytes = OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_bytes,                       \\")
+        lines.append(f"    .nholes = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_holes) - 1, \\")
+        lines.append(f"    .holes = OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_holes,                       \\")
+        lines.append(f"    .nloads = Py_ARRAY_LENGTH(OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_loads) - 1, \\")
+        lines.append(f"    .loads = OPCODE##_##OPARG##_##STACK_LEVEL##_stencil_loads,                       \\")
         lines.append(f"}}")
         lines.append(f"")
-        lines.append(f"static const Stencil deopt_stencils[MAX_STACK_LEVEL + 1] = {{")
-        for stack_level in sorted(opnames["deopt"]):
-            lines.append(f"        [{stack_level}] = INIT_STENCIL(deopt, {stack_level}),")
+        lines.append(f"static const Stencil deopt_stencils[MAX_OPARG + 1][MAX_STACK_LEVEL + 1] = {{")
+        for oparg, stack_level in sorted(opnames["deopt"]):
+            lines.append(f"        [{oparg}][{stack_level}] = INIT_STENCIL(deopt, {oparg}, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
-        lines.append(f"static const Stencil error_stencils[MAX_STACK_LEVEL + 1] = {{")
-        for stack_level in sorted(opnames["error"]):
-            lines.append(f"        [{stack_level}] = INIT_STENCIL(error, {stack_level}),")
+        lines.append(f"static const Stencil error_stencils[MAX_OPARG + 1][MAX_STACK_LEVEL + 1] = {{")
+        for oparg, stack_level in sorted(opnames["error"]):
+            lines.append(f"        [{oparg}][{stack_level}] = INIT_STENCIL(error, {oparg}, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
-        lines.append(f"static const Stencil trampoline_stencils[MAX_STACK_LEVEL + 1] = {{")
-        for stack_level in sorted(opnames["trampoline"]):
-            lines.append(f"        [{stack_level}] = INIT_STENCIL(trampoline, {stack_level}),")
+        lines.append(f"static const Stencil trampoline_stencils[MAX_OPARG + 1][MAX_STACK_LEVEL + 1] = {{")
+        for oparg, stack_level in sorted(opnames["trampoline"]):
+            lines.append(f"        [{oparg}][{stack_level}] = INIT_STENCIL(trampoline, {oparg}, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
-        lines.append(f"static const Stencil stencils[512][MAX_STACK_LEVEL + 1] = {{")
+        lines.append(f"static const Stencil stencils[512][MAX_OPARG + 1][MAX_STACK_LEVEL + 1] = {{")
         del opnames["deopt"], opnames["error"], opnames["trampoline"]
-        for opname, stack_levels in sorted(opnames.items()):
-            lines.append(f"    [{opname}] = {{")
-            for stack_level in sorted(stack_levels):
-                lines.append(f"        [{stack_level}] = INIT_STENCIL({opname}, {stack_level}),")
-            lines.append(f"    }},")
+        for opname, opargs_and_stack_levels in sorted(opnames.items()):
+            for oparg, stack_level in sorted(opargs_and_stack_levels):
+                lines.append(f"    [{opname}][{oparg}][{stack_level}] = INIT_STENCIL({opname}, {oparg}, {stack_level}),")
         lines.append(f"}};")
         lines.append(f"")
         lines.append(f"#define INIT_HOLE(NAME) [NAME] = (uintptr_t)0xBAD0BAD0BAD0BAD0")

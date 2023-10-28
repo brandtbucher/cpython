@@ -413,20 +413,20 @@ translate_bytecode_to_trace(
     } trace_stack[TRACE_STACK_SIZE];
     int trace_stack_depth = 0;
 
-#ifdef Py_DEBUG
+// #ifdef Py_DEBUG
     char *uop_debug = Py_GETENV("PYTHONUOPSDEBUG");
     int lltrace = 0;
     if (uop_debug != NULL && *uop_debug >= '0') {
         lltrace = *uop_debug - '0';  // TODO: Parse an int and all that
     }
-#endif
+// #endif
 
-#ifdef Py_DEBUG
+// #ifdef Py_DEBUG
 #define DPRINTF(level, ...) \
     if (lltrace >= (level)) { printf(__VA_ARGS__); }
-#else
-#define DPRINTF(level, ...)
-#endif
+// #else
+// #define DPRINTF(level, ...)
+// #endif
 
 #define ADD_TO_TRACE(OPCODE, OPARG, OPERAND) \
     DPRINTF(2, \
@@ -850,7 +850,7 @@ remove_unneeded_uops(_PyUOpInstruction *trace, int trace_length)
     // Stage 3: Move the stubs back.
     if (dest < last_instr) {
         int new_trace_length = move_stubs(trace, dest, last_instr, trace_length);
-#ifdef Py_DEBUG
+// #ifdef Py_DEBUG
         char *uop_debug = Py_GETENV("PYTHONUOPSDEBUG");
         int lltrace = 0;
         if (uop_debug != NULL && *uop_debug >= '0') {
@@ -868,7 +868,7 @@ remove_unneeded_uops(_PyUOpInstruction *trace, int trace_length)
                     (uint64_t)(trace[pc].operand));
             }
         }
-#endif
+// #endif
         trace_length = new_trace_length;
     }
     return trace_length;
