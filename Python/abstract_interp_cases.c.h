@@ -310,9 +310,9 @@
 
         case LOAD_GLOBAL: {
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 
@@ -326,17 +326,17 @@
 
         case _LOAD_GLOBAL_MODULE: {
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 
         case _LOAD_GLOBAL_BUILTINS: {
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 
@@ -453,9 +453,9 @@
         }
 
         case LOAD_ATTR: {
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 
@@ -468,16 +468,16 @@
         }
 
         case _LOAD_ATTR_INSTANCE_VALUE: {
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 
         case _LOAD_ATTR_SLOT: {
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (oparg & 1 ? 1 : 0))), true);
-            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(oparg & 1 ? 1 : 0))), true);
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-1 - (OPARG_LOW_BIT ? 1 : 0))), true);
+            PARTITIONNODE_OVERWRITE((_Py_PARTITIONNODE_t *)PARTITIONNODE_NULLROOT, PEEK(-(-(OPARG_LOW_BIT ? 1 : 0))), true);
             break;
         }
 

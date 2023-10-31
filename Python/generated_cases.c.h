@@ -1792,9 +1792,9 @@
             }
             null = NULL;
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = res;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = res;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 4;
             DISPATCH();
         }
@@ -1822,9 +1822,9 @@
                 null = NULL;
             }
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = res;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = res;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 4;
             DISPATCH();
         }
@@ -1860,9 +1860,9 @@
                 null = NULL;
             }
             STACK_GROW(1);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = res;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = res;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 4;
             DISPATCH();
         }
@@ -2219,7 +2219,7 @@
             class = stack_pointer[-2];
             global_super = stack_pointer[-3];
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            int load_method = oparg & 1;
+            int load_method = OPARG_LOW_BIT;
             #if ENABLE_SPECIALIZATION
             _PySuperAttrCache *cache = (_PySuperAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -2268,9 +2268,9 @@
             if (attr == NULL) goto pop_3_error;
             null = NULL;
             STACK_SHRINK(2);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 1;
             DISPATCH();
         }
@@ -2283,7 +2283,7 @@
             self = stack_pointer[-1];
             class = stack_pointer[-2];
             global_super = stack_pointer[-3];
-            assert(!(oparg & 1));
+            assert(!(OPARG_LOW_BIT));
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type, LOAD_SUPER_ATTR);
             DEOPT_IF(!PyType_Check(class), LOAD_SUPER_ATTR);
             STAT_INC(LOAD_SUPER_ATTR, hit);
@@ -2308,7 +2308,7 @@
             self = stack_pointer[-1];
             class = stack_pointer[-2];
             global_super = stack_pointer[-3];
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type, LOAD_SUPER_ATTR);
             DEOPT_IF(!PyType_Check(class), LOAD_SUPER_ATTR);
             STAT_INC(LOAD_SUPER_ATTR, hit);
@@ -2355,7 +2355,7 @@
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 1);
-            if (oparg & 1) {
+            if (OPARG_LOW_BIT) {
                 /* Designed to work in tandem with CALL, pushes two values. */
                 attr = NULL;
                 if (_PyObject_GetMethod(owner, name, &attr)) {
@@ -2386,9 +2386,9 @@
                 Py_DECREF(owner);
                 if (attr == NULL) goto pop_1_error;
             }
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = self_or_null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = self_or_null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2425,9 +2425,9 @@
                 null = NULL;
                 Py_DECREF(owner);
             }
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2452,9 +2452,9 @@
             Py_INCREF(attr);
             null = NULL;
             Py_DECREF(owner);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2493,9 +2493,9 @@
             Py_INCREF(attr);
             null = NULL;
             Py_DECREF(owner);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2523,9 +2523,9 @@
                 null = NULL;
                 Py_DECREF(owner);
             }
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2549,9 +2549,9 @@
             assert(attr != NULL);
             Py_INCREF(attr);
             Py_DECREF(owner);
-            STACK_GROW(((oparg & 1) ? 1 : 0));
-            stack_pointer[-1 - (oparg & 1 ? 1 : 0)] = attr;
-            if (oparg & 1) { stack_pointer[-(oparg & 1 ? 1 : 0)] = null; }
+            STACK_GROW((OPARG_LOW_BIT ? 1 : 0));
+            stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)] = attr;
+            if (OPARG_LOW_BIT) { stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)] = null; }
             next_instr += 9;
             DISPATCH();
         }
@@ -2562,7 +2562,7 @@
             uint32_t type_version = read_u32(&next_instr[1].cache);
             uint32_t func_version = read_u32(&next_instr[3].cache);
             PyObject *fget = read_obj(&next_instr[5].cache);
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
 
             PyTypeObject *cls = Py_TYPE(owner);
@@ -2592,7 +2592,7 @@
             uint32_t type_version = read_u32(&next_instr[1].cache);
             uint32_t func_version = read_u32(&next_instr[3].cache);
             PyObject *getattribute = read_obj(&next_instr[5].cache);
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -3608,7 +3608,7 @@
             // _LOAD_ATTR_METHOD_WITH_VALUES
             {
                 PyObject *descr = read_obj(&next_instr[5].cache);
-                assert(oparg & 1);
+                assert(OPARG_LOW_BIT);
                 /* Cached method object */
                 STAT_INC(LOAD_ATTR, hit);
                 assert(descr != NULL);
@@ -3638,7 +3638,7 @@
             // _LOAD_ATTR_METHOD_NO_DICT
             {
                 PyObject *descr = read_obj(&next_instr[5].cache);
-                assert(oparg & 1);
+                assert(OPARG_LOW_BIT);
                 PyTypeObject *owner_cls = Py_TYPE(owner);
                 assert(owner_cls->tp_dictoffset == 0);
                 STAT_INC(LOAD_ATTR, hit);
@@ -3661,7 +3661,7 @@
             uint32_t type_version = read_u32(&next_instr[1].cache);
             uint32_t keys_version = read_u32(&next_instr[3].cache);
             PyObject *descr = read_obj(&next_instr[5].cache);
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -3688,7 +3688,7 @@
             owner = stack_pointer[-1];
             uint32_t type_version = read_u32(&next_instr[1].cache);
             PyObject *descr = read_obj(&next_instr[5].cache);
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -3709,7 +3709,7 @@
             owner = stack_pointer[-1];
             uint32_t type_version = read_u32(&next_instr[1].cache);
             PyObject *descr = read_obj(&next_instr[5].cache);
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
             Py_ssize_t dictoffset = owner_cls->tp_dictoffset;
@@ -4731,9 +4731,9 @@
             PyObject *callargs;
             PyObject *func;
             PyObject *result;
-            if (oparg & 1) { kwargs = stack_pointer[-(oparg & 1 ? 1 : 0)]; }
-            callargs = stack_pointer[-1 - (oparg & 1 ? 1 : 0)];
-            func = stack_pointer[-3 - (oparg & 1 ? 1 : 0)];
+            if (OPARG_LOW_BIT) { kwargs = stack_pointer[-(OPARG_LOW_BIT ? 1 : 0)]; }
+            callargs = stack_pointer[-1 - (OPARG_LOW_BIT ? 1 : 0)];
+            func = stack_pointer[-3 - (OPARG_LOW_BIT ? 1 : 0)];
             // DICT_MERGE is called before this opcode if there are kwargs.
             // It converts all dict subtypes in kwargs into regular dicts.
             assert(kwargs == NULL || PyDict_CheckExact(kwargs));
@@ -4798,9 +4798,9 @@
             Py_DECREF(func);
             Py_DECREF(callargs);
             Py_XDECREF(kwargs);
-            assert(PEEK(2 + (oparg & 1)) == NULL);
-            if (result == NULL) { STACK_SHRINK(((oparg & 1) ? 1 : 0)); goto pop_3_error; }
-            STACK_SHRINK(((oparg & 1) ? 1 : 0));
+            assert(PEEK(2 + (OPARG_LOW_BIT)) == NULL);
+            if (result == NULL) { STACK_SHRINK((OPARG_LOW_BIT ? 1 : 0)); goto pop_3_error; }
+            STACK_SHRINK((OPARG_LOW_BIT ? 1 : 0));
             STACK_SHRINK(2);
             stack_pointer[-1] = result;
             CHECK_EVAL_BREAKER();

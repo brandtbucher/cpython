@@ -1361,7 +1361,7 @@ dummy_func(
             LOAD_GLOBAL_BUILTIN,
         };
 
-        inst(LOAD_GLOBAL, (unused/1, unused/1, unused/1, unused/1 -- res, null if (oparg & 1))) {
+        inst(LOAD_GLOBAL, (unused/1, unused/1, unused/1, unused/1 -- res, null if (OPARG_LOW_BIT))) {
             #if ENABLE_SPECIALIZATION
             _PyLoadGlobalCache *cache = (_PyLoadGlobalCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1424,7 +1424,7 @@ dummy_func(
             assert(DK_IS_UNICODE(dict->ma_keys));
         }
 
-        op(_LOAD_GLOBAL_MODULE, (index/1 -- res, null if (oparg & 1))) {
+        op(_LOAD_GLOBAL_MODULE, (index/1 -- res, null if (OPARG_LOW_BIT))) {
             PyDictObject *dict = (PyDictObject *)GLOBALS();
             PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(dict->ma_keys);
             res = entries[index].me_value;
@@ -1434,7 +1434,7 @@ dummy_func(
             null = NULL;
         }
 
-        op(_LOAD_GLOBAL_BUILTINS, (index/1 -- res, null if (oparg & 1))) {
+        op(_LOAD_GLOBAL_BUILTINS, (index/1 -- res, null if (OPARG_LOW_BIT))) {
             PyDictObject *bdict = (PyDictObject *)BUILTINS();
             PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(bdict->ma_keys);
             res = entries[index].me_value;
@@ -1686,7 +1686,7 @@ dummy_func(
             ERROR_IF(_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0, error);
         }
 
-        inst(INSTRUMENTED_LOAD_SUPER_ATTR, (unused/9, unused, unused, unused -- unused, unused if (oparg & 1))) {
+        inst(INSTRUMENTED_LOAD_SUPER_ATTR, (unused/9, unused, unused, unused -- unused, unused if (OPARG_LOW_BIT))) {
             _PySuperAttrCache *cache = (_PySuperAttrCache *)next_instr;
             // cancel out the decrement that will happen in LOAD_SUPER_ATTR; we
             // don't want to specialize instrumented instructions
@@ -1699,9 +1699,9 @@ dummy_func(
             LOAD_SUPER_ATTR_METHOD,
         };
 
-        inst(LOAD_SUPER_ATTR, (unused/1, global_super, class, self -- attr, null if (oparg & 1))) {
+        inst(LOAD_SUPER_ATTR, (unused/1, global_super, class, self -- attr, null if (OPARG_LOW_BIT))) {
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            int load_method = oparg & 1;
+            int load_method = OPARG_LOW_BIT;
             #if ENABLE_SPECIALIZATION
             _PySuperAttrCache *cache = (_PySuperAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1762,7 +1762,7 @@ dummy_func(
         };
 
         inst(LOAD_SUPER_ATTR_ATTR, (unused/1, global_super, class, self -- attr, unused if (0))) {
-            assert(!(oparg & 1));
+            assert(!(OPARG_LOW_BIT));
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type, LOAD_SUPER_ATTR);
             DEOPT_IF(!PyType_Check(class), LOAD_SUPER_ATTR);
             STAT_INC(LOAD_SUPER_ATTR, hit);
@@ -1773,7 +1773,7 @@ dummy_func(
         }
 
         inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super, class, self -- attr, self_or_null)) {
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type, LOAD_SUPER_ATTR);
             DEOPT_IF(!PyType_Check(class), LOAD_SUPER_ATTR);
             STAT_INC(LOAD_SUPER_ATTR, hit);
@@ -1811,7 +1811,7 @@ dummy_func(
             LOAD_ATTR_NONDESCRIPTOR_NO_DICT,
         };
 
-        inst(LOAD_ATTR, (unused/9, owner -- attr, self_or_null if (oparg & 1))) {
+        inst(LOAD_ATTR, (unused/9, owner -- attr, self_or_null if (OPARG_LOW_BIT))) {
             #if ENABLE_SPECIALIZATION
             _PyAttrCache *cache = (_PyAttrCache *)next_instr;
             if (ADAPTIVE_COUNTER_IS_ZERO(cache->counter)) {
@@ -1824,7 +1824,7 @@ dummy_func(
             DECREMENT_ADAPTIVE_COUNTER(cache->counter);
             #endif  /* ENABLE_SPECIALIZATION */
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 1);
-            if (oparg & 1) {
+            if (OPARG_LOW_BIT) {
                 /* Designed to work in tandem with CALL, pushes two values. */
                 attr = NULL;
                 if (_PyObject_GetMethod(owner, name, &attr)) {
@@ -1876,7 +1876,7 @@ dummy_func(
                      LOAD_ATTR);
         }
 
-        op(_LOAD_ATTR_INSTANCE_VALUE, (index/1, owner -- attr, null if (oparg & 1))) {
+        op(_LOAD_ATTR_INSTANCE_VALUE, (index/1, owner -- attr, null if (OPARG_LOW_BIT))) {
             PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
             attr = _PyDictOrValues_GetValues(dorv)->values[index];
             DEOPT_IF(attr == NULL, LOAD_ATTR);
@@ -1893,7 +1893,7 @@ dummy_func(
             _LOAD_ATTR_INSTANCE_VALUE +
             unused/5;  // Skip over rest of cache
 
-        inst(LOAD_ATTR_MODULE, (unused/1, type_version/2, index/1, unused/5, owner -- attr, null if (oparg & 1))) {
+        inst(LOAD_ATTR_MODULE, (unused/1, type_version/2, index/1, unused/5, owner -- attr, null if (OPARG_LOW_BIT))) {
             DEOPT_IF(!PyModule_CheckExact(owner), LOAD_ATTR);
             PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
             assert(dict != NULL);
@@ -1909,7 +1909,7 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        inst(LOAD_ATTR_WITH_HINT, (unused/1, type_version/2, index/1, unused/5, owner -- attr, null if (oparg & 1))) {
+        inst(LOAD_ATTR_WITH_HINT, (unused/1, type_version/2, index/1, unused/5, owner -- attr, null if (OPARG_LOW_BIT))) {
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -1939,7 +1939,7 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        op(_LOAD_ATTR_SLOT, (index/1, owner -- attr, null if (oparg & 1))) {
+        op(_LOAD_ATTR_SLOT, (index/1, owner -- attr, null if (OPARG_LOW_BIT))) {
             char *addr = (char *)owner + index;
             attr = *(PyObject **)addr;
             DEOPT_IF(attr == NULL, LOAD_ATTR);
@@ -1955,7 +1955,7 @@ dummy_func(
             _LOAD_ATTR_SLOT +  // NOTE: This action may also deopt
             unused/5;
 
-        inst(LOAD_ATTR_CLASS, (unused/1, type_version/2, unused/2, descr/4, owner -- attr, null if (oparg & 1))) {
+        inst(LOAD_ATTR_CLASS, (unused/1, type_version/2, unused/2, descr/4, owner -- attr, null if (OPARG_LOW_BIT))) {
 
             DEOPT_IF(!PyType_Check(owner), LOAD_ATTR);
             DEOPT_IF(((PyTypeObject *)owner)->tp_version_tag != type_version,
@@ -1971,7 +1971,7 @@ dummy_func(
         }
 
         inst(LOAD_ATTR_PROPERTY, (unused/1, type_version/2, func_version/2, fget/4, owner -- unused, unused if (0))) {
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
 
             PyTypeObject *cls = Py_TYPE(owner);
@@ -1996,7 +1996,7 @@ dummy_func(
         }
 
         inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/2, getattribute/4, owner -- unused, unused if (0))) {
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
             DEOPT_IF(cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -2805,7 +2805,7 @@ dummy_func(
         }
 
         op(_LOAD_ATTR_METHOD_WITH_VALUES, (descr/4, owner -- attr, self if (1))) {
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             /* Cached method object */
             STAT_INC(LOAD_ATTR, hit);
             assert(descr != NULL);
@@ -2822,7 +2822,7 @@ dummy_func(
             _LOAD_ATTR_METHOD_WITH_VALUES;
 
         op(_LOAD_ATTR_METHOD_NO_DICT, (descr/4, owner -- attr, self if (1))) {
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             assert(owner_cls->tp_dictoffset == 0);
             STAT_INC(LOAD_ATTR, hit);
@@ -2839,7 +2839,7 @@ dummy_func(
             _LOAD_ATTR_METHOD_NO_DICT;
 
         inst(LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, (unused/1, type_version/2, keys_version/2, descr/4, owner -- attr, unused if (0))) {
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -2858,7 +2858,7 @@ dummy_func(
         }
 
         inst(LOAD_ATTR_NONDESCRIPTOR_NO_DICT, (unused/1, type_version/2, unused/2, descr/4, owner -- attr, unused if (0))) {
-            assert((oparg & 1) == 0);
+            assert((OPARG_LOW_BIT) == 0);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
@@ -2870,7 +2870,7 @@ dummy_func(
         }
 
         inst(LOAD_ATTR_METHOD_LAZY_DICT, (unused/1, type_version/2, unused/2, descr/4, owner -- attr, self if (1))) {
-            assert(oparg & 1);
+            assert(OPARG_LOW_BIT);
             PyTypeObject *owner_cls = Py_TYPE(owner);
             DEOPT_IF(owner_cls->tp_version_tag != type_version, LOAD_ATTR);
             Py_ssize_t dictoffset = owner_cls->tp_dictoffset;
@@ -3615,7 +3615,7 @@ dummy_func(
             GO_TO_INSTRUCTION(CALL_FUNCTION_EX);
         }
 
-        inst(CALL_FUNCTION_EX, (func, unused, callargs, kwargs if (oparg & 1) -- result)) {
+        inst(CALL_FUNCTION_EX, (func, unused, callargs, kwargs if (OPARG_LOW_BIT) -- result)) {
             // DICT_MERGE is called before this opcode if there are kwargs.
             // It converts all dict subtypes in kwargs into regular dicts.
             assert(kwargs == NULL || PyDict_CheckExact(kwargs));
@@ -3678,7 +3678,7 @@ dummy_func(
                 result = PyObject_Call(func, callargs, kwargs);
             }
             DECREF_INPUTS();
-            assert(PEEK(2 + (oparg & 1)) == NULL);
+            assert(PEEK(2 + (OPARG_LOW_BIT)) == NULL);
             ERROR_IF(result == NULL, error);
             CHECK_EVAL_BREAKER();
         }

@@ -224,8 +224,6 @@ copy_and_patch(unsigned char *memory, const Stencil *stencil, uintptr_t patches[
     }
 }
 
-#define OPARG(I) (OPCODE_HAS_ARG((I)->opcode) ? (I)->oparg : 0)
-
 // The world's smallest compiler?
 _PyJITFunction
 _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
@@ -342,14 +340,14 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         assert(0 <= stack_levels[i]);
         offsets[i] = nbytes;
         _PyUOpInstruction *instruction = &trace[i];
-        // printf("XXX:\t%i\t%i\t%s\t%d\t%p\n", i, stack_levels[i], instruction->opcode < 256 ? _PyOpcode_OpName[instruction->opcode] : _PyOpcode_uop_name[instruction->opcode], OPARG(instruction), instruction->operand);
-        if (MAX_STACK_LEVEL < stack_levels[i] || MAX_OPARG < OPARG(instruction)) {
+        // printf("XXX:\t%i\t%i\t%s\t%d\t%p\n", i, stack_levels[i], instruction->opcode < 256 ? _PyOpcode_OpName[instruction->opcode] : _PyOpcode_uop_name[instruction->opcode], instruction->oparg, instruction->operand);
+        if (MAX_STACK_LEVEL < stack_levels[i]) {
             // PyErr_WarnFormat(PyExc_RuntimeWarning, 0, "JIT can't handle stack level %d", stack_levels[i]);
             PyMem_Free(stack_levels);
             PyMem_Free(offsets);
             return NULL;
         }
-        const Stencil *stencil = &stencils[instruction->opcode][OPARG(instruction)][stack_levels[i]];
+        const Stencil *stencil = &stencils[instruction->opcode][instruction->oparg & 1][stack_levels[i]];
         // XXX: Clean up how these are propagated? Maybe speial cases for EXIT_TRACE and JUMP_TO_TOP?
         // XXX: Broken for generators and coroutines:
         if (instruction->opcode == _PUSH_FRAME) {  // XXX
@@ -373,18 +371,18 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
         else if (stack_levels[i + 1] < 0) {
             stack_levels[i + 1] = (
                 stack_levels[i]
-                - _PyOpcode_num_popped(instruction->opcode, OPARG(instruction), false)
-                + _PyOpcode_num_pushed(instruction->opcode, OPARG(instruction), false)
+                - _PyOpcode_num_popped(instruction->opcode, instruction->oparg, false)
+                + _PyOpcode_num_pushed(instruction->opcode, instruction->oparg, false)
             );
 
         }
         if (instruction->opcode == _POP_JUMP_IF_FALSE ||
             instruction->opcode == _POP_JUMP_IF_TRUE)
         {
-            stack_levels[OPARG(instruction)] = (
+            stack_levels[instruction->oparg] = (
                 stack_levels[i]
-                - _PyOpcode_num_popped(instruction->opcode, OPARG(instruction), true)
-                + _PyOpcode_num_pushed(instruction->opcode, OPARG(instruction), true)
+                - _PyOpcode_num_popped(instruction->opcode, instruction->oparg, true)
+                + _PyOpcode_num_pushed(instruction->opcode, instruction->oparg, true)
             );
         }
         // XXX: Assert this once we support everything, and move initialization
@@ -432,12 +430,13 @@ _PyJIT_CompileTrace(_PyUOpInstruction *trace, int size, int stack_level)
     for (int i = 0; i < size; i++) {
         assert(0 <= stack_levels[i] && stack_levels[i] <= MAX_STACK_LEVEL);
         _PyUOpInstruction *instruction = &trace[i];
-        const Stencil *stencil = &stencils[instruction->opcode][OPARG(instruction)][stack_levels[i]];
+        const Stencil *stencil = &stencils[instruction->opcode][instruction->oparg & 1][stack_levels[i]];
         patches[HoleValue_BASE] = (uintptr_t)head;
-        patches[HoleValue_JUMP] = (uintptr_t)memory + offsets[OPARG(instruction) % size];
+        patches[HoleValue_JUMP] = (uintptr_t)memory + offsets[instruction->oparg % size];
         patches[HoleValue_CONTINUE] = (uintptr_t)head + stencil->nbytes;
         patches[HoleValue_DEOPT] = (uintptr_t)deopt_stubs[stack_levels[i]];
         patches[HoleValue_ERROR] = (uintptr_t)error_stubs[0];
+        patches[HoleValue_OPARG_PLUS_ONE] = instruction->oparg + 1;
         patches[HoleValue_OPERAND_PLUS_ONE] = instruction->operand + 1;
         copy_and_patch(head, stencil, patches);
         head += stencil->nbytes;

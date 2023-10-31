@@ -84,6 +84,7 @@
 extern int _PyOpcode_num_popped(int opcode, int oparg, bool jump);
 #ifdef NEED_OPCODE_METADATA
 int _PyOpcode_num_popped(int opcode, int oparg, bool jump)  {
+    #define OPARG_LOW_BIT (oparg & 1)
     switch(opcode) {
         case NOP:
             return 0;
@@ -578,7 +579,7 @@ int _PyOpcode_num_popped(int opcode, int oparg, bool jump)  {
         case INSTRUMENTED_CALL_FUNCTION_EX:
             return 0;
         case CALL_FUNCTION_EX:
-            return ((oparg & 1) ? 1 : 0) + 3;
+            return (OPARG_LOW_BIT ? 1 : 0) + 3;
         case MAKE_FUNCTION:
             return 1;
         case SET_FUNCTION_ATTRIBUTE:
@@ -636,12 +637,14 @@ int _PyOpcode_num_popped(int opcode, int oparg, bool jump)  {
         default:
             return -1;
     }
+    #undef OPARG_LOW_BIT
 }
 #endif // NEED_OPCODE_METADATA
 
 extern int _PyOpcode_num_pushed(int opcode, int oparg, bool jump);
 #ifdef NEED_OPCODE_METADATA
 int _PyOpcode_num_pushed(int opcode, int oparg, bool jump)  {
+    #define OPARG_LOW_BIT (oparg & 1)
     switch(opcode) {
         case NOP:
             return 0;
@@ -842,19 +845,19 @@ int _PyOpcode_num_pushed(int opcode, int oparg, bool jump)  {
         case LOAD_NAME:
             return 1;
         case LOAD_GLOBAL:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case _GUARD_GLOBALS_VERSION:
             return 0;
         case _GUARD_BUILTINS_VERSION:
             return 0;
         case _LOAD_GLOBAL_MODULE:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case _LOAD_GLOBAL_BUILTINS:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_GLOBAL_MODULE:
-            return (oparg & 1 ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_GLOBAL_BUILTIN:
-            return (oparg & 1 ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case DELETE_FAST:
             return 0;
         case MAKE_CELL:
@@ -894,41 +897,41 @@ int _PyOpcode_num_pushed(int opcode, int oparg, bool jump)  {
         case MAP_ADD:
             return (oparg - 1) + 1;
         case INSTRUMENTED_LOAD_SUPER_ATTR:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_SUPER_ATTR:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_SUPER_METHOD:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ZERO_SUPER_METHOD:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ZERO_SUPER_ATTR:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_SUPER_ATTR_ATTR:
             return 1;
         case LOAD_SUPER_ATTR_METHOD:
             return 2;
         case LOAD_ATTR:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_METHOD:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case _GUARD_TYPE_VERSION:
             return 1;
         case _CHECK_MANAGED_OBJECT_HAS_VALUES:
             return 1;
         case _LOAD_ATTR_INSTANCE_VALUE:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_INSTANCE_VALUE:
-            return (oparg & 1 ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_MODULE:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_WITH_HINT:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case _LOAD_ATTR_SLOT:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_SLOT:
-            return (oparg & 1 ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_CLASS:
-            return ((oparg & 1) ? 1 : 0) + 1;
+            return (OPARG_LOW_BIT ? 1 : 0) + 1;
         case LOAD_ATTR_PROPERTY:
             return 1;
         case LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN:
@@ -1194,6 +1197,7 @@ int _PyOpcode_num_pushed(int opcode, int oparg, bool jump)  {
         default:
             return -1;
     }
+    #undef OPARG_LOW_BIT
 }
 #endif // NEED_OPCODE_METADATA
 
@@ -1209,6 +1213,7 @@ enum InstructionFormat {
     INSTR_FMT_IXC0,
     INSTR_FMT_IXC00,
     INSTR_FMT_IXC000,
+    INSTR_FMT_IXC00000000,
 };
 
 #define IS_VALID_OPCODE(OP) \
@@ -1366,10 +1371,10 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[OPCODE_METADATA_SIZE] = {
     [LOAD_GLOBAL] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG },
     [_GUARD_GLOBALS_VERSION] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
     [_GUARD_BUILTINS_VERSION] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
-    [_LOAD_GLOBAL_MODULE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [_LOAD_GLOBAL_BUILTINS] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_GLOBAL_MODULE] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_GLOBAL_BUILTIN] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
+    [_LOAD_GLOBAL_MODULE] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
+    [_LOAD_GLOBAL_BUILTINS] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
+    [LOAD_GLOBAL_MODULE] = { true, INSTR_FMT_IXC000, HAS_DEOPT_FLAG },
+    [LOAD_GLOBAL_BUILTIN] = { true, INSTR_FMT_IXC000, HAS_DEOPT_FLAG },
     [DELETE_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ERROR_FLAG },
     [MAKE_CELL] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_FREE_FLAG | HAS_ERROR_FLAG },
     [DELETE_DEREF] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_FREE_FLAG | HAS_ERROR_FLAG },
@@ -1389,7 +1394,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[OPCODE_METADATA_SIZE] = {
     [DICT_UPDATE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG },
     [DICT_MERGE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG },
     [MAP_ADD] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG },
-    [INSTRUMENTED_LOAD_SUPER_ATTR] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG },
+    [INSTRUMENTED_LOAD_SUPER_ATTR] = { true, INSTR_FMT_IXC00000000, 0 },
     [LOAD_SUPER_ATTR] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG },
     [LOAD_SUPER_METHOD] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG },
     [LOAD_ZERO_SUPER_METHOD] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG },
@@ -1400,14 +1405,14 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[OPCODE_METADATA_SIZE] = {
     [LOAD_METHOD] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG },
     [_GUARD_TYPE_VERSION] = { true, INSTR_FMT_IXC0, HAS_DEOPT_FLAG },
     [_CHECK_MANAGED_OBJECT_HAS_VALUES] = { true, INSTR_FMT_IX, HAS_DEOPT_FLAG },
-    [_LOAD_ATTR_INSTANCE_VALUE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_INSTANCE_VALUE] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_MODULE] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
+    [_LOAD_ATTR_INSTANCE_VALUE] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_INSTANCE_VALUE] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_MODULE] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
     [LOAD_ATTR_WITH_HINT] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_DEOPT_FLAG },
-    [_LOAD_ATTR_SLOT] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_SLOT] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_CLASS] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_PROPERTY] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
+    [_LOAD_ATTR_SLOT] = { true, INSTR_FMT_IXC, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_SLOT] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_CLASS] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_PROPERTY] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
     [LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_DEOPT_FLAG },
     [_GUARD_DORV_VALUES] = { true, INSTR_FMT_IX, HAS_DEOPT_FLAG },
     [_STORE_ATTR_INSTANCE_VALUE] = { true, INSTR_FMT_IXC, 0 },
@@ -1472,13 +1477,13 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[OPCODE_METADATA_SIZE] = {
     [PUSH_EXC_INFO] = { true, INSTR_FMT_IX, 0 },
     [_GUARD_DORV_VALUES_INST_ATTR_FROM_DICT] = { true, INSTR_FMT_IX, HAS_DEOPT_FLAG },
     [_GUARD_KEYS_VERSION] = { true, INSTR_FMT_IXC0, HAS_DEOPT_FLAG },
-    [_LOAD_ATTR_METHOD_WITH_VALUES] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG },
-    [LOAD_ATTR_METHOD_WITH_VALUES] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [_LOAD_ATTR_METHOD_NO_DICT] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG },
-    [LOAD_ATTR_METHOD_NO_DICT] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_NONDESCRIPTOR_NO_DICT] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
-    [LOAD_ATTR_METHOD_LAZY_DICT] = { true, INSTR_FMT_IBC00000000, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
+    [_LOAD_ATTR_METHOD_WITH_VALUES] = { true, INSTR_FMT_IXC000, 0 },
+    [LOAD_ATTR_METHOD_WITH_VALUES] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [_LOAD_ATTR_METHOD_NO_DICT] = { true, INSTR_FMT_IXC000, 0 },
+    [LOAD_ATTR_METHOD_NO_DICT] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_NONDESCRIPTOR_NO_DICT] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
+    [LOAD_ATTR_METHOD_LAZY_DICT] = { true, INSTR_FMT_IXC00000000, HAS_DEOPT_FLAG },
     [INSTRUMENTED_CALL] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG },
     [CALL] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG },
     [_CHECK_CALL_BOUND_METHOD_EXACT_ARGS] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_DEOPT_FLAG },

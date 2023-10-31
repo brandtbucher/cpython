@@ -80,7 +80,9 @@ _PyUopExecute(_PyExecutorObject *executor, _PyInterpreterFrame *frame, PyObject 
         OBJECT_STAT_INC(optimization_uops_executed);
         switch (opcode) {
 
+#define OPARG_LOW_BIT (oparg & 1)
 #include "executor_cases.c.h"
+#undef OPARG_LOW_BIT
 
             default:
             {

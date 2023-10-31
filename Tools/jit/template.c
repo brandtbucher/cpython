@@ -39,6 +39,7 @@ extern _PyInterpreterFrame *_JIT_ERROR(_PyInterpreterFrame *frame,
 extern _PyInterpreterFrame *_JIT_JUMP(_PyInterpreterFrame *frame,
                                       PyThreadState *tstate, PACK_STACK);
 // The address of an extern can't be 0:
+extern void _JIT_OPARG_PLUS_ONE;
 extern void _JIT_OPERAND_PLUS_ONE;
 
 #undef STACK_LEVEL  // XXX
@@ -89,7 +90,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyThreadState *tstate, PACK_STACK)
 {
     // Locals that the instruction implementations expect to exist:
     uint32_t opcode = _JIT_OPCODE;
-    int32_t oparg = _JIT_OPARG;
+    int32_t oparg = (uintptr_t)&_JIT_OPARG_PLUS_ONE - 1;
     uint64_t operand = (uintptr_t)&_JIT_OPERAND_PLUS_ONE - 1;
     int pc = -1;  // XXX
     PyObject *_stack_base[MAX_STACK_LEVEL];

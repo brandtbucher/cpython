@@ -763,7 +763,9 @@ resume_frame:
 #endif
         {
 
+#define OPARG_LOW_BIT (oparg & 1)
 #include "generated_cases.c.h"
+#undef OPARG_LOW_BIT
 
     /* INSTRUMENTED_LINE has to be here, rather than in bytecodes.c,
      * because it needs to capture frame->prev_instr before it is updated,

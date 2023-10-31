@@ -225,12 +225,14 @@ class Generator(Analyzer):
                 "",
                 "",
             ):
+                self.out.emit(f"#define OPARG_LOW_BIT (oparg & 1)")
                 with self.out.block("switch(opcode)"):
                     for instr, effect in data:
                         self.out.emit(f"case {instr.name}:")
                         self.out.emit(f"    return {effect};")
                     self.out.emit("default:")
                     self.out.emit("    return -1;")
+                self.out.emit(f"#undef OPARG_LOW_BIT")
 
         write_function("popped", popped_data)
         write_function("pushed", pushed_data)
