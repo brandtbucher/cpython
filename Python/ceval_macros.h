@@ -397,3 +397,19 @@ stack_pointer = _PyFrame_GetStackPointer(frame);
 #define GOTO_TIER_TWO() goto enter_tier_two;
 
 #define GOTO_TIER_ONE() goto exit_trace;
+
+#define EXIT_EXECUTOR(EXECUTOR)                                                       \
+    do {                                                                              \
+        next_instr = frame->instr_ptr;                                                \
+        NEXTOPARG();                                                                  \
+        if (opcode == ENTER_EXECUTOR) {                                               \
+            PyCodeObject *code = _PyFrame_GetCode(frame);                             \
+            _PyExecutorObject *executor = code->co_executors->executors[oparg & 255]; \
+            if (executor == (_PyExecutorObject *)(EXECUTOR)) {                        \
+                opcode = executor->vm_data.opcode;                                    \
+                oparg = executor->vm_data.oparg;                                      \
+            }                                                                         \
+        }                                                                             \
+        PRE_DISPATCH_GOTO();                                                          \
+        DISPATCH_GOTO();                                                              \
+    } while (0)

@@ -3414,7 +3414,7 @@
             uint16_t ucounter = this_instr[1].cache + (1 << 15);
             uint16_t threshold = tstate->interp->optimizer_backedge_threshold + (1 << 15);
             // Double-check that the opcode isn't instrumented or something:
-            if (ucounter > threshold && this_instr->op.code == JUMP_BACKWARD) {
+            if (ucounter > threshold && this_instr->op.code == JUMP_BACKWARD && oparg < 256) {
                 OPT_STAT_INC(attempts);
                 int optimized = _PyOptimizer_BackEdge(frame, this_instr, next_instr, stack_pointer);
                 if (optimized < 0) goto error;
@@ -3445,14 +3445,10 @@
             next_instr += 1;
             INSTRUCTION_STATS(ENTER_EXECUTOR);
             TIER_ONE_ONLY
-            CHECK_EVAL_BREAKER();
-
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            _PyExecutorObject *executor = (_PyExecutorObject *)code->co_executors->executors[oparg&255];
-            int original_oparg = executor->vm_data.oparg | (oparg & 0xfffff00);
-            JUMPBY(1-original_oparg);
-            frame->instr_ptr = next_instr;
+            _PyExecutorObject *executor = code->co_executors->executors[oparg & 255];
             Py_INCREF(executor);
+            next_instr--;
             if (executor->execute == _PyUopExecute) {
                 current_executor = (_PyUOpExecutorObject *)executor;
                 GOTO_TIER_TWO();
@@ -3462,7 +3458,9 @@
                 frame = tstate->current_frame;
                 goto resume_with_error;
             }
-            goto enter_tier_one;
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            EXIT_EXECUTOR(executor);
+            DISPATCH();
         }
 
         TARGET(POP_JUMP_IF_FALSE) {

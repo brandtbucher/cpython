@@ -1018,6 +1018,7 @@ enter_tier_two:
 #ifdef Py_STATS
         trace_uop_execution_counter++;
 #endif
+        goto deoptimize;  // XXX
 
         switch (opcode) {
 
@@ -1067,23 +1068,13 @@ deoptimize:
     // On DEOPT_IF we just repeat the last instruction.
     // This presumes nothing was popped from the stack (nor pushed).
     DPRINTF(2, "DEOPT: [Opcode %d, operand %" PRIu64 " @ %d]\n", opcode, operand, (int)(next_uop-current_executor->trace-1));
-    OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
     UOP_STAT_INC(opcode, miss);
     frame->return_offset = 0;  // Dispatch to frame->instr_ptr
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    Py_DECREF(current_executor);
-    // Fall through
-// Jump here from ENTER_EXECUTOR
-enter_tier_one:
-    next_instr = frame->instr_ptr;
-    goto resume_frame;
-
 // Jump here from _EXIT_TRACE
 exit_trace:
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    Py_DECREF(current_executor);
     OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
-    goto enter_tier_one;
+    Py_DECREF(current_executor);
+    EXIT_EXECUTOR(current_executor);
 }
 #if defined(__GNUC__)
 #  pragma GCC diagnostic pop
