@@ -234,6 +234,21 @@ is_valid(PyObject *self, PyObject *Py_UNUSED(ignored))
     return PyBool_FromLong(((_PyExecutorObject *)self)->vm_data.valid);
 }
 
+static PyObject *
+get_jit_code(PyObject *self, PyObject *Py_UNUSED(ignored))
+{
+    if (!Py_IS_TYPE(self, &_PyUOpExecutor_Type)) {
+        PyErr_SetString(PyExc_TypeError, "get_jit_code only works on uop_executor objects.");
+        return NULL;
+    }
+    _PyUOpExecutorObject *executor = (_PyUOpExecutorObject *)self;
+    if (executor->jit_code == NULL || executor->jit_size == 0) {
+        PyErr_SetString(PyExc_ValueError, "No JIT code available.");
+        return NULL;
+    }
+    return PyBytes_FromStringAndSize(executor->jit_code, executor->jit_size);
+}
+
 static PyMethodDef executor_methods[] = {
     { "is_valid", is_valid, METH_NOARGS, NULL },
     { NULL, NULL },
@@ -379,6 +394,12 @@ PySequenceMethods uop_as_sequence = {
     .sq_item = (ssizeargfunc)uop_item,
 };
 
+static PyMethodDef uop_executor_methods[] = {
+    { "is_valid", is_valid, METH_NOARGS, NULL },
+    { "get_jit_code", get_jit_code, METH_NOARGS, NULL},
+    { NULL, NULL },
+};
+
 PyTypeObject _PyUOpExecutor_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     .tp_name = "uop_executor",
@@ -387,7 +408,7 @@ PyTypeObject _PyUOpExecutor_Type = {
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
     .tp_dealloc = (destructor)uop_dealloc,
     .tp_as_sequence = &uop_as_sequence,
-    .tp_methods = executor_methods,
+    .tp_methods = uop_executor_methods,
 };
 
 /* TO DO -- Generate these tables */
