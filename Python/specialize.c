@@ -1501,7 +1501,6 @@ _Py_Specialize_BinarySubscr(
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[BINARY_SUBSCR] ==
            INLINE_CACHE_ENTRIES_BINARY_SUBSCR);
-    _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)(instr + 1);
     PyTypeObject *container_type = Py_TYPE(container);
     if (container_type == &PyList_Type) {
         if (PyLong_CheckExact(sub)) {
@@ -1587,12 +1586,12 @@ fail:
     STAT_INC(BINARY_SUBSCR, failure);
     assert(!PyErr_Occurred());
     instr->op.code = BINARY_SUBSCR;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(BINARY_SUBSCR, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 void

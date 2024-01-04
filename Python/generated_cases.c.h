@@ -410,10 +410,10 @@
 
         TARGET(BINARY_SUBSCR) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR);
             PREDICTED(BINARY_SUBSCR);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *sub;
             PyObject *container;
             PyObject *res;
@@ -421,16 +421,17 @@
             sub = stack_pointer[-1];
             container = stack_pointer[-2];
             {
-                uint16_t counter = read_u16(&this_instr[1].cache);
                 TIER_ONE_ONLY
                 #if ENABLE_SPECIALIZATION
+                uint16_t counter = _PyCounterTable_Get(this_instr);
                 if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                     next_instr = this_instr;
                     _Py_Specialize_BinarySubscr(container, sub, next_instr);
                     DISPATCH_SAME_OPARG();
                 }
                 STAT_INC(BINARY_SUBSCR, deferred);
-                DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+                DECREMENT_ADAPTIVE_COUNTER(counter);
+                _PyCounterTable_Set(this_instr, counter);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
             // _BINARY_SUBSCR
@@ -447,13 +448,12 @@
 
         TARGET(BINARY_SUBSCR_DICT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *dict;
             PyObject *res;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             dict = stack_pointer[-2];
             DEOPT_IF(!PyDict_CheckExact(dict), BINARY_SUBSCR);
@@ -473,12 +473,11 @@
 
         TARGET(BINARY_SUBSCR_GETITEM) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR_GETITEM);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *container;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             container = stack_pointer[-2];
             DEOPT_IF(tstate->interp->eval_frame, BINARY_SUBSCR);
@@ -506,13 +505,12 @@
 
         TARGET(BINARY_SUBSCR_LIST_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR_LIST_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *list;
             PyObject *res;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             list = stack_pointer[-2];
             DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);
@@ -534,13 +532,12 @@
 
         TARGET(BINARY_SUBSCR_STR_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR_STR_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *str;
             PyObject *res;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             str = stack_pointer[-2];
             DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);
@@ -562,13 +559,12 @@
 
         TARGET(BINARY_SUBSCR_TUPLE_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(BINARY_SUBSCR_TUPLE_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *tuple;
             PyObject *res;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             tuple = stack_pointer[-2];
             DEOPT_IF(!PyLong_CheckExact(sub), BINARY_SUBSCR);

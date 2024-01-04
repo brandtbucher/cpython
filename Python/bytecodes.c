@@ -543,16 +543,18 @@ dummy_func(
             BINARY_SUBSCR_TUPLE_INT,
         };
 
-        specializing op(_SPECIALIZE_BINARY_SUBSCR, (counter/1, container, sub -- container, sub)) {
+        specializing op(_SPECIALIZE_BINARY_SUBSCR, (container, sub -- container, sub)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
+            uint16_t counter = _PyCounterTable_Get(this_instr);
             if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_BinarySubscr(container, sub, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(BINARY_SUBSCR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(counter);
+            _PyCounterTable_Set(this_instr, counter);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -594,7 +596,7 @@ dummy_func(
             ERROR_IF(err, error);
         }
 
-        inst(BINARY_SUBSCR_LIST_INT, (unused/1, list, sub -- res)) {
+        inst(BINARY_SUBSCR_LIST_INT, (list, sub -- res)) {
             DEOPT_IF(!PyLong_CheckExact(sub));
             DEOPT_IF(!PyList_CheckExact(list));
 
@@ -610,7 +612,7 @@ dummy_func(
             Py_DECREF(list);
         }
 
-        inst(BINARY_SUBSCR_STR_INT, (unused/1, str, sub -- res)) {
+        inst(BINARY_SUBSCR_STR_INT, (str, sub -- res)) {
             DEOPT_IF(!PyLong_CheckExact(sub));
             DEOPT_IF(!PyUnicode_CheckExact(str));
             DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
@@ -625,7 +627,7 @@ dummy_func(
             Py_DECREF(str);
         }
 
-        inst(BINARY_SUBSCR_TUPLE_INT, (unused/1, tuple, sub -- res)) {
+        inst(BINARY_SUBSCR_TUPLE_INT, (tuple, sub -- res)) {
             DEOPT_IF(!PyLong_CheckExact(sub));
             DEOPT_IF(!PyTuple_CheckExact(tuple));
 
@@ -641,7 +643,7 @@ dummy_func(
             Py_DECREF(tuple);
         }
 
-        inst(BINARY_SUBSCR_DICT, (unused/1, dict, sub -- res)) {
+        inst(BINARY_SUBSCR_DICT, (dict, sub -- res)) {
             DEOPT_IF(!PyDict_CheckExact(dict));
             STAT_INC(BINARY_SUBSCR, hit);
             int rc = PyDict_GetItemRef(dict, sub, &res);
@@ -652,7 +654,7 @@ dummy_func(
             ERROR_IF(rc <= 0, error); // not found or error
         }
 
-        inst(BINARY_SUBSCR_GETITEM, (unused/1, container, sub -- unused)) {
+        inst(BINARY_SUBSCR_GETITEM, (container, sub -- unused)) {
             DEOPT_IF(tstate->interp->eval_frame);
             PyTypeObject *tp = Py_TYPE(container);
             DEOPT_IF(!PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE));
