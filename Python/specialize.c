@@ -2115,7 +2115,7 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
 {
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
-    _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(instr + 1);
+    uint16_t counter = _PyCounterTable_Get(instr);
     switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
@@ -2173,11 +2173,13 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
     SPECIALIZATION_FAIL(BINARY_OP, binary_op_fail_kind(oparg, lhs, rhs));
     STAT_INC(BINARY_OP, failure);
     instr->op.code = BINARY_OP;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    counter = adaptive_counter_backoff(counter);
+    _PyCounterTable_Set(instr, counter);
     return;
 success:
     STAT_INC(BINARY_OP, success);
-    cache->counter = adaptive_counter_cooldown();
+    counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, counter);
 }
 
 
