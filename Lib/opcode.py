@@ -90,7 +90,7 @@ _cache_format = {
         "counter": 1,
     },
     "TO_BOOL": {
-        "counter": 1,
+        # "counter": 1,
         "version": 2,
     },
     "POP_JUMP_IF_TRUE": {

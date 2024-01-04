@@ -337,14 +337,14 @@ dummy_func(
             res = err ? Py_True : Py_False;
         }
 
-        macro(TO_BOOL) = _SPECIALIZE_TO_BOOL + unused/1 + unused/2 + _TO_BOOL;
+        macro(TO_BOOL) = _SPECIALIZE_TO_BOOL + unused/2 + _TO_BOOL;
 
-        inst(TO_BOOL_BOOL, (unused/1, unused/2, value -- value)) {
+        inst(TO_BOOL_BOOL, (unused/2, value -- value)) {
             DEOPT_IF(!PyBool_Check(value));
             STAT_INC(TO_BOOL, hit);
         }
 
-        inst(TO_BOOL_INT, (unused/1, unused/2, value -- res)) {
+        inst(TO_BOOL_INT, (unused/2, value -- res)) {
             DEOPT_IF(!PyLong_CheckExact(value));
             STAT_INC(TO_BOOL, hit);
             if (_PyLong_IsZero((PyLongObject *)value)) {
@@ -357,21 +357,21 @@ dummy_func(
             }
         }
 
-        inst(TO_BOOL_LIST, (unused/1, unused/2, value -- res)) {
+        inst(TO_BOOL_LIST, (unused/2, value -- res)) {
             DEOPT_IF(!PyList_CheckExact(value));
             STAT_INC(TO_BOOL, hit);
             res = Py_SIZE(value) ? Py_True : Py_False;
             DECREF_INPUTS();
         }
 
-        inst(TO_BOOL_NONE, (unused/1, unused/2, value -- res)) {
+        inst(TO_BOOL_NONE, (unused/2, value -- res)) {
             // This one is a bit weird, because we expect *some* failures:
             DEOPT_IF(!Py_IsNone(value));
             STAT_INC(TO_BOOL, hit);
             res = Py_False;
         }
 
-        inst(TO_BOOL_STR, (unused/1, unused/2, value -- res)) {
+        inst(TO_BOOL_STR, (unused/2, value -- res)) {
             DEOPT_IF(!PyUnicode_CheckExact(value));
             STAT_INC(TO_BOOL, hit);
             if (value == &_Py_STR(empty)) {
@@ -385,7 +385,7 @@ dummy_func(
             }
         }
 
-        inst(TO_BOOL_ALWAYS_TRUE, (unused/1, version/2, value -- res)) {
+        inst(TO_BOOL_ALWAYS_TRUE, (version/2, value -- res)) {
             // This one is a bit weird, because we expect *some* failures:
             assert(version);
             DEOPT_IF(Py_TYPE(value)->tp_version_tag != version);

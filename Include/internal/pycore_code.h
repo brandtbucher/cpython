@@ -106,7 +106,7 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_SEND CACHE_ENTRIES(_PySendCache)
 
 typedef struct {
-    uint16_t _counter;
+    // uint16_t counter;
     uint16_t version[2];
 } _PyToBoolCache;
 

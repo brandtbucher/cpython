@@ -5491,10 +5491,10 @@
 
         TARGET(TO_BOOL) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL);
             PREDICTED(TO_BOOL);
-            _Py_CODEUNIT *this_instr = next_instr - 4;
+            _Py_CODEUNIT *this_instr = next_instr - 3;
             PyObject *value;
             PyObject *res;
             // _SPECIALIZE_TO_BOOL
@@ -5511,7 +5511,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             // _TO_BOOL
             {
@@ -5526,14 +5525,13 @@
 
         TARGET(TO_BOOL_ALWAYS_TRUE) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_ALWAYS_TRUE);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
             PyObject *res;
-            /* Skip 1 cache entry */
             value = stack_pointer[-1];
-            uint32_t version = read_u32(&this_instr[2].cache);
+            uint32_t version = read_u32(&this_instr[1].cache);
             // This one is a bit weird, because we expect *some* failures:
             assert(version);
             DEOPT_IF(Py_TYPE(value)->tp_version_tag != version, TO_BOOL);
@@ -5546,11 +5544,10 @@
 
         TARGET(TO_BOOL_BOOL) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_BOOL);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             value = stack_pointer[-1];
             DEOPT_IF(!PyBool_Check(value), TO_BOOL);
@@ -5560,12 +5557,11 @@
 
         TARGET(TO_BOOL_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_INT);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
             PyObject *res;
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             value = stack_pointer[-1];
             DEOPT_IF(!PyLong_CheckExact(value), TO_BOOL);
@@ -5584,12 +5580,11 @@
 
         TARGET(TO_BOOL_LIST) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_LIST);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
             PyObject *res;
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             value = stack_pointer[-1];
             DEOPT_IF(!PyList_CheckExact(value), TO_BOOL);
@@ -5602,12 +5597,11 @@
 
         TARGET(TO_BOOL_NONE) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_NONE);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
             PyObject *res;
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             value = stack_pointer[-1];
             // This one is a bit weird, because we expect *some* failures:
@@ -5620,12 +5614,11 @@
 
         TARGET(TO_BOOL_STR) {
             frame->instr_ptr = next_instr;
-            next_instr += 4;
+            next_instr += 3;
             INSTRUCTION_STATS(TO_BOOL_STR);
-            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 3, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_TO_BOOL == 2, "incorrect cache size");
             PyObject *value;
             PyObject *res;
-            /* Skip 1 cache entry */
             /* Skip 2 cache entries */
             value = stack_pointer[-1];
             DEOPT_IF(!PyUnicode_CheckExact(value), TO_BOOL);
