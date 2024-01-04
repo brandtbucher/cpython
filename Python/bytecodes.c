@@ -1451,7 +1451,7 @@ dummy_func(
         }
 
         macro(LOAD_GLOBAL) =
-            _SPECIALIZE_LOAD_GLOBAL + unused/1 +
+            _SPECIALIZE_LOAD_GLOBAL +
             unused/1 +
             globals_version/1 +
             builtins_version/1 +
@@ -1492,13 +1492,11 @@ dummy_func(
         }
 
         macro(LOAD_GLOBAL_MODULE) =
-            unused/1 + // Skip over the counter
             _GUARD_GLOBALS_VERSION +
             unused/1 + // Skip over the builtins version
             _LOAD_GLOBAL_MODULE;
 
         macro(LOAD_GLOBAL_BUILTIN) =
-            unused/1 + // Skip over the counter
             _GUARD_GLOBALS_VERSION +
             _GUARD_BUILTINS_VERSION +
             _LOAD_GLOBAL_BUILTINS;

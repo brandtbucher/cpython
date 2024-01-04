@@ -4077,10 +4077,10 @@
 
         TARGET(LOAD_GLOBAL) {
             frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(LOAD_GLOBAL);
             PREDICTED(LOAD_GLOBAL);
-            _Py_CODEUNIT *this_instr = next_instr - 5;
+            _Py_CODEUNIT *this_instr = next_instr - 4;
             PyObject *res;
             PyObject *null = NULL;
             // _SPECIALIZE_LOAD_GLOBAL
@@ -4097,7 +4097,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             /* Skip 1 cache entry */
             /* Skip 1 cache entry */
             /* Skip 1 cache entry */
@@ -4146,15 +4145,14 @@
 
         TARGET(LOAD_GLOBAL_BUILTIN) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(LOAD_GLOBAL_BUILTIN);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_GLOBAL == 4, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_GLOBAL == 3, "incorrect cache size");
             PyObject *res;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_GLOBALS_VERSION
             {
-                uint16_t version = read_u16(&this_instr[2].cache);
+                uint16_t version = read_u16(&this_instr[1].cache);
                 PyDictObject *dict = (PyDictObject *)GLOBALS();
                 DEOPT_IF(!PyDict_CheckExact(dict), LOAD_GLOBAL);
                 DEOPT_IF(dict->ma_keys->dk_version != version, LOAD_GLOBAL);
@@ -4162,7 +4160,7 @@
             }
             // _GUARD_BUILTINS_VERSION
             {
-                uint16_t version = read_u16(&this_instr[3].cache);
+                uint16_t version = read_u16(&this_instr[2].cache);
                 PyDictObject *dict = (PyDictObject *)BUILTINS();
                 DEOPT_IF(!PyDict_CheckExact(dict), LOAD_GLOBAL);
                 DEOPT_IF(dict->ma_keys->dk_version != version, LOAD_GLOBAL);
@@ -4170,7 +4168,7 @@
             }
             // _LOAD_GLOBAL_BUILTINS
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 PyDictObject *bdict = (PyDictObject *)BUILTINS();
                 PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(bdict->ma_keys);
                 res = entries[index].me_value;
@@ -4187,15 +4185,14 @@
 
         TARGET(LOAD_GLOBAL_MODULE) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(LOAD_GLOBAL_MODULE);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_GLOBAL == 4, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_GLOBAL == 3, "incorrect cache size");
             PyObject *res;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_GLOBALS_VERSION
             {
-                uint16_t version = read_u16(&this_instr[2].cache);
+                uint16_t version = read_u16(&this_instr[1].cache);
                 PyDictObject *dict = (PyDictObject *)GLOBALS();
                 DEOPT_IF(!PyDict_CheckExact(dict), LOAD_GLOBAL);
                 DEOPT_IF(dict->ma_keys->dk_version != version, LOAD_GLOBAL);
@@ -4204,7 +4201,7 @@
             /* Skip 1 cache entry */
             // _LOAD_GLOBAL_MODULE
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 PyDictObject *dict = (PyDictObject *)GLOBALS();
                 PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(dict->ma_keys);
                 res = entries[index].me_value;

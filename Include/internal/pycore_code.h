@@ -22,7 +22,7 @@ extern "C" {
 #define CACHE_ENTRIES(cache) (sizeof(cache)/sizeof(_Py_CODEUNIT))
 
 typedef struct {
-    uint16_t counter;
+    // uint16_t counter;
     uint16_t module_keys_version;
     uint16_t builtin_keys_version;
     uint16_t index;

@@ -42,7 +42,7 @@ hascompare = [opmap["COMPARE_OP"]]
 
 _cache_format = {
     "LOAD_GLOBAL": {
-        "counter": 1,
+        # "counter": 1,
         "index": 1,
         "module_keys_version": 1,
         "builtin_keys_version": 1,
