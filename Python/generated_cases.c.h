@@ -5379,10 +5379,10 @@
 
         TARGET(STORE_SUBSCR) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(STORE_SUBSCR);
             PREDICTED(STORE_SUBSCR);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *sub;
             PyObject *container;
             PyObject *v;
@@ -5401,7 +5401,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             // _STORE_SUBSCR
             v = stack_pointer[-3];
             {
@@ -5418,13 +5417,12 @@
 
         TARGET(STORE_SUBSCR_DICT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(STORE_SUBSCR_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_STORE_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_STORE_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *dict;
             PyObject *value;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             dict = stack_pointer[-2];
             value = stack_pointer[-3];
@@ -5439,13 +5437,12 @@
 
         TARGET(STORE_SUBSCR_LIST_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(STORE_SUBSCR_LIST_INT);
-            static_assert(INLINE_CACHE_ENTRIES_STORE_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_STORE_SUBSCR == 0, "incorrect cache size");
             PyObject *sub;
             PyObject *list;
             PyObject *value;
-            /* Skip 1 cache entry */
             sub = stack_pointer[-1];
             list = stack_pointer[-2];
             value = stack_pointer[-3];

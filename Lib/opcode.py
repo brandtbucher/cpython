@@ -81,7 +81,7 @@ _cache_format = {
         "func_version": 2,
     },
     "STORE_SUBSCR": {
-        "counter": 1,
+        # "counter": 1,
     },
     "SEND": {
         # "counter": 1,

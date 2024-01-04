@@ -711,9 +711,9 @@ dummy_func(
             ERROR_IF(err, error);
         }
 
-        macro(STORE_SUBSCR) = _SPECIALIZE_STORE_SUBSCR + unused/1 + _STORE_SUBSCR;
+        macro(STORE_SUBSCR) = _SPECIALIZE_STORE_SUBSCR + _STORE_SUBSCR;
 
-        inst(STORE_SUBSCR_LIST_INT, (unused/1, value, list, sub -- )) {
+        inst(STORE_SUBSCR_LIST_INT, (value, list, sub -- )) {
             DEOPT_IF(!PyLong_CheckExact(sub));
             DEOPT_IF(!PyList_CheckExact(list));
 
@@ -732,7 +732,7 @@ dummy_func(
             Py_DECREF(list);
         }
 
-        inst(STORE_SUBSCR_DICT, (unused/1, value, dict, sub -- )) {
+        inst(STORE_SUBSCR_DICT, (value, dict, sub -- )) {
             DEOPT_IF(!PyDict_CheckExact(dict));
             STAT_INC(STORE_SUBSCR, hit);
             int err = _PyDict_SetItem_Take2((PyDictObject *)dict, sub, value);
