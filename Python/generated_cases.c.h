@@ -5720,27 +5720,27 @@
 
         TARGET(UNPACK_SEQUENCE) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(UNPACK_SEQUENCE);
             PREDICTED(UNPACK_SEQUENCE);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *seq;
             // _SPECIALIZE_UNPACK_SEQUENCE
             seq = stack_pointer[-1];
             {
-                uint16_t counter = read_u16(&this_instr[1].cache);
                 TIER_ONE_ONLY
                 #if ENABLE_SPECIALIZATION
+                uint16_t counter = _PyCounterTable_Get(this_instr);
                 if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                     next_instr = this_instr;
                     _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
                     DISPATCH_SAME_OPARG();
                 }
                 STAT_INC(UNPACK_SEQUENCE, deferred);
-                DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+                DECREMENT_ADAPTIVE_COUNTER(counter);
+                _PyCounterTable_Set(this_instr, counter);
                 #endif  /* ENABLE_SPECIALIZATION */
                 (void)seq;
-                (void)counter;
             }
             // _UNPACK_SEQUENCE
             {
@@ -5755,12 +5755,11 @@
 
         TARGET(UNPACK_SEQUENCE_LIST) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(UNPACK_SEQUENCE_LIST);
-            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 0, "incorrect cache size");
             PyObject *seq;
             PyObject **values;
-            /* Skip 1 cache entry */
             seq = stack_pointer[-1];
             values = &stack_pointer[-1];
             DEOPT_IF(!PyList_CheckExact(seq), UNPACK_SEQUENCE);
@@ -5777,12 +5776,11 @@
 
         TARGET(UNPACK_SEQUENCE_TUPLE) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(UNPACK_SEQUENCE_TUPLE);
-            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 0, "incorrect cache size");
             PyObject *seq;
             PyObject **values;
-            /* Skip 1 cache entry */
             seq = stack_pointer[-1];
             values = &stack_pointer[-1];
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);
@@ -5799,12 +5797,11 @@
 
         TARGET(UNPACK_SEQUENCE_TWO_TUPLE) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(UNPACK_SEQUENCE_TWO_TUPLE);
-            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE == 0, "incorrect cache size");
             PyObject *seq;
             PyObject **values;
-            /* Skip 1 cache entry */
             seq = stack_pointer[-1];
             values = &stack_pointer[-1];
             DEOPT_IF(!PyTuple_CheckExact(seq), UNPACK_SEQUENCE);

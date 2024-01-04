@@ -2115,7 +2115,6 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
 {
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[BINARY_OP] == INLINE_CACHE_ENTRIES_BINARY_OP);
-    uint16_t counter = _PyCounterTable_Get(instr);
     switch (oparg) {
         case NB_ADD:
         case NB_INPLACE_ADD:
@@ -2173,13 +2172,11 @@ _Py_Specialize_BinaryOp(PyObject *lhs, PyObject *rhs, _Py_CODEUNIT *instr,
     SPECIALIZATION_FAIL(BINARY_OP, binary_op_fail_kind(oparg, lhs, rhs));
     STAT_INC(BINARY_OP, failure);
     instr->op.code = BINARY_OP;
-    counter = adaptive_counter_backoff(counter);
-    _PyCounterTable_Set(instr, counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(BINARY_OP, success);
-    counter = adaptive_counter_cooldown();
-    _PyCounterTable_Set(instr, counter);
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 
@@ -2287,7 +2284,6 @@ _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr, int oparg)
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[UNPACK_SEQUENCE] ==
            INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE);
-    _PyUnpackSequenceCache *cache = (_PyUnpackSequenceCache *)(instr + 1);
     if (PyTuple_CheckExact(seq)) {
         if (PyTuple_GET_SIZE(seq) != oparg) {
             SPECIALIZATION_FAIL(UNPACK_SEQUENCE, SPEC_FAIL_EXPECTED_ERROR);
@@ -2312,11 +2308,11 @@ _Py_Specialize_UnpackSequence(PyObject *seq, _Py_CODEUNIT *instr, int oparg)
 failure:
     STAT_INC(UNPACK_SEQUENCE, failure);
     instr->op.code = UNPACK_SEQUENCE;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(UNPACK_SEQUENCE, success);
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 #ifdef Py_STATS

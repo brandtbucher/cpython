@@ -37,7 +37,7 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_BINARY_OP CACHE_ENTRIES(_PyBinaryOpCache)
 
 typedef struct {
-    uint16_t counter;
+    // uint16_t counter;
 } _PyUnpackSequenceCache;
 
 #define INLINE_CACHE_ENTRIES_UNPACK_SEQUENCE \

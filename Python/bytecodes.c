@@ -1211,19 +1211,20 @@ dummy_func(
             UNPACK_SEQUENCE_LIST,
         };
 
-        specializing op(_SPECIALIZE_UNPACK_SEQUENCE, (counter/1, seq -- seq)) {
+        specializing op(_SPECIALIZE_UNPACK_SEQUENCE, (seq -- seq)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
+            uint16_t counter = _PyCounterTable_Get(this_instr);
             if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(UNPACK_SEQUENCE, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(counter);
+            _PyCounterTable_Set(this_instr, counter);
             #endif  /* ENABLE_SPECIALIZATION */
             (void)seq;
-            (void)counter;
         }
 
         op(_UNPACK_SEQUENCE, (seq -- unused[oparg])) {
@@ -1235,7 +1236,7 @@ dummy_func(
 
         macro(UNPACK_SEQUENCE) = _SPECIALIZE_UNPACK_SEQUENCE + _UNPACK_SEQUENCE;
 
-        inst(UNPACK_SEQUENCE_TWO_TUPLE, (unused/1, seq -- values[oparg])) {
+        inst(UNPACK_SEQUENCE_TWO_TUPLE, (seq -- values[oparg])) {
             DEOPT_IF(!PyTuple_CheckExact(seq));
             DEOPT_IF(PyTuple_GET_SIZE(seq) != 2);
             assert(oparg == 2);
@@ -1245,7 +1246,7 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        inst(UNPACK_SEQUENCE_TUPLE, (unused/1, seq -- values[oparg])) {
+        inst(UNPACK_SEQUENCE_TUPLE, (seq -- values[oparg])) {
             DEOPT_IF(!PyTuple_CheckExact(seq));
             DEOPT_IF(PyTuple_GET_SIZE(seq) != oparg);
             STAT_INC(UNPACK_SEQUENCE, hit);
@@ -1256,7 +1257,7 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        inst(UNPACK_SEQUENCE_LIST, (unused/1, seq -- values[oparg])) {
+        inst(UNPACK_SEQUENCE_LIST, (seq -- values[oparg])) {
             DEOPT_IF(!PyList_CheckExact(seq));
             DEOPT_IF(PyList_GET_SIZE(seq) != oparg);
             STAT_INC(UNPACK_SEQUENCE, hit);

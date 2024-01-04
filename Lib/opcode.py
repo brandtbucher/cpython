@@ -51,7 +51,7 @@ _cache_format = {
         # "counter": 1,
     },
     "UNPACK_SEQUENCE": {
-        "counter": 1,
+        # "counter": 1,
     },
     "COMPARE_OP": {
         "counter": 1,
