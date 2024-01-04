@@ -81,7 +81,7 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_STORE_ATTR CACHE_ENTRIES(_PyAttrCache)
 
 typedef struct {
-    uint16_t counter;
+    // uint16_t counter;
     uint16_t func_version[2];
 } _PyCallCache;
 
