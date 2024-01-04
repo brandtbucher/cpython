@@ -94,13 +94,13 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_STORE_SUBSCR CACHE_ENTRIES(_PyStoreSubscrCache)
 
 typedef struct {
-    uint16_t _counter;
+    // uint16_t counter;
 } _PyForIterCache;
 
 #define INLINE_CACHE_ENTRIES_FOR_ITER CACHE_ENTRIES(_PyForIterCache)
 
 typedef struct {
-    uint16_t _counter;
+    // uint16_t counter;
 } _PySendCache;
 
 #define INLINE_CACHE_ENTRIES_SEND CACHE_ENTRIES(_PySendCache)

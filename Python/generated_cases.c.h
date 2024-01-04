@@ -2454,10 +2454,10 @@
 
         TARGET(FOR_ITER) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(FOR_ITER);
             PREDICTED(FOR_ITER);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *iter;
             PyObject *next;
             // _SPECIALIZE_FOR_ITER
@@ -2474,7 +2474,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             // _FOR_ITER
             {
                 /* before: [iter]; after: [iter, iter()] *or* [] (and jump over END_FOR.) */
@@ -2505,11 +2504,10 @@
 
         TARGET(FOR_ITER_GEN) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(FOR_ITER_GEN);
-            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 0, "incorrect cache size");
             PyObject *iter;
-            /* Skip 1 cache entry */
             iter = stack_pointer[-1];
             DEOPT_IF(tstate->interp->eval_frame, FOR_ITER);
             PyGenObject *gen = (PyGenObject *)iter;
@@ -2530,12 +2528,11 @@
 
         TARGET(FOR_ITER_LIST) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(FOR_ITER_LIST);
-            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 0, "incorrect cache size");
             PyObject *iter;
             PyObject *next;
-            /* Skip 1 cache entry */
             // _ITER_CHECK_LIST
             iter = stack_pointer[-1];
             {
@@ -2575,12 +2572,11 @@
 
         TARGET(FOR_ITER_RANGE) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(FOR_ITER_RANGE);
-            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 0, "incorrect cache size");
             PyObject *iter;
             PyObject *next;
-            /* Skip 1 cache entry */
             // _ITER_CHECK_RANGE
             iter = stack_pointer[-1];
             {
@@ -2618,12 +2614,11 @@
 
         TARGET(FOR_ITER_TUPLE) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(FOR_ITER_TUPLE);
-            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 0, "incorrect cache size");
             PyObject *iter;
             PyObject *next;
-            /* Skip 1 cache entry */
             // _ITER_CHECK_TUPLE
             iter = stack_pointer[-1];
             {
@@ -2969,9 +2964,8 @@
 
         TARGET(INSTRUMENTED_FOR_ITER) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(INSTRUMENTED_FOR_ITER);
-            /* Skip 1 cache entry */
             _Py_CODEUNIT *target;
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -4909,10 +4903,10 @@
 
         TARGET(SEND) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(SEND);
             PREDICTED(SEND);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *receiver;
             PyObject *v;
             PyObject *retval;
@@ -4930,7 +4924,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             // _SEND
             v = stack_pointer[-1];
             {
@@ -4977,12 +4970,11 @@
 
         TARGET(SEND_GEN) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(SEND_GEN);
-            static_assert(INLINE_CACHE_ENTRIES_SEND == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_SEND == 0, "incorrect cache size");
             PyObject *v;
             PyObject *receiver;
-            /* Skip 1 cache entry */
             v = stack_pointer[-1];
             receiver = stack_pointer[-2];
             DEOPT_IF(tstate->interp->eval_frame, SEND);

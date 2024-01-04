@@ -1029,9 +1029,9 @@ dummy_func(
             Py_DECREF(v);
         }
 
-        macro(SEND) = _SPECIALIZE_SEND + unused/1 + _SEND;
+        macro(SEND) = _SPECIALIZE_SEND + _SEND;
 
-        inst(SEND_GEN, (unused/1, receiver, v -- receiver, unused)) {
+        inst(SEND_GEN, (receiver, v -- receiver, unused)) {
             DEOPT_IF(tstate->interp->eval_frame);
             PyGenObject *gen = (PyGenObject *)receiver;
             DEOPT_IF(Py_TYPE(gen) != &PyGen_Type && Py_TYPE(gen) != &PyCoro_Type);
@@ -2572,9 +2572,9 @@ dummy_func(
             // Common case: no jump, leave it to the code generator
         }
 
-        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + unused/1 + _FOR_ITER;
+        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + _FOR_ITER;
 
-        inst(INSTRUMENTED_FOR_ITER, (unused/1 -- )) {
+        inst(INSTRUMENTED_FOR_ITER, ( -- )) {
             _Py_CODEUNIT *target;
             PyObject *iter = TOP();
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -2642,7 +2642,6 @@ dummy_func(
         }
 
         macro(FOR_ITER_LIST) =
-            unused/1 +  // Skip over the counter
             _ITER_CHECK_LIST +
             _ITER_JUMP_LIST +
             _ITER_NEXT_LIST;
@@ -2688,7 +2687,6 @@ dummy_func(
         }
 
         macro(FOR_ITER_TUPLE) =
-            unused/1 +  // Skip over the counter
             _ITER_CHECK_TUPLE +
             _ITER_JUMP_TUPLE +
             _ITER_NEXT_TUPLE;
@@ -2730,12 +2728,11 @@ dummy_func(
         }
 
         macro(FOR_ITER_RANGE) =
-            unused/1 +  // Skip over the counter
             _ITER_CHECK_RANGE +
             _ITER_JUMP_RANGE +
             _ITER_NEXT_RANGE;
 
-        inst(FOR_ITER_GEN, (unused/1, iter -- iter, unused)) {
+        inst(FOR_ITER_GEN, (iter -- iter, unused)) {
             DEOPT_IF(tstate->interp->eval_frame);
             PyGenObject *gen = (PyGenObject *)iter;
             DEOPT_IF(Py_TYPE(gen) != &PyGen_Type);
