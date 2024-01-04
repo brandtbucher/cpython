@@ -255,7 +255,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
         STAT_INC(opcode, miss);                                  \
         STAT_INC((INSTNAME), miss);                              \
         /* The counter is always the first cache entry: */       \
-        if (ADAPTIVE_COUNTER_IS_ZERO(next_instr->cache)) {       \
+        if (ADAPTIVE_COUNTER_IS_ZERO(next_instr)) {              \
             STAT_INC((INSTNAME), deopt);                         \
         }                                                        \
     } while (0)
@@ -283,21 +283,21 @@ GETITEM(PyObject *v, Py_ssize_t i) {
         dtrace_function_entry(frame); \
     }
 
-#define ADAPTIVE_COUNTER_IS_ZERO(COUNTER) \
-    (((COUNTER) >> ADAPTIVE_BACKOFF_BITS) == 0)
+#define ADAPTIVE_COUNTER_IS_ZERO(I) \
+    ((_PyCounterTable_Get((I)) >> ADAPTIVE_BACKOFF_BITS) == 0)
 
-#define ADAPTIVE_COUNTER_IS_MAX(COUNTER) \
-    (((COUNTER) >> ADAPTIVE_BACKOFF_BITS) == ((1 << MAX_BACKOFF_VALUE) - 1))
+#define ADAPTIVE_COUNTER_IS_MAX(I) \
+    ((_PyCounterTable_Get((I)) >> ADAPTIVE_BACKOFF_BITS) == ((1 << MAX_BACKOFF_VALUE) - 1))
 
-#define DECREMENT_ADAPTIVE_COUNTER(COUNTER)           \
-    do {                                              \
-        assert(!ADAPTIVE_COUNTER_IS_ZERO((COUNTER))); \
-        (COUNTER) -= (1 << ADAPTIVE_BACKOFF_BITS);    \
+#define DECREMENT_ADAPTIVE_COUNTER(I)                                                      \
+    do {                                                                                   \
+        assert(!ADAPTIVE_COUNTER_IS_ZERO((I)));                                            \
+        _PyCounterTable_Set((I), _PyCounterTable_Get((I)) - (1 << ADAPTIVE_BACKOFF_BITS)); \
     } while (0);
 
-#define INCREMENT_ADAPTIVE_COUNTER(COUNTER)          \
-    do {                                             \
-        (COUNTER) += (1 << ADAPTIVE_BACKOFF_BITS);   \
+#define INCREMENT_ADAPTIVE_COUNTER(I)                                                      \
+    do {                                                                                   \
+        _PyCounterTable_Set((I), _PyCounterTable_Get((I)) + (1 << ADAPTIVE_BACKOFF_BITS)); \
     } while (0);
 
 #define UNBOUNDLOCAL_ERROR_MSG \

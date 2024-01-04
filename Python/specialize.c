@@ -677,7 +677,6 @@ void
 _Py_Specialize_LoadSuperAttr(PyObject *global_super, PyObject *cls, _Py_CODEUNIT *instr, int load_method) {
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[LOAD_SUPER_ATTR] == INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR);
-    _PySuperAttrCache *cache = (_PySuperAttrCache *)(instr + 1);
     if (global_super != (PyObject *)&PySuper_Type) {
         SPECIALIZATION_FAIL(LOAD_SUPER_ATTR, SPEC_FAIL_SUPER_SHADOWED);
         goto fail;
@@ -693,12 +692,12 @@ fail:
     STAT_INC(LOAD_SUPER_ATTR, failure);
     assert(!PyErr_Occurred());
     instr->op.code = LOAD_SUPER_ATTR;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(LOAD_SUPER_ATTR, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 typedef enum {
@@ -1068,12 +1067,12 @@ fail:
     STAT_INC(LOAD_ATTR, failure);
     assert(!PyErr_Occurred());
     instr->op.code = LOAD_ATTR;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(LOAD_ATTR, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 void
@@ -1164,12 +1163,12 @@ fail:
     STAT_INC(STORE_ATTR, failure);
     assert(!PyErr_Occurred());
     instr->op.code = STORE_ATTR;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(STORE_ATTR, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 
@@ -1410,12 +1409,12 @@ fail:
     STAT_INC(LOAD_GLOBAL, failure);
     assert(!PyErr_Occurred());
     instr->op.code = LOAD_GLOBAL;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(LOAD_GLOBAL, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 #ifdef Py_STATS
@@ -1598,7 +1597,6 @@ void
 _Py_Specialize_StoreSubscr(PyObject *container, PyObject *sub, _Py_CODEUNIT *instr)
 {
     assert(ENABLE_SPECIALIZATION);
-    _PyStoreSubscrCache *cache = (_PyStoreSubscrCache *)(instr + 1);
     PyTypeObject *container_type = Py_TYPE(container);
     if (container_type == &PyList_Type) {
         if (PyLong_CheckExact(sub)) {
@@ -1691,12 +1689,12 @@ fail:
     STAT_INC(STORE_SUBSCR, failure);
     assert(!PyErr_Occurred());
     instr->op.code = STORE_SUBSCR;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(STORE_SUBSCR, success);
     assert(!PyErr_Occurred());
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 /* Returns a borrowed reference.
@@ -1997,7 +1995,6 @@ _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs)
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[CALL] == INLINE_CACHE_ENTRIES_CALL);
     assert(_Py_OPCODE(*instr) != INSTRUMENTED_CALL);
-    _PyCallCache *cache = (_PyCallCache *)(instr + 1);
     int fail;
     if (PyCFunction_CheckExact(callable)) {
         fail = specialize_c_call(callable, instr, nargs);
@@ -2029,12 +2026,12 @@ _Py_Specialize_Call(PyObject *callable, _Py_CODEUNIT *instr, int nargs)
         STAT_INC(CALL, failure);
         assert(!PyErr_Occurred());
         instr->op.code = CALL;
-        cache->counter = adaptive_counter_backoff(cache->counter);
+        _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     }
     else {
         STAT_INC(CALL, success);
         assert(!PyErr_Occurred());
-        cache->counter = adaptive_counter_cooldown();
+        _PyCounterTable_Set(instr, adaptive_counter_cooldown());
     }
 }
 
@@ -2391,7 +2388,6 @@ _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg)
 {
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[FOR_ITER] == INLINE_CACHE_ENTRIES_FOR_ITER);
-    _PyForIterCache *cache = (_PyForIterCache *)(instr + 1);
     PyTypeObject *tp = Py_TYPE(iter);
     if (tp == &PyListIter_Type) {
         instr->op.code = FOR_ITER_LIST;
@@ -2421,11 +2417,11 @@ _Py_Specialize_ForIter(PyObject *iter, _Py_CODEUNIT *instr, int oparg)
 failure:
     STAT_INC(FOR_ITER, failure);
     instr->op.code = FOR_ITER;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(FOR_ITER, success);
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 void
@@ -2433,7 +2429,6 @@ _Py_Specialize_Send(PyObject *receiver, _Py_CODEUNIT *instr)
 {
     assert(ENABLE_SPECIALIZATION);
     assert(_PyOpcode_Caches[SEND] == INLINE_CACHE_ENTRIES_SEND);
-    _PySendCache *cache = (_PySendCache *)(instr + 1);
     PyTypeObject *tp = Py_TYPE(receiver);
     if (tp == &PyGen_Type || tp == &PyCoro_Type) {
         if (_PyInterpreterState_GET()->eval_frame) {
@@ -2448,11 +2443,11 @@ _Py_Specialize_Send(PyObject *receiver, _Py_CODEUNIT *instr)
 failure:
     STAT_INC(SEND, failure);
     instr->op.code = SEND;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(SEND, success);
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 void
@@ -2541,11 +2536,11 @@ _Py_Specialize_ToBool(PyObject *value, _Py_CODEUNIT *instr)
 failure:
     STAT_INC(TO_BOOL, failure);
     instr->op.code = TO_BOOL;
-    cache->counter = adaptive_counter_backoff(cache->counter);
+    _PyCounterTable_Set(instr, adaptive_counter_backoff(_PyCounterTable_Get(instr)));
     return;
 success:
     STAT_INC(TO_BOOL, success);
-    cache->counter = adaptive_counter_cooldown();
+    _PyCounterTable_Set(instr, adaptive_counter_cooldown());
 }
 
 /* Code init cleanup.

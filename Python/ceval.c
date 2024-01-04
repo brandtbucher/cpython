@@ -807,12 +807,11 @@ resume_frame:
         if (next_instr != here) {
             DISPATCH();
         }
+        // XXX: Fix this, and check usages of _PyOpcode_Caches!
         if (_PyOpcode_Caches[original_opcode]) {
-            // XXX: Fix this, also check usages of _PyOpcode_Caches!
-            // _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(next_instr+1);
-            // /* Prevent the underlying instruction from specializing
-            //  * and overwriting the instrumentation. */
-            // INCREMENT_ADAPTIVE_COUNTER(cache->counter);
+            /* Prevent the underlying instruction from specializing
+             * and overwriting the instrumentation. */
+            INCREMENT_ADAPTIVE_COUNTER(next_instr);
         }
         opcode = original_opcode;
         DISPATCH_GOTO();

@@ -56,19 +56,19 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_BINARY_SUBSCR CACHE_ENTRIES(_PyBinarySubscrCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
 } _PySuperAttrCache;
 
 #define INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR CACHE_ENTRIES(_PySuperAttrCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
     uint16_t version[2];
     uint16_t index;
 } _PyAttrCache;
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
     uint16_t type_version[2];
     uint16_t keys_version[2];
     uint16_t descr[4];
@@ -81,32 +81,32 @@ typedef struct {
 #define INLINE_CACHE_ENTRIES_STORE_ATTR CACHE_ENTRIES(_PyAttrCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
     uint16_t func_version[2];
 } _PyCallCache;
 
 #define INLINE_CACHE_ENTRIES_CALL CACHE_ENTRIES(_PyCallCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
 } _PyStoreSubscrCache;
 
 #define INLINE_CACHE_ENTRIES_STORE_SUBSCR CACHE_ENTRIES(_PyStoreSubscrCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
 } _PyForIterCache;
 
 #define INLINE_CACHE_ENTRIES_FOR_ITER CACHE_ENTRIES(_PyForIterCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
 } _PySendCache;
 
 #define INLINE_CACHE_ENTRIES_SEND CACHE_ENTRIES(_PySendCache)
 
 typedef struct {
-    uint16_t counter;
+    uint16_t _counter;
     uint16_t version[2];
 } _PyToBoolCache;
 

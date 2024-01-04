@@ -65,7 +65,7 @@ static PyObject *orig, *excs, *update, *b, *fromlist, *level, *from;
 static PyObject **pieces, **values;
 static size_t jump;
 // Dummy variables for cache effects
-static uint16_t invert, counter, index, hint;
+static uint16_t invert, index, hint;
 #define unused 0  // Used in a macro def, can't be static
 static uint32_t type_version;
 static _PyUOpExecutorObject *current_executor;
@@ -317,16 +317,16 @@ dummy_func(
             TO_BOOL_STR,
         };
 
-        specializing op(_SPECIALIZE_TO_BOOL, (counter/1, value -- value)) {
+        specializing op(_SPECIALIZE_TO_BOOL, (value -- value)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_ToBool(value, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(TO_BOOL, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -337,7 +337,7 @@ dummy_func(
             res = err ? Py_True : Py_False;
         }
 
-        macro(TO_BOOL) = _SPECIALIZE_TO_BOOL + unused/2 + _TO_BOOL;
+        macro(TO_BOOL) = _SPECIALIZE_TO_BOOL + unused/1 + unused/2 + _TO_BOOL;
 
         inst(TO_BOOL_BOOL, (unused/1, unused/2, value -- value)) {
             DEOPT_IF(!PyBool_Check(value));
@@ -546,15 +546,13 @@ dummy_func(
         specializing op(_SPECIALIZE_BINARY_SUBSCR, (container, sub -- container, sub)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            uint16_t counter = _PyCounterTable_Get(this_instr);
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_BinarySubscr(container, sub, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(BINARY_SUBSCR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(counter);
-            _PyCounterTable_Set(this_instr, counter);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -693,16 +691,16 @@ dummy_func(
             STORE_SUBSCR_LIST_INT,
         };
 
-        specializing op(_SPECIALIZE_STORE_SUBSCR, (counter/1, container, sub -- container, sub)) {
+        specializing op(_SPECIALIZE_STORE_SUBSCR, (container, sub -- container, sub)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_StoreSubscr(container, sub, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(STORE_SUBSCR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -713,7 +711,7 @@ dummy_func(
             ERROR_IF(err, error);
         }
 
-        macro(STORE_SUBSCR) = _SPECIALIZE_STORE_SUBSCR + _STORE_SUBSCR;
+        macro(STORE_SUBSCR) = _SPECIALIZE_STORE_SUBSCR + unused/1 + _STORE_SUBSCR;
 
         inst(STORE_SUBSCR_LIST_INT, (unused/1, value, list, sub -- )) {
             DEOPT_IF(!PyLong_CheckExact(sub));
@@ -979,16 +977,16 @@ dummy_func(
             SEND_GEN,
         };
 
-        specializing op(_SPECIALIZE_SEND, (counter/1, receiver, unused -- receiver, unused)) {
+        specializing op(_SPECIALIZE_SEND, (receiver, unused -- receiver, unused)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_Send(receiver, next_instr);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(SEND, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1031,7 +1029,7 @@ dummy_func(
             Py_DECREF(v);
         }
 
-        macro(SEND) = _SPECIALIZE_SEND + _SEND;
+        macro(SEND) = _SPECIALIZE_SEND + unused/1 + _SEND;
 
         inst(SEND_GEN, (unused/1, receiver, v -- receiver, unused)) {
             DEOPT_IF(tstate->interp->eval_frame);
@@ -1216,15 +1214,13 @@ dummy_func(
         specializing op(_SPECIALIZE_UNPACK_SEQUENCE, (seq -- seq)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            uint16_t counter = _PyCounterTable_Get(this_instr);
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(UNPACK_SEQUENCE, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(counter);
-            _PyCounterTable_Set(this_instr, counter);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
             (void)seq;
         }
@@ -1284,17 +1280,17 @@ dummy_func(
             STORE_ATTR_WITH_HINT,
         };
 
-        specializing op(_SPECIALIZE_STORE_ATTR, (counter/1, owner -- owner)) {
+        specializing op(_SPECIALIZE_STORE_ATTR, (owner -- owner)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
                 next_instr = this_instr;
                 _Py_Specialize_StoreAttr(owner, next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(STORE_ATTR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1305,7 +1301,7 @@ dummy_func(
             ERROR_IF(err, error);
         }
 
-        macro(STORE_ATTR) = _SPECIALIZE_STORE_ATTR + unused/3 + _STORE_ATTR;
+        macro(STORE_ATTR) = _SPECIALIZE_STORE_ATTR + unused/1 + unused/3 + _STORE_ATTR;
 
         inst(DELETE_ATTR, (owner --)) {
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
@@ -1403,17 +1399,17 @@ dummy_func(
             LOAD_GLOBAL_BUILTIN,
         };
 
-        specializing op(_SPECIALIZE_LOAD_GLOBAL, (counter/1 -- )) {
+        specializing op(_SPECIALIZE_LOAD_GLOBAL, ( -- )) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
                 next_instr = this_instr;
                 _Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(LOAD_GLOBAL, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1455,8 +1451,8 @@ dummy_func(
         }
 
         macro(LOAD_GLOBAL) =
-            _SPECIALIZE_LOAD_GLOBAL +
-            counter/1 +
+            _SPECIALIZE_LOAD_GLOBAL + unused/1 +
+            unused/1 +
             globals_version/1 +
             builtins_version/1 +
             _LOAD_GLOBAL;
@@ -1722,7 +1718,7 @@ dummy_func(
         inst(INSTRUMENTED_LOAD_SUPER_ATTR, (unused/1, unused, unused, unused -- unused, unused if (oparg & 1))) {
             // cancel out the decrement that will happen in LOAD_SUPER_ATTR; we
             // don't want to specialize instrumented instructions
-            INCREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            INCREMENT_ADAPTIVE_COUNTER(this_instr);
             GO_TO_INSTRUCTION(LOAD_SUPER_ATTR);
         }
 
@@ -1731,17 +1727,17 @@ dummy_func(
             LOAD_SUPER_ATTR_METHOD,
         };
 
-        specializing op(_SPECIALIZE_LOAD_SUPER_ATTR, (counter/1, global_super, class, unused -- global_super, class, unused)) {
+        specializing op(_SPECIALIZE_LOAD_SUPER_ATTR, (global_super, class, unused -- global_super, class, unused)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
             int load_method = oparg & 1;
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_LoadSuperAttr(global_super, class, next_instr, load_method);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(LOAD_SUPER_ATTR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1783,7 +1779,7 @@ dummy_func(
             null = NULL;
         }
 
-        macro(LOAD_SUPER_ATTR) = _SPECIALIZE_LOAD_SUPER_ATTR + _LOAD_SUPER_ATTR;
+        macro(LOAD_SUPER_ATTR) = _SPECIALIZE_LOAD_SUPER_ATTR + unused/1 + _LOAD_SUPER_ATTR;
 
         pseudo(LOAD_SUPER_METHOD) = {
             LOAD_SUPER_ATTR,
@@ -1847,17 +1843,17 @@ dummy_func(
             LOAD_ATTR_NONDESCRIPTOR_NO_DICT,
         };
 
-        specializing op(_SPECIALIZE_LOAD_ATTR, (counter/1, owner -- owner)) {
+        specializing op(_SPECIALIZE_LOAD_ATTR, (owner -- owner)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
                 next_instr = this_instr;
                 _Py_Specialize_LoadAttr(owner, next_instr, name);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(LOAD_ATTR, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1895,7 +1891,7 @@ dummy_func(
         }
 
         macro(LOAD_ATTR) =
-            _SPECIALIZE_LOAD_ATTR +
+            _SPECIALIZE_LOAD_ATTR + unused/1 +
             unused/8 +
             _LOAD_ATTR;
 
@@ -2175,15 +2171,13 @@ dummy_func(
         specializing op(_SPECIALIZE_COMPARE_OP, (left, right -- left, right)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            uint16_t counter = _PyCounterTable_Get(this_instr);
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_CompareOp(left, right, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(COMPARE_OP, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(counter);
-            _PyCounterTable_Set(this_instr, counter);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2525,16 +2519,16 @@ dummy_func(
             FOR_ITER_GEN,
         };
 
-        specializing op(_SPECIALIZE_FOR_ITER, (counter/1, iter -- iter)) {
+        specializing op(_SPECIALIZE_FOR_ITER, (iter -- iter)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_ForIter(iter, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(FOR_ITER, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2580,7 +2574,7 @@ dummy_func(
             // Common case: no jump, leave it to the code generator
         }
 
-        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + _FOR_ITER;
+        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + unused/1 + _FOR_ITER;
 
         inst(INSTRUMENTED_FOR_ITER, (unused/1 -- )) {
             _Py_CODEUNIT *target;
@@ -2993,11 +2987,11 @@ dummy_func(
                     tstate, PY_MONITORING_EVENT_CALL,
                     frame, this_instr, function, arg);
             ERROR_IF(err, error);
-            INCREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            INCREMENT_ADAPTIVE_COUNTER(this_instr);
             GO_TO_INSTRUCTION(CALL);
         }
 
-        // Cache layout: counter/1, func_version/2
+        // Cache layout: unused/1, func_version/2
         // CALL_INTRINSIC_1/2, CALL_KW, and CALL_FUNCTION_EX aren't members!
         family(CALL, INLINE_CACHE_ENTRIES_CALL) = {
             CALL_BOUND_METHOD_EXACT_ARGS,
@@ -3020,16 +3014,16 @@ dummy_func(
             CALL_ALLOC_AND_ENTER_INIT,
         };
 
-        specializing op(_SPECIALIZE_CALL, (counter/1, callable, self_or_null, args[oparg] -- callable, self_or_null, args[oparg])) {
+        specializing op(_SPECIALIZE_CALL, (callable, self_or_null, args[oparg] -- callable, self_or_null, args[oparg])) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_Call(callable, next_instr, oparg + (self_or_null != NULL));
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(CALL, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -3103,7 +3097,7 @@ dummy_func(
             CHECK_EVAL_BREAKER();
         }
 
-        macro(CALL) = _SPECIALIZE_CALL + unused/2 + _CALL;
+        macro(CALL) = _SPECIALIZE_CALL + unused/1 + unused/2 + _CALL;
 
         op(_CHECK_CALL_BOUND_METHOD_EXACT_ARGS, (callable, null, unused[oparg] -- callable, null, unused[oparg])) {
             DEOPT_IF(null != NULL);
@@ -3890,15 +3884,13 @@ dummy_func(
         specializing op(_SPECIALIZE_BINARY_OP, (lhs, rhs -- lhs, rhs)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
-            uint16_t counter = _PyCounterTable_Get(this_instr);
-            if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
+            if (ADAPTIVE_COUNTER_IS_ZERO(this_instr)) {
                 next_instr = this_instr;
                 _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, LOCALS_ARRAY);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(BINARY_OP, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(counter);
-            _PyCounterTable_Set(this_instr, counter);
+            DECREMENT_ADAPTIVE_COUNTER(this_instr);
             #endif  /* ENABLE_SPECIALIZATION */
             assert(NB_ADD <= oparg);
             assert(oparg <= NB_INPLACE_XOR);
@@ -3924,7 +3916,7 @@ dummy_func(
             ERROR_IF(next_opcode < 0, error);
             next_instr = this_instr;
             if (_PyOpcode_Caches[next_opcode]) {
-                INCREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+                INCREMENT_ADAPTIVE_COUNTER(this_instr);
             }
             assert(next_opcode > 0 && next_opcode < 256);
             opcode = next_opcode;

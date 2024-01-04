@@ -1233,7 +1233,7 @@ _PyOpcode_macro_expansion[256] = {
     [EXIT_INIT_CHECK] = { .nuops = 1, .uops = { { _EXIT_INIT_CHECK, 0, 0 } } },
     [FORMAT_SIMPLE] = { .nuops = 1, .uops = { { _FORMAT_SIMPLE, 0, 0 } } },
     [FORMAT_WITH_SPEC] = { .nuops = 1, .uops = { { _FORMAT_WITH_SPEC, 0, 0 } } },
-    [FOR_ITER] = { .nuops = 1, .uops = { { _FOR_ITER, 9, 0 } } },
+    [FOR_ITER] = { .nuops = 1, .uops = { { _FOR_ITER, 9, 1 } } },
     [FOR_ITER_LIST] = { .nuops = 3, .uops = { { _ITER_CHECK_LIST, 0, 0 }, { _ITER_JUMP_LIST, 9, 1 }, { _ITER_NEXT_LIST, 0, 0 } } },
     [FOR_ITER_RANGE] = { .nuops = 3, .uops = { { _ITER_CHECK_RANGE, 0, 0 }, { _ITER_JUMP_RANGE, 9, 1 }, { _ITER_NEXT_RANGE, 0, 0 } } },
     [FOR_ITER_TUPLE] = { .nuops = 3, .uops = { { _ITER_CHECK_TUPLE, 0, 0 }, { _ITER_JUMP_TUPLE, 9, 1 }, { _ITER_NEXT_TUPLE, 0, 0 } } },
