@@ -2982,7 +2982,7 @@
                 tstate, frame, this_instr);
             if (next_opcode < 0) goto error;
             next_instr = this_instr;
-            if (_PyOpcode_Caches[next_opcode]) {
+            if (_PyOpcode_Caches[next_opcode]) {  // XXX
                 INCREMENT_ADAPTIVE_COUNTER(this_instr);
             }
             assert(next_opcode > 0 && next_opcode < 256);
@@ -3352,10 +3352,10 @@
 
         TARGET(LOAD_ATTR) {
             frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR);
             PREDICTED(LOAD_ATTR);
-            _Py_CODEUNIT *this_instr = next_instr - 10;
+            _Py_CODEUNIT *this_instr = next_instr - 9;
             PyObject *owner;
             PyObject *attr;
             PyObject *self_or_null = NULL;
@@ -3374,7 +3374,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             /* Skip 8 cache entries */
             // _LOAD_ATTR
             {
@@ -3417,17 +3416,16 @@
 
         TARGET(LOAD_ATTR_CLASS) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_CLASS);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _CHECK_ATTR_CLASS
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 DEOPT_IF(!PyType_Check(owner), LOAD_ATTR);
                 assert(type_version != 0);
                 DEOPT_IF(((PyTypeObject *)owner)->tp_version_tag != type_version, LOAD_ATTR);
@@ -3435,7 +3433,7 @@
             /* Skip 2 cache entries */
             // _LOAD_ATTR_CLASS
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 STAT_INC(LOAD_ATTR, hit);
                 assert(descr != NULL);
                 attr = Py_NewRef(descr);
@@ -3450,15 +3448,14 @@
 
         TARGET(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
-            /* Skip 1 cache entry */
             owner = stack_pointer[-1];
-            uint32_t type_version = read_u32(&this_instr[2].cache);
-            uint32_t func_version = read_u32(&this_instr[4].cache);
-            PyObject *getattribute = read_obj(&this_instr[6].cache);
+            uint32_t type_version = read_u32(&this_instr[1].cache);
+            uint32_t func_version = read_u32(&this_instr[3].cache);
+            PyObject *getattribute = read_obj(&this_instr[5].cache);
             assert((oparg & 1) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
@@ -3485,17 +3482,16 @@
 
         TARGET(LOAD_ATTR_INSTANCE_VALUE) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_INSTANCE_VALUE);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3509,7 +3505,7 @@
             }
             // _LOAD_ATTR_INSTANCE_VALUE
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
                 attr = _PyDictOrValues_GetValues(dorv)->values[index];
                 DEOPT_IF(attr == NULL, LOAD_ATTR);
@@ -3527,17 +3523,16 @@
 
         TARGET(LOAD_ATTR_METHOD_LAZY_DICT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_METHOD_LAZY_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *self = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3553,7 +3548,7 @@
             /* Skip 2 cache entries */
             // _LOAD_ATTR_METHOD_LAZY_DICT
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 assert(oparg & 1);
                 STAT_INC(LOAD_ATTR, hit);
                 assert(descr != NULL);
@@ -3569,17 +3564,16 @@
 
         TARGET(LOAD_ATTR_METHOD_NO_DICT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_METHOD_NO_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *self = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3587,7 +3581,7 @@
             /* Skip 2 cache entries */
             // _LOAD_ATTR_METHOD_NO_DICT
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 assert(oparg & 1);
                 assert(Py_TYPE(owner)->tp_dictoffset == 0);
                 STAT_INC(LOAD_ATTR, hit);
@@ -3604,17 +3598,16 @@
 
         TARGET(LOAD_ATTR_METHOD_WITH_VALUES) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_METHOD_WITH_VALUES);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *self = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3627,14 +3620,14 @@
             }
             // _GUARD_KEYS_VERSION
             {
-                uint32_t keys_version = read_u32(&this_instr[4].cache);
+                uint32_t keys_version = read_u32(&this_instr[3].cache);
                 PyTypeObject *owner_cls = Py_TYPE(owner);
                 PyHeapTypeObject *owner_heap_type = (PyHeapTypeObject *)owner_cls;
                 DEOPT_IF(owner_heap_type->ht_cached_keys->dk_version != keys_version, LOAD_ATTR);
             }
             // _LOAD_ATTR_METHOD_WITH_VALUES
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 assert(oparg & 1);
                 /* Cached method object */
                 STAT_INC(LOAD_ATTR, hit);
@@ -3651,17 +3644,16 @@
 
         TARGET(LOAD_ATTR_MODULE) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_MODULE);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _CHECK_ATTR_MODULE
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 DEOPT_IF(!PyModule_CheckExact(owner), LOAD_ATTR);
                 PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
                 assert(dict != NULL);
@@ -3669,7 +3661,7 @@
             }
             // _LOAD_ATTR_MODULE
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
                 assert(dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
                 assert(index < dict->ma_keys->dk_nentries);
@@ -3690,16 +3682,15 @@
 
         TARGET(LOAD_ATTR_NONDESCRIPTOR_NO_DICT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_NONDESCRIPTOR_NO_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3707,7 +3698,7 @@
             /* Skip 2 cache entries */
             // _LOAD_ATTR_NONDESCRIPTOR_NO_DICT
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 assert((oparg & 1) == 0);
                 assert(Py_TYPE(owner)->tp_dictoffset == 0);
                 STAT_INC(LOAD_ATTR, hit);
@@ -3722,16 +3713,15 @@
 
         TARGET(LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3744,14 +3734,14 @@
             }
             // _GUARD_KEYS_VERSION
             {
-                uint32_t keys_version = read_u32(&this_instr[4].cache);
+                uint32_t keys_version = read_u32(&this_instr[3].cache);
                 PyTypeObject *owner_cls = Py_TYPE(owner);
                 PyHeapTypeObject *owner_heap_type = (PyHeapTypeObject *)owner_cls;
                 DEOPT_IF(owner_heap_type->ht_cached_keys->dk_version != keys_version, LOAD_ATTR);
             }
             // _LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES
             {
-                PyObject *descr = read_obj(&this_instr[6].cache);
+                PyObject *descr = read_obj(&this_instr[5].cache);
                 assert((oparg & 1) == 0);
                 STAT_INC(LOAD_ATTR, hit);
                 assert(descr != NULL);
@@ -3765,15 +3755,14 @@
 
         TARGET(LOAD_ATTR_PROPERTY) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_PROPERTY);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
-            /* Skip 1 cache entry */
             owner = stack_pointer[-1];
-            uint32_t type_version = read_u32(&this_instr[2].cache);
-            uint32_t func_version = read_u32(&this_instr[4].cache);
-            PyObject *fget = read_obj(&this_instr[6].cache);
+            uint32_t type_version = read_u32(&this_instr[1].cache);
+            uint32_t func_version = read_u32(&this_instr[3].cache);
+            PyObject *fget = read_obj(&this_instr[5].cache);
             assert((oparg & 1) == 0);
             DEOPT_IF(tstate->interp->eval_frame, LOAD_ATTR);
             PyTypeObject *cls = Py_TYPE(owner);
@@ -3798,24 +3787,23 @@
 
         TARGET(LOAD_ATTR_SLOT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_SLOT);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
             }
             // _LOAD_ATTR_SLOT
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 char *addr = (char *)owner + index;
                 attr = *(PyObject **)addr;
                 DEOPT_IF(attr == NULL, LOAD_ATTR);
@@ -3833,17 +3821,16 @@
 
         TARGET(LOAD_ATTR_WITH_HINT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 10;
+            next_instr += 9;
             INSTRUCTION_STATS(LOAD_ATTR_WITH_HINT);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 9, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_ATTR == 8, "incorrect cache size");
             PyObject *owner;
             PyObject *attr;
             PyObject *null = NULL;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, LOAD_ATTR);
@@ -3859,7 +3846,7 @@
             }
             // _LOAD_ATTR_WITH_HINT
             {
-                uint16_t hint = read_u16(&this_instr[4].cache);
+                uint16_t hint = read_u16(&this_instr[3].cache);
                 PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
                 PyDictObject *dict = (PyDictObject *)_PyDictOrValues_GetDict(dorv);
                 DEOPT_IF(hint >= (size_t)dict->ma_keys->dk_nentries, LOAD_ATTR);
@@ -5070,10 +5057,10 @@
 
         TARGET(STORE_ATTR) {
             frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(STORE_ATTR);
             PREDICTED(STORE_ATTR);
-            _Py_CODEUNIT *this_instr = next_instr - 5;
+            _Py_CODEUNIT *this_instr = next_instr - 4;
             PyObject *owner;
             PyObject *v;
             // _SPECIALIZE_STORE_ATTR
@@ -5091,7 +5078,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             /* Skip 3 cache entries */
             // _STORE_ATTR
             v = stack_pointer[-2];
@@ -5108,16 +5094,15 @@
 
         TARGET(STORE_ATTR_INSTANCE_VALUE) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(STORE_ATTR_INSTANCE_VALUE);
-            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 4, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 3, "incorrect cache size");
             PyObject *owner;
             PyObject *value;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, STORE_ATTR);
@@ -5131,7 +5116,7 @@
             // _STORE_ATTR_INSTANCE_VALUE
             value = stack_pointer[-2];
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(owner);
                 STAT_INC(STORE_ATTR, hit);
                 PyDictValues *values = _PyDictOrValues_GetValues(dorv);
@@ -5151,16 +5136,15 @@
 
         TARGET(STORE_ATTR_SLOT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(STORE_ATTR_SLOT);
-            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 4, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 3, "incorrect cache size");
             PyObject *owner;
             PyObject *value;
-            /* Skip 1 cache entry */
             // _GUARD_TYPE_VERSION
             owner = stack_pointer[-1];
             {
-                uint32_t type_version = read_u32(&this_instr[2].cache);
+                uint32_t type_version = read_u32(&this_instr[1].cache);
                 PyTypeObject *tp = Py_TYPE(owner);
                 assert(type_version != 0);
                 DEOPT_IF(tp->tp_version_tag != type_version, STORE_ATTR);
@@ -5168,7 +5152,7 @@
             // _STORE_ATTR_SLOT
             value = stack_pointer[-2];
             {
-                uint16_t index = read_u16(&this_instr[4].cache);
+                uint16_t index = read_u16(&this_instr[3].cache);
                 char *addr = (char *)owner + index;
                 STAT_INC(STORE_ATTR, hit);
                 PyObject *old_value = *(PyObject **)addr;
@@ -5182,16 +5166,15 @@
 
         TARGET(STORE_ATTR_WITH_HINT) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 5;
+            next_instr += 4;
             INSTRUCTION_STATS(STORE_ATTR_WITH_HINT);
-            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 4, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_STORE_ATTR == 3, "incorrect cache size");
             PyObject *owner;
             PyObject *value;
-            /* Skip 1 cache entry */
             owner = stack_pointer[-1];
             value = stack_pointer[-2];
-            uint32_t type_version = read_u32(&this_instr[2].cache);
-            uint16_t hint = read_u16(&this_instr[4].cache);
+            uint32_t type_version = read_u32(&this_instr[1].cache);
+            uint16_t hint = read_u16(&this_instr[3].cache);
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version, STORE_ATTR);

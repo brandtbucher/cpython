@@ -1301,7 +1301,7 @@ dummy_func(
             ERROR_IF(err, error);
         }
 
-        macro(STORE_ATTR) = _SPECIALIZE_STORE_ATTR + unused/1 + unused/3 + _STORE_ATTR;
+        macro(STORE_ATTR) = _SPECIALIZE_STORE_ATTR + unused/3 + _STORE_ATTR;
 
         inst(DELETE_ATTR, (owner --)) {
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
@@ -1889,7 +1889,7 @@ dummy_func(
         }
 
         macro(LOAD_ATTR) =
-            _SPECIALIZE_LOAD_ATTR + unused/1 +
+            _SPECIALIZE_LOAD_ATTR +
             unused/8 +
             _LOAD_ATTR;
 
@@ -1921,7 +1921,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_INSTANCE_VALUE) =
-            unused/1 + // Skip over the counter
             _GUARD_TYPE_VERSION +
             _CHECK_MANAGED_OBJECT_HAS_VALUES +
             _LOAD_ATTR_INSTANCE_VALUE +
@@ -1948,7 +1947,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_MODULE) =
-            unused/1 +
             _CHECK_ATTR_MODULE +
             _LOAD_ATTR_MODULE +
             unused/5;
@@ -1985,7 +1983,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_WITH_HINT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _CHECK_ATTR_WITH_HINT +
             _LOAD_ATTR_WITH_HINT +
@@ -2002,7 +1999,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_SLOT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _LOAD_ATTR_SLOT +  // NOTE: This action may also deopt
             unused/5;
@@ -2023,12 +2019,11 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_CLASS) =
-            unused/1 +
             _CHECK_ATTR_CLASS +
             unused/2 +
             _LOAD_ATTR_CLASS;
 
-        inst(LOAD_ATTR_PROPERTY, (unused/1, type_version/2, func_version/2, fget/4, owner -- unused, unused if (0))) {
+        inst(LOAD_ATTR_PROPERTY, (type_version/2, func_version/2, fget/4, owner -- unused, unused if (0))) {
             assert((oparg & 1) == 0);
             DEOPT_IF(tstate->interp->eval_frame);
 
@@ -2052,7 +2047,7 @@ dummy_func(
             DISPATCH_INLINED(new_frame);
         }
 
-        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (unused/1, type_version/2, func_version/2, getattribute/4, owner -- unused, unused if (0))) {
+        inst(LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN, (type_version/2, func_version/2, getattribute/4, owner -- unused, unused if (0))) {
             assert((oparg & 1) == 0);
             DEOPT_IF(tstate->interp->eval_frame);
             PyTypeObject *cls = Py_TYPE(owner);
@@ -2100,12 +2095,11 @@ dummy_func(
         }
 
         macro(STORE_ATTR_INSTANCE_VALUE) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _GUARD_DORV_VALUES +
             _STORE_ATTR_INSTANCE_VALUE;
 
-        inst(STORE_ATTR_WITH_HINT, (unused/1, type_version/2, hint/1, value, owner --)) {
+        inst(STORE_ATTR_WITH_HINT, (type_version/2, hint/1, value, owner --)) {
             PyTypeObject *tp = Py_TYPE(owner);
             assert(type_version != 0);
             DEOPT_IF(tp->tp_version_tag != type_version);
@@ -2156,7 +2150,6 @@ dummy_func(
         }
 
         macro(STORE_ATTR_SLOT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _STORE_ATTR_SLOT;
 
@@ -2896,7 +2889,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_METHOD_WITH_VALUES) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _GUARD_DORV_VALUES_INST_ATTR_FROM_DICT +
             _GUARD_KEYS_VERSION +
@@ -2913,7 +2905,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_METHOD_NO_DICT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             unused/2 +
             _LOAD_ATTR_METHOD_NO_DICT;
@@ -2927,7 +2918,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _GUARD_DORV_VALUES_INST_ATTR_FROM_DICT +
             _GUARD_KEYS_VERSION +
@@ -2943,7 +2933,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_NONDESCRIPTOR_NO_DICT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             unused/2 +
             _LOAD_ATTR_NONDESCRIPTOR_NO_DICT;
@@ -2966,7 +2955,6 @@ dummy_func(
         }
 
         macro(LOAD_ATTR_METHOD_LAZY_DICT) =
-            unused/1 +
             _GUARD_TYPE_VERSION +
             _CHECK_ATTR_METHOD_LAZY_DICT +
             unused/2 +
