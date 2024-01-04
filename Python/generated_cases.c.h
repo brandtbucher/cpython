@@ -3035,9 +3035,8 @@
 
         TARGET(INSTRUMENTED_LOAD_SUPER_ATTR) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(INSTRUMENTED_LOAD_SUPER_ATTR);
-            /* Skip 1 cache entry */
             // cancel out the decrement that will happen in LOAD_SUPER_ATTR; we
             // don't want to specialize instrumented instructions
             INCREMENT_ADAPTIVE_COUNTER(this_instr);
@@ -4271,10 +4270,10 @@
 
         TARGET(LOAD_SUPER_ATTR) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(LOAD_SUPER_ATTR);
             PREDICTED(LOAD_SUPER_ATTR);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *class;
             PyObject *global_super;
             PyObject *self;
@@ -4296,7 +4295,6 @@
                 DECREMENT_ADAPTIVE_COUNTER(this_instr);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
-            /* Skip 1 cache entry */
             // _LOAD_SUPER_ATTR
             self = stack_pointer[-1];
             {
@@ -4346,14 +4344,13 @@
 
         TARGET(LOAD_SUPER_ATTR_ATTR) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(LOAD_SUPER_ATTR_ATTR);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR == 0, "incorrect cache size");
             PyObject *self;
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
-            /* Skip 1 cache entry */
             self = stack_pointer[-1];
             class = stack_pointer[-2];
             global_super = stack_pointer[-3];
@@ -4374,15 +4371,14 @@
 
         TARGET(LOAD_SUPER_ATTR_METHOD) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(LOAD_SUPER_ATTR_METHOD);
-            static_assert(INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_LOAD_SUPER_ATTR == 0, "incorrect cache size");
             PyObject *self;
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
             PyObject *self_or_null;
-            /* Skip 1 cache entry */
             self = stack_pointer[-1];
             class = stack_pointer[-2];
             global_super = stack_pointer[-3];

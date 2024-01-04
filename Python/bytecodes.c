@@ -1713,7 +1713,7 @@ dummy_func(
             ERROR_IF(_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0, error);
         }
 
-        inst(INSTRUMENTED_LOAD_SUPER_ATTR, (unused/1, unused, unused, unused -- unused, unused if (oparg & 1))) {
+        inst(INSTRUMENTED_LOAD_SUPER_ATTR, (unused, unused, unused -- unused, unused if (oparg & 1))) {
             // cancel out the decrement that will happen in LOAD_SUPER_ATTR; we
             // don't want to specialize instrumented instructions
             INCREMENT_ADAPTIVE_COUNTER(this_instr);
@@ -1777,7 +1777,7 @@ dummy_func(
             null = NULL;
         }
 
-        macro(LOAD_SUPER_ATTR) = _SPECIALIZE_LOAD_SUPER_ATTR + unused/1 + _LOAD_SUPER_ATTR;
+        macro(LOAD_SUPER_ATTR) = _SPECIALIZE_LOAD_SUPER_ATTR + _LOAD_SUPER_ATTR;
 
         pseudo(LOAD_SUPER_METHOD) = {
             LOAD_SUPER_ATTR,
@@ -1791,7 +1791,7 @@ dummy_func(
             LOAD_SUPER_ATTR,
         };
 
-        inst(LOAD_SUPER_ATTR_ATTR, (unused/1, global_super, class, self -- attr, unused if (0))) {
+        inst(LOAD_SUPER_ATTR_ATTR, (global_super, class, self -- attr, unused if (0))) {
             assert(!(oparg & 1));
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type);
             DEOPT_IF(!PyType_Check(class));
@@ -1802,7 +1802,7 @@ dummy_func(
             ERROR_IF(attr == NULL, error);
         }
 
-        inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super, class, self -- attr, self_or_null)) {
+        inst(LOAD_SUPER_ATTR_METHOD, (global_super, class, self -- attr, self_or_null)) {
             assert(oparg & 1);
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type);
             DEOPT_IF(!PyType_Check(class));

@@ -63,7 +63,7 @@ _cache_format = {
         "counter": 1,
     },
     "LOAD_SUPER_ATTR": {
-        "counter": 1,
+        # "counter": 1,
     },
     "LOAD_ATTR": {
         "counter": 1,
