@@ -112,6 +112,26 @@ class Stencil:
         yield hole.replace(offset=base + 4 * 2, kind="R_AARCH64_MOVW_UABS_G2_NC")
         yield hole.replace(offset=base + 4 * 3, kind="R_AARCH64_MOVW_UABS_G3")
 
+    def remove_jump(self) -> None:
+        match self.holes:
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
+                    kind="R_X86_64_64",
+                    value=HoleValue.CONTINUE,
+                    symbol=None,
+                    addend=0,
+                ),
+            ]:
+                jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\xff\xe0"
+                offset -= 2
+            case _:
+                return
+        if self.body[offset:] == jump:
+            self.body = self.body[:offset]
+            self.holes = holes
+
 
 @dataclasses.dataclass
 class StencilGroup:
@@ -242,6 +262,7 @@ class Target(typing.Generic[_S, _R]):
         group.data.pad(8)
         self._process_relocations(group.code, group)
         remaining: list[Hole] = []
+        group.code.remove_jump()
         for hole in group.code.holes:
             if (
                 hole.kind in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26"}
