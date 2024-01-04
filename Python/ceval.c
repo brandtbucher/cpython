@@ -808,10 +808,11 @@ resume_frame:
             DISPATCH();
         }
         if (_PyOpcode_Caches[original_opcode]) {
-            _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(next_instr+1);
-            /* Prevent the underlying instruction from specializing
-             * and overwriting the instrumentation. */
-            INCREMENT_ADAPTIVE_COUNTER(cache->counter);
+            // XXX
+            // _PyBinaryOpCache *cache = (_PyBinaryOpCache *)(next_instr+1);
+            // /* Prevent the underlying instruction from specializing
+            //  * and overwriting the instrumentation. */
+            // INCREMENT_ADAPTIVE_COUNTER(cache->counter);
         }
         opcode = original_opcode;
         DISPATCH_GOTO();

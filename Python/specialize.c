@@ -18,6 +18,45 @@
 #include <stdlib.h> // rand()
 
 
+typedef struct {
+    _Py_CODEUNIT *instruction;
+    uint16_t counter;
+} counter_table_entry;
+
+#define COUNTER_TABLE_SIZE (10)
+
+static counter_table_entry counter_table[1 << COUNTER_TABLE_SIZE];
+
+static counter_table_entry *
+counter_table_lookup(_Py_CODEUNIT *instruction)
+{
+    assert(instruction);
+    size_t mask = (1 << COUNTER_TABLE_SIZE) - 1;
+    // XXX: We can probably do better than this. Gather collision stats:
+    return &counter_table[((uintptr_t)instruction >> 4) & mask];
+}
+
+uint16_t
+_PyCounterTable_Get(_Py_CODEUNIT *instruction)
+{
+    counter_table_entry *entry = counter_table_lookup(instruction);
+    if (entry->instruction == instruction) {
+        return entry->counter;
+    }
+    if (_PyOpcode_Deopt[instruction->op.code] == instruction->op.code) {
+        return adaptive_counter_warmup();
+    }
+    return adaptive_counter_cooldown();
+}
+
+void
+_PyCounterTable_Set(_Py_CODEUNIT *instruction, uint16_t value)
+{
+    counter_table_entry *entry = counter_table_lookup(instruction);
+    entry->instruction = instruction;
+    entry->counter = value;
+}
+
 /* For guidance on adding or extending families of instructions see
  * ./adaptive.md
  */

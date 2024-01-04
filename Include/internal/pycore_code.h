@@ -112,6 +112,9 @@ typedef struct {
 
 #define INLINE_CACHE_ENTRIES_TO_BOOL CACHE_ENTRIES(_PyToBoolCache)
 
+uint16_t _PyCounterTable_Get(_Py_CODEUNIT *instruction);
+void _PyCounterTable_Set(_Py_CODEUNIT *instruction, uint16_t value);
+
 // Borrowed references to common callables:
 struct callable_cache {
     PyObject *isinstance;
