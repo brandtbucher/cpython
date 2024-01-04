@@ -450,7 +450,6 @@ mark_stacks(PyCodeObject *code_obj, int len)
                     break;
                 }
                 case CACHE:
-                case RESERVED:
                 {
                     assert(0);
                 }

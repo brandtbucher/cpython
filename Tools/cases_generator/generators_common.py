@@ -209,6 +209,8 @@ def cflags(p: Properties) -> str:
         flags.append("HAS_ERROR_FLAG")
     if p.escapes:
         flags.append("HAS_ESCAPES_FLAG")
+    if p.specializing:
+        flags.append("HAS_SPECIALIZING_FLAG")
     if flags:
         return " | ".join(flags)
     else:

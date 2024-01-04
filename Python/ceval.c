@@ -807,8 +807,7 @@ resume_frame:
         if (next_instr != here) {
             DISPATCH();
         }
-        // XXX: Fix this, and check usages of _PyOpcode_Caches!
-        if (_PyOpcode_Caches[original_opcode]) {
+        if (OPCODE_HAS_SPECIALIZING(original_opcode)) {
             /* Prevent the underlying instruction from specializing
              * and overwriting the instrumentation. */
             INCREMENT_ADAPTIVE_COUNTER(next_instr);

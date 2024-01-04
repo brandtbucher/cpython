@@ -2982,7 +2982,7 @@
                 tstate, frame, this_instr);
             if (next_opcode < 0) goto error;
             next_instr = this_instr;
-            if (_PyOpcode_Caches[next_opcode]) {  // XXX
+            if (OPCODE_HAS_SPECIALIZING(next_opcode)) {  // XXX
                 INCREMENT_ADAPTIVE_COUNTER(this_instr);
             }
             assert(next_opcode > 0 && next_opcode < 256);
@@ -4720,15 +4720,6 @@
             _PyErr_SetRaisedException(tstate, exc);
             monitor_reraise(tstate, frame, this_instr);
             goto exception_unwind;
-        }
-
-        TARGET(RESERVED) {
-            frame->instr_ptr = next_instr;
-            next_instr += 1;
-            INSTRUCTION_STATS(RESERVED);
-            TIER_ONE_ONLY
-            assert(0 && "Executing RESERVED instruction.");
-            Py_UNREACHABLE();
         }
 
         TARGET(RESUME) {

@@ -21,6 +21,7 @@ class Properties:
     uses_co_names: bool
     uses_locals: bool
     has_free: bool
+    specializing: bool
 
     def dump(self, indent: str) -> None:
         print(indent, end="")
@@ -45,6 +46,7 @@ class Properties:
             uses_co_names=any(p.uses_co_names for p in properties),
             uses_locals=any(p.uses_locals for p in properties),
             has_free=any(p.has_free for p in properties),
+            specializing=any(p.specializing for p in properties),
         )
 
 
@@ -64,6 +66,7 @@ SKIP_PROPERTIES = Properties(
     uses_co_names=False,
     uses_locals=False,
     has_free=False,
+    specializing=False
 )
 
 
@@ -440,6 +443,7 @@ def compute_properties(op: parser.InstDef) -> Properties:
         uses_locals=(variable_used(op, "GETLOCAL") or variable_used(op, "SETLOCAL"))
         and not has_free,
         has_free=has_free,
+        specializing="specializing" in op.annotations,
     )
 
 
@@ -557,10 +561,6 @@ def assign_opcodes(
 
     # 0 is reserved for cache entries. This helps debugging.
     instmap["CACHE"] = 0
-
-    # 17 is reserved as it is the initial value for the specializing counter.
-    # This helps catch cases where we attempt to execute a cache.
-    instmap["RESERVED"] = 17
 
     # 149 is RESUME - it is hard coded as such in Tools/build/deepfreeze.py
     instmap["RESUME"] = 149

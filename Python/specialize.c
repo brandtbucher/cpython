@@ -23,7 +23,28 @@ typedef struct {
     uint16_t counter;
 } counter_table_entry;
 
-#define COUNTER_TABLE_SIZE (10)
+// static size_t hits;
+// static size_t misses;
+
+//  0:  0% (100%)
+//  1:  0% (100%)
+//  2:  0% (100%)
+//  3:  1% (100%)
+//  4:  5% (100%)
+//  5: 13% (100%)
+//  6: 28% (100%)
+//  7: 45% (100%)
+//  8: 62% (100%)
+//  9: 74% (100%)
+// 10: 83% (100%)
+// 11: 89% (100%)
+// 12: 92% (100%) -> 98% (100%)
+// 13: 95% ( 99%) -> 98% (100%)
+// 14: 97% ( 92%) -> 99%
+// 15: 97% ( 72%) -> 99%
+
+
+#define COUNTER_TABLE_SIZE (14)
 
 static counter_table_entry counter_table[1 << COUNTER_TABLE_SIZE];
 
@@ -31,9 +52,9 @@ static counter_table_entry *
 counter_table_lookup(_Py_CODEUNIT *instruction)
 {
     assert(instruction);
+    assert(((uintptr_t)instruction & 1) == 0);
     size_t mask = (1 << COUNTER_TABLE_SIZE) - 1;
-    // XXX: We can probably do better than this. Gather collision stats:
-    return &counter_table[((uintptr_t)instruction >> 4) & mask];
+    return &counter_table[((uintptr_t)instruction >> 1) & mask];
 }
 
 uint16_t
@@ -41,8 +62,28 @@ _PyCounterTable_Get(_Py_CODEUNIT *instruction)
 {
     counter_table_entry *entry = counter_table_lookup(instruction);
     if (entry->instruction == instruction) {
+        // hits++;
+        // if ((hits + misses) % 1000000 == 0) {
+        //     size_t i = 0;
+        //     for (size_t j = 0; j < (1 << COUNTER_TABLE_SIZE); j++) {
+        //         if (counter_table[j].instruction) {
+        //             i++;
+        //         }
+        //     }
+        //     printf("XXX: %ld%% (%ld%%)\n", 100 * hits / (hits + misses), i * 100 / (1 << COUNTER_TABLE_SIZE));
+        // }
         return entry->counter;
     }
+    // misses++;
+    // if ((hits + misses) % 1000000 == 0) {
+    //     size_t i = 0;
+    //     for (size_t j = 0; j < (1 << COUNTER_TABLE_SIZE); j++) {
+    //         if (counter_table[j].instruction) {
+    //             i++;
+    //         }
+    //     }
+    //     printf("XXX: %ld%% (%ld%%)\n", 100 * hits / (hits + misses), i * 100 / (1 << COUNTER_TABLE_SIZE));
+    // }
     if (_PyOpcode_Deopt[instruction->op.code] == instruction->op.code) {
         return adaptive_counter_warmup();
     }
@@ -175,7 +216,7 @@ print_spec_stats(FILE *out, OpcodeStats *stats)
     fprintf(out, "opcode[BINARY_SLICE].specializable : 1\n");
     fprintf(out, "opcode[STORE_SLICE].specializable : 1\n");
     for (int i = 0; i < 256; i++) {
-        if (_PyOpcode_Caches[i] && i != JUMP_BACKWARD) {
+        if (OPCODE_HAS_SPECIALIZING(i)) {
             fprintf(out, "opcode[%s].specializable : 1\n", _PyOpcode_OpName[i]);
         }
         PRINT_STAT(i, specialization.success);
@@ -433,9 +474,6 @@ _PyCode_Quicken(PyCodeObject *code)
             // The initial value depends on the opcode
             int initial_value;
             switch (opcode) {
-                case JUMP_BACKWARD:
-                    initial_value = 0;
-                    break;
                 case POP_JUMP_IF_FALSE:
                 case POP_JUMP_IF_TRUE:
                 case POP_JUMP_IF_NONE:
@@ -443,7 +481,7 @@ _PyCode_Quicken(PyCodeObject *code)
                     initial_value = 0x5555;  // Alternating 0, 1 bits
                     break;
                 default:
-                    initial_value = adaptive_counter_warmup();
+                    initial_value = 0;
                     break;
             }
             instructions[i + 1].cache = initial_value;

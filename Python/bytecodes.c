@@ -3896,7 +3896,7 @@ dummy_func(
                 tstate, frame, this_instr);
             ERROR_IF(next_opcode < 0, error);
             next_instr = this_instr;
-            if (_PyOpcode_Caches[next_opcode]) {
+            if (OPCODE_HAS_SPECIALIZING(next_opcode)) {
                 INCREMENT_ADAPTIVE_COUNTER(this_instr);
             }
             assert(next_opcode > 0 && next_opcode < 256);
@@ -3981,12 +3981,6 @@ dummy_func(
         inst(CACHE, (--)) {
             TIER_ONE_ONLY
             assert(0 && "Executing a cache.");
-            Py_UNREACHABLE();
-        }
-
-        inst(RESERVED, (--)) {
-            TIER_ONE_ONLY
-            assert(0 && "Executing RESERVED instruction.");
             Py_UNREACHABLE();
         }
 
