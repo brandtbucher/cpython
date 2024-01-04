@@ -1970,10 +1970,10 @@
 
         TARGET(COMPARE_OP) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(COMPARE_OP);
             PREDICTED(COMPARE_OP);
-            _Py_CODEUNIT *this_instr = next_instr - 2;
+            _Py_CODEUNIT *this_instr = next_instr - 1;
             PyObject *right;
             PyObject *left;
             PyObject *res;
@@ -1981,16 +1981,17 @@
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             {
-                uint16_t counter = read_u16(&this_instr[1].cache);
                 TIER_ONE_ONLY
                 #if ENABLE_SPECIALIZATION
+                uint16_t counter = _PyCounterTable_Get(this_instr);
                 if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                     next_instr = this_instr;
                     _Py_Specialize_CompareOp(left, right, next_instr, oparg);
                     DISPATCH_SAME_OPARG();
                 }
                 STAT_INC(COMPARE_OP, deferred);
-                DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+                DECREMENT_ADAPTIVE_COUNTER(counter);
+                _PyCounterTable_Set(this_instr, counter);
                 #endif  /* ENABLE_SPECIALIZATION */
             }
             // _COMPARE_OP
@@ -2014,13 +2015,12 @@
 
         TARGET(COMPARE_OP_FLOAT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(COMPARE_OP_FLOAT);
-            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 0, "incorrect cache size");
             PyObject *right;
             PyObject *left;
             PyObject *res;
-            /* Skip 1 cache entry */
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             DEOPT_IF(!PyFloat_CheckExact(left), COMPARE_OP);
@@ -2041,13 +2041,12 @@
 
         TARGET(COMPARE_OP_INT) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(COMPARE_OP_INT);
-            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 0, "incorrect cache size");
             PyObject *right;
             PyObject *left;
             PyObject *res;
-            /* Skip 1 cache entry */
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             DEOPT_IF(!PyLong_CheckExact(left), COMPARE_OP);
@@ -2072,13 +2071,12 @@
 
         TARGET(COMPARE_OP_STR) {
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(COMPARE_OP_STR);
-            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_COMPARE_OP == 0, "incorrect cache size");
             PyObject *right;
             PyObject *left;
             PyObject *res;
-            /* Skip 1 cache entry */
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             DEOPT_IF(!PyUnicode_CheckExact(left), COMPARE_OP);

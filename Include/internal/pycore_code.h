@@ -44,7 +44,7 @@ typedef struct {
     CACHE_ENTRIES(_PyUnpackSequenceCache)
 
 typedef struct {
-    uint16_t counter;
+    // uint16_t counter;
 } _PyCompareOpCache;
 
 #define INLINE_CACHE_ENTRIES_COMPARE_OP CACHE_ENTRIES(_PyCompareOpCache)

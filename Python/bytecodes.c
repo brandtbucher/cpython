@@ -2170,16 +2170,18 @@ dummy_func(
             COMPARE_OP_STR,
         };
 
-        specializing op(_SPECIALIZE_COMPARE_OP, (counter/1, left, right -- left, right)) {
+        specializing op(_SPECIALIZE_COMPARE_OP, (left, right -- left, right)) {
             TIER_ONE_ONLY
             #if ENABLE_SPECIALIZATION
+            uint16_t counter = _PyCounterTable_Get(this_instr);
             if (ADAPTIVE_COUNTER_IS_ZERO(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_CompareOp(left, right, next_instr, oparg);
                 DISPATCH_SAME_OPARG();
             }
             STAT_INC(COMPARE_OP, deferred);
-            DECREMENT_ADAPTIVE_COUNTER(this_instr[1].cache);
+            DECREMENT_ADAPTIVE_COUNTER(counter);
+            _PyCounterTable_Set(this_instr, counter);
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2198,7 +2200,7 @@ dummy_func(
 
         macro(COMPARE_OP) = _SPECIALIZE_COMPARE_OP + _COMPARE_OP;
 
-        inst(COMPARE_OP_FLOAT, (unused/1, left, right -- res)) {
+        inst(COMPARE_OP_FLOAT, (left, right -- res)) {
             DEOPT_IF(!PyFloat_CheckExact(left));
             DEOPT_IF(!PyFloat_CheckExact(right));
             STAT_INC(COMPARE_OP, hit);
@@ -2213,7 +2215,7 @@ dummy_func(
         }
 
         // Similar to COMPARE_OP_FLOAT
-        inst(COMPARE_OP_INT, (unused/1, left, right -- res)) {
+        inst(COMPARE_OP_INT, (left, right -- res)) {
             DEOPT_IF(!PyLong_CheckExact(left));
             DEOPT_IF(!PyLong_CheckExact(right));
             DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)left));
@@ -2232,7 +2234,7 @@ dummy_func(
         }
 
         // Similar to COMPARE_OP_FLOAT, but for ==, != only
-        inst(COMPARE_OP_STR, (unused/1, left, right -- res)) {
+        inst(COMPARE_OP_STR, (left, right -- res)) {
             DEOPT_IF(!PyUnicode_CheckExact(left));
             DEOPT_IF(!PyUnicode_CheckExact(right));
             STAT_INC(COMPARE_OP, hit);
