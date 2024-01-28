@@ -1,0 +1,2 @@
+Add :func:`sys._clear_executors`, which clears and invalidates all tier two
+executors (useful when hunting for reference or memory leaks).
