@@ -239,6 +239,7 @@ struct _is {
     struct callable_cache callable_cache;
     _PyOptimizerObject *optimizer;
     _PyExecutorObject *executor_list_head;
+    PyCodeObject *code_list_head;
     uint16_t optimizer_resume_threshold;
     uint16_t optimizer_backedge_threshold;
     uint32_t next_func_version;

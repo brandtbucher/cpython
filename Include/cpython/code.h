@@ -170,6 +170,8 @@ typedef struct {
     uintptr_t _co_instrumentation_version; /* current instrumentation version */ \
     _PyCoMonitoringData *_co_monitoring; /* Monitoring data */                 \
     int _co_firsttraceable;       /* index of first traceable instruction */   \
+    PyCodeObject *_co_list_prev;                                               \
+    PyCodeObject *_co_list_next;                                               \
     /* Scratch space for extra data relating to the code object.               \
        Type is a void* to keep the format private in codeobject.c to force     \
        people to go through the proper APIs. */                                \

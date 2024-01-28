@@ -376,6 +376,33 @@ _PyCode_Validate(struct _PyCodeConstructor *con)
 extern void _PyCode_Quicken(PyCodeObject *code);
 
 static void
+insert_into_linked_list(PyCodeObject *code)
+{
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    code->_co_list_prev = NULL;
+    code->_co_list_next = interp->code_list_head;
+    interp->code_list_head = code;
+    if (code->_co_list_next) {
+        code->_co_list_next->_co_list_prev = code;
+    }
+}
+
+static void
+remove_from_linked_list(PyCodeObject *code)
+{
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    if (code->_co_list_prev) {
+        code->_co_list_prev->_co_list_next = code->_co_list_next;
+    }
+    else {
+        interp->code_list_head = code->_co_list_next;
+    }
+    if (code->_co_list_next) {
+        code->_co_list_next->_co_list_prev = code->_co_list_prev;
+    }
+}
+
+static void
 init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
 {
     int nlocalsplus = (int)PyTuple_GET_SIZE(con->localsplusnames);
@@ -436,6 +463,7 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     }
     co->_co_firsttraceable = entry_point;
     _PyCode_Quicken(co);
+    insert_into_linked_list(co);
     notify_code_watchers(PY_CODE_EVENT_CREATE, co);
 }
 
@@ -1756,6 +1784,7 @@ code_dealloc(PyCodeObject *co)
         PyObject_ClearWeakRefs((PyObject*)co);
     }
     free_monitoring_data(co->_co_monitoring);
+    remove_from_linked_list(co);
     PyObject_Free(co);
 }
 
@@ -2380,6 +2409,7 @@ _PyStaticCode_Fini(PyCodeObject *co)
     }
     free_monitoring_data(co->_co_monitoring);
     co->_co_monitoring = NULL;
+    remove_from_linked_list(co);
 }
 
 int
@@ -2397,6 +2427,7 @@ _PyStaticCode_Init(PyCodeObject *co)
     if (res < 0) {
         return -1;
     }
+    insert_into_linked_list(co);
     _PyCode_Quicken(co);
     return 0;
 }
