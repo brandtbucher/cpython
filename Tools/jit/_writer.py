@@ -33,6 +33,7 @@ def _dump_header() -> typing.Iterator[str]:
     yield ""
     yield "typedef struct {"
     yield "    const Stencil code;"
+    yield "    const Stencil cold;"
     yield "    const Stencil data;"
     yield "} StencilGroup;"
     yield ""
@@ -48,6 +49,7 @@ def _dump_footer(opnames: typing.Iterable[str]) -> typing.Iterator[str]:
     yield ""
     yield "#define INIT_STENCIL_GROUP(OP) {     \\"
     yield "    .code = INIT_STENCIL(OP##_code), \\"
+    yield "    .cold = INIT_STENCIL(OP##_cold), \\"
     yield "    .data = INIT_STENCIL(OP##_data), \\"
     yield "}"
     yield ""
@@ -64,7 +66,11 @@ def _dump_footer(opnames: typing.Iterable[str]) -> typing.Iterator[str]:
 
 def _dump_stencil(opname: str, group: _stencils.StencilGroup) -> typing.Iterator[str]:
     yield f"// {opname}"
-    for part, stencil in [("code", group.code), ("data", group.data)]:
+    for part, stencil in [
+        ("code", group.code),
+        ("cold", group.cold),
+        ("data", group.data),
+    ]:
         for line in stencil.disassembly:
             yield f"// {line}"
         if stencil.body:

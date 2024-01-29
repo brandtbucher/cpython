@@ -13,26 +13,40 @@ class HoleValue(enum.Enum):
     address of a symbol and/or an addend).
     """
 
-    # The base address of the machine code for the current uop (exposed as _JIT_ENTRY):
+    # The base address of the "hot" code for the current uop (exposed as _JIT_ENTRY):
     CODE = enum.auto()
+    # The base address of the "cold" code for the current uop:
+    COLD = enum.auto()
     # The base address of the machine code for the next uop (exposed as _JIT_CONTINUE):
     CONTINUE = enum.auto()
     # The base address of the read-only data for this uop:
     DATA = enum.auto()
+    # The base address of a deoptimization stub (exposed as _JIT_DEOPTIMIZE).
+    # Replaced with equivalent COLD values in the final stencils:
+    DEOPTIMIZE = enum.auto()
     # The address of the current executor (exposed as _JIT_EXECUTOR):
     EXECUTOR = enum.auto()
     # The base address of the "global" offset table located in the read-only data.
-    # Shouldn't be present in the final stencils, since these are all replaced with
-    # equivalent DATA values:
+    # Replaced with equivalent DATA values in the final stencils:
     GOT = enum.auto()
     # The current uop's oparg (exposed as _JIT_OPARG):
     OPARG = enum.auto()
     # The current uop's operand (exposed as _JIT_OPERAND):
     OPERAND = enum.auto()
+    # The base address of an error stub (exposed as _JIT_POP_*_ERROR).
+    # Replaced with equivalent COLD values in the final stencils:
+    POP_0_ERROR = enum.auto()
+    POP_1_ERROR = enum.auto()
+    POP_2_ERROR = enum.auto()
+    POP_3_ERROR = enum.auto()
+    POP_4_ERROR = enum.auto()
     # The current uop's target (exposed as _JIT_TARGET):
     TARGET = enum.auto()
     # The base address of the machine code for the first uop (exposed as _JIT_TOP):
     TOP = enum.auto()
+    # The base address of an unbound local error stub (exposed as _JIT_UNBOUND_LOCAL_ERROR).
+    # Replaced with equivalent COLD values in the final stencils:
+    UNBOUND_LOCAL_ERROR = enum.auto()
     # A hardcoded value of zero (used for symbol lookups):
     ZERO = enum.auto()
 
@@ -134,6 +148,7 @@ class StencilGroup:
     """
 
     code: Stencil = dataclasses.field(default_factory=Stencil, init=False)
+    cold: Stencil = dataclasses.field(default_factory=Stencil, init=False)
     data: Stencil = dataclasses.field(default_factory=Stencil, init=False)
     symbols: dict[int | str, tuple[HoleValue, int]] = dataclasses.field(
         default_factory=dict, init=False
@@ -143,8 +158,9 @@ class StencilGroup:
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
         self.code.pad(alignment)
+        self.cold.pad(alignment)
         self.data.pad(8)
-        for stencil in [self.code, self.data]:
+        for stencil in [self.code, self.cold, self.data]:
             holes = []
             for hole in stencil.holes:
                 if hole.value is HoleValue.GOT:
@@ -160,13 +176,16 @@ class StencilGroup:
                     hole.kind in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26"}
                     and hole.value is HoleValue.ZERO
                 ):
-                    self.code.emit_aarch64_trampoline(hole)
+                    assert stencil is not self.data
+                    stencil.emit_aarch64_trampoline(hole)
                     continue
                 holes.append(hole)
             stencil.holes[:] = holes
         self.code.pad(alignment)
+        self.cold.pad(alignment)
         self._emit_global_offset_table()
         self.code.holes.sort(key=lambda hole: hole.offset)
+        self.cold.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
 
     def _global_offset_table_lookup(self, symbol: str) -> int:

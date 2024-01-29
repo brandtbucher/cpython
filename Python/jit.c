@@ -295,6 +295,7 @@ static void
 emit(const StencilGroup *group, uint64_t patches[])
 {
     copy_and_patch((char *)patches[HoleValue_CODE], &group->code, patches);
+    copy_and_patch((char *)patches[HoleValue_COLD], &group->cold, patches);
     copy_and_patch((char *)patches[HoleValue_DATA], &group->data, patches);
 }
 
@@ -304,31 +305,36 @@ _PyJIT_Compile(_PyExecutorObject *executor, _PyUOpInstruction *trace, size_t len
 {
     // Loop once to find the total compiled size:
     size_t code_size = 0;
+    size_t cold_size = 0;
     size_t data_size = 0;
     for (size_t i = 0; i < length; i++) {
         _PyUOpInstruction *instruction = &trace[i];
         const StencilGroup *group = &stencil_groups[instruction->opcode];
         code_size += group->code.body_size;
+        cold_size += group->cold.body_size;
         data_size += group->data.body_size;
     }
     // Round up to the nearest page (code and data need separate pages):
     size_t page_size = get_page_size();
     assert((page_size & (page_size - 1)) == 0);
     code_size += page_size - (code_size & (page_size - 1));
+    cold_size += page_size - (cold_size & (page_size - 1));
     data_size += page_size - (data_size & (page_size - 1));
-    char *memory = jit_alloc(code_size + data_size);
+    char *memory = jit_alloc(code_size + cold_size + data_size);
     if (memory == NULL) {
         return -1;
     }
     // Loop again to emit the code:
     char *code = memory;
-    char *data = memory + code_size;
+    char *cold = code + code_size;
+    char *data = cold + cold_size;
     for (size_t i = 0; i < length; i++) {
         _PyUOpInstruction *instruction = &trace[i];
         const StencilGroup *group = &stencil_groups[instruction->opcode];
         // Think of patches as a dictionary mapping HoleValue to uint64_t:
         uint64_t patches[] = GET_PATCHES();
         patches[HoleValue_CODE] = (uint64_t)code;
+        patches[HoleValue_COLD] = (uint64_t)cold;
         patches[HoleValue_CONTINUE] = (uint64_t)code + group->code.body_size;
         patches[HoleValue_DATA] = (uint64_t)data;
         patches[HoleValue_EXECUTOR] = (uint64_t)executor;
@@ -339,16 +345,17 @@ _PyJIT_Compile(_PyExecutorObject *executor, _PyUOpInstruction *trace, size_t len
         patches[HoleValue_ZERO] = 0;
         emit(group, patches);
         code += group->code.body_size;
+        cold += group->cold.body_size;
         data += group->data.body_size;
     }
-    if (mark_executable(memory, code_size) ||
-        mark_readable(memory + code_size, data_size))
+    if (mark_executable(memory, code_size + cold_size) ||
+        mark_readable(memory + code_size + cold_size, data_size))
     {
-        jit_free(memory, code_size + data_size);
+        jit_free(memory, code_size + cold_size + data_size);
         return -1;
     }
     executor->jit_code = memory;
-    executor->jit_size = code_size + data_size;
+    executor->jit_size = code_size + cold_size + data_size;
     return 0;
 }
 
