@@ -23,7 +23,10 @@ TOOLS_JIT = TOOLS_JIT_BUILD.parent
 TOOLS = TOOLS_JIT.parent
 CPYTHON = TOOLS.parent
 PYTHON_EXECUTOR_CASES_C_H = CPYTHON / "Python" / "executor_cases.c.h"
+TOOLS_JIT_DEOPTIMIZE_C = TOOLS_JIT / "deoptimize.c"
+TOOLS_JIT_ERROR_C = TOOLS_JIT / "error.c"
 TOOLS_JIT_TEMPLATE_C = TOOLS_JIT / "template.c"
+TOOLS_JIT_UNBOUND_LOCAL_ERROR_C = TOOLS_JIT / "unbound_local_error.c"
 
 
 _S = typing.TypeVar("_S", _schema.COFFSection, _schema.ELFSection, _schema.MachOSection)
@@ -55,7 +58,9 @@ class _Target(typing.Generic[_S, _R]):
                 hasher.update(pathlib.Path(dirpath, filename).read_bytes())
         return hasher.hexdigest()
 
-    async def _parse(self, path: pathlib.Path) -> _stencils.StencilGroup:
+    async def _parse(
+        self, path: pathlib.Path, tempdir: pathlib.Path
+    ) -> _stencils.StencilGroup:
         group = _stencils.StencilGroup()
         args = ["--disassemble", "--reloc", f"{path}"]
         output = await _llvm.maybe_run("llvm-objdump", args, echo=self.verbose)
@@ -89,7 +94,42 @@ class _Target(typing.Generic[_S, _R]):
         if group.data.body:
             line = f"0: {str(bytes(group.data.body)).removeprefix('b')}"
             group.data.disassembly.append(line)
-        group.process_relocations()
+        # XXX: Don't use a two-way generator here...
+        processor = (  # pylint: disable = assignment-from-no-return
+            group.process_relocations()
+        )
+        try:
+            stub = next(processor)
+            while True:
+                if stub is _stencils.HoleValue.DEOPTIMIZE:
+                    file = TOOLS_JIT_DEOPTIMIZE_C
+                    defines = {}
+                elif stub is _stencils.HoleValue.POP_0_ERROR:
+                    file = TOOLS_JIT_ERROR_C
+                    defines = {"_JIT_STACK_SHRINK": "0"}
+                elif stub is _stencils.HoleValue.POP_1_ERROR:
+                    file = TOOLS_JIT_ERROR_C
+                    defines = {"_JIT_STACK_SHRINK": "1"}
+                elif stub is _stencils.HoleValue.POP_2_ERROR:
+                    file = TOOLS_JIT_ERROR_C
+                    defines = {"_JIT_STACK_SHRINK": "2"}
+                elif stub is _stencils.HoleValue.POP_3_ERROR:
+                    file = TOOLS_JIT_ERROR_C
+                    defines = {"_JIT_STACK_SHRINK": "3"}
+                elif stub is _stencils.HoleValue.POP_4_ERROR:
+                    file = TOOLS_JIT_ERROR_C
+                    defines = {"_JIT_STACK_SHRINK": "4"}
+                elif stub is _stencils.HoleValue.UNBOUND_LOCAL_ERROR:
+                    file = TOOLS_JIT_UNBOUND_LOCAL_ERROR_C
+                    defines = {}
+                else:
+                    assert False, stub
+                stub = processor.send(
+                    await self._compile(stub.name, file, tempdir, **defines)
+                )
+        except StopIteration:
+            pass
+
         return group
 
     def _handle_section(self, section: _S, group: _stencils.StencilGroup) -> None:
@@ -101,16 +141,16 @@ class _Target(typing.Generic[_S, _R]):
         raise NotImplementedError(type(self))
 
     async def _compile(
-        self, opname: str, c: pathlib.Path, tempdir: pathlib.Path
+        self, name: str, c: pathlib.Path, tempdir: pathlib.Path, **defines: str
     ) -> _stencils.StencilGroup:
-        o = tempdir / f"{opname}.o"
+        o = tempdir / f"{name}.o"
         args = [
             f"--target={self.triple}",
             "-DPy_BUILD_CORE",
             "-D_DEBUG" if self.debug else "-DNDEBUG",
-            f"-D_JIT_OPCODE={opname}",
             "-D_PyJIT_ACTIVE",
             "-D_Py_JIT",
+            *[f"-D{key}={value}" for key, value in defines.items()],
             "-I.",
             f"-I{CPYTHON / 'Include'}",
             f"-I{CPYTHON / 'Include' / 'internal'}",
@@ -138,7 +178,7 @@ class _Target(typing.Generic[_S, _R]):
             f"{c}",
         ]
         await _llvm.run("clang", args, echo=self.verbose)
-        return await self._parse(o)
+        return await self._parse(o, tempdir)
 
     async def _build_stencils(self) -> dict[str, _stencils.StencilGroup]:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
@@ -148,7 +188,9 @@ class _Target(typing.Generic[_S, _R]):
             work = pathlib.Path(tempdir).resolve()
             async with asyncio.TaskGroup() as group:
                 for opname in opnames:
-                    coro = self._compile(opname, TOOLS_JIT_TEMPLATE_C, work)
+                    coro = self._compile(
+                        opname, TOOLS_JIT_TEMPLATE_C, work, _JIT_OPCODE=opname
+                    )
                     tasks.append(group.create_task(coro, name=opname))
         return {task.get_name(): task.result() for task in tasks}
 

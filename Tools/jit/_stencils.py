@@ -2,6 +2,7 @@
 import dataclasses
 import enum
 import sys
+import typing
 
 import _schema
 
@@ -155,7 +156,67 @@ class StencilGroup:
     )
     _got: dict[str, int] = dataclasses.field(default_factory=dict, init=False)
 
-    def process_relocations(self, *, alignment: int = 1) -> None:
+    def _add_cold_code(self, cold: "StencilGroup", alignment: int) -> int:
+        data_size = len(self.data.body)
+        # XXX: Dedup:
+        cold_size = len(self.cold.body)
+        self.cold.body += cold.code.body
+        self.cold.disassembly += cold.code.disassembly
+        self.cold.pad(alignment)
+        new_cold_size = len(self.cold.body)
+        for hole in cold.code.holes:
+            offset, value, addend = hole.offset, hole.value, hole.addend
+            offset += cold_size
+            if value is HoleValue.CODE:
+                value = HoleValue.COLD
+                addend += cold_size
+            elif value is HoleValue.COLD:
+                addend += new_cold_size
+            elif value is HoleValue.DATA:
+                addend += data_size
+            self.cold.holes.append(
+                hole.replace(offset=offset, value=value, addend=addend)
+            )
+        # XXX: Dedup:
+        new_cold_size = len(self.cold.body)
+        self.cold.body += cold.cold.body
+        self.cold.disassembly += cold.cold.disassembly
+        self.cold.pad(alignment)
+        for hole in cold.cold.holes:
+            offset, value, addend = hole.offset, hole.value, hole.addend
+            offset += new_cold_size
+            if value is HoleValue.CODE:
+                value = HoleValue.COLD
+                addend += cold_size
+            elif value is HoleValue.COLD:
+                addend += new_cold_size
+            elif value is HoleValue.DATA:
+                addend += data_size
+            self.cold.holes.append(
+                hole.replace(offset=offset, value=value, addend=addend)
+            )
+        # XXX: Dedup:
+        self.data.body += cold.data.body
+        self.data.disassembly += cold.data.disassembly
+        self.data.pad(8)
+        for hole in cold.cold.holes:
+            offset, value, addend = hole.offset, hole.value, hole.addend
+            offset += data_size
+            if value is HoleValue.CODE:
+                value = HoleValue.COLD
+                addend += cold_size
+            elif value is HoleValue.COLD:
+                addend += new_cold_size
+            elif value is HoleValue.DATA:
+                addend += data_size
+            self.data.holes.append(
+                hole.replace(offset=offset, value=value, addend=addend)
+            )
+        return cold_size
+
+    def process_relocations(
+        self, *, alignment: int = 1
+    ) -> typing.Generator[HoleValue, "StencilGroup", None]:
         """Fix up all GOT and internal relocations for this stencil group."""
         self.code.pad(alignment)
         self.cold.pad(alignment)
@@ -168,6 +229,17 @@ class StencilGroup:
                     hole.value = HoleValue.DATA
                     hole.addend += self._global_offset_table_lookup(hole.symbol)
                     hole.symbol = None
+                if hole.value in {
+                    HoleValue.DEOPTIMIZE,
+                    HoleValue.POP_0_ERROR,
+                    HoleValue.POP_1_ERROR,
+                    HoleValue.POP_2_ERROR,
+                    HoleValue.POP_3_ERROR,
+                    HoleValue.POP_4_ERROR,
+                    HoleValue.UNBOUND_LOCAL_ERROR,
+                }:
+                    hole.addend = self._add_cold_code((yield hole.value), alignment)
+                    hole.value = HoleValue.COLD
                 elif hole.symbol in self.symbols:
                     hole.value, addend = self.symbols[hole.symbol]
                     hole.addend += addend
@@ -176,13 +248,13 @@ class StencilGroup:
                     hole.kind in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26"}
                     and hole.value is HoleValue.ZERO
                 ):
+                    # XXX: Use cold code mechanism for this:
                     assert stencil is not self.data
                     stencil.emit_aarch64_trampoline(hole)
+                    self.code.pad(alignment)
                     continue
                 holes.append(hole)
             stencil.holes[:] = holes
-        self.code.pad(alignment)
-        self.cold.pad(alignment)
         self._emit_global_offset_table()
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.cold.holes.sort(key=lambda hole: hole.offset)

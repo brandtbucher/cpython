@@ -26,7 +26,6 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     // Other stuff we need handy:
     PATCH_VALUE(uint16_t, _oparg, _JIT_OPARG);
     PATCH_VALUE(uint64_t, _operand, _JIT_OPERAND);
-    // PATCH_VALUE(uint32_t, _target, _JIT_TARGET);
     // The actual instruction definitions (only one will be used):
     if (opcode == _JUMP_TO_TOP) {
         CHECK_EVAL_BREAKER();
@@ -40,41 +39,17 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     PATCH_JUMP(_JIT_CONTINUE);
     // Labels that the instruction implementations expect to exist:
 deoptimize:
-    // PATCH_JUMP(_JIT_DEOPTIMIZE);
-    ;
-    PATCH_VALUE(uint32_t, _target, _JIT_TARGET);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return _PyCode_CODE(_PyFrame_GetCode(frame)) + _target;
+    PATCH_JUMP(_JIT_DEOPTIMIZE);
 error_tier_two:
-    // PATCH_JUMP(_JIT_POP_0_ERROR);
-    STACK_SHRINK(0);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_POP_0_ERROR);
 pop_1_error_tier_two:
-    // PATCH_JUMP(_JIT_POP_1_ERROR);
-    STACK_SHRINK(1);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_POP_1_ERROR);
 pop_2_error_tier_two:
-    // PATCH_JUMP(_JIT_POP_2_ERROR);
-    STACK_SHRINK(2);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_POP_2_ERROR);
 pop_3_error_tier_two:
-    // PATCH_JUMP(_JIT_POP_3_ERROR);
-    STACK_SHRINK(3);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_POP_3_ERROR);
 pop_4_error_tier_two:
-    // PATCH_JUMP(_JIT_POP_4_ERROR);
-    STACK_SHRINK(4);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_POP_4_ERROR);
 unbound_local_error_tier_two:
-    // PATCH_JUMP(_JIT_UNBOUND_LOCAL_ERROR);
-    ;
-    PyObject *name = PyTuple_GetItem(_PyFrame_GetCode(frame)->co_names, oparg);
-    _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError, UNBOUNDLOCAL_ERROR_MSG, name);
-    _PyFrame_SetStackPointer(frame, stack_pointer);
-    return NULL;
+    PATCH_JUMP(_JIT_UNBOUND_LOCAL_ERROR);
 }

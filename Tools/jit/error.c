@@ -1,5 +1,6 @@
 #include "Python.h"
 
+#include "pycore_ceval.h"
 #include "pycore_frame.h"
 
 #include "jit_macros.h"
