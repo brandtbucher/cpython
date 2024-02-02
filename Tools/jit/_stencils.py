@@ -178,7 +178,6 @@ class StencilGroup:
                 hole.replace(offset=offset, value=value, addend=addend)
             )
         # XXX: Dedup:
-        new_cold_size = len(self.cold.body)
         self.cold.body += cold.cold.body
         self.cold.disassembly += cold.cold.disassembly
         self.cold.pad(alignment)
@@ -199,7 +198,7 @@ class StencilGroup:
         self.data.body += cold.data.body
         self.data.disassembly += cold.data.disassembly
         self.data.pad(8)
-        for hole in cold.cold.holes:
+        for hole in cold.data.holes:
             offset, value, addend = hole.offset, hole.value, hole.addend
             offset += data_size
             if value is HoleValue.CODE:
@@ -222,6 +221,8 @@ class StencilGroup:
         self.cold.pad(alignment)
         self.data.pad(8)
         for stencil in [self.code, self.cold, self.data]:
+            if stencil is self.data:
+                self._emit_global_offset_table()
             holes = []
             for hole in stencil.holes:
                 if hole.value is HoleValue.GOT:
@@ -255,7 +256,6 @@ class StencilGroup:
                     continue
                 holes.append(hole)
             stencil.holes[:] = holes
-        self._emit_global_offset_table()
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.cold.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
