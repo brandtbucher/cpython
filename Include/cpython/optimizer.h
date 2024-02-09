@@ -25,8 +25,10 @@ typedef struct {
     uint8_t oparg;
     uint8_t valid;
     uint8_t linked;
+    int index;           // Index of ENTER_EXECUTOR (if code isn't NULL, below).
     _PyBloomFilter bloom;
     _PyExecutorLinkListNode links;
+    PyCodeObject *code;  // Weak (NULL if no corresponding ENTER_EXECUTOR).
 } _PyVMData;
 
 typedef struct {
@@ -52,6 +54,7 @@ typedef struct _PyExecutorObject {
     uint32_t exit_count;
     uint32_t code_size;
     void *jit_code;
+    size_t jit_size;
     _PyExitData exits[1];
 } _PyExecutorObject;
 
