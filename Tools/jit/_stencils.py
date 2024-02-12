@@ -125,7 +125,27 @@ class Stencil:
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
 
     def remove_jump(self) -> None:
+        self.holes.sort(key=lambda hole: hole.offset)
         match self.holes:
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
+                    kind="ARM64_RELOC_GOT_LOAD_PAGE21",
+                    value=HoleValue.GOT,
+                    symbol='_JIT_CONTINUE',
+                    addend=0,
+                ),
+                Hole(
+                    offset=o,
+                    kind="ARM64_RELOC_GOT_LOAD_PAGEOFF12",
+                    value=HoleValue.GOT,
+                    symbol='_JIT_CONTINUE',
+                    addend=0,
+                ),
+            ] if offset + 4 == o:
+                jump = b"\x03\x00\x00\x90\x63\x00\x40\xf9\x60\x00\x1f\xd6"
+                offset -= 0
             case [
                 *holes,
                 Hole(
@@ -186,9 +206,9 @@ class StencilGroup:
 
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
+        self.code.remove_jump()
         self.code.pad(alignment)
         self.data.pad(8)
-        self.code.remove_jump()
         for stencil in [self.code, self.data]:
             holes = []
             for hole in stencil.holes:
