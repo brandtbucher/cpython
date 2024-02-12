@@ -124,6 +124,26 @@ class Stencil:
         ):
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
 
+    def remove_jump(self) -> None:
+        match self.holes:
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
+                    kind="R_X86_64_64",
+                    value=HoleValue.CONTINUE,
+                    symbol=None,
+                    addend=0,
+                ),
+            ]:
+                jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\xff\xe0"
+                offset -= 2
+            case _:
+                return
+        if self.body[offset:] == jump:
+            self.body = self.body[:offset]
+            self.holes = holes
+
 
 @dataclasses.dataclass
 class StencilGroup:
@@ -144,6 +164,7 @@ class StencilGroup:
         """Fix up all GOT and internal relocations for this stencil group."""
         self.code.pad(alignment)
         self.data.pad(8)
+        self.code.remove_jump()
         for stencil in [self.code, self.data]:
             holes = []
             for hole in stencil.holes:
