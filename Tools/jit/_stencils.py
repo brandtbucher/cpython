@@ -130,6 +130,30 @@ class Stencil:
                 *holes,
                 Hole(
                     offset=offset,
+                    kind="IMAGE_REL_AMD64_ADDR64",
+                    value=HoleValue.CONTINUE,
+                    symbol=None,
+                    addend=0,
+                ),
+            ]:
+                jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x48\xff\xe0"
+                offset -= 2
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
+                    kind="IMAGE_REL_I386_DIR32",
+                    value=HoleValue.CONTINUE,
+                    symbol=None,
+                    addend=0,
+                ),
+            ]:
+                jump = b"\xb8\x00\x00\x00\x00\xff\xe0"
+                offset -= 1
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
                     kind="R_X86_64_64",
                     value=HoleValue.CONTINUE,
                     symbol=None,
