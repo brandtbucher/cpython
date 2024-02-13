@@ -125,6 +125,7 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-pic",
             # Don't make calls to weird stack-smashing canaries:
             "-fno-stack-protector",
+            "-fomit-frame-pointer",
             # We have three options for code model:
             # - "small": the default, assumes that code and data reside in the
             #   lowest 2GB of memory (128MB on aarch64)
