@@ -175,6 +175,7 @@ patch(char *base, const Stencil *stencil, uint64_t *patches)
         const Hole *hole = &stencil->holes[i];
         void *location = base + hole->offset;
         uint64_t value = patches[hole->value] + (uint64_t)hole->symbol + hole->addend;
+        uint8_t *loc8 = (uint8_t *)location;
         uint32_t *loc32 = (uint32_t *)location;
         uint64_t *loc64 = (uint64_t *)location;
         // LLD is a great reference for performing relocations... just keep in
@@ -194,6 +195,14 @@ patch(char *base, const Stencil *stencil, uint64_t *patches)
         // - x86_64-unknown-linux-gnu:
         //   - https://github.com/llvm/llvm-project/blob/main/lld/ELF/Arch/X86_64.cpp
         switch (hole->kind) {
+            case HoleKind_R_X86_64_PC8:
+                // 8-bit relative address.
+                value -= (uint64_t)location;
+                // Check that we're not out of range of 8 signed bits:
+                assert((int64_t)value >= -(1 << 7));
+                assert((int64_t)value < (1 << 7));
+                *loc8 = (int8_t)value;
+                continue;
             case HoleKind_IMAGE_REL_I386_DIR32:
                 // 32-bit absolute address.
                 // Check that we're not out of range of 32 unsigned bits:

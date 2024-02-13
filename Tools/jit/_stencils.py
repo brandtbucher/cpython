@@ -89,18 +89,6 @@ class Stencil:
 
     def emit_aarch64_trampoline(self, hole: Hole) -> None:
         """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
-        continuation_jump = b"\x00\x00\x00\x14"
-        continuation_hole = Hole(
-            offset=len(self.body) - 4,
-            kind="R_AARCH64_JUMP26",
-            value=HoleValue.CONTINUE,
-            symbol=None,
-            addend=0,
-        )
-        if self.body[-4:] != continuation_jump or self.holes[-1] != continuation_hole:
-            # This might have been removed by remove_jump:
-            self.body.extend(continuation_jump)
-            self.holes.append(continuation_hole.replace(offset=len(self.body) - 4))
         base = len(self.body)
         where = slice(hole.offset, hole.offset + 4)
         instruction = int.from_bytes(self.body[where], sys.byteorder)
@@ -136,19 +124,19 @@ class Stencil:
         ):
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
 
-    def remove_jump(self) -> None:
-        """Remove (zero-length) continuation jumps at the end of the body."""
+    def relax(self) -> None:
+        """Relax some of the "special" relocations."""
         self.holes.sort(key=lambda hole: hole.offset)
         match self.holes:
             case [
-                *holes,
+                *_,
                 Hole(
                     offset=offset,
                     kind="ARM64_RELOC_GOT_LOAD_PAGE21",
                     value=HoleValue.GOT,
                     symbol="_JIT_CONTINUE",
                     addend=0,
-                ),
+                ) as h,
                 Hole(
                     offset=o,
                     kind="ARM64_RELOC_GOT_LOAD_PAGEOFF12",
@@ -158,67 +146,57 @@ class Stencil:
                 ),
             ] if offset + 4 == o:
                 jump = b"\x03\x00\x00\x90\x63\x00\x40\xf9\x60\x00\x1f\xd6"
-                nops = bytes([len(jump) // 4]) + b"\x00\x00\x14" + jump[4:]
-                holes.append(self.holes[-1])
+                new = b"\x00\x00\x00\x14"
+                hole = h.replace(kind="R_AARCH64_JUMP26", value=HoleValue.CONTINUE, symbol=None)
                 offset -= 0
             case [
-                *holes,
+                *_,
                 Hole(
                     offset=offset,
                     kind="IMAGE_REL_AMD64_ADDR64",
                     value=HoleValue.CONTINUE,
                     symbol=None,
                     addend=0,
-                ),
+                ) as h,
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x48\xff\xe0"
-                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
+                new = b"\xeb\x00"
+                hole = h.replace(kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
                 offset -= 2
             case [
-                *holes,
+                *_,
                 Hole(
                     offset=offset,
                     kind="IMAGE_REL_I386_DIR32",
                     value=HoleValue.CONTINUE,
                     symbol=None,
                     addend=0,
-                ),
+                ) as h,
             ]:
                 jump = b"\xb8\x00\x00\x00\x00\xff\xe0"
-                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
+                new = b"\xeb\x00"
+                hole = h.replace(kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
                 offset -= 1
             case [
-                *holes,
-                Hole(
-                    offset=offset,
-                    kind="R_AARCH64_JUMP26",
-                    value=HoleValue.CONTINUE,
-                    symbol=None,
-                    addend=0,
-                ),
-            ]:
-                jump = b"\x00\x00\x00\x14"
-                nops = b""
-                offset -= 0
-            case [
-                *holes,
+                *_,
                 Hole(
                     offset=offset,
                     kind="R_X86_64_64" | "X86_64_RELOC_UNSIGNED",
                     value=HoleValue.CONTINUE,
                     symbol=None,
                     addend=0,
-                ),
+                ) as h,
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\xff\xe0"
-                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
+                new = b"\xeb\x00"
+                hole = h.replace(kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
                 offset -= 2
             case _:
                 return
-        if self.body[offset:] == jump:
-            assert len(nops) == len(jump)
-            self.body[offset:] = nops
-            self.holes = holes
+        if self.body[offset:offset + len(jump)] == jump:
+            assert len(new) <= len(jump)
+            self.body[offset : offset + len(new)] = new
+            self.holes[self.holes.index(h)] = hole
 
 
 @dataclasses.dataclass
@@ -238,7 +216,7 @@ class StencilGroup:
 
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
-        self.code.remove_jump()
+        self.code.relax()
         self.code.pad(alignment)
         self.data.pad(8)
         for stencil in [self.code, self.data]:
