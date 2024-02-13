@@ -311,6 +311,8 @@ class _MachO(
         flags = {flag["Name"] for flag in section["Attributes"]["Flags"]}
         name = section["Name"]["Value"]
         name = name.removeprefix(self.prefix)
+        if name in {"_compact_unwind", "_eh_frame"}:
+            return
         if "SomeInstructions" in flags:
             value = _stencils.HoleValue.CODE
             stencil = group.code
