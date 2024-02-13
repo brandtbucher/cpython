@@ -89,6 +89,18 @@ class Stencil:
 
     def emit_aarch64_trampoline(self, hole: Hole) -> None:
         """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
+        continuation_jump = b"\x00\x00\x00\x14"
+        continuation_hole = Hole(
+            offset=len(self.body) - 4,
+            kind="R_AARCH64_JUMP26",
+            value=HoleValue.CONTINUE,
+            symbol=None,
+            addend=0,
+        )
+        if self.body[-4:] != continuation_jump or self.holes[-1] != continuation_hole:
+            # This might have been removed by remove_jump:
+            self.body.extend(continuation_jump)
+            self.holes.append(continuation_hole.replace(offset=len(self.body) - 4))
         base = len(self.body)
         where = slice(hole.offset, hole.offset + 4)
         instruction = int.from_bytes(self.body[where], sys.byteorder)
@@ -125,7 +137,9 @@ class Stencil:
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
 
     def remove_jump(self) -> None:
+        """Remove (zero-length) continuation jumps at the end of the body."""
         self.holes.sort(key=lambda hole: hole.offset)
+        # XXX: Might need to replace with NOPs...
         match self.holes:
             case [
                 *holes,
@@ -133,14 +147,14 @@ class Stencil:
                     offset=offset,
                     kind="ARM64_RELOC_GOT_LOAD_PAGE21",
                     value=HoleValue.GOT,
-                    symbol='_JIT_CONTINUE',
+                    symbol="_JIT_CONTINUE",
                     addend=0,
                 ),
                 Hole(
                     offset=o,
                     kind="ARM64_RELOC_GOT_LOAD_PAGEOFF12",
                     value=HoleValue.GOT,
-                    symbol='_JIT_CONTINUE',
+                    symbol="_JIT_CONTINUE",
                     addend=0,
                 ),
             ] if offset + 4 == o:
@@ -174,7 +188,19 @@ class Stencil:
                 *holes,
                 Hole(
                     offset=offset,
-                    kind="R_X86_64_64",
+                    kind="R_AARCH64_JUMP26",
+                    value=HoleValue.CONTINUE,
+                    symbol=None,
+                    addend=0,
+                ),
+            ]:
+                jump = b"\x00\x00\x00\x14"
+                offset -= 0
+            case [
+                *holes,
+                Hole(
+                    offset=offset,
+                    kind="R_X86_64_64" | "X86_64_RELOC_UNSIGNED",
                     value=HoleValue.CONTINUE,
                     symbol=None,
                     addend=0,
