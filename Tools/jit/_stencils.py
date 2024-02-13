@@ -161,7 +161,7 @@ class Stencil:
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x48\xff\xe0"
                 new = b"\xeb\x00"
-                hole = h.replace(offset=offset-1, kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
+                hole = h.replace(offset=offset-1, kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-1)
                 offset -= 2
             case [
                 *_,
@@ -175,7 +175,7 @@ class Stencil:
             ]:
                 jump = b"\xb8\x00\x00\x00\x00\xff\xe0"
                 new = b"\xeb\x00"
-                hole = h.replace(kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
+                hole = h.replace(kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-1)
                 offset -= 1
             case [
                 *_,
@@ -189,7 +189,7 @@ class Stencil:
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\xff\xe0"
                 new = b"\xeb\x00"
-                hole = h.replace(offset=offset-1, kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-2)
+                hole = h.replace(offset=offset-1, kind="R_X86_64_PC8", value=HoleValue.CONTINUE, addend=-1)
                 offset -= 2
             case _:
                 return
