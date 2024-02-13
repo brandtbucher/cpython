@@ -139,7 +139,6 @@ class Stencil:
     def remove_jump(self) -> None:
         """Remove (zero-length) continuation jumps at the end of the body."""
         self.holes.sort(key=lambda hole: hole.offset)
-        # XXX: Might need to replace with NOPs...
         match self.holes:
             case [
                 *holes,
@@ -159,6 +158,8 @@ class Stencil:
                 ),
             ] if offset + 4 == o:
                 jump = b"\x03\x00\x00\x90\x63\x00\x40\xf9\x60\x00\x1f\xd6"
+                nops = bytes([len(jump) // 4]) + b"\x00\x00\x14" + jump[4:]
+                holes.append(self.holes[-1])
                 offset -= 0
             case [
                 *holes,
@@ -171,6 +172,7 @@ class Stencil:
                 ),
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x48\xff\xe0"
+                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
                 offset -= 2
             case [
                 *holes,
@@ -183,6 +185,7 @@ class Stencil:
                 ),
             ]:
                 jump = b"\xb8\x00\x00\x00\x00\xff\xe0"
+                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
                 offset -= 1
             case [
                 *holes,
@@ -195,6 +198,7 @@ class Stencil:
                 ),
             ]:
                 jump = b"\x00\x00\x00\x14"
+                nops = b""
                 offset -= 0
             case [
                 *holes,
@@ -207,11 +211,13 @@ class Stencil:
                 ),
             ]:
                 jump = b"\x48\xb8\x00\x00\x00\x00\x00\x00\x00\x00\xff\xe0"
+                nops = b"\xeb" + bytes([len(jump)]) + jump[2:]
                 offset -= 2
             case _:
                 return
         if self.body[offset:] == jump:
-            self.body = self.body[:offset]
+            assert len(nops) == len(jump)
+            self.body[offset:] = nops
             self.holes = holes
 
 
