@@ -16,7 +16,21 @@
 #include "pycore_sliceobject.h"
 #include "pycore_jit.h"
 
-#include "jit_stencils.h"
+#if defined(__aarch64__) && defined(__APPLE__)
+    #include "jit_stencils/aarch64-apple-darwin.h"
+#elif defined(__aarch64__) && defined(__linux__)
+    #include "jit_stencils/aarch64-unknown-linux-gnu.h"
+#elif defined(_M_IX86)
+    #include "jit_stencils/i686-pc-windows-msvc.h"
+#elif defined(__x86_64__) && defined(__APPLE__)
+    #include "jit_stencils/x86_64-apple-darwin.h"
+#elif defined(_M_X64)
+    #include "jit_stencils/x86_64-pc-windows-msvc.h"
+#elif defined(__x86_64__) && defined(__linux__)
+    #include "jit_stencils/x86_64-unknown-linux-gnu.h"
+#else
+    #error "JIT not supported for this platform"
+#endif
 
 // Memory management stuff: ////////////////////////////////////////////////////
 

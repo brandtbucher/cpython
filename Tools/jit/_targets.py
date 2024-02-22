@@ -153,9 +153,10 @@ class _Target(typing.Generic[_S, _R]):
         return {task.get_name(): task.result() for task in tasks}
 
     def build(self, out: pathlib.Path, *, comment: str = "") -> None:
-        """Build jit_stencils.h in the given directory."""
+        """Build jit_stencils in the given directory."""
         digest = f"// {self._compute_digest(out)}\n"
-        jit_stencils = out / "jit_stencils.h"
+        jit_stencils = out / "jit_stencils" / f"{self.triple}.h"
+        jit_stencils.parent.mkdir(parents=True, exist_ok=True)
         if (
             not self.force
             and jit_stencils.exists()
@@ -379,15 +380,15 @@ class _MachO(
 def get_target(host: str) -> _COFF | _ELF | _MachO:
     """Build a _Target for the given host "triple" and options."""
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
-        return _MachO(host, alignment=8, prefix="_")
+        return _MachO("aarch64-apple-darwin", alignment=8, prefix="_")
     if re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        return _ELF(host, alignment=8)
+        return _ELF("aarch64-unknown-linux-gnu", alignment=8)
     if re.fullmatch(r"i686-pc-windows-msvc", host):
-        return _COFF(host, prefix="_")
+        return _COFF("i686-pc-windows-msvc", prefix="_")
     if re.fullmatch(r"x86_64-apple-darwin.*", host):
-        return _MachO(host, prefix="_")
+        return _MachO("x86_64-apple-darwin", prefix="_")
     if re.fullmatch(r"x86_64-pc-windows-msvc", host):
-        return _COFF(host)
+        return _COFF("x86_64-pc-windows-msvc")
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        return _ELF(host)
+        return _ELF("x86_64-unknown-linux-gnu")
     raise ValueError(host)
