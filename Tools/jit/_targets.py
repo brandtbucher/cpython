@@ -37,6 +37,7 @@ _R = typing.TypeVar(
 @dataclasses.dataclass
 class _Target(typing.Generic[_S, _R]):
     triple: str
+    condition: str
     _: dataclasses.KW_ONLY
     alignment: int = 1
     prefix: str = ""
@@ -108,7 +109,6 @@ class _Target(typing.Generic[_S, _R]):
         o = tempdir / f"{opname}.o"
         args = [
             f"--target={self.triple}",
-            "-isysroot", "/Users/ronald/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
             "-DPy_BUILD_CORE",
             "-D_DEBUG" if self.debug else "-DNDEBUG",
             f"-D_JIT_OPCODE={opname}",
@@ -383,15 +383,21 @@ class _MachO(
 def get_target(host: str) -> _COFF | _ELF | _MachO:
     """Build a _Target for the given host "triple" and options."""
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
-        return _MachO(host, alignment=8, prefix="_")
+        condition = "defined(__aarch64__) && defined(__APPLE__)"
+        return _MachO(host, condition, alignment=8, prefix="_")
     if re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        return _ELF(host, alignment=8)
+        condition = "defined(__aarch64__) && defined(__linux__)"
+        return _ELF(host, condition, alignment=8)
     if re.fullmatch(r"i686-pc-windows-msvc", host):
-        return _COFF(host, prefix="_")
+        condition = "defined(__i386__) && defined(_WIN32)"
+        return _COFF(host, condition, prefix="_")
     if re.fullmatch(r"x86_64-apple-darwin.*", host):
-        return _MachO(host, prefix="_")
+        condition = "defined(__x86_64__) && defined(__APPLE__)"
+        return _MachO(host, condition, prefix="_")
     if re.fullmatch(r"x86_64-pc-windows-msvc", host):
-        return _COFF(host)
+        condition = "defined(__x86_64__) && defined(_WIN32)"
+        return _COFF(host, condition)
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        return _ELF(host)
+        condition = "defined(__x86_64__) && defined(__linux__)"
+        return _ELF(host, condition)
     raise ValueError(host)
