@@ -389,13 +389,13 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         condition = "defined(__aarch64__) && defined(__linux__)"
         return _ELF(host, condition, alignment=8)
     if re.fullmatch(r"i686-pc-windows-msvc", host):
-        condition = "defined(__i386__) && defined(_WIN32)"
+        condition = "defined(_M_IX86)"
         return _COFF(host, condition, prefix="_")
     if re.fullmatch(r"x86_64-apple-darwin.*", host):
         condition = "defined(__x86_64__) && defined(__APPLE__)"
         return _MachO(host, condition, prefix="_")
     if re.fullmatch(r"x86_64-pc-windows-msvc", host):
-        condition = "defined(__x86_64__) && defined(_WIN32)"
+        condition = "defined(_M_X64)"
         return _COFF(host, condition)
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
         condition = "defined(__x86_64__) && defined(__linux__)"
