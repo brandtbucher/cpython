@@ -47,24 +47,35 @@ jit_error(const char *message)
     PyErr_Format(PyExc_RuntimeWarning, "JIT %s (%d)", message, hint);
 }
 
+static size_t jit_arena_size;
+static unsigned char *jit_arena;
+
 static unsigned char *
 jit_alloc(size_t size)
 {
     assert(size);
     assert(size % get_page_size() == 0);
-#ifdef MS_WINDOWS
-    int flags = MEM_COMMIT | MEM_RESERVE;
-    unsigned char *memory = VirtualAlloc(NULL, size, flags, PAGE_READWRITE);
-    int failed = memory == NULL;
-#else
-    int flags = MAP_ANONYMOUS | MAP_PRIVATE;
-    unsigned char *memory = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
-    int failed = memory == MAP_FAILED;
-#endif
-    if (failed) {
-        jit_error("unable to allocate memory");
-        return NULL;
+    if (jit_arena == NULL || jit_arena_size < size) {
+        jit_arena_size = get_page_size() << 10;
+    #ifdef MS_WINDOWS
+        int flags = MEM_COMMIT | MEM_RESERVE;
+        jit_arena = VirtualAlloc(NULL, jit_arena_size, flags, PAGE_READWRITE);
+        int failed = jit_arena == NULL;
+    #else
+        int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+        jit_arena = mmap(NULL, jit_arena_size, PROT_READ | PROT_WRITE, flags, -1, 0);
+        int failed = jit_arena == MAP_FAILED;
+    #endif
+        if (failed) {
+            jit_error("unable to allocate memory");
+            jit_arena_size = 0;
+            jit_arena = NULL;
+            return NULL;
+        }
     }
+    unsigned char *memory = jit_arena;
+    jit_arena_size -= size;
+    jit_arena += size;
     return memory;
 }
 
