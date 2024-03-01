@@ -135,8 +135,9 @@ class Stencil:
                 symbol="_JIT_CONTINUE",
                 addend=-4,
             ) as hole:
-                # jmp qword ptr [rip]
+                # jmp qword ptr [rip] -> nop dword ptr [rax]
                 jump = b"\x48\xFF\x25\x00\x00\x00\x00"
+                nops = b"\x0F\x1F\x80\x00\x00\x00\x00"
                 offset -= 3
             case Hole(
                 offset=offset,
@@ -145,8 +146,9 @@ class Stencil:
                 symbol=None,
                 addend=-4,
             ) as hole:
-                # jmp 5
+                # jmp 5 -> nop dword ptr [rax + rax]
                 jump = b"\xE9\x00\x00\x00\x00"
+                nops = b"\x0F\x1F\x44\x00\x00"
                 offset -= 1
             case Hole(
                 offset=offset,
@@ -155,8 +157,9 @@ class Stencil:
                 symbol=None,
                 addend=0,
             ) as hole:
-                # b #4
+                # b #4 -> nop
                 jump = b"\x00\x00\x00\x14"
+                nops = b"\x1F\x20\x03\xD5"
             case Hole(
                 offset=offset,
                 kind="R_X86_64_GOTPCRELX",
@@ -165,13 +168,15 @@ class Stencil:
                 addend=addend,
             ) as hole:
                 assert _signed(addend) == -4
-                # jmp qword ptr [rip]
+                # jmp qword ptr [rip] -> nop word ptr [rax + rax]
                 jump = b"\xFF\x25\x00\x00\x00\x00"
+                nops = b"\x66\x0F\x1F\x44\x00\x00"
                 offset -= 2
             case _:
                 return
+        assert len(jump) == len(nops)
         if self.body[offset:] == jump:
-            self.body = self.body[:offset]
+            self.body[offset:] = nops
             self.holes.remove(hole)
 
 
