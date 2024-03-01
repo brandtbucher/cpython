@@ -85,7 +85,7 @@ jit_free(unsigned char *memory, size_t size)
     assert(size);
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
-    int failed = !VirtualFree(memory, 0, MEM_RELEASE);
+    int failed = !VirtualFree(memory, size, MEM_DECOMMIT);
 #else
     int failed = munmap(memory, size);
 #endif
