@@ -306,6 +306,7 @@
             PyObject *value;
             PyObject *res;
             value = stack_pointer[-1];
+            commit_decrefs(tstate);
             int err = PyObject_IsTrue(value);
             Py_DECREF(value);
             if (err < 0) goto pop_1_error_tier_two;
@@ -422,8 +423,8 @@
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
             res = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
+            Py_DECREF(right);
+            Py_DECREF(left);
             if (res == NULL) goto pop_2_error_tier_two;
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -438,8 +439,8 @@
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
             res = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
+            Py_DECREF(right);
+            Py_DECREF(left);
             if (res == NULL) goto pop_2_error_tier_two;
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -454,8 +455,8 @@
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
             res = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
+            Py_DECREF(right);
+            Py_DECREF(left);
             if (res == NULL) goto pop_2_error_tier_two;
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -538,8 +539,8 @@
             left = stack_pointer[-2];
             STAT_INC(BINARY_OP, hit);
             res = PyUnicode_Concat(left, right);
-            _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
+            Py_DECREF(left);
+            Py_DECREF(right);
             if (res == NULL) goto pop_2_error_tier_two;
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -627,7 +628,7 @@
             res = PyList_GET_ITEM(list, index);
             assert(res != NULL);
             Py_INCREF(res);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
+            Py_DECREF(sub);
             Py_DECREF(list);
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -650,7 +651,7 @@
             if (Py_ARRAY_LENGTH(_Py_SINGLETON(strings).ascii) <= c) goto deoptimize;
             STAT_INC(BINARY_SUBSCR, hit);
             res = (PyObject*)&_Py_SINGLETON(strings).ascii[c];
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
+            Py_DECREF(sub);
             Py_DECREF(str);
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -673,7 +674,7 @@
             res = PyTuple_GET_ITEM(tuple, index);
             assert(res != NULL);
             Py_INCREF(res);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
+            Py_DECREF(sub);
             Py_DECREF(tuple);
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -763,7 +764,7 @@
             PyList_SET_ITEM(list, index, value);
             assert(old_value != NULL);
             Py_DECREF(old_value);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
+            Py_DECREF(sub);
             Py_DECREF(list);
             stack_pointer += -3;
             break;
@@ -832,6 +833,7 @@
         case _POP_FRAME: {
             PyObject *retval;
             retval = stack_pointer[-1];
+            commit_decrefs(tstate);
             #if TIER_ONE
             assert(frame != &entry_frame);
             #endif
@@ -1752,6 +1754,7 @@
             PyObject *self_or_null = NULL;
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
+            commit_decrefs(tstate);
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 1);
             if (oparg & 1) {
                 /* Designed to work in tandem with CALL, pushes two values. */
@@ -2100,8 +2103,8 @@
             double dright = PyFloat_AS_DOUBLE(right);
             // 1 if NaN, 2 if <, 4 if >, 8 if ==; this matches low four bits of the oparg
             int sign_ish = COMPARISON_BIT(dleft, dright);
-            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            Py_DECREF(left);
+            Py_DECREF(right);
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             stack_pointer[-2] = res;
@@ -2125,8 +2128,8 @@
             Py_ssize_t iright = _PyLong_CompactValue((PyLongObject *)right);
             // 2 if <, 4 if >, 8 if ==; this matches the low 4 bits of the oparg
             int sign_ish = COMPARISON_BIT(ileft, iright);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
+            Py_DECREF(left);
+            Py_DECREF(right);
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             stack_pointer[-2] = res;
@@ -2144,8 +2147,8 @@
             STAT_INC(COMPARE_OP, hit);
             int eq = _PyUnicode_Equal(left, right);
             assert((oparg >> 5) == Py_EQ || (oparg >> 5) == Py_NE);
-            _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
+            Py_DECREF(left);
+            Py_DECREF(right);
             assert(eq == 0 || eq == 1);
             assert((oparg & 0xf) == COMPARISON_NOT_EQUALS || (oparg & 0xf) == COMPARISON_EQUALS);
             assert(COMPARISON_NOT_EQUALS + 1 == COMPARISON_EQUALS);
@@ -2770,6 +2773,7 @@
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
+            commit_decrefs(tstate);
             assert(oparg & 1);
             /* Cached method object */
             STAT_INC(LOAD_ATTR, hit);
@@ -2790,6 +2794,7 @@
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
+            commit_decrefs(tstate);
             assert(oparg & 1);
             assert(Py_TYPE(owner)->tp_dictoffset == 0);
             STAT_INC(LOAD_ATTR, hit);

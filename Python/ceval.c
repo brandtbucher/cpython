@@ -2023,6 +2023,7 @@ _PyEval_ExceptionGroupMatch(PyObject* exc_value, PyObject *match_type,
                 return -1;
             }
             PyObject *wrapped = _PyExc_CreateExceptionGroup("", excs);
+            PyThreadState *tstate = _PyThreadState_GET();
             Py_DECREF(excs);
             if (wrapped == NULL) {
                 return -1;
@@ -2046,6 +2047,7 @@ _PyEval_ExceptionGroupMatch(PyObject* exc_value, PyObject *match_type,
         assert(PyTuple_GET_SIZE(pair) == 2);
         *match = Py_NewRef(PyTuple_GET_ITEM(pair, 0));
         *rest = Py_NewRef(PyTuple_GET_ITEM(pair, 1));
+        PyThreadState *tstate = _PyThreadState_GET();
         Py_DECREF(pair);
         return 0;
     }

@@ -1278,6 +1278,7 @@ gc_select_generation(GCState *gcstate)
 static Py_ssize_t
 gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
 {
+    commit_decrefs(tstate);
     int i;
     Py_ssize_t m = 0; /* # objects collected */
     Py_ssize_t n = 0; /* # unreachable objects that couldn't be collected */

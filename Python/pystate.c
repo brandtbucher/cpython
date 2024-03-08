@@ -1353,6 +1353,8 @@ init_threadstate(_PyThreadStateImpl *_tstate,
     tstate->what_event = -1;
     tstate->previous_executor = NULL;
 
+    tstate->deferred_decrefs_top = tstate->deferred_decrefs;
+
 #ifdef Py_GIL_DISABLED
     // Initialize biased reference counting inter-thread queue
     _Py_brc_init_thread(tstate);

@@ -121,7 +121,27 @@
 // Use this instead of 'goto error' so Tier 2 can go to a different label
 #define GOTO_ERROR(LABEL) goto LABEL
 
+static inline void
+defer_decref(PyThreadState *tstate, PyObject *o)
+{
+    assert(tstate->deferred_decrefs_top < &tstate->deferred_decrefs[DEFERRED_DECREFS_SIZE]);
+    *tstate->deferred_decrefs_top++ = o;
+}
+
+#undef Py_DECREF
+#define Py_DECREF(O)                           \
+do {                                           \
+    defer_decref(tstate, _PyObject_CAST((O))); \
+} while (0)
+
+#undef Py_XDECREF
+#define Py_XDECREF(O)                                   \
+do {                                                    \
+    if ((O)) defer_decref(tstate, _PyObject_CAST((O))); \
+} while (0)
+
 #define CHECK_EVAL_BREAKER() \
+    commit_decrefs(tstate); \
     _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY(); \
     QSBR_QUIESCENT_STATE(tstate); \
     if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) { \
@@ -326,7 +346,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
 do { \
     if (Py_REFCNT(left) == 1) { \
         ((PyFloatObject *)left)->ob_fval = (dval); \
-        _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);\
+        Py_DECREF(right);\
         result = (left); \
     } \
     else if (Py_REFCNT(right) == 1)  {\

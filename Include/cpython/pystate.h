@@ -219,7 +219,19 @@ struct _ts {
 
     PyObject *previous_executor;
 
+#define DEFERRED_DECREFS_SIZE (1 << 17)
+
+    PyObject **deferred_decrefs_top;
+    PyObject *deferred_decrefs[DEFERRED_DECREFS_SIZE];
 };
+
+static inline void
+commit_decrefs(PyThreadState *tstate)
+{
+    while (tstate->deferred_decrefs_top != tstate->deferred_decrefs) {
+        Py_DECREF(*--tstate->deferred_decrefs_top);
+    }
+}
 
 #ifdef Py_DEBUG
    // A debug build is likely built with low optimization level which implies
