@@ -286,7 +286,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                 assert(IS_AARCH64_ADRP(*loc32));
                 // Try to relax the pair of GOT loads into an immediate value:
                 const Hole *next_hole = &stencil->holes[i + 1];
-                if (i + 1 < (ssize_t)stencil->holes_size &&
+                if (i + 1 < (int64_t)stencil->holes_size &&
                     (next_hole->kind == HoleKind_ARM64_RELOC_GOT_LOAD_PAGEOFF12 ||
                      next_hole->kind == HoleKind_IMAGE_REL_ARM64_PAGEOFFSET_12L ||
                      next_hole->kind == HoleKind_R_AARCH64_LD64_GOT_LO12_NC) &&
