@@ -136,17 +136,10 @@ class Stencil:
         match hole:
             case Hole(
                 offset=offset,
-                kind="IMAGE_REL_AMD64_REL32",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
-                addend=-4,
-            ) as hole:
-                # jmp qword ptr [rip]
-                jump = b"\x48\xFF\x25\x00\x00\x00\x00"
-                offset -= 3
-            case Hole(
-                offset=offset,
-                kind="IMAGE_REL_I386_REL32" | "X86_64_RELOC_BRANCH",
+                kind="IMAGE_REL_AMD64_REL32"
+                | "IMAGE_REL_I386_REL32"
+                | "R_X86_64_PLT32"
+                | "X86_64_RELOC_BRANCH",
                 value=HoleValue.CONTINUE,
                 symbol=None,
                 addend=-4,
@@ -165,17 +158,6 @@ class Stencil:
             ) as hole:
                 # b #4
                 jump = b"\x00\x00\x00\x14"
-            case Hole(
-                offset=offset,
-                kind="R_X86_64_PLT32",
-                value=HoleValue.CONTINUE,
-                symbol=None,
-                addend=addend,
-            ) as hole:
-                assert _signed(addend) == -4
-                # jmp qword ptr [rip]
-                jump = b"\xFF\x25\x00\x00\x00\x00"
-                offset -= 2
             case _:
                 return
         if self.body[offset:] == jump and offset % alignment == 0:

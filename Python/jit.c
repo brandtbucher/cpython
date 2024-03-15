@@ -151,7 +151,7 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 static void
 patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
 {
-    for (int64_t i = stencil->holes_size - 1; i >= 0; i--) {
+    for (int64_t i = (int64_t)stencil->holes_size - 1; i >= 0; i--) {
         const Hole *hole = &stencil->holes[i];
         unsigned char *location = base + hole->offset;
         uint64_t value = patches[hole->value] + (uint64_t)hole->symbol + hole->addend;

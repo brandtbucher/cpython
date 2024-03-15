@@ -64,7 +64,7 @@ do {  \
     TYPE NAME = (TYPE)(uint64_t)&ALIAS;
 
 #define PATCH_JUMP(ALIAS)                                    \
-    PyAPI_DATA(void) ALIAS;                                  \
+    extern void ALIAS;                                       \
     __attribute__((musttail))                                \
     return ((jit_func)&ALIAS)(frame, stack_pointer, tstate);
 
