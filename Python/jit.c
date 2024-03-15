@@ -151,7 +151,7 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 static void
 patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
 {
-    for (int64_t i = stencil->holes_size - 1; i >= 0; i--) {
+    for (ssize_t i = stencil->holes_size - 1; i >= 0; i--) {
         const Hole *hole = &stencil->holes[i];
         unsigned char *location = base + hole->offset;
         uint64_t value = patches[hole->value] + (uint64_t)hole->symbol + hole->addend;
@@ -286,7 +286,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                 assert(IS_AARCH64_ADRP(*loc32));
                 // Try to relax the pair of GOT loads into an immediate value:
                 const Hole *next_hole = &stencil->holes[i + 1];
-                if (i + 1 < stencil->holes_size &&
+                if (i + 1 < (ssize_t)stencil->holes_size &&
                     (next_hole->kind == HoleKind_ARM64_RELOC_GOT_LOAD_PAGEOFF12 ||
                      next_hole->kind == HoleKind_IMAGE_REL_ARM64_PAGEOFFSET_12L ||
                      next_hole->kind == HoleKind_R_AARCH64_LD64_GOT_LO12_NC) &&
@@ -329,6 +329,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                 }
                 // Fall through...
             case HoleKind_ARM64_RELOC_PAGE21:
+            case HoleKind_R_AARCH64_ADR_PREL_PG_HI21:
                 // Number of pages between this page and the value's page:
                 value = (value >> 12) - ((uint64_t)location >> 12);
                 // Check that we're not out of range of 21 signed bits:
@@ -343,6 +344,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
             case HoleKind_ARM64_RELOC_PAGEOFF12:
             case HoleKind_IMAGE_REL_ARM64_PAGEOFFSET_12A:
             case HoleKind_IMAGE_REL_ARM64_PAGEOFFSET_12L:
+            case HoleKind_R_AARCH64_ADD_ABS_LO12_NC:
             case HoleKind_R_AARCH64_LD64_GOT_LO12_NC:
                 // 12-bit low part of an absolute address. Pairs nicely with
                 // ARM64_RELOC_GOT_LOAD_PAGE21 (above).

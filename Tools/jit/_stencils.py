@@ -84,21 +84,22 @@ class Stencil:
         """Pad the stencil to the given alignment."""
         offset = len(self.body)
         padding = -offset % alignment
-        self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
+        if padding:
+            self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
         self.body.extend([0] * padding)
 
     def emit_aarch64_trampoline(self, hole: Hole) -> None:
         base = len(self.body)
         self.disassembly += [
-            f"{base + 0:x}: 90000000      adrp    x0, #0x0",
+            f"{base + 0:x}: 90000008      adrp    x8, #0x0",
             f"{base + 0:016x}:  R_AARCH64_ADR_GOT_PAGE       {hole.symbol}",
-            f"{base + 4:x}: f9400000      ldr     x0, [x0, #0x0]",
+            f"{base + 4:x}: f9400108      ldr     x8, [x8, #0x0]",
             f"{base + 4:016x}:  R_AARCH64_LD64_GOT_LO12_NC   {hole.symbol}",
-            f"{base + 8:x}: d61f0000      br      x0",
+            f"{base + 8:x}: d61f0100      br      x8",
         ]
-        self.body.extend(0x90000000.to_bytes(4, sys.byteorder))
-        self.body.extend(0xF9400000.to_bytes(4, sys.byteorder))
-        self.body.extend(0xD61F0000.to_bytes(4, sys.byteorder))
+        self.body.extend(0x90000008.to_bytes(4, sys.byteorder))
+        self.body.extend(0xF9400108.to_bytes(4, sys.byteorder))
+        self.body.extend(0xD61F0100.to_bytes(4, sys.byteorder))
         self.holes.append(
             hole.replace(
                 offset=base + 0, kind="R_AARCH64_ADR_GOT_PAGE", value=HoleValue.GOT
@@ -211,7 +212,7 @@ class StencilGroup:
                     self.data.pad(alignment)
                     self.data.emit_aarch64_trampoline(hole)
                 case Hole(
-                    kind="R_X86_64_PLT32" | "X86_64_RELOC_BRANCH", value=HoleValue.ZERO
+                    kind="R_X86_64_PLT32" | "X86_64_RELOC_BRANCH", value=HoleValue.ZERO,
                 ):
                     self.data.pad(alignment)
                     self.data.emit_x86_64_trampoline(hole)
