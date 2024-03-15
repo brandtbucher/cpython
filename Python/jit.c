@@ -151,7 +151,7 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 static void
 patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
 {
-    for (uint64_t i = 0; i < stencil->holes_size; i++) {
+    for (int64_t i = stencil->holes_size - 1; i >= 0; i--) {
         const Hole *hole = &stencil->holes[i];
         unsigned char *location = base + hole->offset;
         uint64_t value = patches[hole->value] + (uint64_t)hole->symbol + hole->addend;
@@ -225,6 +225,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
             // Fall through...
             case HoleKind_R_X86_64_GOTPCREL:
             case HoleKind_R_X86_64_PC32:
+            case HoleKind_R_X86_64_PLT32:
             case HoleKind_X86_64_RELOC_SIGNED:
             case HoleKind_X86_64_RELOC_BRANCH:
                 // 32-bit relative address.
@@ -234,6 +235,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                 assert((int64_t)value < (1LL << 31));
                 *loc32 = (uint32_t)value;
                 continue;
+            case HoleKind_ARM64_RELOC_BRANCH26:
             case HoleKind_IMAGE_REL_ARM64_BRANCH26:
             case HoleKind_R_AARCH64_CALL26:
             case HoleKind_R_AARCH64_JUMP26:

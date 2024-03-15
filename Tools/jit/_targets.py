@@ -124,10 +124,6 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-asynchronous-unwind-tables",
             # Don't call built-in functions that we can't find or patch:
             "-fno-builtin",
-            # Emit relaxable 64-bit calls/jumps, so we don't have to worry about
-            # about emitting in-range trampolines for out-of-range targets.
-            # We can probably remove this and emit trampolines in the future:
-            "-fno-plt",
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
             "-o",
@@ -446,14 +442,12 @@ class _MachO(
 def get_target(host: str) -> _COFF | _ELF | _MachO:
     """Build a _Target for the given host "triple" and options."""
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
-        args = ["-mcmodel=large"]
-        return _MachO(host, alignment=8, args=args, prefix="_")
+        return _MachO(host, alignment=8, prefix="_")
     if re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
         return _COFF(host, alignment=8, args=args)
     if re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        args = ["-mcmodel=large"]
-        return _ELF(host, alignment=8, args=args)
+        return _ELF(host, alignment=8)
     if re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
         return _COFF(host, args=args, prefix="_")

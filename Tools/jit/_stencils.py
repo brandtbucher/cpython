@@ -88,41 +88,46 @@ class Stencil:
         self.body.extend([0] * padding)
 
     def emit_aarch64_trampoline(self, hole: Hole) -> None:
-        """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
         base = len(self.body)
-        where = slice(hole.offset, hole.offset + 4)
-        instruction = int.from_bytes(self.body[where], sys.byteorder)
-        instruction &= 0xFC000000
-        instruction |= ((base - hole.offset) >> 2) & 0x03FFFFFF
-        self.body[where] = instruction.to_bytes(4, sys.byteorder)
         self.disassembly += [
-            f"{base + 4 * 0:x}: d2800008      mov     x8, #0x0",
-            f"{base + 4 * 0:016x}:  R_AARCH64_MOVW_UABS_G0_NC    {hole.symbol}",
-            f"{base + 4 * 1:x}: f2a00008      movk    x8, #0x0, lsl #16",
-            f"{base + 4 * 1:016x}:  R_AARCH64_MOVW_UABS_G1_NC    {hole.symbol}",
-            f"{base + 4 * 2:x}: f2c00008      movk    x8, #0x0, lsl #32",
-            f"{base + 4 * 2:016x}:  R_AARCH64_MOVW_UABS_G2_NC    {hole.symbol}",
-            f"{base + 4 * 3:x}: f2e00008      movk    x8, #0x0, lsl #48",
-            f"{base + 4 * 3:016x}:  R_AARCH64_MOVW_UABS_G3       {hole.symbol}",
-            f"{base + 4 * 4:x}: d61f0100      br      x8",
+            f"{base + 0:x}: 90000000      adrp    x0, #0x0",
+            f"{base + 0:016x}:  R_AARCH64_ADR_GOT_PAGE       {hole.symbol}",
+            f"{base + 4:x}: f9400000      ldr     x0, [x0, #0x0]",
+            f"{base + 4:016x}:  R_AARCH64_LD64_GOT_LO12_NC   {hole.symbol}",
+            f"{base + 8:x}: d61f0000      br      x0",
         ]
-        for code in [
-            0xD2800008.to_bytes(4, sys.byteorder),
-            0xF2A00008.to_bytes(4, sys.byteorder),
-            0xF2C00008.to_bytes(4, sys.byteorder),
-            0xF2E00008.to_bytes(4, sys.byteorder),
-            0xD61F0100.to_bytes(4, sys.byteorder),
-        ]:
-            self.body.extend(code)
-        for i, kind in enumerate(
-            [
-                "R_AARCH64_MOVW_UABS_G0_NC",
-                "R_AARCH64_MOVW_UABS_G1_NC",
-                "R_AARCH64_MOVW_UABS_G2_NC",
-                "R_AARCH64_MOVW_UABS_G3",
-            ]
-        ):
-            self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
+        self.body.extend(0x90000000.to_bytes(4, sys.byteorder))
+        self.body.extend(0xF9400000.to_bytes(4, sys.byteorder))
+        self.body.extend(0xD61F0000.to_bytes(4, sys.byteorder))
+        self.holes.append(
+            hole.replace(
+                offset=base + 0, kind="R_AARCH64_ADR_GOT_PAGE", value=HoleValue.GOT
+            )
+        )
+        self.holes.append(
+            hole.replace(
+                offset=base + 4, kind="R_AARCH64_LD64_GOT_LO12_NC", value=HoleValue.GOT
+            )
+        )
+        hole.value = HoleValue.DATA
+        hole.symbol = None
+        hole.addend = base
+
+    def emit_x86_64_trampoline(self, hole: Hole) -> None:
+        base = len(self.body)
+        self.disassembly += [
+            f"{base + 0:x}: ff 25 00 00 00 00             jmp     qword ptr [rip]",
+            f"{base + 2:016x}:  R_X86_64_GOTPCRELX   {hole.symbol}-0x4",
+        ]
+        self.body.extend(b"\xFF\x25\x00\x00\x00\x00")
+        self.holes.append(
+            hole.replace(
+                offset=base + 2, kind="R_X86_64_GOTPCRELX", value=HoleValue.GOT
+            )
+        )
+        hole.value = HoleValue.DATA
+        hole.symbol = None
+        hole.addend = base - 4
 
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
@@ -150,7 +155,9 @@ class Stencil:
                 offset -= 1
             case Hole(
                 offset=offset,
-                kind="R_AARCH64_JUMP26",
+                kind="ARM64_RELOC_BRANCH26"
+                | "IMAGE_REL_ARM64_BRANCH26"
+                | "R_AARCH64_JUMP26",
                 value=HoleValue.CONTINUE,
                 symbol=None,
                 addend=0,
@@ -159,9 +166,9 @@ class Stencil:
                 jump = b"\x00\x00\x00\x14"
             case Hole(
                 offset=offset,
-                kind="R_X86_64_GOTPCRELX",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
+                kind="R_X86_64_PLT32",
+                value=HoleValue.CONTINUE,
+                symbol=None,
                 addend=addend,
             ) as hole:
                 assert _signed(addend) == -4
@@ -193,13 +200,21 @@ class StencilGroup:
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
         for hole in self.code.holes.copy():
-            if (
-                hole.kind in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26"}
-                and hole.value is HoleValue.ZERO
-            ):
-                self.code.pad(alignment)
-                self.code.emit_aarch64_trampoline(hole)
-                self.code.holes.remove(hole)
+            match hole:
+                case Hole(
+                    kind="ARM64_RELOC_BRANCH26"
+                    | "IMAGE_REL_ARM64_BRANCH26"
+                    | "R_AARCH64_CALL26"
+                    | "R_AARCH64_JUMP26",
+                    value=HoleValue.ZERO,
+                ):
+                    self.data.pad(alignment)
+                    self.data.emit_aarch64_trampoline(hole)
+                case Hole(
+                    kind="R_X86_64_PLT32" | "X86_64_RELOC_BRANCH", value=HoleValue.ZERO
+                ):
+                    self.data.pad(alignment)
+                    self.data.emit_x86_64_trampoline(hole)
         self.code.remove_jump(alignment=alignment)
         self.code.pad(alignment)
         self.data.pad(8)
