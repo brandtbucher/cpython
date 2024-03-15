@@ -198,6 +198,7 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
         // - x86_64-unknown-linux-gnu:
         //   - https://github.com/llvm/llvm-project/blob/main/lld/ELF/Arch/X86_64.cpp
         switch (hole->kind) {
+            unsigned_32:
             case HoleKind_IMAGE_REL_I386_DIR32:
                 // 32-bit absolute address.
                 // Check that we're not out of range of 32 unsigned bits:
@@ -219,9 +220,32 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
             case HoleKind_X86_64_RELOC_GOT_LOAD: {
                 // 32-bit relative address.
                 // Try to relax the GOT load into an immediate value:
-                uint64_t relaxed = *(uint64_t *)(value + 4) - 4;
+                uint64_t relaxed = *(uint64_t *)(value + 4);
+                if ((int64_t)relaxed < (1LL << 32)) {
+                    if ((hole->kind == HoleKind_R_X86_64_REX_GOTPCRELX ||
+                         hole->kind == HoleKind_X86_64_RELOC_GOT_LOAD)
+                        && loc8[-2] == 0x8B)
+                    {
+                        // mov %reg, foo@GOTPCREL(%rip) -> mov $foo, %reg
+                        loc8[-3] = (loc8[-3] & ~0x4) | (loc8[-3] & 0x4) >> 2;
+                        loc8[-2] = 0xC7;
+                        loc8[-1] = 0xC0 | (loc8[-1] & 0x38) >> 3;
+                        value = relaxed;
+                        goto unsigned_32;
+                    }
+                    else if (hole->kind == HoleKind_R_X86_64_GOTPCRELX &&
+                             loc8[-2] == 0x8B)
+                    {
+                        // mov %reg, foo@GOTPCREL(%rip) -> nop; mov $foo, %reg
+                        loc8[-1] = 0xB8 | ((loc8[-1] & 0x38) >> 3) | (loc8[-2] & 0x3C);
+                        loc8[-2] = 0x90;
+                        value = relaxed;
+                        goto unsigned_32;
+                    }
+                }
+                relaxed -= 4;
                 if ((int64_t)relaxed - (int64_t)location >= -(1LL << 31) &&
-                    (int64_t)relaxed - (int64_t)location + 1 < (1LL << 31))
+                    (int64_t)relaxed - (int64_t)location < (1LL << 31))
                 {
                     if (loc8[-2] == 0x8B) {
                         // mov reg, dword ptr [rip + AAA] -> lea reg, [rip + XXX]
@@ -243,7 +267,6 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                 }
             }
             // Fall through...
-            case HoleKind_R_X86_64_GOTPCREL:
             case HoleKind_R_X86_64_PC32:
             case HoleKind_X86_64_RELOC_SIGNED:
             case HoleKind_X86_64_RELOC_BRANCH:

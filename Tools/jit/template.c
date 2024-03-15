@@ -61,7 +61,8 @@ do {  \
 
 #define PATCH_VALUE(TYPE, NAME, ALIAS)  \
     PyAPI_DATA(void) ALIAS;             \
-    TYPE NAME = (TYPE)(uint64_t)&ALIAS;
+    TYPE NAME = (TYPE)(uint64_t)&ALIAS; \
+    __asm__ inline ("":"+r"(NAME));
 
 #define PATCH_JUMP(ALIAS)                                    \
     PyAPI_DATA(void) ALIAS;                                  \

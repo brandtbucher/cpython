@@ -316,7 +316,6 @@ class _ELF(
                 "Type": {
                     "Value": "R_AARCH64_ADR_GOT_PAGE"
                     | "R_AARCH64_LD64_GOT_LO12_NC"
-                    | "R_X86_64_GOTPCREL"
                     | "R_X86_64_GOTPCRELX"
                     | "R_X86_64_REX_GOTPCRELX" as kind
                 },
