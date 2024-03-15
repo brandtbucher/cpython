@@ -151,7 +151,7 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 static void
 patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
 {
-    for (ssize_t i = stencil->holes_size - 1; i >= 0; i--) {
+    for (int64_t i = stencil->holes_size - 1; i >= 0; i--) {
         const Hole *hole = &stencil->holes[i];
         unsigned char *location = base + hole->offset;
         uint64_t value = patches[hole->value] + (uint64_t)hole->symbol + hole->addend;
@@ -305,14 +305,12 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                         // adrp reg, AAA; ldr reg, [reg + BBB] -> movz reg, XXX; nop
                         loc32[0] = 0xD2800000 | (get_bits(relaxed, 0, 16) << 5) | reg;
                         loc32[1] = 0xD503201F;
-                        i++;
                         continue;
                     }
                     if (relaxed < (1ULL << 32)) {
                         // adrp reg, AAA; ldr reg, [reg + BBB] -> movz reg, XXX; movk reg, YYY
                         loc32[0] = 0xD2800000 | (get_bits(relaxed,  0, 16) << 5) | reg;
                         loc32[1] = 0xF2A00000 | (get_bits(relaxed, 16, 16) << 5) | reg;
-                        i++;
                         continue;
                     }
                     relaxed = (uint64_t)value - (uint64_t)location;
@@ -323,7 +321,6 @@ patch(unsigned char *base, const Stencil *stencil, uint64_t *patches)
                         // adrp reg, AAA; ldr reg, [reg + BBB] -> ldr reg, XXX; nop
                         loc32[0] = 0x58000000 | (get_bits(relaxed, 2, 19) << 5) | reg;
                         loc32[1] = 0xD503201F;
-                        i++;
                         continue;
                     }
                 }
