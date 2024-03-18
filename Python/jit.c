@@ -54,11 +54,14 @@ jit_alloc(size_t size)
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
     int flags = MEM_COMMIT | MEM_RESERVE;
-    unsigned char *memory = VirtualAlloc(NULL, size, flags, PAGE_READWRITE);
+    unsigned char *memory = VirtualAlloc(NULL, size, flags, PAGE_EXECUTE_READWRITE);
     int failed = memory == NULL;
 #else
     int flags = MAP_ANONYMOUS | MAP_PRIVATE;
-    unsigned char *memory = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
+#ifdef __APPLE__
+    flags |= MAP_JIT;
+#endif
+    unsigned char *memory = mmap(NULL, size, PROT_EXEC | PROT_READ | PROT_WRITE, flags, -1, 0);
     int failed = memory == MAP_FAILED;
 #endif
     if (failed) {
@@ -99,16 +102,16 @@ mark_executable(unsigned char *memory, size_t size)
         jit_error("unable to flush instruction cache");
         return -1;
     }
-    int old;
-    int failed = !VirtualProtect(memory, size, PAGE_EXECUTE_READ, &old);
+    // int old;
+    // int failed = !VirtualProtect(memory, size, PAGE_EXECUTE_READ, &old);
 #else
     __builtin___clear_cache((char *)memory, (char *)memory + size);
-    int failed = mprotect(memory, size, PROT_EXEC | PROT_READ);
+    // int failed = mprotect(memory, size, PROT_EXEC | PROT_READ);
 #endif
-    if (failed) {
-        jit_error("unable to protect executable memory");
-        return -1;
-    }
+    // if (failed) {
+    //     jit_error("unable to protect executable memory");
+    //     return -1;
+    // }
     return 0;
 }
 
@@ -121,14 +124,14 @@ mark_readable(unsigned char *memory, size_t size)
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
     DWORD old;
-    int failed = !VirtualProtect(memory, size, PAGE_READONLY, &old);
+    // int failed = !VirtualProtect(memory, size, PAGE_READONLY, &old);
 #else
-    int failed = mprotect(memory, size, PROT_READ);
+    // int failed = mprotect(memory, size, PROT_READ);
 #endif
-    if (failed) {
-        jit_error("unable to protect readable memory");
-        return -1;
-    }
+    // if (failed) {
+    //     jit_error("unable to protect readable memory");
+    //     return -1;
+    // }
     return 0;
 }
 
@@ -418,6 +421,9 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
     if (memory == NULL) {
         return -1;
     }
+#ifdef __APPLE__
+    pthread_jit_write_protect_np(0);
+#endif
     // Loop again to emit the code:
     unsigned char *code = memory;
     unsigned char *data = memory + code_size;
@@ -444,6 +450,9 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
         code += group->code.body_size;
         data += group->data.body_size;
     }
+#ifdef __APPLE__
+    pthread_jit_write_protect_np(1);
+#endif
     if (mark_executable(memory, code_size) ||
         mark_readable(memory + code_size, data_size))
     {
