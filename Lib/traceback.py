@@ -550,7 +550,7 @@ class StackSummary(list):
         colorize = kwargs.get("colorize", False)
         row = []
         filename = frame_summary.filename
-        if frame_summary.filename.startswith("<stdin>-"):
+        if frame_summary.filename.startswith("<python-input"):
             filename = "<stdin>"
         if colorize:
             row.append('  File {}"{}"{}, line {}{}{}, in {}{}{}\n'.format(
