@@ -529,7 +529,8 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         target = _COFF(host, args=args, code_alignment=4, data_alignment=16)  # XXX: Check align
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
         args = ["-mcmodel=large"]
-        target = _ELF(host, args=args, code_alignment=8)
+        # Builds (but crashes) without data_alignment:
+        target = _ELF(host, args=args, code_alignment=4, data_alignment=8)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
         target = _COFF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True, prefix="_")
