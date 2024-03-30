@@ -523,21 +523,21 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     target: _COFF | _ELF | _MachO
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
         args = ["-mcmodel=large"]
-        target = _MachO(host, args=args, code_alignment=8, prefix="_")  # XXX: Check align
+        target = _MachO(host, args=args, code_alignment=4, prefix="_")  # XXX: Check align
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        target = _COFF(host, args=args, code_alignment=8)  # XXX: Check align
+        target = _COFF(host, args=args, code_alignment=4, data_alignment=16)  # XXX: Check align
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
         args = ["-mcmodel=large"]
         target = _ELF(host, args=args, code_alignment=4)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
-        target = _COFF(host, args=args, ghccc=True, prefix="_")
+        target = _COFF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
-        target = _MachO(host, ghccc=True, prefix="_")
+        target = _MachO(host, code_alignment=16, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        target = _COFF(host, args=args, ghccc=True)
+        target = _COFF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
         args = ["-fpic"]
         target = _ELF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True)
