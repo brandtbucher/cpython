@@ -97,6 +97,7 @@ class COFFSection(typing.TypedDict):
 class ELFSection(typing.TypedDict):
     """An ELF object file section."""
 
+    AddressAlignment: int
     Flags: dict[typing.Literal["Flags"], list[dict[typing.Literal["Name"], str]]]
     Index: int
     Info: int
@@ -110,6 +111,7 @@ class MachOSection(typing.TypedDict):
     """A Mach-O object file section."""
 
     Address: int
+    Alignment: int
     Attributes: dict[typing.Literal["Flags"], list[dict[typing.Literal["Name"], str]]]
     Index: int
     Name: dict[typing.Literal["Value"], str]

@@ -417,8 +417,9 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     // Round up to the nearest page:
     size_t page_size = get_page_size();
     assert((page_size & (page_size - 1)) == 0);
-    size_t padding = page_size - ((code_size + data_size) & (page_size - 1));
-    size_t total_size = code_size + data_size + padding;
+    size_t total_size = code_size + JIT_CODE_ALIGNMENT - 1;
+    total_size += data_size + JIT_DATA_ALIGNMENT - 1;
+    total_size += (page_size - (total_size & (page_size - 1))) & (page_size - 1);
     unsigned char *memory = jit_alloc(total_size);
     if (memory == NULL) {
         return -1;
@@ -429,7 +430,10 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     }
     // Loop again to emit the code:
     unsigned char *code = memory;
-    unsigned char *data = memory + code_size;
+    code += (JIT_CODE_ALIGNMENT - ((uint64_t)code & (JIT_CODE_ALIGNMENT - 1))) & (JIT_CODE_ALIGNMENT - 1);
+    unsigned char *jit_code = code;
+    unsigned char *data = code + code_size;
+    data += (JIT_DATA_ALIGNMENT - ((uint64_t)data & (JIT_DATA_ALIGNMENT - 1))) & (JIT_DATA_ALIGNMENT - 1);
     // Compile the trampoline, which handles converting between the native
     // calling convention and the calling convention used by jitted code
     // (which may be different for efficiency reasons). On platforms where
@@ -458,8 +462,9 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
         jit_free(memory, total_size);
         return -1;
     }
-    executor->jit_code = memory;
-    executor->jit_side_entry = memory + trampoline.code_size;
+    executor->jit_code = jit_code;
+    executor->jit_side_entry = jit_code + trampoline.code_size;
+    executor->jit_base = memory;
     executor->jit_size = total_size;
     return 0;
 }
@@ -467,11 +472,12 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
 void
 _PyJIT_Free(_PyExecutorObject *executor)
 {
-    unsigned char *memory = (unsigned char *)executor->jit_code;
+    unsigned char *memory = (unsigned char *)executor->jit_base;
     size_t size = executor->jit_size;
     if (memory) {
         executor->jit_code = NULL;
         executor->jit_side_entry = NULL;
+        executor->jit_base = NULL;
         executor->jit_size = 0;
         if (jit_free(memory, size)) {
             PyErr_WriteUnraisable(NULL);

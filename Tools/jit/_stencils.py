@@ -181,11 +181,12 @@ class Stencil:
     body: bytearray = dataclasses.field(default_factory=bytearray, init=False)
     holes: list[Hole] = dataclasses.field(default_factory=list, init=False)
     disassembly: list[str] = dataclasses.field(default_factory=list, init=False)
+    alignment: int = dataclasses.field(default=1, init=False)
 
-    def pad(self, alignment: int) -> None:
+    def pad(self, alignment: int = 0) -> None:  # XXX
         """Pad the stencil to the given alignment."""
         offset = len(self.body)
-        padding = -offset % alignment
+        padding = -offset % (alignment or self.alignment)  # XXX
         self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
         self.body.extend([0] * padding)
 
@@ -226,7 +227,7 @@ class Stencil:
         ):
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
 
-    def remove_jump(self, *, alignment: int = 1) -> None:
+    def remove_jump(self) -> None:
         """Remove a zero-length continuation jump, if it exists."""
         hole = max(self.holes, key=lambda hole: hole.offset)
         match hole:
@@ -272,7 +273,7 @@ class Stencil:
                 offset -= 2
             case _:
                 return
-        if self.body[offset:] == jump and offset % alignment == 0:
+        if self.body[offset:] == jump and offset % self.alignment == 0:
             self.body = self.body[:offset]
             self.holes.remove(hole)
 
@@ -292,7 +293,7 @@ class StencilGroup:
     )
     _got: dict[str, int] = dataclasses.field(default_factory=dict, init=False)
 
-    def process_relocations(self, *, alignment: int = 1) -> None:
+    def process_relocations(self) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
         for hole in self.code.holes.copy():
             if (
@@ -300,12 +301,10 @@ class StencilGroup:
                 in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26", "ARM64_RELOC_BRANCH26"}
                 and hole.value is HoleValue.ZERO
             ):
-                self.code.pad(alignment)
+                self.code.pad()
                 self.code.emit_aarch64_trampoline(hole)
                 self.code.holes.remove(hole)
-        self.code.remove_jump(alignment=alignment)
-        self.code.pad(alignment)
-        self.data.pad(8)
+        self.code.remove_jump()
         for stencil in [self.code, self.data]:
             for hole in stencil.holes:
                 if hole.value is HoleValue.GOT:
@@ -325,10 +324,13 @@ class StencilGroup:
                         f"Add PyAPI_FUNC(...) or PyAPI_DATA(...) to declaration of {hole.symbol}!"
                     )
         self._emit_global_offset_table()
+        self.code.pad()
+        self.data.pad()
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
 
     def _global_offset_table_lookup(self, symbol: str) -> int:
+        # self.data.pad(8)  # XXX
         return len(self.data.body) + self._got.setdefault(symbol, 8 * len(self._got))
 
     def _emit_global_offset_table(self) -> None:

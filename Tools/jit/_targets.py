@@ -37,9 +37,10 @@ _R = typing.TypeVar(
 class _Target(typing.Generic[_S, _R]):
     triple: str
     _: dataclasses.KW_ONLY
-    alignment: int = 1
     args: typing.Sequence[str] = ()
     ghccc: bool = False
+    code_alignment: int = 1
+    data_alignment: int = 1
     prefix: str = ""
     stable: bool = False
     debug: bool = False
@@ -59,6 +60,8 @@ class _Target(typing.Generic[_S, _R]):
 
     async def _parse(self, path: pathlib.Path) -> _stencils.StencilGroup:
         group = _stencils.StencilGroup()
+        group.code.alignment = self.code_alignment
+        group.data.alignment = self.data_alignment
         args = ["--disassemble", "--reloc", f"{path}"]
         output = await _llvm.maybe_run("llvm-objdump", args, echo=self.verbose)
         if output is not None:
@@ -95,7 +98,7 @@ class _Target(typing.Generic[_S, _R]):
         if group.data.body:
             line = f"0: {str(bytes(group.data.body)).removeprefix('b')}"
             group.data.disassembly.append(line)
-        group.process_relocations(alignment=self.alignment)
+        group.process_relocations()
         return group
 
     def _handle_section(self, section: _S, group: _stencils.StencilGroup) -> None:
@@ -219,6 +222,9 @@ class _Target(typing.Generic[_S, _R]):
                 if comment:
                     file.write(f"// {comment}\n")
                 file.write("\n")
+                file.write(f"#define JIT_CODE_ALIGNMENT {self.code_alignment}\n")
+                file.write(f"#define JIT_DATA_ALIGNMENT {self.data_alignment}\n")
+                file.write("\n")
                 for line in _writer.dump(stencil_groups):
                     file.write(f"{line}\n")
             jit_stencils_new.replace(jit_stencils)
@@ -246,6 +252,18 @@ class _COFF(
             stencil = group.data
         else:
             return
+        if "IMAGE_SCN_ALIGN_1BYTES" in flags:
+            assert 1 <= stencil.alignment
+        elif "IMAGE_SCN_ALIGN_2BYTES" in flags:
+            assert 2 <= stencil.alignment
+        elif "IMAGE_SCN_ALIGN_4BYTES" in flags:
+            assert 4 <= stencil.alignment
+        elif "IMAGE_SCN_ALIGN_8BYTES" in flags:
+            assert 8 <= stencil.alignment
+        elif "IMAGE_SCN_ALIGN_16BYTES" in flags:
+            assert 16 <= stencil.alignment
+        else:
+            assert False, flags
         base = len(stencil.body)
         group.symbols[section["Number"]] = value, base
         stencil.body.extend(section_data_bytes)
@@ -341,6 +359,7 @@ class _ELF(
             else:
                 value = _stencils.HoleValue.DATA
                 stencil = group.data
+            assert section["AddressAlignment"] <= stencil.alignment
             group.symbols[section["Index"]] = value, len(stencil.body)
             for wrapped_symbol in section["Symbols"]:
                 symbol = wrapped_symbol["Symbol"]
@@ -417,6 +436,7 @@ class _MachO(
             stencil = group.data
             start_address = len(group.code.body)
             group.symbols[name] = value, len(group.code.body)
+        assert 1 << section["Alignment"] <= stencil.alignment
         base = section["Address"] - start_address
         group.symbols[section["Index"]] = value, base
         stencil.body.extend(
@@ -502,13 +522,14 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     # ghccc currently crashes Clang when combined with musttail on aarch64. :(
     target: _COFF | _ELF | _MachO
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
-        target = _MachO(host, alignment=8, prefix="_")
+        args = ["-mcmodel=large"]
+        target = _MachO(host, args=args, code_alignment=8, prefix="_")  # XXX: Check align
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        target = _COFF(host, alignment=8, args=args)
+        target = _COFF(host, args=args, code_alignment=8)  # XXX: Check align
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        args = ["-fpic"]
-        target = _ELF(host, alignment=8, args=args)
+        args = ["-mcmodel=large"]
+        target = _ELF(host, args=args, code_alignment=4)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
         target = _COFF(host, args=args, ghccc=True, prefix="_")
@@ -519,7 +540,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         target = _COFF(host, args=args, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
         args = ["-fpic"]
-        target = _ELF(host, args=args, ghccc=True)
+        target = _ELF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True)
     else:
         raise ValueError(host)
     return target
