@@ -216,6 +216,9 @@ patch_aarch64_12(unsigned char *location, uint64_t value)
         assert(get_bits(*loc32, 23, 1) == 0 || get_bits(*loc32, 26, 1) == 0);
     }
     value = get_bits(value, 0, 12);
+    while (get_bits(value, 0, shift)) {
+        shift--;
+    }
     assert(get_bits(value, 0, shift) == 0);
     set_bits(loc32, 10, value, shift, 12);
 }
