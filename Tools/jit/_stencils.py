@@ -331,7 +331,7 @@ class StencilGroup:
         self.data.holes.sort(key=lambda hole: hole.offset)
 
     def _global_offset_table_lookup(self, symbol: str) -> int:
-        # self.data.pad(8)  # XXX
+        self.data.pad(8)  # XXX
         return len(self.data.body) + self._got.setdefault(symbol, 8 * len(self._got))
 
     def _emit_global_offset_table(self) -> None:
