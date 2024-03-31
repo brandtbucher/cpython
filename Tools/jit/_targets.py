@@ -250,20 +250,20 @@ class _COFF(
         elif "IMAGE_SCN_MEM_READ" in flags:
             value = _stencils.HoleValue.DATA
             stencil = group.data
+            if "IMAGE_SCN_ALIGN_1BYTES" in flags:
+                assert 1 <= stencil.alignment
+            elif "IMAGE_SCN_ALIGN_2BYTES" in flags:
+                assert 2 <= stencil.alignment
+            elif "IMAGE_SCN_ALIGN_4BYTES" in flags:
+                assert 4 <= stencil.alignment
+            elif "IMAGE_SCN_ALIGN_8BYTES" in flags:
+                assert 8 <= stencil.alignment
+            elif "IMAGE_SCN_ALIGN_16BYTES" in flags:
+                assert 16 <= stencil.alignment
+            else:
+                assert False, flags
         else:
             return
-        if "IMAGE_SCN_ALIGN_1BYTES" in flags:
-            assert 1 <= stencil.alignment
-        elif "IMAGE_SCN_ALIGN_2BYTES" in flags:
-            assert 2 <= stencil.alignment
-        elif "IMAGE_SCN_ALIGN_4BYTES" in flags:
-            assert 4 <= stencil.alignment
-        elif "IMAGE_SCN_ALIGN_8BYTES" in flags:
-            assert 8 <= stencil.alignment
-        elif "IMAGE_SCN_ALIGN_16BYTES" in flags:
-            assert 16 <= stencil.alignment
-        else:
-            assert False, flags
         base = len(stencil.body)
         group.symbols[section["Number"]] = value, base
         stencil.body.extend(section_data_bytes)
@@ -359,7 +359,7 @@ class _ELF(
             else:
                 value = _stencils.HoleValue.DATA
                 stencil = group.data
-            assert section["AddressAlignment"] <= stencil.alignment
+                assert section["AddressAlignment"] <= stencil.alignment
             group.symbols[section["Index"]] = value, len(stencil.body)
             for wrapped_symbol in section["Symbols"]:
                 symbol = wrapped_symbol["Symbol"]
@@ -436,7 +436,7 @@ class _MachO(
             stencil = group.data
             start_address = len(group.code.body)
             group.symbols[name] = value, len(group.code.body)
-        assert 1 << section["Alignment"] <= stencil.alignment
+            assert 1 << section["Alignment"] <= stencil.alignment
         base = section["Address"] - start_address
         group.symbols[section["Index"]] = value, base
         stencil.body.extend(
@@ -523,7 +523,8 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     target: _COFF | _ELF | _MachO
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
         args = ["-mcmodel=large"]
-        target = _MachO(host, args=args, code_alignment=4, prefix="_")  # XXX: Check align
+        # Works without data_alignment:
+        target = _MachO(host, args=args, code_alignment=4, data_alignment=8, prefix="_")
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
         target = _COFF(host, args=args, code_alignment=4, data_alignment=16)  # XXX: Check align
@@ -533,15 +534,19 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         target = _ELF(host, args=args, code_alignment=4, data_alignment=8)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
-        target = _COFF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True, prefix="_")
+        # Works with data_alignment=4:
+        target = _COFF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
-        target = _MachO(host, code_alignment=16, ghccc=True, prefix="_")
+        # Works without data_alignment:
+        target = _MachO(host, code_alignment=1, data_alignment=8, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        target = _COFF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True)
+        # Works with data_alignment=4:
+        target = _COFF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
         args = ["-fpic"]
-        target = _ELF(host, args=args, code_alignment=16, data_alignment=4, ghccc=True)
+        # Works with data_alignment=4:
+        target = _ELF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True)
     else:
         raise ValueError(host)
     return target
