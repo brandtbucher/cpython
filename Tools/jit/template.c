@@ -46,7 +46,7 @@
 do {  \
     OPT_STAT_INC(traces_executed);                \
     __attribute__((musttail))                     \
-    return ((jit_func)((EXECUTOR)->jit_code))(frame, stack_pointer, tstate); \
+    return ((jit_func)((EXECUTOR)->jit_code_ghccc))(frame, stack_pointer, tstate); \
 } while (0)
 
 #undef GOTO_TIER_ONE

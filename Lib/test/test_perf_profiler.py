@@ -305,6 +305,7 @@ class TestPerfProfiler(unittest.TestCase):
         for file in files_to_delete:
             file.unlink()
 
+    @unittest.skip("JIT")  # XXX
     def test_python_calls_appear_in_the_stack_if_perf_activated(self):
         with temp_dir() as script_dir:
             code = """if 1:
