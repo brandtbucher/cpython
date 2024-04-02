@@ -934,6 +934,7 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
     int32_t current_error = -1;
     int32_t current_error_target = -1;
     int32_t current_popped = -1;
+    uint16_t current_exit_op = 0;
     /* Leaving in NOPs slows down the interpreter and messes up the stats */
     _PyUOpInstruction *copy_to = &buffer[0];
     for (int i = 0; i < length; i++) {
@@ -952,11 +953,12 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
         int opcode = inst->opcode;
         int32_t target = (int32_t)uop_get_target(inst);
         if (_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)) {
-            if (target != current_jump_target) {
-                uint16_t exit_op = (_PyUop_Flags[opcode] & HAS_EXIT_FLAG) ? _SIDE_EXIT : _DEOPT;
+            uint16_t exit_op = (_PyUop_Flags[opcode] & HAS_EXIT_FLAG) ? _SIDE_EXIT : _DEOPT;
+            if (target != current_jump_target || exit_op != current_exit_op) {
                 make_exit(&buffer[next_spare], exit_op, target);
                 current_jump_target = target;
                 current_jump = next_spare;
+                current_exit_op = exit_op;
                 next_spare++;
             }
             buffer[i].jump_target = current_jump;

@@ -2642,8 +2642,8 @@ dummy_func(
             _PyListIterObject *it = (_PyListIterObject *)iter;
             assert(Py_TYPE(iter) == &PyListIter_Type);
             PyListObject *seq = it->it_seq;
-            DEOPT_IF(seq == NULL);
-            DEOPT_IF((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq));
+            EXIT_IF(seq == NULL);
+            EXIT_IF((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq));
         }
 
         op(_ITER_NEXT_LIST, (iter -- iter, next)) {
@@ -2688,8 +2688,8 @@ dummy_func(
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter;
             assert(Py_TYPE(iter) == &PyTupleIter_Type);
             PyTupleObject *seq = it->it_seq;
-            DEOPT_IF(seq == NULL);
-            DEOPT_IF(it->it_index >= PyTuple_GET_SIZE(seq));
+            EXIT_IF(seq == NULL);
+            EXIT_IF(it->it_index >= PyTuple_GET_SIZE(seq));
         }
 
         op(_ITER_NEXT_TUPLE, (iter -- iter, next)) {
@@ -2729,7 +2729,7 @@ dummy_func(
         op(_GUARD_NOT_EXHAUSTED_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)iter;
             assert(Py_TYPE(r) == &PyRangeIter_Type);
-            DEOPT_IF(r->len <= 0);
+            EXIT_IF(r->len <= 0);
         }
 
         op(_ITER_NEXT_RANGE, (iter -- iter, next)) {
