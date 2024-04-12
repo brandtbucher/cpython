@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+import itertools
 import lexer
 import parser
 import re
@@ -145,6 +146,7 @@ class Uop:
     implicitly_created: bool = False
     replicated = 0
     replicates : "Uop | None" = None
+    stack_cache_state: int | None = None
 
     def dump(self, indent: str) -> None:
         print(
@@ -160,7 +162,7 @@ class Uop:
         return self._size
 
     def why_not_viable(self) -> str | None:
-        if self.name == "_SAVE_RETURN_OFFSET":
+        if self.name.endswith("_SAVE_RETURN_OFFSET"):
             return None  # Adjusts next_instr, but only in tier 1 code
         if "INSTRUMENTED" in self.name:
             return "is instrumented"
@@ -191,6 +193,49 @@ class Uop:
             if tkn.kind == "IDENTIFIER" and tkn.text == "oparg1":
                 return True
         return False
+
+    def analyze_stack_cache(self) -> tuple[int, list[StackItem], list[StackItem]]:
+        if self.stack_cache_state is None:
+            return 0, [], []
+        size = self.stack_cache_state
+        def var_is_cacheable(var: StackItem) -> bool:
+            # XXX
+            return not var.is_array() and not var.condition and not var.type
+        # XXX
+        if self.properties.stores_sp:
+            return size, [], []
+        cached_inputs = []
+        for _, var in zip(range(size), reversed(self.stack.inputs)):
+            if not var_is_cacheable(var):
+                break
+            cached_inputs.append(var)
+        cached_outputs = []
+        # XXX: Do this after computing spills?
+        for _, var in zip(range(size), reversed(self.stack.outputs)):
+            if not var_is_cacheable(var):
+                break
+            cached_outputs.append(var)
+        spilled_inputs = 0
+        if (
+            len(cached_inputs) < len(self.stack.inputs)
+            or len(cached_outputs) < len(self.stack.outputs)
+            or size - len(cached_inputs) + len(cached_outputs) > STACK_CACHE_SIZE
+        ):
+            spilled_inputs = size - len(cached_inputs)
+        assert 0 <= size <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - len(cached_inputs) <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - len(cached_inputs) + len(cached_outputs) <= STACK_CACHE_SIZE
+        return spilled_inputs, cached_inputs, cached_outputs
+
+
+STACK_CACHE_SIZE = 4
+
+def add_variants(uop: Uop, uops: dict[str, Uop]) -> None:
+    for stack_cache_state in range(STACK_CACHE_SIZE + 1):
+        name = f"__R{stack_cache_state}_{uop.name}"
+        assert name not in uops
+        uops[name] = replace(uop, name=name, stack_cache_state=stack_cache_state)
 
 
 Part = Uop | Skip
@@ -593,6 +638,7 @@ def make_uop(name: str, op: parser.InstDef, inputs: list[parser.InputEffect], uo
             )
             rep.replicates = result
             uops[name_x] = rep
+            add_variants(rep, uops)
     for anno in op.annotations:
         if anno.startswith("replicate"):
             result.replicated = int(anno[10:-1])
@@ -615,6 +661,7 @@ def make_uop(name: str, op: parser.InstDef, inputs: list[parser.InputEffect], uo
         )
         rep.replicates = result
         uops[name_x] = rep
+        add_variants(rep, uops)
 
     return result
 
@@ -627,6 +674,7 @@ def add_op(op: parser.InstDef, uops: dict[str, Uop]) -> None:
                 op.name, op.context, uops[op.name].context, op.tokens[0]
             )
     uops[op.name] = make_uop(op.name, op, op.inputs, uops)
+    add_variants(uops[op.name], uops)
 
 
 def add_instruction(
@@ -654,6 +702,7 @@ def desugar_inst(
                 # Place holder for the uop.
                 parts.append(Skip(0))
     uop = make_uop("_" + inst.name, inst, op_inputs, uops)
+    add_variants(uop, uops)
     uop.implicitly_created = True
     uops[inst.name] = uop
     if uop_index < 0:

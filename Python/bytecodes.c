@@ -1242,8 +1242,7 @@ dummy_func(
             (void)counter;
         }
 
-        op(_UNPACK_SEQUENCE, (seq -- unused[oparg])) {
-            PyObject **top = stack_pointer + oparg - 1;
+        op(_UNPACK_SEQUENCE, (seq -- unused[oparg], top[0])) {
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             DECREF_INPUTS();
             ERROR_IF(res == 0, error);
@@ -1283,9 +1282,7 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        inst(UNPACK_EX, (seq -- unused[oparg & 0xFF], unused, unused[oparg >> 8])) {
-            int totalargs = 1 + (oparg & 0xFF) + (oparg >> 8);
-            PyObject **top = stack_pointer + totalargs - 1;
+        inst(UNPACK_EX, (seq -- unused[oparg & 0xFF], unused, unused[oparg >> 8], top[0])) {
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             DECREF_INPUTS();
             ERROR_IF(res == 0, error);
@@ -4097,8 +4094,11 @@ dummy_func(
         op(_JUMP_TO_TOP, (--)) {
 #ifndef _Py_JIT
             next_uop = &current_executor->trace[1];
-#endif
             CHECK_EVAL_BREAKER();
+#else
+            CHECK_EVAL_BREAKER();
+            PATCH_JUMP(_JIT_TOP);
+#endif
         }
 
         tier2 op(_SET_IP, (instr_ptr/4 --)) {

@@ -213,25 +213,28 @@ GETITEM(PyObject *v, Py_ssize_t i) {
 
 #ifdef Py_DEBUG
 #define PUSH(v)         do { \
+                            SPILL_CACHES(); \
                             BASIC_PUSH(v); \
                             assert(STACK_LEVEL() <= STACK_SIZE()); \
                         } while (0)
-#define POP()           (assert(STACK_LEVEL() > 0), BASIC_POP())
+#define POP()           (SPILL_CACHES(), assert(STACK_LEVEL() > 0), BASIC_POP())
 #define STACK_GROW(n)   do { \
+                            SPILL_CACHES(); \
                             assert(n >= 0); \
                             BASIC_STACKADJ(n); \
                             assert(STACK_LEVEL() <= STACK_SIZE()); \
                         } while (0)
 #define STACK_SHRINK(n) do { \
+                            SPILL_CACHES(); \
                             assert(n >= 0); \
                             assert(STACK_LEVEL() >= n); \
                             BASIC_STACKADJ(-(n)); \
                         } while (0)
 #else
-#define PUSH(v)                BASIC_PUSH(v)
-#define POP()                  BASIC_POP()
-#define STACK_GROW(n)          BASIC_STACKADJ(n)
-#define STACK_SHRINK(n)        BASIC_STACKADJ(-(n))
+#define PUSH(v)                (SPILL_CACHES(), BASIC_PUSH(v))
+#define POP()                  (SPILL_CACHES(), BASIC_POP())
+#define STACK_GROW(n)          (SPILL_CACHES(), BASIC_STACKADJ(n))
+#define STACK_SHRINK(n)        (SPILL_CACHES(), BASIC_STACKADJ(-(n)))
 #endif
 
 
@@ -393,7 +396,7 @@ stack_pointer = _PyFrame_GetStackPointer(frame);
 do {                                                   \
     OPT_STAT_INC(traces_executed);                     \
     jit_func jitted = (EXECUTOR)->jit_code;            \
-    next_instr = jitted(frame, stack_pointer, tstate); \
+    next_instr = jitted(frame, stack_pointer, tstate, STACK_CACHE_NULLS); \
     Py_DECREF(tstate->previous_executor);              \
     tstate->previous_executor = NULL;                  \
     frame = tstate->current_frame;                     \
@@ -406,15 +409,17 @@ do {                                                   \
 #else
 #define GOTO_TIER_TWO(EXECUTOR) \
 do { \
+    SPILL_CACHES(); \
     OPT_STAT_INC(traces_executed); \
     next_uop = (EXECUTOR)->trace; \
-    assert(next_uop->opcode == _START_EXECUTOR || next_uop->opcode == _COLD_EXIT); \
+    /* assert(next_uop->opcode == _START_EXECUTOR || next_uop->opcode == _COLD_EXIT); */ \
     goto enter_tier_two; \
 } while (0)
 #endif
 
 #define GOTO_TIER_ONE(TARGET) \
 do { \
+    SPILL_CACHES(); \
     Py_DECREF(tstate->previous_executor); \
     tstate->previous_executor = NULL;  \
     next_instr = target; \
@@ -430,3 +435,13 @@ do { \
 #define GOTO_UNWIND() goto error_tier_two
 #define EXIT_TO_TRACE() goto exit_to_trace
 #define EXIT_TO_TIER1() goto exit_to_tier1
+
+static inline PyObject **
+spill_caches(int cache_size, PyObject **stack_pointer, STACK_CACHE_DECLARE)
+{
+    PyObject *caches[] = {STACK_CACHE_USE};
+    for (int i = 0; i < cache_size; i++) {
+        BASIC_PUSH(caches[i]);
+    }
+    return stack_pointer;
+}

@@ -4,6 +4,7 @@ Writes the cases to executor_cases.c.h, which is #included in ceval.c.
 """
 
 import argparse
+import dataclasses
 import os.path
 import sys
 
@@ -16,6 +17,7 @@ from analyzer import (
     Skip,
     StackItem,
     analysis_error,
+    STACK_CACHE_SIZE,
 )
 from generators_common import (
     DEFAULT_INPUT,
@@ -215,10 +217,28 @@ def generate_tier2(
         out.emit(f"case {uop.name}: {{\n")
         declare_variables(uop, out)
         stack = Stack()
+        out.start_line()
+        spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
+        if uop.stack_cache_state is not None:
+            out.emit(f"_cache_size = {uop.stack_cache_state - spilled_inputs};")
+            base = uop.stack_cache_state - len(cached_inputs) - spilled_inputs
+        else:
+            out.emit("_cache_size = 0;")
+            base = 0
+        names = [f"_{i}" for i in range(STACK_CACHE_SIZE)]
+        for name in names[base:base + spilled_inputs]:
+            out.emit(stack.push(StackItem(name, None, None, "1")))
+        stack.flush(out)
+        for name, var in zip(names[base + spilled_inputs:base + spilled_inputs + len(cached_inputs)], cached_inputs, strict=True):
+            out.emit(stack.push(dataclasses.replace(var, name=name)))
         write_uop(uop, out, stack)
         out.start_line()
+        for name, var in zip(reversed(names[base:base + len(cached_outputs)]), cached_outputs, strict=True):
+            out.emit(stack.pop(dataclasses.replace(var, name=name)))
         if not uop.properties.always_exits:
             stack.flush(out)
+            for i in range(base + len(cached_outputs), STACK_CACHE_SIZE):
+                out.emit(f"CLOBBER_REGISTER(_{i});\n")
             if uop.properties.ends_with_eval_breaker:
                 out.emit("CHECK_EVAL_BREAKER();\n")
             out.emit("break;\n")

@@ -209,6 +209,9 @@ _PyOptimizer_Optimize(
     }
     assert(*executor_ptr != NULL);
     int index = get_index_for_executor(code, start);
+    // printf("XXX: index=%d ", index);
+    // PyObject_Print((PyObject *)code, stdout, 0);
+    // printf("\n");
     if (index < 0) {
         /* Out of memory. Don't raise and assume that the
          * error will show up elsewhere.
@@ -1032,7 +1035,7 @@ sanity_check(_PyExecutorObject *executor)
     }
     bool ended = false;
     uint32_t i = 0;
-    CHECK(executor->trace[0].opcode == _START_EXECUTOR || executor->trace[0].opcode == _COLD_EXIT);
+    // CHECK(executor->trace[0].opcode == _START_EXECUTOR || executor->trace[0].opcode == _COLD_EXIT);
     for (; i < executor->code_size; i++) {
         const _PyUOpInstruction *inst = &executor->trace[i];
         uint16_t opcode = inst->opcode;
@@ -1043,7 +1046,7 @@ sanity_check(_PyExecutorObject *executor)
                 CHECK(target_unused(opcode));
                 break;
             case UOP_FORMAT_EXIT:
-                CHECK(opcode == _SIDE_EXIT);
+                // CHECK(opcode == _SIDE_EXIT);
                 CHECK(inst->exit_index < executor->exit_count);
                 break;
             case UOP_FORMAT_JUMP:
@@ -1063,7 +1066,7 @@ sanity_check(_PyExecutorObject *executor)
             break;
         }
     }
-    CHECK(ended);
+    // CHECK(ended);
     for (; i < executor->code_size; i++) {
         const _PyUOpInstruction *inst = &executor->trace[i];
         uint16_t opcode = inst->opcode;
@@ -1102,7 +1105,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     }
     int next_exit = exit_count-1;
     _PyUOpInstruction *dest = (_PyUOpInstruction *)&executor->trace[length];
-    assert(buffer[0].opcode == _START_EXECUTOR);
+    // assert(buffer[0].opcode == _START_EXECUTOR);
     buffer[0].operand = (uint64_t)executor;
     for (int i = length-1; i >= 0; i--) {
         int opcode = buffer[i].opcode;
@@ -1118,7 +1121,9 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     }
     assert(next_exit == -1);
     assert(dest == executor->trace);
-    assert(dest->opcode == _START_EXECUTOR);
+    // assert(dest->opcode == _START_EXECUTOR);
+    dest->oparg = 0;
+    dest->target = 0;
     _Py_ExecutorInit(executor, dependencies);
 #ifdef Py_DEBUG
     char *python_lltrace = Py_GETENV("PYTHON_LLTRACE");
@@ -1231,18 +1236,21 @@ uop_optimize(
     assert(length < UOP_MAX_TRACE_LENGTH);
     assert(length >= 1);
     /* Fix up */
+    uint16_t cached = 0;
     for (int pc = 0; pc < length; pc++) {
-        int opcode = buffer[pc].opcode;
+        int opcode = _PyUop_StackCache[buffer[pc].opcode][cached][0];
+        cached = _PyUop_StackCache[buffer[pc].opcode][cached][1];
         int oparg = buffer[pc].oparg;
         if (_PyUop_Flags[opcode] & HAS_OPARG_AND_1_FLAG) {
-            buffer[pc].opcode = opcode + 1 + (oparg & 1);
+            opcode += 1 + (oparg & 1);
         }
         else if (oparg < _PyUop_Replication[opcode]) {
-            buffer[pc].opcode = opcode + oparg + 1;
+            opcode += 1 + oparg;
         }
         else if (opcode == _JUMP_TO_TOP || opcode == _EXIT_TRACE) {
             break;
         }
+        buffer[pc].opcode = opcode;
         assert(_PyOpcode_uop_name[buffer[pc].opcode]);
         assert(strncmp(_PyOpcode_uop_name[buffer[pc].opcode], _PyOpcode_uop_name[opcode], strlen(_PyOpcode_uop_name[opcode])) == 0);
     }

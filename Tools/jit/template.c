@@ -20,6 +20,8 @@
 
 #include "ceval_macros.h"
 
+#define SPILL_CACHES() (stack_pointer = spill_caches(_cache_size, stack_pointer, STACK_CACHE_USE), _cache_size = 0)
+
 #undef CURRENT_OPARG
 #define CURRENT_OPARG() (_oparg)
 
@@ -46,14 +48,16 @@
 #undef GOTO_TIER_TWO
 #define GOTO_TIER_TWO(EXECUTOR) \
 do {  \
+    SPILL_CACHES();                               \
     OPT_STAT_INC(traces_executed);                \
     __attribute__((musttail))                     \
-    return ((jit_func)((EXECUTOR)->jit_code_ghccc))(frame, stack_pointer, tstate); \
+    return ((jit_func)((EXECUTOR)->jit_code_ghccc))(frame, stack_pointer, tstate, STACK_CACHE_NULLS); \
 } while (0)
 
 #undef GOTO_TIER_ONE
 #define GOTO_TIER_ONE(TARGET) \
 do {  \
+    SPILL_CACHES(); \
     _PyFrame_SetStackPointer(frame, stack_pointer); \
     return TARGET; \
 } while (0)
@@ -67,11 +71,17 @@ do {  \
     PyAPI_DATA(void) ALIAS;             \
     TYPE NAME = (TYPE)(uintptr_t)&ALIAS;
 
-#define PATCH_JUMP(ALIAS)                                    \
-do {                                                         \
-    PyAPI_DATA(void) ALIAS;                                  \
-    __attribute__((musttail))                                \
-    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate); \
+#define _PATCH_JUMP(ALIAS)                                                    \
+do {                                                                          \
+    PyAPI_DATA(void) ALIAS;                                                   \
+    __attribute__((musttail))                                                 \
+    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate, STACK_CACHE_USE); \
+} while (0)
+
+#define PATCH_JUMP(ALIAS) \
+do {                      \
+    SPILL_CACHES();       \
+    _PATCH_JUMP(ALIAS);   \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
@@ -81,10 +91,11 @@ do {                                                         \
 #define JUMP_TO_ERROR() PATCH_JUMP(_JIT_ERROR_TARGET)
 
 _Py_CODEUNIT *
-_JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate)
+_JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate, STACK_CACHE_DECLARE)
 {
     // Locals that the instruction implementations expect to exist:
     PATCH_VALUE(_PyExecutorObject *, current_executor, _JIT_EXECUTOR)
+    int _cache_size;
     int oparg;
     int uopcode = _JIT_OPCODE;
     // Other stuff we need handy:
@@ -104,16 +115,12 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     UOP_STAT_INC(uopcode, execution_count);
 
     // The actual instruction definitions (only one will be used):
-    if (uopcode == _JUMP_TO_TOP) {
-        CHECK_EVAL_BREAKER();
-        PATCH_JUMP(_JIT_TOP);
-    }
     switch (uopcode) {
 #include "executor_cases.c.h"
         default:
             Py_UNREACHABLE();
     }
-    PATCH_JUMP(_JIT_CONTINUE);
+    _PATCH_JUMP(_JIT_CONTINUE);
     // Labels that the instruction implementations expect to exist:
 
 error_tier_two:

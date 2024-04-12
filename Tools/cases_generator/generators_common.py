@@ -125,6 +125,10 @@ def replace_decrefs(
     next(tkn_iter)
     next(tkn_iter)
     out.emit_at("", tkn)
+    if uop.stack_cache_state is not None:
+        spilled_inputs, cached_inputs, _ = uop.analyze_stack_cache()
+        if cached_inputs:
+            out.emit(f"_cache_size = {uop.stack_cache_state - spilled_inputs - len(cached_inputs)};\n")
     for var in uop.stack.inputs:
         if var.name == "unused" or var.name == "null" or var.peek:
             continue

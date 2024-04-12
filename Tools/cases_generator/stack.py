@@ -61,8 +61,6 @@ class StackOffset:
 
     def simplify(self) -> None:
         "Remove matching values from both the popped and pushed list"
-        if not self.popped or not self.pushed:
-            return
         # Sort the list so the lexically largest element is last.
         popped = sorted(self.popped)
         pushed = sorted(self.pushed)
@@ -82,6 +80,8 @@ class StackOffset:
                 popped.append(pop)
         self.popped.extend(popped)
         self.pushed.extend(pushed)
+        self.popped.sort()
+        self.pushed.sort()
 
     def to_c(self) -> str:
         self.simplify()

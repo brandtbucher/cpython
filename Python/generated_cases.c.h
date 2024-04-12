@@ -5849,13 +5849,13 @@
             next_instr += 1;
             INSTRUCTION_STATS(UNPACK_EX);
             PyObject *seq;
+            PyObject **top;
             seq = stack_pointer[-1];
-            int totalargs = 1 + (oparg & 0xFF) + (oparg >> 8);
-            PyObject **top = stack_pointer + totalargs - 1;
+            top = &stack_pointer[(oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) goto pop_1_error;
-            stack_pointer += (oparg >> 8) + (oparg & 0xFF);
+            stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             DISPATCH();
         }
 
@@ -5867,6 +5867,7 @@
             _Py_CODEUNIT *this_instr = next_instr - 2;
             (void)this_instr;
             PyObject *seq;
+            PyObject **top;
             // _SPECIALIZE_UNPACK_SEQUENCE
             seq = stack_pointer[-1];
             {
@@ -5886,7 +5887,7 @@
             }
             // _UNPACK_SEQUENCE
             {
-                PyObject **top = stack_pointer + oparg - 1;
+                top = &stack_pointer[-1 + oparg];
                 int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
                 Py_DECREF(seq);
                 if (res == 0) goto pop_1_error;

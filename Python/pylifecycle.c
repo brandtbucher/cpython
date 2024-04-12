@@ -1270,7 +1270,7 @@ init_interp_main(PyThreadState *tstate)
         if (_Py_get_xoption(&config->xoptions, L"uops") != NULL) {
             enabled = 1;
         }
-        if (enabled) {
+        if (true) {
 #else
         // Always enable tier two for JIT builds (ignoring the environment
         // variable and command-line option above):
