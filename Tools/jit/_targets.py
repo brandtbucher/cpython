@@ -485,5 +485,5 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-fms-runtime-lib=dll"]
         return _COFF(host, ghccc=True, args=args)
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        return _ELF(host, ghccc=True)
+        return _ELF(host, ghccc=True)  # XXX
     raise ValueError(host)

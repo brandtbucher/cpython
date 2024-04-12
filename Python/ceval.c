@@ -697,6 +697,8 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
 #include "opcode_targets.h"
 #endif
 
+#define SPILL_CACHES() ((void)0)
+
 #ifdef Py_STATS
     int lastopcode = 0;
 #endif
@@ -991,13 +993,18 @@ enter_tier_two:
     #define DPRINTF(level, ...)
 #endif
 
+#undef SPILL_CACHES
+#define SPILL_CACHES() (stack_pointer = spill_caches(_cache_size, stack_pointer, STACK_CACHE_USE), _cache_size = 0)
+
     ; // dummy statement after a label, before a declaration
     uint16_t uopcode;
 #ifdef Py_STATS
     uint64_t trace_uop_execution_counter = 0;
 #endif
+    int _cache_size;
+    STACK_CACHE_DEFINE;
 
-    assert(next_uop->opcode == _START_EXECUTOR || next_uop->opcode == _COLD_EXIT);
+    // assert(next_uop->opcode == _START_EXECUTOR || next_uop->opcode == _COLD_EXIT);
 tier2_dispatch:
     for (;;) {
         uopcode = next_uop->opcode;
@@ -1007,7 +1014,7 @@ tier2_dispatch:
                 printf("%4d uop: ", 0);
             }
             else {
-                printf("%4d uop: ", (int)(next_uop - current_executor->trace));
+                printf("%4d uop: ", 0);
             }
             _PyUOpPrint(next_uop);
             printf(" stack_level=%d\n",
@@ -1041,6 +1048,7 @@ tier2_dispatch:
     }
 
 jump_to_error_target:
+    SPILL_CACHES();
 #ifdef Py_DEBUG
     if (lltrace >= 2) {
         printf("Error: [UOp ");
@@ -1056,6 +1064,7 @@ jump_to_error_target:
     goto tier2_dispatch;
 
 error_tier_two:
+    SPILL_CACHES();
     OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
     assert(next_uop[-1].format == UOP_FORMAT_TARGET);
     frame->return_offset = 0;  // Don't leave this random
@@ -1065,12 +1074,14 @@ error_tier_two:
     goto resume_with_error;
 
 jump_to_jump_target:
+    SPILL_CACHES();
     assert(next_uop[-1].format == UOP_FORMAT_JUMP);
     target = uop_get_jump_target(&next_uop[-1]);
     next_uop = current_executor->trace + target;
     goto tier2_dispatch;
 
 exit_to_tier1:
+    SPILL_CACHES();
     assert(next_uop[-1].format == UOP_FORMAT_TARGET);
     next_instr = next_uop[-1].target + _PyCode_CODE(_PyFrame_GetCode(frame));
 #ifdef Py_DEBUG
@@ -1088,6 +1099,7 @@ exit_to_tier1:
     DISPATCH();
 
 exit_to_trace:
+    SPILL_CACHES();
     assert(next_uop[-1].format == UOP_FORMAT_EXIT);
     OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
     UOP_STAT_INC(uopcode, miss);

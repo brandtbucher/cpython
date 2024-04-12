@@ -5,13 +5,13 @@
 #include "pycore_jit.h"
 
 _Py_CODEUNIT *
-_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate)
+_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate, STACK_CACHE_DECLARE)
 {
     PyAPI_DATA(void) _JIT_EXECUTOR;
     PyObject *executor = (PyObject *)(uint64_t)&_JIT_EXECUTOR;
     Py_INCREF(executor);
     PyAPI_DATA(void) _JIT_CONTINUE;
-    _Py_CODEUNIT *target = ((jit_func)&_JIT_CONTINUE)(frame, stack_pointer, tstate);
+    _Py_CODEUNIT *target = ((jit_func)&_JIT_CONTINUE)(frame, stack_pointer, tstate, STACK_CACHE_USE);
     Py_SETREF(tstate->previous_executor, executor);
     return target;
 }

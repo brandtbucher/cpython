@@ -419,7 +419,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
         code += group->code.body_size;
         data += group->data.body_size;
     }
-    assert(trace[0].opcode == _START_EXECUTOR || trace[0].opcode == _COLD_EXIT);
+    // assert(trace[0].opcode == _START_EXECUTOR || trace[0].opcode == _COLD_EXIT);
     for (size_t i = 0; i < length; i++) {
         _PyUOpInstruction *instruction = (_PyUOpInstruction *)&trace[i];
         const StencilGroup *group = &stencil_groups[instruction->opcode];
