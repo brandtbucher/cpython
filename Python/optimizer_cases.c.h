@@ -6609,27 +6609,27 @@
 
         /* _LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN is not a viable micro-op for tier 2 */
 
-        case _GUARD_DORV_VALUES: {
+        case _GUARD_DORV_NO_DICT: {
             break;
         }
 
-        case __R0__GUARD_DORV_VALUES: {
+        case __R0__GUARD_DORV_NO_DICT: {
             break;
         }
 
-        case __R1__GUARD_DORV_VALUES: {
+        case __R1__GUARD_DORV_NO_DICT: {
             break;
         }
 
-        case __R2__GUARD_DORV_VALUES: {
+        case __R2__GUARD_DORV_NO_DICT: {
             break;
         }
 
-        case __R3__GUARD_DORV_VALUES: {
+        case __R3__GUARD_DORV_NO_DICT: {
             break;
         }
 
-        case __R4__GUARD_DORV_VALUES: {
+        case __R4__GUARD_DORV_NO_DICT: {
             break;
         }
 
@@ -11418,6 +11418,30 @@
         }
 
         case __R4__SET_IP: {
+            break;
+        }
+
+        case _CHECK_STACK_SPACE_OPERAND: {
+            break;
+        }
+
+        case __R0__CHECK_STACK_SPACE_OPERAND: {
+            break;
+        }
+
+        case __R1__CHECK_STACK_SPACE_OPERAND: {
+            break;
+        }
+
+        case __R2__CHECK_STACK_SPACE_OPERAND: {
+            break;
+        }
+
+        case __R3__CHECK_STACK_SPACE_OPERAND: {
+            break;
+        }
+
+        case __R4__CHECK_STACK_SPACE_OPERAND: {
             break;
         }
 
