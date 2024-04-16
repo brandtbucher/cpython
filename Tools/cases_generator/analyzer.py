@@ -229,7 +229,7 @@ class Uop:
         return spilled_inputs, cached_inputs, cached_outputs
 
 
-STACK_CACHE_SIZE = 4
+STACK_CACHE_SIZE = 3
 
 def add_variants(uop: Uop, uops: dict[str, Uop]) -> None:
     for stack_cache_state in range(STACK_CACHE_SIZE + 1):
