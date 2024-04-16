@@ -237,8 +237,9 @@ def generate_tier2(
             out.emit(stack.pop(dataclasses.replace(var, name=name)))
         if not uop.properties.always_exits:
             stack.flush(out)
+            ghccc = ["r13", "rbp", "r12", "rbx", "r14", "rsi", "rdi", "r8", "r9", "r15"]
             for i in range(base + len(cached_outputs), STACK_CACHE_SIZE):
-                out.emit(f"CLOBBER_REGISTER(_{i});\n")
+                out.emit(f"CLOBBER_REGISTER(_{i}, {ghccc[i + 3]});\n")
             if uop.properties.ends_with_eval_breaker:
                 out.emit("CHECK_EVAL_BREAKER();\n")
             out.emit("break;\n")
