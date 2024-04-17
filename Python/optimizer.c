@@ -1228,6 +1228,9 @@ uop_optimize(
     /* Fix up */
     uint16_t cached = 0;
     for (int pc = 0; pc < length; pc++) {
+        if (buffer[pc].opcode == _NOP) {
+            continue;
+        }
         int opcode = _PyUop_StackCache[buffer[pc].opcode][cached][0];
         cached = _PyUop_StackCache[buffer[pc].opcode][cached][1];
         int oparg = buffer[pc].oparg;
@@ -1237,7 +1240,8 @@ uop_optimize(
         else if (oparg < _PyUop_Replication[opcode]) {
             opcode += 1 + oparg;
         }
-        else if (opcode == _JUMP_TO_TOP || opcode == _EXIT_TRACE) {
+        if (buffer[pc].opcode == _JUMP_TO_TOP || buffer[pc].opcode == _EXIT_TRACE) {
+            buffer[pc].opcode = opcode;
             break;
         }
         buffer[pc].opcode = opcode;

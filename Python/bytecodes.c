@@ -4068,6 +4068,7 @@ dummy_func(
         }
 
         op(_JUMP_TO_TOP, (--)) {
+            SPILL_CACHES();
 #ifndef _Py_JIT
             next_uop = &current_executor->trace[1];
             CHECK_EVAL_BREAKER();
