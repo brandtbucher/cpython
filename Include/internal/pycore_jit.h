@@ -14,7 +14,7 @@ extern "C" {
 #define STACK_CACHE_NULLS   NULL, NULL, NULL
 #define STACK_CACHE_USE     _0, _1, _2
 
-#ifdef _PyJIT_ACTIVE
+#if defined(_PyJIT_ACTIVE) && defined(_PyJIT_GHCCC)
 #define CLOBBER_REGISTER(R, N)            \
     do {                                  \
         register void *_reg __asm__ (#N); \
@@ -27,7 +27,7 @@ extern "C" {
     do {                       \
         (R) = NULL;            \
     } while(0)
-#endif  // _PyJIT_ACTIVE
+#endif
 
 #ifdef _Py_JIT
 

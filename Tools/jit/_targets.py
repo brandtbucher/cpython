@@ -139,7 +139,7 @@ class _Target(typing.Generic[_S, _R]):
         ]
         if self.ghccc:
             ll = tempdir / f"{opname}.ll"
-            args_ll = args + ["-S", "-emit-llvm", "-o", f"{ll}", f"{c}"]
+            args_ll = args + ["-D_PyJIT_GHCCC", "-S", "-emit-llvm", "-o", f"{ll}", f"{c}"]
             await _llvm.run("clang", args_ll, echo=self.verbose)
             ir = ll.read_text()
             # Hack! Use __attribute__((preserve_none)) once we have Clang 19:
