@@ -60,7 +60,7 @@ def generate_names_and_flags(analysis: Analysis, out: CWriter) -> None:
     out.emit("    return -1;\n")
     out.emit("}\n")
     out.emit("}\n\n")
-    out.emit(f"const uint16_t _PyUop_StackCache[MAX_UOP_ID+1][{STACK_CACHE_SIZE + 1}][2] = {{\n")
+    out.emit(f"const uint16_t _PyUop_StackCache[MAX_UOP_ID+1][{STACK_CACHE_SIZE + 1}][3] = {{\n")
     for uop in analysis.uops.values():
         if uop.is_viable() and uop.properties.tier != 1 and uop.stack_cache_state is not None:
             assert uop.name.startswith(f"__R{uop.stack_cache_state}_")
@@ -68,7 +68,7 @@ def generate_names_and_flags(analysis: Analysis, out: CWriter) -> None:
             size = uop.stack_cache_state
             spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
             new_size = size - spilled_inputs - len(cached_inputs) + len(cached_outputs)
-            out.emit(f"[{base}][{size}] = {{{uop.name}, {new_size}}},\n")
+            out.emit(f"[{base}][{size}] = {{{uop.name}, {new_size}, {size - spilled_inputs}}},\n")
     out.emit("};\n\n")
     out.emit("#endif // NEED_OPCODE_METADATA\n\n")
 
