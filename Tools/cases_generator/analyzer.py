@@ -195,37 +195,46 @@ class Uop:
         return False
 
     def analyze_stack_cache(self) -> tuple[int, list[StackItem], list[StackItem]]:
-        if self.stack_cache_state is None:
-            return 0, [], []
-        size = self.stack_cache_state
         def var_is_cacheable(var: StackItem) -> bool:
-            # XXX
-            return not var.is_array() and not var.condition and not var.type
+            # XXX: peek...
+            return not var.is_array() and not var.condition and not var.type and not var.peek
+
+        size = self.stack_cache_state
+        if size is None:
+            return 0, [], []
         # XXX
         if self.properties.stores_sp:
             return size, [], []
+
         cached_inputs = []
-        for _, var in zip(range(size), reversed(self.stack.inputs)):
+        for var in self.stack.inputs[::-1][:size]:
             if not var_is_cacheable(var):
                 break
             cached_inputs.append(var)
+
         cached_outputs = []
-        # XXX: Do this after computing spills?
-        for _, var in zip(range(size), reversed(self.stack.outputs)):
+        for var in self.stack.outputs[::-1][:STACK_CACHE_SIZE]:
             if not var_is_cacheable(var):
                 break
             cached_outputs.append(var)
+
+        # XXX
         spilled_inputs = 0
-        if (
-            len(cached_inputs) < len(self.stack.inputs)
-            or len(cached_outputs) < len(self.stack.outputs)
-            or size - len(cached_inputs) + len(cached_outputs) > STACK_CACHE_SIZE
-        ):
-            spilled_inputs = size - len(cached_inputs)
+        if size - spilled_inputs - len(cached_inputs) + len(cached_outputs) > STACK_CACHE_SIZE:
+            # XXX: Interaction with peek... size - len(cached_inputs)?
+            spilled_inputs = size
+            cached_inputs = []
+
+        if not all(map(var_is_cacheable, self.stack.inputs)) or not all(map(var_is_cacheable, self.stack.outputs)):
+            # XXX: Interaction with peek... size - len(cached_inputs)?
+            spilled_inputs = size
+            cached_inputs = []
+
         assert 0 <= size <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs - len(cached_inputs) <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs - len(cached_inputs) + len(cached_outputs) <= STACK_CACHE_SIZE
+
         return spilled_inputs, cached_inputs, cached_outputs
 
 
