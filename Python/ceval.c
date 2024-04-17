@@ -1050,7 +1050,6 @@ tier2_dispatch:
     }
 
 jump_to_error_target:
-    SPILL_CACHES();
 #ifdef Py_DEBUG
     if (lltrace >= 2) {
         printf("Error: [UOp ");
@@ -1076,7 +1075,6 @@ error_tier_two:
     goto resume_with_error;
 
 jump_to_jump_target:
-    SPILL_CACHES();
     assert(next_uop[-1].format == UOP_FORMAT_JUMP);
     target = uop_get_jump_target(&next_uop[-1]);
     next_uop = current_executor->trace + target;

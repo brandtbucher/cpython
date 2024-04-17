@@ -71,17 +71,11 @@ do {  \
     PyAPI_DATA(void) ALIAS;             \
     TYPE NAME = (TYPE)(uintptr_t)&ALIAS;
 
-#define _PATCH_JUMP(ALIAS)                                                    \
+#define PATCH_JUMP(ALIAS)                                                     \
 do {                                                                          \
     PyAPI_DATA(void) ALIAS;                                                   \
     __attribute__((musttail))                                                 \
     return ((jit_func)&ALIAS)(frame, stack_pointer, tstate, STACK_CACHE_USE); \
-} while (0)
-
-#define PATCH_JUMP(ALIAS) \
-do {                      \
-    SPILL_CACHES();       \
-    _PATCH_JUMP(ALIAS);   \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
@@ -120,7 +114,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
         default:
             Py_UNREACHABLE();
     }
-    _PATCH_JUMP(_JIT_CONTINUE);
+    PATCH_JUMP(_JIT_CONTINUE);
     // Labels that the instruction implementations expect to exist:
 
 error_tier_two:
