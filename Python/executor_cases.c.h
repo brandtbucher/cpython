@@ -10,22 +10,22 @@
 
         case __R0__NOP: {
             _cache_size = 0;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R1__NOP: {
             _cache_size = 1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R2__NOP: {
             _cache_size = 2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -36,9 +36,9 @@
 
         case _NOP: {
             _cache_size = 0;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -58,9 +58,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -80,8 +80,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -101,7 +101,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -140,9 +140,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -170,8 +170,8 @@
             }
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -189,7 +189,7 @@
             }
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -228,8 +228,8 @@
             }
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -248,9 +248,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -264,9 +264,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -279,8 +279,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -293,7 +293,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -322,8 +322,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -337,9 +337,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -352,8 +352,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -366,7 +366,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -395,8 +395,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -410,9 +410,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -425,8 +425,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -439,7 +439,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -468,8 +468,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -483,9 +483,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -498,8 +498,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -512,7 +512,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -541,8 +541,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -556,9 +556,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -571,8 +571,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -585,7 +585,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -614,8 +614,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -629,9 +629,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -644,8 +644,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -658,7 +658,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -687,8 +687,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -702,9 +702,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -717,8 +717,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -731,7 +731,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -760,8 +760,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -775,9 +775,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -790,8 +790,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -804,7 +804,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -833,8 +833,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -846,8 +846,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -859,7 +859,7 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -886,8 +886,8 @@
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -900,9 +900,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -914,8 +914,8 @@
             // do not use SETLOCAL here, it decrefs the old value
             GETLOCAL(oparg) = NULL;
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -927,7 +927,7 @@
             // do not use SETLOCAL here, it decrefs the old value
             GETLOCAL(oparg) = NULL;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -954,8 +954,8 @@
             // do not use SETLOCAL here, it decrefs the old value
             GETLOCAL(oparg) = NULL;
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -968,9 +968,9 @@
             GETLOCAL(oparg) = NULL;
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -981,8 +981,8 @@
             value = GETITEM(FRAME_CO_CONSTS, oparg);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -993,7 +993,7 @@
             value = GETITEM(FRAME_CO_CONSTS, oparg);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1018,8 +1018,8 @@
             value = GETITEM(FRAME_CO_CONSTS, oparg);
             Py_INCREF(value);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1031,9 +1031,9 @@
             Py_INCREF(value);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1045,9 +1045,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1059,9 +1059,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1072,9 +1072,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1085,8 +1085,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1097,7 +1097,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1109,9 +1109,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1123,9 +1123,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1136,9 +1136,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1149,8 +1149,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1161,7 +1161,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1173,9 +1173,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1187,9 +1187,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1200,9 +1200,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1213,8 +1213,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1225,7 +1225,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1237,9 +1237,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1251,9 +1251,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1264,9 +1264,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1277,8 +1277,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1289,7 +1289,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1301,9 +1301,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1315,9 +1315,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1328,9 +1328,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1341,8 +1341,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1353,7 +1353,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1365,9 +1365,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1379,9 +1379,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1392,9 +1392,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1405,8 +1405,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1417,7 +1417,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1429,9 +1429,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1443,9 +1443,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1456,9 +1456,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1469,8 +1469,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1481,7 +1481,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1493,9 +1493,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1507,9 +1507,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1520,9 +1520,9 @@
             assert(oparg == CURRENT_OPARG());
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1533,8 +1533,8 @@
             assert(oparg == CURRENT_OPARG());
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1545,7 +1545,7 @@
             assert(oparg == CURRENT_OPARG());
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1556,9 +1556,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1568,9 +1568,9 @@
             oparg = CURRENT_OPARG();
             value = _0;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1580,8 +1580,8 @@
             oparg = CURRENT_OPARG();
             value = _1;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1591,7 +1591,7 @@
             oparg = CURRENT_OPARG();
             value = _2;
             SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1602,9 +1602,9 @@
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1614,9 +1614,9 @@
             value = stack_pointer[-1];
             Py_DECREF(value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1625,9 +1625,9 @@
             _cache_size = 1;
             value = _0;
             Py_DECREF(value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1636,8 +1636,8 @@
             _cache_size = 2;
             value = _1;
             Py_DECREF(value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1646,7 +1646,7 @@
             _cache_size = 3;
             value = _2;
             Py_DECREF(value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1656,9 +1656,9 @@
             value = stack_pointer[-1];
             Py_DECREF(value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1667,8 +1667,8 @@
             _cache_size = 0;
             res = NULL;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1677,7 +1677,7 @@
             _cache_size = 1;
             res = NULL;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1698,8 +1698,8 @@
             stack_pointer += 3;
             res = NULL;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1709,9 +1709,9 @@
             res = NULL;
             stack_pointer[0] = res;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1724,8 +1724,8 @@
             Py_DECREF(receiver);
             _0 = value;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1738,8 +1738,8 @@
             Py_DECREF(receiver);
             _0 = value;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1751,8 +1751,8 @@
             receiver = _0;
             Py_DECREF(receiver);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1764,7 +1764,7 @@
             receiver = _1;
             Py_DECREF(receiver);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1777,9 +1777,9 @@
             Py_DECREF(receiver);
             stack_pointer[-2] = value;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1793,8 +1793,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1807,8 +1807,8 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1821,7 +1821,7 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1846,9 +1846,9 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1861,8 +1861,8 @@
             res = Py_IsFalse(value) ? Py_True : Py_False;
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1874,8 +1874,8 @@
             assert(PyBool_Check(value));
             res = Py_IsFalse(value) ? Py_True : Py_False;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1887,7 +1887,7 @@
             assert(PyBool_Check(value));
             res = Py_IsFalse(value) ? Py_True : Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1910,9 +1910,9 @@
             assert(PyBool_Check(value));
             res = Py_IsFalse(value) ? Py_True : Py_False;
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1926,9 +1926,9 @@
             if (err < 0) JUMP_TO_ERROR();
             res = err ? Py_True : Py_False;
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1943,8 +1943,8 @@
             res = err ? Py_True : Py_False;
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1958,8 +1958,8 @@
             if (err < 0) JUMP_TO_ERROR();
             res = err ? Py_True : Py_False;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -1973,7 +1973,7 @@
             if (err < 0) JUMP_TO_ERROR();
             res = err ? Py_True : Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2001,8 +2001,8 @@
             STAT_INC(TO_BOOL, hit);
             _0 = value;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2016,8 +2016,8 @@
             }
             STAT_INC(TO_BOOL, hit);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2031,7 +2031,7 @@
             }
             STAT_INC(TO_BOOL, hit);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2057,9 +2057,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             STAT_INC(TO_BOOL, hit);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2083,8 +2083,8 @@
             }
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2107,8 +2107,8 @@
                 res = Py_True;
             }
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2131,7 +2131,7 @@
                 res = Py_True;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2176,9 +2176,9 @@
                 res = Py_True;
             }
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2196,8 +2196,8 @@
             Py_DECREF(value);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2214,8 +2214,8 @@
             res = Py_SIZE(value) ? Py_True : Py_False;
             Py_DECREF(value);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2232,7 +2232,7 @@
             res = Py_SIZE(value) ? Py_True : Py_False;
             Py_DECREF(value);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2265,9 +2265,9 @@
             res = Py_SIZE(value) ? Py_True : Py_False;
             Py_DECREF(value);
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2285,8 +2285,8 @@
             res = Py_False;
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2303,8 +2303,8 @@
             STAT_INC(TO_BOOL, hit);
             res = Py_False;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2321,7 +2321,7 @@
             STAT_INC(TO_BOOL, hit);
             res = Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2354,9 +2354,9 @@
             STAT_INC(TO_BOOL, hit);
             res = Py_False;
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2381,8 +2381,8 @@
             }
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2406,8 +2406,8 @@
                 res = Py_True;
             }
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2431,7 +2431,7 @@
                 res = Py_True;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2478,9 +2478,9 @@
                 res = Py_True;
             }
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2492,9 +2492,9 @@
             Py_DECREF(value);
             res = Py_True;
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2507,8 +2507,8 @@
             res = Py_True;
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2520,8 +2520,8 @@
             Py_DECREF(value);
             res = Py_True;
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2533,7 +2533,7 @@
             Py_DECREF(value);
             res = Py_True;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2558,8 +2558,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2572,8 +2572,8 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2586,7 +2586,7 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2611,9 +2611,9 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2631,9 +2631,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2654,7 +2654,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2675,7 +2675,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2695,7 +2695,7 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2732,9 +2732,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2752,8 +2752,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2771,8 +2771,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2789,8 +2789,8 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2807,7 +2807,7 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2825,9 +2825,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2845,8 +2845,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2864,8 +2864,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2882,8 +2882,8 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2900,7 +2900,7 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2918,9 +2918,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2938,8 +2938,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2957,8 +2957,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2975,8 +2975,8 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -2993,7 +2993,7 @@
             _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3011,9 +3011,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3034,7 +3034,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3055,7 +3055,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3075,7 +3075,7 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3112,9 +3112,9 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3132,8 +3132,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3151,8 +3151,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3169,8 +3169,8 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3187,7 +3187,7 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3205,9 +3205,9 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3225,8 +3225,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3244,8 +3244,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3262,8 +3262,8 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3280,7 +3280,7 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3298,9 +3298,9 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3318,8 +3318,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3337,8 +3337,8 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3355,8 +3355,8 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3373,7 +3373,7 @@
             ((PyFloatObject *)right)->ob_fval;
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3391,9 +3391,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3414,7 +3414,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3435,7 +3435,7 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3455,7 +3455,7 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3492,9 +3492,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3512,8 +3512,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3531,8 +3531,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3549,8 +3549,8 @@
             _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3567,7 +3567,7 @@
             _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3584,9 +3584,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3603,8 +3603,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3621,8 +3621,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3638,8 +3638,8 @@
             Py_DECREF(sub);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3655,7 +3655,7 @@
             Py_DECREF(sub);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3682,8 +3682,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3710,8 +3710,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3738,8 +3738,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3765,8 +3765,8 @@
             Py_DECREF(container);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3793,9 +3793,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3822,9 +3822,9 @@
             Py_DECREF(container);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -4;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3851,9 +3851,9 @@
             Py_DECREF(container);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3880,9 +3880,9 @@
             Py_DECREF(container);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3909,9 +3909,9 @@
             Py_DECREF(container);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3938,9 +3938,9 @@
             Py_DECREF(container);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -4;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -3977,8 +3977,8 @@
             Py_DECREF(list);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4015,8 +4015,8 @@
             Py_DECREF(list);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4052,8 +4052,8 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4089,7 +4089,7 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4126,9 +4126,9 @@
             Py_DECREF(list);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4168,8 +4168,8 @@
             Py_DECREF(str);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4209,8 +4209,8 @@
             Py_DECREF(str);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4249,8 +4249,8 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(str);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4289,7 +4289,7 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(str);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4329,9 +4329,9 @@
             Py_DECREF(str);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4368,8 +4368,8 @@
             Py_DECREF(tuple);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4406,8 +4406,8 @@
             Py_DECREF(tuple);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4443,8 +4443,8 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(tuple);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4480,7 +4480,7 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(tuple);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4517,9 +4517,9 @@
             Py_DECREF(tuple);
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4545,8 +4545,8 @@
             // not found or error
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4572,8 +4572,8 @@
             // not found or error
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4598,8 +4598,8 @@
             if (rc <= 0) JUMP_TO_ERROR();
             // not found or error
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4624,7 +4624,7 @@
             if (rc <= 0) JUMP_TO_ERROR();
             // not found or error
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4650,9 +4650,9 @@
             // not found or error
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4675,9 +4675,9 @@
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4692,9 +4692,9 @@
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4710,9 +4710,9 @@
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4729,9 +4729,9 @@
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4744,9 +4744,9 @@
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4761,9 +4761,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4780,9 +4780,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4800,9 +4800,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4821,9 +4821,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4838,9 +4838,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4859,9 +4859,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4880,9 +4880,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4901,9 +4901,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4922,9 +4922,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4942,9 +4942,9 @@
             Py_DECREF(container);
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -4983,9 +4983,9 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5024,9 +5024,9 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5065,9 +5065,9 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5105,9 +5105,9 @@
             Py_DECREF(old_value);
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5146,9 +5146,9 @@
             _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
             Py_DECREF(list);
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5169,9 +5169,9 @@
             Py_DECREF(dict);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5192,9 +5192,9 @@
             Py_DECREF(dict);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5215,9 +5215,9 @@
             Py_DECREF(dict);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5237,9 +5237,9 @@
             int err = _PyDict_SetItem_Take2((PyDictObject *)dict, sub, value);
             Py_DECREF(dict);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5260,9 +5260,9 @@
             Py_DECREF(dict);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -3;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5278,9 +5278,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5296,9 +5296,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5313,9 +5313,9 @@
             Py_DECREF(container);
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5330,8 +5330,8 @@
             Py_DECREF(container);
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5347,9 +5347,9 @@
             Py_DECREF(sub);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5365,8 +5365,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5381,8 +5381,8 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5397,7 +5397,7 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5426,9 +5426,9 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5447,8 +5447,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5467,8 +5467,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5486,8 +5486,8 @@
             Py_DECREF(value1);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5505,7 +5505,7 @@
             Py_DECREF(value1);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5524,9 +5524,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5554,9 +5554,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5584,9 +5584,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5616,9 +5616,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5649,9 +5649,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5683,9 +5683,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5741,8 +5741,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5777,8 +5777,8 @@
                 if (true) JUMP_TO_ERROR();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5813,7 +5813,7 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5882,9 +5882,9 @@
                 if (true) JUMP_TO_ERROR();
             }
             stack_pointer[-1] = iter;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5934,7 +5934,7 @@
             _1 = awaitable;
             _0 = aiter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -5983,7 +5983,7 @@
             }
             _1 = awaitable;
             _0 = aiter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6085,7 +6085,7 @@
             _1 = awaitable;
             _0 = aiter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6134,9 +6134,9 @@
             }
             stack_pointer[0] = awaitable;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6167,8 +6167,8 @@
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6198,8 +6198,8 @@
             }
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6229,7 +6229,7 @@
             }
             if (iter == NULL) JUMP_TO_ERROR();
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6288,9 +6288,9 @@
             }
             if (iter == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = iter;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6331,9 +6331,9 @@
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6343,9 +6343,9 @@
             exc_value = _0;
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6355,8 +6355,8 @@
             exc_value = _1;
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6366,7 +6366,7 @@
             exc_value = _2;
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6377,9 +6377,9 @@
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6388,8 +6388,8 @@
             _cache_size = 0;
             value = Py_NewRef(PyExc_AssertionError);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6398,7 +6398,7 @@
             _cache_size = 1;
             value = Py_NewRef(PyExc_AssertionError);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6419,8 +6419,8 @@
             stack_pointer += 3;
             value = Py_NewRef(PyExc_AssertionError);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6430,9 +6430,9 @@
             value = Py_NewRef(PyExc_AssertionError);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6446,8 +6446,8 @@
                 if (true) JUMP_TO_ERROR();
             }
             _0 = bc;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6461,7 +6461,7 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = bc;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6492,8 +6492,8 @@
                 if (true) JUMP_TO_ERROR();
             }
             _0 = bc;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6508,9 +6508,9 @@
             }
             stack_pointer[0] = bc;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6535,9 +6535,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6561,9 +6561,9 @@
             err = PyObject_SetItem(ns, name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6587,8 +6587,8 @@
             err = PyObject_SetItem(ns, name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6612,7 +6612,7 @@
             err = PyObject_SetItem(ns, name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6637,9 +6637,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6662,9 +6662,9 @@
                     name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6687,8 +6687,8 @@
                     name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6711,7 +6711,7 @@
                     name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6756,9 +6756,9 @@
                     name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6773,9 +6773,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6790,9 +6790,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6809,9 +6809,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6829,9 +6829,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6850,9 +6850,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6879,7 +6879,7 @@
             _1 = val0;
             _0 = val1;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6905,7 +6905,7 @@
             Py_DECREF(seq);
             _1 = val0;
             _0 = val1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6961,7 +6961,7 @@
             _1 = val0;
             _0 = val1;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -6988,9 +6988,9 @@
             stack_pointer[-1] = val1;
             stack_pointer[0] = val0;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7016,9 +7016,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7046,9 +7046,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7077,9 +7077,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7109,9 +7109,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7137,9 +7137,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7165,9 +7165,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7195,9 +7195,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7226,9 +7226,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7258,9 +7258,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7286,9 +7286,9 @@
             }
             Py_DECREF(seq);
             stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7303,9 +7303,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7322,9 +7322,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7342,9 +7342,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7363,9 +7363,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7380,9 +7380,9 @@
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7399,9 +7399,9 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7418,9 +7418,9 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7437,9 +7437,9 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7455,9 +7455,9 @@
             Py_DECREF(v);
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7473,8 +7473,8 @@
             Py_DECREF(v);
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7488,9 +7488,9 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7503,9 +7503,9 @@
             int err = PyObject_DelAttr(owner, name);
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7518,8 +7518,8 @@
             int err = PyObject_DelAttr(owner, name);
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7532,7 +7532,7 @@
             int err = PyObject_DelAttr(owner, name);
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7546,9 +7546,9 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7562,9 +7562,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7577,9 +7577,9 @@
             int err = PyDict_SetItem(GLOBALS(), name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7592,8 +7592,8 @@
             int err = PyDict_SetItem(GLOBALS(), name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7606,7 +7606,7 @@
             int err = PyDict_SetItem(GLOBALS(), name, v);
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7620,9 +7620,9 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7640,9 +7640,9 @@
                     NAME_ERROR_MSG, name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7660,8 +7660,8 @@
                     NAME_ERROR_MSG, name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7679,7 +7679,7 @@
                     NAME_ERROR_MSG, name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7714,9 +7714,9 @@
                     NAME_ERROR_MSG, name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7731,8 +7731,8 @@
             }
             Py_INCREF(locals);
             _0 = locals;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7747,7 +7747,7 @@
             }
             Py_INCREF(locals);
             _1 = locals;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7780,8 +7780,8 @@
             }
             Py_INCREF(locals);
             _0 = locals;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7797,9 +7797,9 @@
             Py_INCREF(locals);
             stack_pointer[0] = locals;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7832,8 +7832,8 @@
             Py_DECREF(mod_or_class_dict);
             _0 = v;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7865,8 +7865,8 @@
             }
             Py_DECREF(mod_or_class_dict);
             _0 = v;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7898,7 +7898,7 @@
             }
             Py_DECREF(mod_or_class_dict);
             _1 = v;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -7961,9 +7961,9 @@
             }
             Py_DECREF(mod_or_class_dict);
             stack_pointer[-1] = v;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8018,9 +8018,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8065,9 +8065,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8114,9 +8114,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8164,9 +8164,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8215,9 +8215,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8234,9 +8234,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8253,9 +8253,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8272,8 +8272,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8290,7 +8290,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8323,9 +8323,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8342,9 +8342,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8361,8 +8361,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8379,7 +8379,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8418,9 +8418,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8443,9 +8443,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8470,9 +8470,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8498,9 +8498,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8527,9 +8527,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8552,9 +8552,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8577,9 +8577,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8604,9 +8604,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8632,9 +8632,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8661,9 +8661,9 @@
             stack_pointer[0] = res;
             if (oparg & 1) stack_pointer[1] = null;
             stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8679,9 +8679,9 @@
                 if (1) JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, NULL);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8697,8 +8697,8 @@
                 if (1) JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, NULL);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8714,7 +8714,7 @@
                 if (1) JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, NULL);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8745,9 +8745,9 @@
                 if (1) JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, NULL);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8762,9 +8762,9 @@
                 JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, cell);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8779,8 +8779,8 @@
                 JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, cell);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8795,7 +8795,7 @@
                 JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, cell);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8824,9 +8824,9 @@
                 JUMP_TO_ERROR();
             }
             SETLOCAL(oparg, cell);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8842,9 +8842,9 @@
                 JUMP_TO_ERROR();
             }
             Py_DECREF(oldobj);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8860,8 +8860,8 @@
                 JUMP_TO_ERROR();
             }
             Py_DECREF(oldobj);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8877,7 +8877,7 @@
                 JUMP_TO_ERROR();
             }
             Py_DECREF(oldobj);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8908,9 +8908,9 @@
                 JUMP_TO_ERROR();
             }
             Py_DECREF(oldobj);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8938,8 +8938,8 @@
             Py_DECREF(class_dict);
             _0 = value;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8966,8 +8966,8 @@
             }
             Py_DECREF(class_dict);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -8994,7 +8994,7 @@
             }
             Py_DECREF(class_dict);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9047,9 +9047,9 @@
             }
             Py_DECREF(class_dict);
             stack_pointer[-1] = value;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9064,8 +9064,8 @@
                 if (true) JUMP_TO_ERROR();
             }
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9080,7 +9080,7 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9113,8 +9113,8 @@
                 if (true) JUMP_TO_ERROR();
             }
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9130,9 +9130,9 @@
             }
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9144,9 +9144,9 @@
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9157,9 +9157,9 @@
             v = _0;
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9170,8 +9170,8 @@
             v = _1;
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9182,7 +9182,7 @@
             v = _2;
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9194,9 +9194,9 @@
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9213,9 +9213,9 @@
                 PyObject *o = PyTuple_GET_ITEM(closure, i);
                 frame->localsplus[offset + i] = Py_NewRef(o);
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9232,8 +9232,8 @@
                 PyObject *o = PyTuple_GET_ITEM(closure, i);
                 frame->localsplus[offset + i] = Py_NewRef(o);
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9250,7 +9250,7 @@
                 PyObject *o = PyTuple_GET_ITEM(closure, i);
                 frame->localsplus[offset + i] = Py_NewRef(o);
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9283,9 +9283,9 @@
                 PyObject *o = PyTuple_GET_ITEM(closure, i);
                 frame->localsplus[offset + i] = Py_NewRef(o);
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9302,8 +9302,8 @@
             if (str == NULL) JUMP_TO_ERROR();
             _0 = str;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9322,8 +9322,8 @@
             if (str == NULL) JUMP_TO_ERROR();
             _0 = str;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9343,8 +9343,8 @@
             if (str == NULL) JUMP_TO_ERROR();
             _0 = str;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9365,8 +9365,8 @@
             if (str == NULL) JUMP_TO_ERROR();
             _0 = str;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9383,9 +9383,9 @@
             if (str == NULL) JUMP_TO_ERROR();
             stack_pointer[-oparg] = str;
             stack_pointer += 1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9399,8 +9399,8 @@
             if (tup == NULL) JUMP_TO_ERROR();
             _0 = tup;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9416,8 +9416,8 @@
             if (tup == NULL) JUMP_TO_ERROR();
             _0 = tup;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9434,8 +9434,8 @@
             if (tup == NULL) JUMP_TO_ERROR();
             _0 = tup;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9453,8 +9453,8 @@
             if (tup == NULL) JUMP_TO_ERROR();
             _0 = tup;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9468,9 +9468,9 @@
             if (tup == NULL) JUMP_TO_ERROR();
             stack_pointer[-oparg] = tup;
             stack_pointer += 1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9484,8 +9484,8 @@
             if (list == NULL) JUMP_TO_ERROR();
             _0 = list;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9501,8 +9501,8 @@
             if (list == NULL) JUMP_TO_ERROR();
             _0 = list;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9519,8 +9519,8 @@
             if (list == NULL) JUMP_TO_ERROR();
             _0 = list;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9538,8 +9538,8 @@
             if (list == NULL) JUMP_TO_ERROR();
             _0 = list;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9553,9 +9553,9 @@
             if (list == NULL) JUMP_TO_ERROR();
             stack_pointer[-oparg] = list;
             stack_pointer += 1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9582,9 +9582,9 @@
             assert(Py_IsNone(none_val));
             Py_DECREF(iterable);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9613,9 +9613,9 @@
             assert(Py_IsNone(none_val));
             Py_DECREF(iterable);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9645,9 +9645,9 @@
             assert(Py_IsNone(none_val));
             Py_DECREF(iterable);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9678,9 +9678,9 @@
             assert(Py_IsNone(none_val));
             Py_DECREF(iterable);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9707,9 +9707,9 @@
             assert(Py_IsNone(none_val));
             Py_DECREF(iterable);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9724,9 +9724,9 @@
             Py_DECREF(iterable);
             if (err < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9743,9 +9743,9 @@
             Py_DECREF(iterable);
             if (err < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9763,9 +9763,9 @@
             Py_DECREF(iterable);
             if (err < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9784,9 +9784,9 @@
             Py_DECREF(iterable);
             if (err < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9801,9 +9801,9 @@
             Py_DECREF(iterable);
             if (err < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9833,8 +9833,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -oparg*2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9856,8 +9856,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -oparg*2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9880,8 +9880,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -oparg*2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9905,8 +9905,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -oparg*2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9926,9 +9926,9 @@
             if (map == NULL) JUMP_TO_ERROR();
             stack_pointer[-oparg*2] = map;
             stack_pointer += 1 - oparg*2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9954,9 +9954,9 @@
             else {
                 Py_DECREF(ann_dict);
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -9982,8 +9982,8 @@
             else {
                 Py_DECREF(ann_dict);
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10009,7 +10009,7 @@
             else {
                 Py_DECREF(ann_dict);
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10060,9 +10060,9 @@
             else {
                 Py_DECREF(ann_dict);
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10086,8 +10086,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10113,8 +10113,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10141,8 +10141,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10170,8 +10170,8 @@
             if (map == NULL) JUMP_TO_ERROR();
             _0 = map;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10195,9 +10195,9 @@
             if (map == NULL) JUMP_TO_ERROR();
             stack_pointer[-1 - oparg] = map;
             stack_pointer += -oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10219,9 +10219,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10245,9 +10245,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10272,9 +10272,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10300,9 +10300,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10324,9 +10324,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10346,9 +10346,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10370,9 +10370,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10395,9 +10395,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10421,9 +10421,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10443,9 +10443,9 @@
             }
             Py_DECREF(update);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10463,9 +10463,9 @@
             // Do not DECREF INPUTS because the function steals the references
             if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10485,9 +10485,9 @@
             // Do not DECREF INPUTS because the function steals the references
             if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10508,9 +10508,9 @@
             // Do not DECREF INPUTS because the function steals the references
             if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10532,9 +10532,9 @@
             // Do not DECREF INPUTS because the function steals the references
             if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10552,9 +10552,9 @@
             // Do not DECREF INPUTS because the function steals the references
             if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10596,9 +10596,9 @@
             if (attr == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10632,9 +10632,9 @@
             if (attr == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10669,9 +10669,9 @@
             if (attr == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10707,9 +10707,9 @@
             if (attr == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10741,9 +10741,9 @@
             if (attr == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10788,7 +10788,7 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10833,7 +10833,7 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10878,7 +10878,7 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10922,7 +10922,7 @@
             }
             _1 = self_or_null;
             _0 = attr;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -10967,9 +10967,9 @@
             stack_pointer[-3] = attr;
             stack_pointer[-2] = self_or_null;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11013,9 +11013,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = self_or_null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11059,9 +11059,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = self_or_null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11107,9 +11107,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = self_or_null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11156,9 +11156,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = self_or_null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11206,9 +11206,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = self_or_null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11223,9 +11223,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11242,8 +11242,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11259,8 +11259,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11276,7 +11276,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11305,9 +11305,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11323,8 +11323,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11339,8 +11339,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11355,7 +11355,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11391,9 +11391,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11415,9 +11415,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11441,9 +11441,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11468,9 +11468,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11496,9 +11496,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11522,9 +11522,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11548,9 +11548,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11576,9 +11576,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11605,9 +11605,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11635,9 +11635,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11666,9 +11666,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11689,8 +11689,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11710,8 +11710,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11731,7 +11731,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11778,9 +11778,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11808,9 +11808,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11840,9 +11840,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11873,9 +11873,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11907,9 +11907,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11925,9 +11925,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(PyDict_CheckExact((PyObject *)dict));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11945,8 +11945,8 @@
             assert(PyDict_CheckExact((PyObject *)dict));
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11963,8 +11963,8 @@
             }
             assert(PyDict_CheckExact((PyObject *)dict));
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -11981,7 +11981,7 @@
             }
             assert(PyDict_CheckExact((PyObject *)dict));
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12043,9 +12043,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12091,9 +12091,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12141,9 +12141,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12192,9 +12192,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12244,9 +12244,9 @@
             stack_pointer[-1] = attr;
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12269,9 +12269,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12294,9 +12294,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12321,9 +12321,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12349,9 +12349,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12378,9 +12378,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12405,9 +12405,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12432,9 +12432,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12461,9 +12461,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12491,9 +12491,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12522,9 +12522,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12552,9 +12552,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12574,8 +12574,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12594,8 +12594,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12614,7 +12614,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12650,9 +12650,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12670,9 +12670,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12692,9 +12692,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12715,9 +12715,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12739,9 +12739,9 @@
             null = NULL;
             Py_DECREF(owner);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12761,9 +12761,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12783,9 +12783,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12807,9 +12807,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12832,9 +12832,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12858,9 +12858,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = null;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12908,9 +12908,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12930,8 +12930,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12950,8 +12950,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -12970,7 +12970,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13012,9 +13012,9 @@
             }
             Py_DECREF(owner);
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13038,9 +13038,9 @@
             }
             Py_DECREF(owner);
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13064,9 +13064,9 @@
             }
             Py_DECREF(owner);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13089,9 +13089,9 @@
                 Py_DECREF(old_value);
             }
             Py_DECREF(owner);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13114,8 +13114,8 @@
                 Py_DECREF(old_value);
             }
             Py_DECREF(owner);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13143,9 +13143,9 @@
             Py_XDECREF(old_value);
             Py_DECREF(owner);
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13163,9 +13163,9 @@
             Py_XDECREF(old_value);
             Py_DECREF(owner);
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13183,9 +13183,9 @@
             Py_XDECREF(old_value);
             Py_DECREF(owner);
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13202,9 +13202,9 @@
             *(PyObject **)addr = value;
             Py_XDECREF(old_value);
             Py_DECREF(owner);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13221,8 +13221,8 @@
             *(PyObject **)addr = value;
             Py_XDECREF(old_value);
             Py_DECREF(owner);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13247,9 +13247,9 @@
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13274,8 +13274,8 @@
             }
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13300,8 +13300,8 @@
             }
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13325,8 +13325,8 @@
                 res = res_bool ? Py_True : Py_False;
             }
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13350,7 +13350,7 @@
                 res = res_bool ? Py_True : Py_False;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13373,9 +13373,9 @@
             // It's always a bool, so we don't care about oparg & 16.
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13398,8 +13398,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13422,8 +13422,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13445,8 +13445,8 @@
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13468,7 +13468,7 @@
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13501,9 +13501,9 @@
             // It's always a bool, so we don't care about oparg & 16.
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13536,8 +13536,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13570,8 +13570,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13603,8 +13603,8 @@
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13636,7 +13636,7 @@
             res = (sign_ish & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13660,9 +13660,9 @@
             // It's always a bool, so we don't care about oparg & 16.
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13686,8 +13686,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13711,8 +13711,8 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13735,8 +13735,8 @@
             res = ((COMPARISON_NOT_EQUALS + eq) & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13759,7 +13759,7 @@
             res = ((COMPARISON_NOT_EQUALS + eq) & oparg) ? Py_True : Py_False;
             // It's always a bool, so we don't care about oparg & 16.
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13777,8 +13777,8 @@
             b = res ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13796,8 +13796,8 @@
             b = res ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13814,8 +13814,8 @@
             Py_DECREF(right);
             b = res ? Py_True : Py_False;
             _0 = b;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13832,7 +13832,7 @@
             Py_DECREF(right);
             b = res ? Py_True : Py_False;
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13850,9 +13850,9 @@
             b = res ? Py_True : Py_False;
             stack_pointer[-2] = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13871,9 +13871,9 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             stack_pointer[-2] = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13892,8 +13892,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13912,8 +13912,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13931,8 +13931,8 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13950,7 +13950,7 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -13975,8 +13975,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14001,8 +14001,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14026,8 +14026,8 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14051,7 +14051,7 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14076,9 +14076,9 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             stack_pointer[-2] = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14102,8 +14102,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14127,8 +14127,8 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14151,8 +14151,8 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14175,7 +14175,7 @@
             if (res < 0) JUMP_TO_ERROR();
             b = (res ^ oparg) ? Py_True : Py_False;
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14199,9 +14199,9 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             stack_pointer[-2] = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14233,7 +14233,7 @@
             _1 = match;
             _0 = rest;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14265,7 +14265,7 @@
             _1 = match;
             _0 = rest;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14296,7 +14296,7 @@
             }
             _1 = match;
             _0 = rest;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14357,9 +14357,9 @@
             }
             stack_pointer[-2] = rest;
             stack_pointer[-1] = match;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14381,7 +14381,7 @@
             _1 = b;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14403,7 +14403,7 @@
             _1 = b;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14424,7 +14424,7 @@
             b = res ? Py_True : Py_False;
             _1 = b;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14464,9 +14464,9 @@
             Py_DECREF(right);
             b = res ? Py_True : Py_False;
             stack_pointer[-1] = b;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14503,9 +14503,9 @@
                 Py_DECREF(value);
             }
             stack_pointer[-1] = b;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14523,8 +14523,8 @@
             }
             _0 = b;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14541,8 +14541,8 @@
                 Py_DECREF(value);
             }
             _0 = b;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14559,7 +14559,7 @@
                 Py_DECREF(value);
             }
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14592,7 +14592,7 @@
             _1 = len_o;
             _0 = obj;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14608,7 +14608,7 @@
             if (len_o == NULL) JUMP_TO_ERROR();
             _1 = len_o;
             _0 = obj;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14644,7 +14644,7 @@
             _1 = len_o;
             _0 = obj;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14660,9 +14660,9 @@
             if (len_o == NULL) JUMP_TO_ERROR();
             stack_pointer[0] = len_o;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14693,8 +14693,8 @@
             }
             _0 = attrs;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14725,8 +14725,8 @@
             }
             _0 = attrs;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14757,8 +14757,8 @@
             }
             _0 = attrs;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14788,8 +14788,8 @@
                 attrs = Py_None;  // Failure!
             }
             _0 = attrs;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14820,9 +14820,9 @@
             }
             stack_pointer[-3] = attrs;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14836,7 +14836,7 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14849,7 +14849,7 @@
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14879,7 +14879,7 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14892,9 +14892,9 @@
             res = match ? Py_True : Py_False;
             stack_pointer[0] = res;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14908,7 +14908,7 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14921,7 +14921,7 @@
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14951,7 +14951,7 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -14964,9 +14964,9 @@
             res = match ? Py_True : Py_False;
             stack_pointer[0] = res;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15053,9 +15053,9 @@
             if (values_or_none == NULL) JUMP_TO_ERROR();
             stack_pointer[0] = values_or_none;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15070,8 +15070,8 @@
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15085,8 +15085,8 @@
             Py_DECREF(iterable);
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15100,7 +15100,7 @@
             Py_DECREF(iterable);
             if (iter == NULL) JUMP_TO_ERROR();
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15127,9 +15127,9 @@
             Py_DECREF(iterable);
             if (iter == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = iter;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15164,8 +15164,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15199,8 +15199,8 @@
                 Py_DECREF(iterable);
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15234,7 +15234,7 @@
                 Py_DECREF(iterable);
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15301,9 +15301,9 @@
                 Py_DECREF(iterable);
             }
             stack_pointer[-1] = iter;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15343,9 +15343,9 @@
             // Common case: no jump, leave it to the code generator
             stack_pointer[0] = next;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15376,7 +15376,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15406,7 +15406,7 @@
             // Common case: no jump, leave it to the code generator
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15470,7 +15470,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15492,9 +15492,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15508,8 +15508,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15522,8 +15522,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15536,7 +15536,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15577,9 +15577,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15600,8 +15600,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15621,8 +15621,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15642,7 +15642,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15678,9 +15678,9 @@
             next = Py_NewRef(PyList_GET_ITEM(seq, it->it_index++));
             stack_pointer[0] = next;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15698,7 +15698,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15715,7 +15715,7 @@
             next = Py_NewRef(PyList_GET_ITEM(seq, it->it_index++));
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15753,7 +15753,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15765,9 +15765,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15781,8 +15781,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15795,8 +15795,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15809,7 +15809,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15850,9 +15850,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15873,8 +15873,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15894,8 +15894,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15915,7 +15915,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15951,9 +15951,9 @@
             next = Py_NewRef(PyTuple_GET_ITEM(seq, it->it_index++));
             stack_pointer[0] = next;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15971,7 +15971,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -15988,7 +15988,7 @@
             next = Py_NewRef(PyTuple_GET_ITEM(seq, it->it_index++));
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16026,7 +16026,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16039,9 +16039,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16056,8 +16056,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16071,8 +16071,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16086,7 +16086,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16123,9 +16123,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16141,8 +16141,8 @@
             }
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16157,8 +16157,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = iter;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16173,7 +16173,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16206,9 +16206,9 @@
             if (next == NULL) JUMP_TO_ERROR();
             stack_pointer[0] = next;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16228,7 +16228,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16247,7 +16247,7 @@
             if (next == NULL) JUMP_TO_ERROR();
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16289,7 +16289,7 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16517,9 +16517,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[0] = res;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16540,7 +16540,7 @@
             _1 = new_exc;
             _0 = prev_exc;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16560,7 +16560,7 @@
             exc_info->exc_value = Py_NewRef(new_exc);
             _1 = new_exc;
             _0 = prev_exc;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16604,7 +16604,7 @@
             _1 = new_exc;
             _0 = prev_exc;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16625,9 +16625,9 @@
             stack_pointer[-1] = prev_exc;
             stack_pointer[0] = new_exc;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16640,9 +16640,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16657,8 +16657,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16672,8 +16672,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16687,7 +16687,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16715,9 +16715,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16734,8 +16734,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16751,8 +16751,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16768,7 +16768,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16805,9 +16805,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16829,9 +16829,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16855,9 +16855,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16882,9 +16882,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16910,9 +16910,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16934,9 +16934,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16958,9 +16958,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -16984,9 +16984,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17011,9 +17011,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17039,9 +17039,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17058,9 +17058,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17077,9 +17077,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17098,9 +17098,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17120,9 +17120,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17143,9 +17143,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17163,9 +17163,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17183,9 +17183,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17205,9 +17205,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17228,9 +17228,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17252,9 +17252,9 @@
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
             stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17270,9 +17270,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17290,8 +17290,8 @@
             }
             _0 = owner;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17308,8 +17308,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _0 = owner;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17326,7 +17326,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17363,9 +17363,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17386,9 +17386,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17411,9 +17411,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17437,9 +17437,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17464,9 +17464,9 @@
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17492,33 +17492,33 @@
 
         case _CHECK_PERIODIC: {
             _cache_size = 0;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             CHECK_EVAL_BREAKER();
             break;
         }
 
         case __R0__CHECK_PERIODIC: {
             _cache_size = 0;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             CHECK_EVAL_BREAKER();
             break;
         }
 
         case __R1__CHECK_PERIODIC: {
             _cache_size = 1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             CHECK_EVAL_BREAKER();
             break;
         }
 
         case __R2__CHECK_PERIODIC: {
             _cache_size = 2;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             CHECK_EVAL_BREAKER();
             break;
         }
@@ -17544,9 +17544,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17565,9 +17565,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17588,9 +17588,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17612,9 +17612,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17637,9 +17637,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17658,9 +17658,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17679,9 +17679,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17702,9 +17702,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17726,9 +17726,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17751,9 +17751,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17763,9 +17763,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17775,9 +17775,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17787,8 +17787,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17798,7 +17798,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17833,9 +17833,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17861,9 +17861,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17891,9 +17891,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17922,9 +17922,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17954,9 +17954,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17975,9 +17975,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -17996,9 +17996,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18019,9 +18019,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18043,9 +18043,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18068,9 +18068,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18096,9 +18096,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18124,9 +18124,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18154,9 +18154,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18185,9 +18185,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18217,9 +18217,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18245,9 +18245,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18273,9 +18273,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18303,9 +18303,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18334,9 +18334,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18366,9 +18366,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18394,9 +18394,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18422,9 +18422,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18452,9 +18452,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18483,9 +18483,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18515,9 +18515,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18543,9 +18543,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18571,9 +18571,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18601,9 +18601,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18632,9 +18632,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18664,9 +18664,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18692,9 +18692,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18720,9 +18720,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18750,9 +18750,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18781,9 +18781,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18813,9 +18813,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18840,9 +18840,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18867,9 +18867,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18896,9 +18896,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18926,9 +18926,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18957,9 +18957,9 @@
             }
             stack_pointer[-2 - oparg] = (PyObject *)new_frame;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -18984,9 +18984,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19011,9 +19011,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19040,9 +19040,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19070,9 +19070,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19101,9 +19101,9 @@
                 goto exit_unwind;
             }
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19141,8 +19141,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19170,8 +19170,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19199,8 +19199,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19227,8 +19227,8 @@
             res = Py_NewRef(Py_TYPE(arg));
             Py_DECREF(arg);
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19256,9 +19256,9 @@
             Py_DECREF(arg);
             stack_pointer[-3] = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19287,9 +19287,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19318,8 +19318,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19348,8 +19348,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19378,8 +19378,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19407,8 +19407,8 @@
             Py_DECREF(arg);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19437,9 +19437,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-3] = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19468,8 +19468,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19498,8 +19498,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19528,8 +19528,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19557,8 +19557,8 @@
             Py_DECREF(arg);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19584,9 +19584,9 @@
                 JUMP_TO_ERROR();
             }
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19601,9 +19601,9 @@
                              Py_TYPE(should_be_none)->tp_name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19618,8 +19618,8 @@
                              Py_TYPE(should_be_none)->tp_name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19634,7 +19634,7 @@
                              Py_TYPE(should_be_none)->tp_name);
                 JUMP_TO_ERROR();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19650,9 +19650,9 @@
                 JUMP_TO_ERROR();
             }
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19690,9 +19690,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19730,8 +19730,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19771,8 +19771,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19813,8 +19813,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19856,8 +19856,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19906,9 +19906,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -19957,8 +19957,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20009,8 +20009,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20062,8 +20062,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20116,8 +20116,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20161,9 +20161,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20207,8 +20207,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20254,8 +20254,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20302,8 +20302,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20351,8 +20351,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20395,9 +20395,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20440,8 +20440,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20486,8 +20486,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20533,8 +20533,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20581,8 +20581,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20626,8 +20626,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20673,8 +20673,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20721,8 +20721,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20770,8 +20770,8 @@
             Py_DECREF(arg);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20815,9 +20815,9 @@
             Py_DECREF(arg);
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20863,8 +20863,8 @@
             Py_DECREF(callable);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20912,8 +20912,8 @@
             Py_DECREF(callable);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -20962,8 +20962,8 @@
             Py_DECREF(callable);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21013,8 +21013,8 @@
             Py_DECREF(callable);
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21060,9 +21060,9 @@
             Py_DECREF(callable);
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21118,9 +21118,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21176,8 +21176,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21235,8 +21235,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21295,8 +21295,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21356,8 +21356,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21406,9 +21406,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21457,8 +21457,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21509,8 +21509,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21562,8 +21562,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21616,8 +21616,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21672,9 +21672,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21729,8 +21729,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21787,8 +21787,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21846,8 +21846,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21906,8 +21906,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -21956,9 +21956,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22007,8 +22007,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22059,8 +22059,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22112,8 +22112,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22166,8 +22166,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22227,8 +22227,8 @@
             func = (PyObject *)func_obj;
             _0 = func;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22247,8 +22247,8 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = (PyObject *)func_obj;
             _0 = func;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22267,7 +22267,7 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = (PyObject *)func_obj;
             _1 = func;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22304,9 +22304,9 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = (PyObject *)func_obj;
             stack_pointer[-1] = func;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22343,8 +22343,8 @@
             }
             _0 = func;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22381,8 +22381,8 @@
             }
             _0 = func;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22418,8 +22418,8 @@
                 Py_UNREACHABLE();
             }
             _0 = func;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22455,7 +22455,7 @@
                 Py_UNREACHABLE();
             }
             _1 = func;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22492,9 +22492,9 @@
             }
             stack_pointer[-2] = func;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22515,8 +22515,8 @@
             if (slice == NULL) JUMP_TO_ERROR();
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22539,8 +22539,8 @@
             if (slice == NULL) JUMP_TO_ERROR();
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22564,8 +22564,8 @@
             if (slice == NULL) JUMP_TO_ERROR();
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22590,8 +22590,8 @@
             if (slice == NULL) JUMP_TO_ERROR();
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22612,9 +22612,9 @@
             if (slice == NULL) JUMP_TO_ERROR();
             stack_pointer[-2 - ((oparg == 3) ? 1 : 0)] = slice;
             stack_pointer += -1 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22632,8 +22632,8 @@
             if (result == NULL) JUMP_TO_ERROR();
             _0 = result;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22650,8 +22650,8 @@
             Py_DECREF(value);
             if (result == NULL) JUMP_TO_ERROR();
             _0 = result;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22668,7 +22668,7 @@
             Py_DECREF(value);
             if (result == NULL) JUMP_TO_ERROR();
             _1 = result;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22701,9 +22701,9 @@
             Py_DECREF(value);
             if (result == NULL) JUMP_TO_ERROR();
             stack_pointer[-1] = result;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22724,8 +22724,8 @@
             }
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22745,8 +22745,8 @@
                 res = value;
             }
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22766,7 +22766,7 @@
                 res = value;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22805,9 +22805,9 @@
                 res = value;
             }
             stack_pointer[-1] = res;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22824,8 +22824,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22842,8 +22842,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22859,8 +22859,8 @@
             Py_DECREF(fmt_spec);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22876,7 +22876,7 @@
             Py_DECREF(fmt_spec);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22893,9 +22893,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22908,8 +22908,8 @@
             assert(oparg > 0);
             top = Py_NewRef(bottom);
             _0 = top;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22924,8 +22924,8 @@
             assert(oparg > 0);
             top = Py_NewRef(bottom);
             _0 = top;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22941,8 +22941,8 @@
             assert(oparg > 0);
             top = Py_NewRef(bottom);
             _0 = top;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22959,8 +22959,8 @@
             assert(oparg > 0);
             top = Py_NewRef(bottom);
             _0 = top;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22974,9 +22974,9 @@
             top = Py_NewRef(bottom);
             stack_pointer[0] = top;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -22995,9 +22995,9 @@
             if (res == NULL) JUMP_TO_ERROR();
             stack_pointer[-2] = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23016,8 +23016,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23036,8 +23036,8 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23055,8 +23055,8 @@
             Py_DECREF(rhs);
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23074,7 +23074,7 @@
             Py_DECREF(rhs);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23089,8 +23089,8 @@
             _0 = bottom;
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23107,8 +23107,8 @@
             _0 = bottom;
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23126,8 +23126,8 @@
             _0 = bottom;
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23146,8 +23146,8 @@
             _0 = bottom;
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23161,9 +23161,9 @@
             assert(oparg >= 2);
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer[-1] = bottom;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23247,9 +23247,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23263,9 +23263,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23281,9 +23281,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23300,9 +23300,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23320,9 +23320,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23336,9 +23336,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23352,9 +23352,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23370,9 +23370,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23389,9 +23389,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23409,9 +23409,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23427,9 +23427,9 @@
                     JUMP_TO_JUMP_TARGET();
                 }
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23445,9 +23445,9 @@
                     JUMP_TO_JUMP_TARGET();
                 }
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23465,9 +23465,9 @@
                     JUMP_TO_JUMP_TARGET();
                 }
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23486,9 +23486,9 @@
                     JUMP_TO_JUMP_TARGET();
                 }
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23508,9 +23508,9 @@
                     JUMP_TO_JUMP_TARGET();
                 }
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23524,9 +23524,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23540,9 +23540,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23558,9 +23558,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23577,9 +23577,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23597,9 +23597,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23613,9 +23613,9 @@
             CHECK_EVAL_BREAKER();
             PATCH_JUMP(_JIT_TOP);
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23629,9 +23629,9 @@
             CHECK_EVAL_BREAKER();
             PATCH_JUMP(_JIT_TOP);
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23645,8 +23645,8 @@
             CHECK_EVAL_BREAKER();
             PATCH_JUMP(_JIT_TOP);
             #endif
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23660,7 +23660,7 @@
             CHECK_EVAL_BREAKER();
             PATCH_JUMP(_JIT_TOP);
             #endif
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23681,9 +23681,9 @@
             _cache_size = 0;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23691,9 +23691,9 @@
             _cache_size = 0;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23701,8 +23701,8 @@
             _cache_size = 1;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23710,7 +23710,7 @@
             _cache_size = 2;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23733,9 +23733,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23751,9 +23751,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23769,8 +23769,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23786,7 +23786,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23814,9 +23814,9 @@
             #if TIER_TWO
             frame->return_offset = oparg;
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23829,9 +23829,9 @@
             #if TIER_TWO
             frame->return_offset = oparg;
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23844,8 +23844,8 @@
             #if TIER_TWO
             frame->return_offset = oparg;
             #endif
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23858,7 +23858,7 @@
             #if TIER_TWO
             frame->return_offset = oparg;
             #endif
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23880,9 +23880,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23892,9 +23892,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23904,8 +23904,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23915,7 +23915,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23934,9 +23934,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23946,9 +23946,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23958,8 +23958,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23969,7 +23969,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -23989,9 +23989,9 @@
             value = Py_NewRef(ptr);
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24001,8 +24001,8 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24012,7 +24012,7 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24035,8 +24035,8 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24047,9 +24047,9 @@
             value = ptr;
             stack_pointer[0] = value;
             stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24059,8 +24059,8 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24070,7 +24070,7 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24093,8 +24093,8 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24107,9 +24107,9 @@
             Py_DECREF(pop);
             value = ptr;
             stack_pointer[-1] = value;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24123,8 +24123,8 @@
             value = ptr;
             _0 = value;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24137,8 +24137,8 @@
             Py_DECREF(pop);
             value = ptr;
             _0 = value;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24151,7 +24151,7 @@
             Py_DECREF(pop);
             value = ptr;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24177,9 +24177,9 @@
             stack_pointer[0] = value;
             stack_pointer[1] = null;
             stack_pointer += 2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24192,7 +24192,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24220,7 +24220,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24237,7 +24237,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24251,9 +24251,9 @@
             stack_pointer[0] = value;
             stack_pointer[1] = null;
             stack_pointer += 2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24266,7 +24266,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24294,7 +24294,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24311,7 +24311,7 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24323,9 +24323,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24337,9 +24337,9 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24351,8 +24351,8 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24364,7 +24364,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24386,9 +24386,9 @@
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24399,9 +24399,9 @@
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24411,9 +24411,9 @@
             opt = _0;
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24423,8 +24423,8 @@
             opt = _1;
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24434,7 +24434,7 @@
             opt = _2;
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24472,9 +24472,9 @@
             Py_INCREF(executor);
             exit->executor = executor;
             GOTO_TIER_TWO(executor);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24512,9 +24512,9 @@
             Py_INCREF(executor);
             exit->executor = executor;
             GOTO_TIER_TWO(executor);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24552,8 +24552,8 @@
             Py_INCREF(executor);
             exit->executor = executor;
             GOTO_TIER_TWO(executor);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24591,7 +24591,7 @@
             Py_INCREF(executor);
             exit->executor = executor;
             GOTO_TIER_TWO(executor);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24640,9 +24640,9 @@
             #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24654,9 +24654,9 @@
             #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
             #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24668,8 +24668,8 @@
             #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
             #endif
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24681,7 +24681,7 @@
             #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
             #endif
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24700,9 +24700,9 @@
             _cache_size = 0;
             assert(0);
             Py_FatalError("Fatal error uop executed.");
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24710,9 +24710,9 @@
             _cache_size = 0;
             assert(0);
             Py_FatalError("Fatal error uop executed.");
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24720,8 +24720,8 @@
             _cache_size = 1;
             assert(0);
             Py_FatalError("Fatal error uop executed.");
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24729,7 +24729,7 @@
             _cache_size = 2;
             assert(0);
             Py_FatalError("Fatal error uop executed.");
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24748,9 +24748,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24762,9 +24762,9 @@
                 JUMP_TO_JUMP_TARGET();
             }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24776,8 +24776,8 @@
                 JUMP_TO_JUMP_TARGET();
             }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24789,7 +24789,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24807,33 +24807,33 @@
         case _DEOPT: {
             _cache_size = 0;
             EXIT_TO_TIER1();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R0__DEOPT: {
             _cache_size = 0;
             EXIT_TO_TIER1();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R1__DEOPT: {
             _cache_size = 1;
             EXIT_TO_TIER1();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R2__DEOPT: {
             _cache_size = 2;
             EXIT_TO_TIER1();
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24846,33 +24846,33 @@
         case _SIDE_EXIT: {
             _cache_size = 0;
             EXIT_TO_TRACE();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R0__SIDE_EXIT: {
             _cache_size = 0;
             EXIT_TO_TRACE();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R1__SIDE_EXIT: {
             _cache_size = 1;
             EXIT_TO_TRACE();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
         case __R2__SIDE_EXIT: {
             _cache_size = 2;
             EXIT_TO_TRACE();
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24887,9 +24887,9 @@
             oparg = CURRENT_OPARG();
             stack_pointer += -oparg;
             GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24898,9 +24898,9 @@
             oparg = CURRENT_OPARG();
             stack_pointer += -oparg;
             GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24911,9 +24911,9 @@
             oparg = CURRENT_OPARG();
             stack_pointer += -oparg;
             GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24925,9 +24925,9 @@
             oparg = CURRENT_OPARG();
             stack_pointer += -oparg;
             GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 
@@ -24940,9 +24940,9 @@
             oparg = CURRENT_OPARG();
             stack_pointer += -oparg;
             GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            CLOBBER_REGISTER(_0, rcx);
+            CLOBBER_REGISTER(_1, r8);
+            CLOBBER_REGISTER(_2, r9);
             break;
         }
 

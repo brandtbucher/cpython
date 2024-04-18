@@ -477,13 +477,14 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         return _ELF(host, alignment=8, args=args)
     if re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
-        return _COFF(host, args=args, ghccc=True, prefix="_")
+        return _COFF(host, args=args, ghccc=False, prefix="_")  # XXX
     if re.fullmatch(r"x86_64-apple-darwin.*", host):
         args = ["-fomit-frame-pointer"]
-        return _MachO(host, args=args, ghccc=True, prefix="_")
+        return _MachO(host, args=args, ghccc=False, prefix="_")  # XXX
     if re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        return _COFF(host, ghccc=True, args=args)
+        return _COFF(host, ghccc=False, args=args)  # XXX
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        return _ELF(host, ghccc=True)  # XXX
+        args = ["-D_PyJIT_GHCCC"]  # XXX
+        return _ELF(host, args=args, ghccc=False)  # XXX
     raise ValueError(host)
