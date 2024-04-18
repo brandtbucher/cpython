@@ -21,6 +21,8 @@
 
 __attribute__((preserve_most)) void _JIT_DEALLOC(PyObject *o);
 
+#if !defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(Py_GIL_DISABLED)
+
 #undef Py_DECREF
 #define Py_DECREF(arg) \
     do { \
@@ -42,6 +44,8 @@ __attribute__((preserve_most)) void _JIT_DEALLOC(PyObject *o);
             Py_DECREF(xop); \
         } \
     } while (0)
+
+#endif
 
 #undef CURRENT_OPARG
 #define CURRENT_OPARG() (_oparg)
