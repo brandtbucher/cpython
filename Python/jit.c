@@ -391,8 +391,8 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
         code_size += group->code.body_size;
         data_size += group->data.body_size;
     }
-    code_size += stencil_groups[_FATAL_ERROR].code.body_size;
-    data_size += stencil_groups[_FATAL_ERROR].data.body_size;
+    code_size += dealloc.code.body_size;
+    data_size += dealloc.data.body_size;
     // Round up to the nearest page:
     size_t page_size = get_page_size();
     assert((page_size & (page_size - 1)) == 0);
@@ -405,6 +405,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
     // Loop again to emit the code:
     unsigned char *code = memory;
     unsigned char *data = memory + code_size;
+    unsigned char *dealloc_code = memory + code_size - dealloc.code.body_size;
     assert(trace[0].opcode == _START_EXECUTOR || trace[0].opcode == _COLD_EXIT);
     for (size_t i = 0; i < length; i++) {
         _PyUOpInstruction *instruction = (_PyUOpInstruction *)&trace[i];
@@ -414,6 +415,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
         patches[HoleValue_CODE] = (uintptr_t)code;
         patches[HoleValue_CONTINUE] = (uintptr_t)code + group->code.body_size;
         patches[HoleValue_DATA] = (uintptr_t)data;
+        patches[HoleValue_DEALLOC] = (uintptr_t)dealloc_code;
         patches[HoleValue_EXECUTOR] = (uintptr_t)executor;
         patches[HoleValue_OPARG] = instruction->oparg;
     #if SIZEOF_VOID_P == 8
@@ -452,7 +454,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
         data += group->data.body_size;
     }
     // Protect against accidental buffer overrun into data:
-    const StencilGroup *group = &stencil_groups[_FATAL_ERROR];
+    const StencilGroup *group = &dealloc;
     uintptr_t patches[] = GET_PATCHES();
     patches[HoleValue_CODE] = (uintptr_t)code;
     patches[HoleValue_CONTINUE] = (uintptr_t)code;

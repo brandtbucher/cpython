@@ -19,6 +19,8 @@ class HoleValue(enum.Enum):
     CONTINUE = enum.auto()
     # The base address of the read-only data for this uop:
     DATA = enum.auto()
+    # XXX
+    DEALLOC = enum.auto()
     # The address of the current executor (exposed as _JIT_EXECUTOR):
     EXECUTOR = enum.auto()
     # The base address of the "global" offset table located in the read-only data.

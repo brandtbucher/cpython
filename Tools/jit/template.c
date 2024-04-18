@@ -19,6 +19,30 @@
 
 #include "ceval_macros.h"
 
+__attribute__((preserve_most)) void _JIT_DEALLOC(PyObject *o);
+
+#undef Py_DECREF
+#define Py_DECREF(arg) \
+    do { \
+        PyObject *op = _PyObject_CAST(arg); \
+        if (_Py_IsImmortal(op)) { \
+            break; \
+        } \
+        _Py_DECREF_STAT_INC(); \
+        if (--op->ob_refcnt == 0) { \
+            _JIT_DEALLOC(op); \
+        } \
+    } while (0)
+
+#undef Py_XDECREF
+#define Py_XDECREF(arg) \
+    do { \
+        PyObject *xop = _PyObject_CAST(arg); \
+        if (xop != NULL) { \
+            Py_DECREF(xop); \
+        } \
+    } while (0)
+
 #undef CURRENT_OPARG
 #define CURRENT_OPARG() (_oparg)
 
