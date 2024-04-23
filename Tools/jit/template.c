@@ -84,7 +84,7 @@ _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame,
 #ifdef _PyJIT_FRAME_POINTER_HACK
     void *_frame_pointer_hack,
-#endif 
+#endif
     PyObject **stack_pointer, PyThreadState *tstate)
 {
     // Locals that the instruction implementations expect to exist:
