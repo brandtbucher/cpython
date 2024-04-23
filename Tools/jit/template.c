@@ -44,11 +44,11 @@
     } while (0)
 
 #undef GOTO_TIER_TWO
-#define GOTO_TIER_TWO(EXECUTOR)                                                                               \
-do {                                                                                                          \
-    OPT_STAT_INC(traces_executed);                                                                            \
-    __attribute__((musttail))                                                                                 \
-    return ((jit_func_ghccc)((EXECUTOR)->jit_code_ghccc))(frame, _frame_pointer_hack, stack_pointer, tstate); \
+#define GOTO_TIER_TWO(EXECUTOR)                                                                     \
+do {                                                                                                \
+    OPT_STAT_INC(traces_executed);                                                                  \
+    __attribute__((musttail))                                                                       \
+    return JIT_CALL((EXECUTOR)->jit_code_ghccc, frame, _frame_pointer_hack, stack_pointer, tstate); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -67,11 +67,11 @@ do {  \
     PyAPI_DATA(void) ALIAS;             \
     TYPE NAME = (TYPE)(uintptr_t)&ALIAS;
 
-#define PATCH_JUMP(ALIAS)                                                               \
-do {                                                                                    \
-    PyAPI_DATA(void) ALIAS;                                                             \
-    __attribute__((musttail))                                                           \
-    return ((jit_func_ghccc)&ALIAS)(frame, _frame_pointer_hack, stack_pointer, tstate); \
+#define PATCH_JUMP(ALIAS)                                                       \
+do {                                                                            \
+    PyAPI_DATA(void) ALIAS;                                                     \
+    __attribute__((musttail))                                                   \
+    return JIT_CALL(&ALIAS, frame, _frame_pointer_hack, stack_pointer, tstate); \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
@@ -81,7 +81,11 @@ do {                                                                            
 #define JUMP_TO_ERROR() PATCH_JUMP(_JIT_ERROR_TARGET)
 
 _Py_CODEUNIT *
-_JIT_ENTRY(_PyInterpreterFrame *frame, void *_frame_pointer_hack, PyObject **stack_pointer, PyThreadState *tstate)
+_JIT_ENTRY(_PyInterpreterFrame *frame,
+#ifdef _PyJIT_FRAME_POINTER_HACK
+    void *_frame_pointer_hack,
+#endif 
+    PyObject **stack_pointer, PyThreadState *tstate)
 {
     // Locals that the instruction implementations expect to exist:
     PATCH_VALUE(_PyExecutorObject *, current_executor, _JIT_EXECUTOR)

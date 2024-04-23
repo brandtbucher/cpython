@@ -483,7 +483,8 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         return _MachO(host, args=args, ghccc=True, prefix="_")
     if re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        return _COFF(host, ghccc=True, args=args)
+        return _COFF(host, args=args, ghccc=True)
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        return _ELF(host, ghccc=True)
+        args = ["-D_PyJIT_FRAME_POINTER_HACK"]
+        return _ELF(host, args=args, ghccc=True)
     raise ValueError(host)
