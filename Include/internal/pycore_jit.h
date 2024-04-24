@@ -9,10 +9,10 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-#define STACK_CACHE_DECLARE PyObject *_0, PyObject *_1, PyObject *_2
-#define STACK_CACHE_DEFINE  PyObject *_0 = NULL, *_1 = NULL, *_2 = NULL
-#define STACK_CACHE_NULLS   NULL, NULL, NULL
-#define STACK_CACHE_USE     _0, _1, _2
+#define STACK_CACHE_DECLARE PyObject *_0, PyObject *_1
+#define STACK_CACHE_DEFINE  PyObject *_0 = NULL, *_1 = NULL
+#define STACK_CACHE_NULLS   NULL, NULL
+#define STACK_CACHE_USE     _0, _1
 
 #if defined(_PyJIT_ACTIVE) && defined(_PyJIT_GHCCC)
 #define CLOBBER_REGISTER(R, N)            \

@@ -12,25 +12,17 @@
             _cache_size = 0;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__NOP: {
             _cache_size = 1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__NOP: {
             _cache_size = 2;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__NOP: {
-            _cache_size = 3;
             break;
         }
 
@@ -38,7 +30,6 @@
             _cache_size = 0;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -60,7 +51,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -81,32 +71,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__RESUME_CHECK: {
             _cache_size = 2;
-            #if defined(__EMSCRIPTEN__)
-            if (_Py_emscripten_signal_clock == 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
-            #endif
-            uintptr_t eval_breaker = _Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker);
-            uintptr_t version = FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version);
-            assert((version & _PY_EVAL_EVENTS_MASK) == 0);
-            if (eval_breaker != version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__RESUME_CHECK: {
-            _cache_size = 3;
             #if defined(__EMSCRIPTEN__)
             if (_Py_emscripten_signal_clock == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -142,7 +111,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -151,8 +119,6 @@
         /* __R1__INSTRUMENTED_RESUME is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_RESUME is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_RESUME is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_RESUME is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -171,7 +137,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -189,34 +154,15 @@
             }
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_CHECK: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            value = GETLOCAL(oparg);
-            if (value == NULL) {
-                _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError,
-                    UNBOUNDLOCAL_ERROR_MSG,
-                    PyTuple_GetItem(_PyFrame_GetCode(frame)->co_localsplusnames, oparg)
-                );
-                if (1) JUMP_TO_ERROR();
-            }
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_CHECK: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             value = GETLOCAL(oparg);
             if (value == NULL) {
@@ -229,7 +175,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -250,7 +195,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -266,7 +210,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -280,7 +223,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -293,29 +235,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_0: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 0;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_0: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 0;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -323,7 +251,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -339,7 +266,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -353,7 +279,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -366,29 +291,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_1: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 1;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_1: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 1;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -396,7 +307,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -412,7 +322,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -426,7 +335,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -439,29 +347,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_2: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 2;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_2: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 2;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -469,7 +363,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -485,7 +378,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -499,7 +391,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -512,29 +403,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_3: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 3;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_3: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 3;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -542,7 +419,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -558,7 +434,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -572,7 +447,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -585,29 +459,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_4: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 4;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_4: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -615,7 +475,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -631,7 +490,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -645,7 +503,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -658,29 +515,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_5: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 5;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_5: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -688,7 +531,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -704,7 +546,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -718,7 +559,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -731,29 +571,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_6: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 6;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_6: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -761,7 +587,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -777,7 +602,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -791,7 +615,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -804,29 +627,15 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_7: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = 7;
-            assert(oparg == CURRENT_OPARG());
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_7: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             value = GETLOCAL(oparg);
@@ -834,7 +643,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -847,7 +655,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -859,35 +666,21 @@
             assert(value != NULL);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            value = GETLOCAL(oparg);
-            assert(value != NULL);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             value = GETLOCAL(oparg);
             assert(value != NULL);
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -902,7 +695,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -915,7 +707,6 @@
             GETLOCAL(oparg) = NULL;
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -927,35 +718,21 @@
             // do not use SETLOCAL here, it decrefs the old value
             GETLOCAL(oparg) = NULL;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_FAST_AND_CLEAR: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            value = GETLOCAL(oparg);
-            // do not use SETLOCAL here, it decrefs the old value
-            GETLOCAL(oparg) = NULL;
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_FAST_AND_CLEAR: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             value = GETLOCAL(oparg);
             // do not use SETLOCAL here, it decrefs the old value
             GETLOCAL(oparg) = NULL;
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -970,7 +747,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -982,7 +758,6 @@
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -993,33 +768,20 @@
             value = GETITEM(FRAME_CO_CONSTS, oparg);
             Py_INCREF(value);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_CONST: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            value = GETITEM(FRAME_CO_CONSTS, oparg);
-            Py_INCREF(value);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_CONST: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             value = GETITEM(FRAME_CO_CONSTS, oparg);
             Py_INCREF(value);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1033,7 +795,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1047,7 +808,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1061,7 +821,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1074,7 +833,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1086,18 +844,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_0: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 0;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1111,7 +857,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1125,7 +870,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1138,7 +882,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1150,18 +893,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_1: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 1;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1175,7 +906,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1189,7 +919,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1202,7 +931,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1214,18 +942,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_2: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 2;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1239,7 +955,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1253,7 +968,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1266,7 +980,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1278,18 +991,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_3: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 3;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1303,7 +1004,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1317,7 +1017,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1330,7 +1029,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1342,18 +1040,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_4: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 4;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1367,7 +1053,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1381,7 +1066,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1394,7 +1078,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1406,18 +1089,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_5: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 5;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1431,7 +1102,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1445,7 +1115,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1458,7 +1127,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1470,18 +1138,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_6: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 6;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1495,7 +1151,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1509,7 +1164,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1522,7 +1176,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1534,18 +1187,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST_7: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = 7;
-            assert(oparg == CURRENT_OPARG());
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1558,7 +1199,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1570,7 +1210,6 @@
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1581,17 +1220,6 @@
             value = _1;
             SETLOCAL(oparg, value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_FAST: {
-            PyObject *value;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            value = _2;
-            SETLOCAL(oparg, value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1604,7 +1232,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1616,7 +1243,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1627,7 +1253,6 @@
             Py_DECREF(value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1637,16 +1262,6 @@
             value = _1;
             Py_DECREF(value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__POP_TOP: {
-            PyObject *value;
-            _cache_size = 3;
-            value = _2;
-            Py_DECREF(value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1658,7 +1273,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1668,7 +1282,6 @@
             res = NULL;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1677,29 +1290,18 @@
             _cache_size = 1;
             res = NULL;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__PUSH_NULL: {
             PyObject *res;
-            _cache_size = 2;
-            res = NULL;
-            _2 = res;
-            break;
-        }
-
-        case __R3__PUSH_NULL: {
-            PyObject *res;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             res = NULL;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1711,7 +1313,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1725,7 +1326,6 @@
             _0 = value;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1739,7 +1339,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1752,19 +1351,6 @@
             Py_DECREF(receiver);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__END_SEND: {
-            PyObject *value;
-            PyObject *receiver;
-            _cache_size = 3;
-            value = _2;
-            receiver = _1;
-            Py_DECREF(receiver);
-            _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1779,7 +1365,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1794,7 +1379,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1808,7 +1392,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1821,19 +1404,6 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNARY_NEGATIVE: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            res = PyNumber_Negative(value);
-            Py_DECREF(value);
-            if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
             break;
         }
 
@@ -1848,7 +1418,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1862,7 +1431,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1875,7 +1443,6 @@
             res = Py_IsFalse(value) ? Py_True : Py_False;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1887,18 +1454,6 @@
             assert(PyBool_Check(value));
             res = Py_IsFalse(value) ? Py_True : Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNARY_NOT: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            assert(PyBool_Check(value));
-            res = Py_IsFalse(value) ? Py_True : Py_False;
-            _2 = res;
             break;
         }
 
@@ -1912,7 +1467,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1928,7 +1482,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1944,7 +1497,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1959,7 +1511,6 @@
             res = err ? Py_True : Py_False;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -1973,20 +1524,6 @@
             if (err < 0) JUMP_TO_ERROR();
             res = err ? Py_True : Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            int err = PyObject_IsTrue(value);
-            Py_DECREF(value);
-            if (err < 0) JUMP_TO_ERROR();
-            res = err ? Py_True : Py_False;
-            _2 = res;
             break;
         }
 
@@ -2002,7 +1539,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2017,7 +1553,6 @@
             STAT_INC(TO_BOOL, hit);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2031,20 +1566,6 @@
             }
             STAT_INC(TO_BOOL, hit);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL_BOOL: {
-            PyObject *value;
-            _cache_size = 3;
-            value = _2;
-            if (!PyBool_Check(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(TO_BOOL, hit);
-            _2 = value;
             break;
         }
 
@@ -2059,7 +1580,6 @@
             STAT_INC(TO_BOOL, hit);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2084,7 +1604,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2108,7 +1627,6 @@
             }
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2131,29 +1649,6 @@
                 res = Py_True;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL_INT: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            if (!PyLong_CheckExact(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(TO_BOOL, hit);
-            if (_PyLong_IsZero((PyLongObject *)value)) {
-                assert(_Py_IsImmortal(value));
-                res = Py_False;
-            }
-            else {
-                Py_DECREF(value);
-                res = Py_True;
-            }
-            _2 = res;
             break;
         }
 
@@ -2178,7 +1673,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2197,7 +1691,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2215,7 +1708,6 @@
             Py_DECREF(value);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2232,23 +1724,6 @@
             res = Py_SIZE(value) ? Py_True : Py_False;
             Py_DECREF(value);
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL_LIST: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            if (!PyList_CheckExact(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(TO_BOOL, hit);
-            res = Py_SIZE(value) ? Py_True : Py_False;
-            Py_DECREF(value);
-            _2 = res;
             break;
         }
 
@@ -2267,7 +1742,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2286,7 +1760,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2304,7 +1777,6 @@
             res = Py_False;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2321,23 +1793,6 @@
             STAT_INC(TO_BOOL, hit);
             res = Py_False;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL_NONE: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            // This one is a bit weird, because we expect *some* failures:
-            if (!Py_IsNone(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(TO_BOOL, hit);
-            res = Py_False;
-            _2 = res;
             break;
         }
 
@@ -2356,7 +1811,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2382,7 +1836,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2407,7 +1860,6 @@
             }
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2431,30 +1883,6 @@
                 res = Py_True;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__TO_BOOL_STR: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            if (!PyUnicode_CheckExact(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(TO_BOOL, hit);
-            if (value == &_Py_STR(empty)) {
-                assert(_Py_IsImmortal(value));
-                res = Py_False;
-            }
-            else {
-                assert(Py_SIZE(value));
-                Py_DECREF(value);
-                res = Py_True;
-            }
-            _2 = res;
             break;
         }
 
@@ -2480,7 +1908,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2494,7 +1921,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2508,7 +1934,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2521,7 +1946,6 @@
             res = Py_True;
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2533,18 +1957,6 @@
             Py_DECREF(value);
             res = Py_True;
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__REPLACE_WITH_TRUE: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            Py_DECREF(value);
-            res = Py_True;
-            _2 = res;
             break;
         }
 
@@ -2559,7 +1971,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2573,7 +1984,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2586,19 +1996,6 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNARY_INVERT: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            res = PyNumber_Invert(value);
-            Py_DECREF(value);
-            if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
             break;
         }
 
@@ -2613,7 +2010,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2633,7 +2029,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2654,7 +2049,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2675,7 +2069,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2695,26 +2088,6 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_BOTH_INT: {
-            PyObject *right;
-            PyObject *left;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            if (!PyLong_CheckExact(left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyLong_CheckExact(right)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = right;
-            _1 = left;
             break;
         }
 
@@ -2728,7 +2101,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2742,7 +2114,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2758,7 +2129,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2775,25 +2145,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_NOS_INT: {
-            PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            left = stack_pointer[-2];
-            if (!PyLong_CheckExact(left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2807,7 +2158,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2822,7 +2172,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2836,7 +2185,6 @@
             }
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2849,19 +2197,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_TOS_INT: {
-            PyObject *value;
-            _cache_size = 3;
-            value = _2;
-            if (!PyLong_CheckExact(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = value;
             break;
         }
 
@@ -2881,7 +2216,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2900,7 +2234,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2919,7 +2252,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2937,24 +2269,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_MULTIPLY_INT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            res = _PyLong_Multiply((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2974,7 +2288,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -2993,7 +2306,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3012,7 +2324,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3030,24 +2341,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_ADD_INT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            res = _PyLong_Add((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3067,7 +2360,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3086,7 +2378,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3105,7 +2396,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3123,24 +2413,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_SUBTRACT_INT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            res = _PyLong_Subtract((PyLongObject *)left, (PyLongObject *)right);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3160,7 +2432,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3181,7 +2452,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3202,7 +2472,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3222,26 +2491,6 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_BOTH_FLOAT: {
-            PyObject *right;
-            PyObject *left;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            if (!PyFloat_CheckExact(left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyFloat_CheckExact(right)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = right;
-            _1 = left;
             break;
         }
 
@@ -3255,7 +2504,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3269,7 +2517,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3285,7 +2532,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3302,25 +2548,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_NOS_FLOAT: {
-            PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            left = stack_pointer[-2];
-            if (!PyFloat_CheckExact(left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3334,7 +2561,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3349,7 +2575,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3363,7 +2588,6 @@
             }
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3376,19 +2600,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_TOS_FLOAT: {
-            PyObject *value;
-            _cache_size = 3;
-            value = _2;
-            if (!PyFloat_CheckExact(value)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = value;
             break;
         }
 
@@ -3408,7 +2619,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3427,7 +2637,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3446,7 +2655,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3464,24 +2672,6 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_MULTIPLY_FLOAT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-            ((PyFloatObject *)left)->ob_fval *
-            ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3501,7 +2691,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3520,7 +2709,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3539,7 +2727,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3557,24 +2744,6 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_ADD_FLOAT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-            ((PyFloatObject *)left)->ob_fval +
-            ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3594,7 +2763,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3613,7 +2781,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3632,7 +2799,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3650,24 +2816,6 @@
             DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_SUBTRACT_FLOAT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-            ((PyFloatObject *)left)->ob_fval -
-            ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3687,7 +2835,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3708,7 +2855,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3729,7 +2875,6 @@
             _1 = right;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3749,26 +2894,6 @@
             }
             _1 = right;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_BOTH_UNICODE: {
-            PyObject *right;
-            PyObject *left;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            if (!PyUnicode_CheckExact(left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyUnicode_CheckExact(right)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = right;
-            _1 = left;
             break;
         }
 
@@ -3788,7 +2913,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3807,7 +2931,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3826,7 +2949,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3844,24 +2966,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP_ADD_UNICODE: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            STAT_INC(BINARY_OP, hit);
-            res = PyUnicode_Concat(left, right);
-            _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3880,7 +2984,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3898,7 +3001,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3916,7 +3018,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3933,23 +3034,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SUBSCR: {
-            PyObject *sub;
-            PyObject *container;
-            PyObject *res;
-            _cache_size = 3;
-            sub = _2;
-            container = _1;
-            res = PyObject_GetItem(container, sub);
-            Py_DECREF(container);
-            Py_DECREF(sub);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3977,7 +3061,6 @@
             _0 = res;
             stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4005,7 +3088,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4033,34 +3115,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SLICE: {
-            PyObject *stop;
-            PyObject *start;
-            PyObject *container;
-            PyObject *res;
-            _cache_size = 3;
-            stop = _2;
-            start = _1;
-            container = _0;
-            PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
-            // Can't use ERROR_IF() here, because we haven't
-            // DECREF'ed container yet, and we still own slice.
-            if (slice == NULL) {
-                res = NULL;
-            }
-            else {
-                res = PyObject_GetItem(container, slice);
-                Py_DECREF(slice);
-            }
-            Py_DECREF(container);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4089,7 +3143,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4118,7 +3171,6 @@
             stack_pointer += -4;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4147,7 +3199,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4176,36 +3227,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_SLICE: {
-            PyObject *stop;
-            PyObject *start;
-            PyObject *container;
-            PyObject *v;
-            _cache_size = 3;
-            stop = _2;
-            start = _1;
-            container = _0;
-            v = stack_pointer[-1];
-            PyObject *slice = _PyBuildSlice_ConsumeRefs(start, stop);
-            int err;
-            if (slice == NULL) {
-                err = 1;
-            }
-            else {
-                err = PyObject_SetItem(container, slice, v);
-                Py_DECREF(slice);
-            }
-            Py_DECREF(v);
-            Py_DECREF(container);
-            if (err) JUMP_TO_ERROR();
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4234,7 +3255,6 @@
             stack_pointer += -4;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4272,7 +3292,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4310,7 +3329,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4347,43 +3365,6 @@
             Py_DECREF(list);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SUBSCR_LIST_INT: {
-            PyObject *sub;
-            PyObject *list;
-            PyObject *res;
-            _cache_size = 3;
-            sub = _2;
-            list = _1;
-            if (!PyLong_CheckExact(sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyList_CheckExact(list)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // Deopt unless 0 <= sub < PyList_Size(list)
-            if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            if (index >= PyList_GET_SIZE(list)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(BINARY_SUBSCR, hit);
-            res = PyList_GET_ITEM(list, index);
-            assert(res != NULL);
-            Py_INCREF(res);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
-            Py_DECREF(list);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4422,7 +3403,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4463,7 +3443,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4504,7 +3483,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4544,46 +3522,6 @@
             Py_DECREF(str);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SUBSCR_STR_INT: {
-            PyObject *sub;
-            PyObject *str;
-            PyObject *res;
-            _cache_size = 3;
-            sub = _2;
-            str = _1;
-            if (!PyLong_CheckExact(sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyUnicode_CheckExact(str)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            if (PyUnicode_GET_LENGTH(str) <= index) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // Specialize for reading an ASCII character from any string:
-            Py_UCS4 c = PyUnicode_READ_CHAR(str, index);
-            if (Py_ARRAY_LENGTH(_Py_SINGLETON(strings).ascii) <= c) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(BINARY_SUBSCR, hit);
-            res = (PyObject*)&_Py_SINGLETON(strings).ascii[c];
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
-            Py_DECREF(str);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4625,7 +3563,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4663,7 +3600,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4701,7 +3637,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4738,43 +3673,6 @@
             Py_DECREF(tuple);
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SUBSCR_TUPLE_INT: {
-            PyObject *sub;
-            PyObject *tuple;
-            PyObject *res;
-            _cache_size = 3;
-            sub = _2;
-            tuple = _1;
-            if (!PyLong_CheckExact(sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyTuple_CheckExact(tuple)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // Deopt unless 0 <= sub < PyTuple_Size(list)
-            if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            if (index >= PyTuple_GET_SIZE(tuple)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(BINARY_SUBSCR, hit);
-            res = PyTuple_GET_ITEM(tuple, index);
-            assert(res != NULL);
-            Py_INCREF(res);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
-            Py_DECREF(tuple);
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4813,7 +3711,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4840,7 +3737,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4867,7 +3763,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4893,32 +3788,6 @@
             // not found or error
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_SUBSCR_DICT: {
-            PyObject *sub;
-            PyObject *dict;
-            PyObject *res;
-            _cache_size = 3;
-            sub = _2;
-            dict = _1;
-            if (!PyDict_CheckExact(dict)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(BINARY_SUBSCR, hit);
-            int rc = PyDict_GetItemRef(dict, sub, &res);
-            if (rc == 0) {
-                _PyErr_SetKeyError(sub);
-            }
-            Py_DECREF(dict);
-            Py_DECREF(sub);
-            if (rc <= 0) JUMP_TO_ERROR();
-            // not found or error
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4946,7 +3815,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4955,8 +3823,6 @@
         /* __R1__BINARY_SUBSCR_GETITEM is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__BINARY_SUBSCR_GETITEM is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__BINARY_SUBSCR_GETITEM is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _BINARY_SUBSCR_GETITEM is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -4971,7 +3837,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -4988,7 +3853,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5006,26 +3870,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LIST_APPEND: {
-            PyObject *v;
-            PyObject *list;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            v = stack_pointer[-1];
-            list = stack_pointer[-2 - (oparg-1)];
-            if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5040,7 +3884,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5057,7 +3900,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5076,7 +3918,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5096,28 +3937,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SET_ADD: {
-            PyObject *v;
-            PyObject *set;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            v = stack_pointer[-1];
-            set = stack_pointer[-2 - (oparg-1)];
-            int err = PySet_Add(set, v);
-            Py_DECREF(v);
-            if (err) JUMP_TO_ERROR();
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5134,7 +3953,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5155,7 +3973,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5176,7 +3993,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5197,7 +4013,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5218,27 +4033,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_SUBSCR: {
-            PyObject *sub;
-            PyObject *container;
-            PyObject *v;
-            _cache_size = 3;
-            sub = _2;
-            container = _1;
-            v = _0;
-            /* container[sub] = v */
-            int err = PyObject_SetItem(container, sub, v);
-            Py_DECREF(v);
-            Py_DECREF(container);
-            Py_DECREF(sub);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5279,7 +4073,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5320,7 +4113,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5361,47 +4153,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_SUBSCR_LIST_INT: {
-            PyObject *sub;
-            PyObject *list;
-            PyObject *value;
-            _cache_size = 3;
-            sub = _2;
-            list = _1;
-            value = _0;
-            if (!PyLong_CheckExact(sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyList_CheckExact(list)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // Ensure nonnegative, zero-or-one-digit ints.
-            if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            // Ensure index < len(list)
-            if (index >= PyList_GET_SIZE(list)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(STORE_SUBSCR, hit);
-            PyObject *old_value = PyList_GET_ITEM(list, index);
-            PyList_SET_ITEM(list, index, value);
-            assert(old_value != NULL);
-            Py_DECREF(old_value);
-            _Py_DECREF_SPECIALIZED(sub, (destructor)PyObject_Free);
-            Py_DECREF(list);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5442,7 +4193,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5465,7 +4215,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5488,7 +4237,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5511,29 +4259,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_SUBSCR_DICT: {
-            PyObject *sub;
-            PyObject *dict;
-            PyObject *value;
-            _cache_size = 3;
-            sub = _2;
-            dict = _1;
-            value = _0;
-            if (!PyDict_CheckExact(dict)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(STORE_SUBSCR, hit);
-            int err = _PyDict_SetItem_Take2((PyDictObject *)dict, sub, value);
-            Py_DECREF(dict);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5556,7 +4281,6 @@
             stack_pointer += -3;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5574,7 +4298,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5592,7 +4315,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5609,23 +4331,6 @@
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_SUBSCR: {
-            PyObject *sub;
-            PyObject *container;
-            _cache_size = 3;
-            sub = _2;
-            container = _1;
-            /* del container[sub] */
-            int err = PyObject_DelItem(container, sub);
-            Py_DECREF(container);
-            Py_DECREF(sub);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5643,7 +4348,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5660,7 +4364,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5676,7 +4379,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5691,21 +4393,6 @@
             Py_DECREF(value);
             if (res == NULL) JUMP_TO_ERROR();
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_INTRINSIC_1: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            value = _2;
-            assert(oparg <= MAX_INTRINSIC_1);
-            res = _PyIntrinsics_UnaryFunctions[oparg].func(tstate, value);
-            Py_DECREF(value);
-            if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
             break;
         }
 
@@ -5722,7 +4409,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5742,7 +4428,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5762,7 +4447,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5781,25 +4465,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_INTRINSIC_2: {
-            PyObject *value1;
-            PyObject *value2;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            value1 = _2;
-            value2 = _1;
-            assert(oparg <= MAX_INTRINSIC_2);
-            res = _PyIntrinsics_BinaryFunctions[oparg].func(tstate, value2, value1);
-            Py_DECREF(value2);
-            Py_DECREF(value1);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5820,7 +4485,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5850,7 +4514,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5880,7 +4543,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5912,7 +4574,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5945,41 +4606,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__POP_FRAME: {
-            PyObject *retval;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            retval = stack_pointer[-1];
-            #if TIER_ONE
-            assert(frame != &entry_frame);
-            #endif
-            stack_pointer += -1;
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            assert(EMPTY());
-            _Py_LeaveRecursiveCallPy(tstate);
-            // GH-99729: We need to unlink the frame *before* clearing it:
-            _PyInterpreterFrame *dying = frame;
-            frame = tstate->current_frame = dying->previous;
-            _PyEval_FrameClearAndPop(tstate, dying);
-            _PyFrame_StackPush(frame, retval);
-            LOAD_SP();
-            LOAD_IP(frame->return_offset);
-            #if LLTRACE && TIER_ONE
-            lltrace = maybe_lltrace_resume_frame(frame, &entry_frame, GLOBALS());
-            if (lltrace < 0) {
-                goto exit_unwind;
-            }
-            #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -5989,8 +4615,6 @@
 
         /* __R2__INSTRUMENTED_RETURN_VALUE is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_RETURN_VALUE is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_RETURN_VALUE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__INSTRUMENTED_RETURN_CONST is not a viable micro-op for tier 2 because it is instrumented */
@@ -5998,8 +4622,6 @@
         /* __R1__INSTRUMENTED_RETURN_CONST is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_RETURN_CONST is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_RETURN_CONST is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_RETURN_CONST is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -6036,7 +4658,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6072,7 +4693,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6107,41 +4727,6 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GET_AITER: {
-            PyObject *obj;
-            PyObject *iter;
-            _cache_size = 3;
-            obj = _2;
-            unaryfunc getter = NULL;
-            PyTypeObject *type = Py_TYPE(obj);
-            if (type->tp_as_async != NULL) {
-                getter = type->tp_as_async->am_aiter;
-            }
-            if (getter == NULL) {
-                _PyErr_Format(tstate, PyExc_TypeError,
-                              "'async for' requires an object with "
-                              "__aiter__ method, got %.100s",
-                              type->tp_name);
-                Py_DECREF(obj);
-                if (true) JUMP_TO_ERROR();
-            }
-            iter = (*getter)(obj);
-            Py_DECREF(obj);
-            if (iter == NULL) JUMP_TO_ERROR();
-            if (Py_TYPE(iter)->tp_as_async == NULL ||
-                Py_TYPE(iter)->tp_as_async->am_anext == NULL) {
-                _PyErr_Format(tstate, PyExc_TypeError,
-                              "'async for' received an object from __aiter__ "
-                              "that does not implement __anext__: %.100s",
-                              Py_TYPE(iter)->tp_name);
-                Py_DECREF(iter);
-                if (true) JUMP_TO_ERROR();
-            }
-            _2 = iter;
             break;
         }
 
@@ -6178,7 +4763,6 @@
             stack_pointer[-1] = iter;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6228,7 +4812,6 @@
             _1 = awaitable;
             _0 = aiter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6277,66 +4860,16 @@
             }
             _1 = awaitable;
             _0 = aiter;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GET_ANEXT: {
             PyObject *aiter;
             PyObject *awaitable;
-            _cache_size = 2;
-            aiter = _1;
-            unaryfunc getter = NULL;
-            PyObject *next_iter = NULL;
-            PyTypeObject *type = Py_TYPE(aiter);
-            if (PyAsyncGen_CheckExact(aiter)) {
-                awaitable = type->tp_as_async->am_anext(aiter);
-                if (awaitable == NULL) {
-                    JUMP_TO_ERROR();
-                }
-            } else {
-                if (type->tp_as_async != NULL){
-                    getter = type->tp_as_async->am_anext;
-                }
-                if (getter != NULL) {
-                    next_iter = (*getter)(aiter);
-                    if (next_iter == NULL) {
-                        JUMP_TO_ERROR();
-                    }
-                }
-                else {
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "'async for' requires an iterator with "
-                                  "__anext__ method, got %.100s",
-                                  type->tp_name);
-                    JUMP_TO_ERROR();
-                }
-                awaitable = _PyCoro_GetAwaitableIter(next_iter);
-                if (awaitable == NULL) {
-                    _PyErr_FormatFromCause(
-                        PyExc_TypeError,
-                        "'async for' received an invalid object "
-                        "from __anext__: %.100s",
-                        Py_TYPE(next_iter)->tp_name);
-                    Py_DECREF(next_iter);
-                    JUMP_TO_ERROR();
-                } else {
-                    Py_DECREF(next_iter);
-                }
-            }
-            _2 = awaitable;
-            _1 = aiter;
-            break;
-        }
-
-        case __R3__GET_ANEXT: {
-            PyObject *aiter;
-            PyObject *awaitable;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             aiter = stack_pointer[-1];
             unaryfunc getter = NULL;
             PyObject *next_iter = NULL;
@@ -6379,7 +4912,6 @@
             _1 = awaitable;
             _0 = aiter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6430,7 +4962,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6462,7 +4993,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6493,7 +5023,6 @@
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6523,36 +5052,6 @@
             }
             if (iter == NULL) JUMP_TO_ERROR();
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GET_AWAITABLE: {
-            PyObject *iterable;
-            PyObject *iter;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            iterable = _2;
-            iter = _PyCoro_GetAwaitableIter(iterable);
-            if (iter == NULL) {
-                _PyEval_FormatAwaitableError(tstate, Py_TYPE(iterable), oparg);
-            }
-            Py_DECREF(iterable);
-            if (iter != NULL && PyCoro_CheckExact(iter)) {
-                PyObject *yf = _PyGen_yf((PyGenObject*)iter);
-                if (yf != NULL) {
-                    /* `iter` is a coroutine object that is being
-                       awaited, `yf` is a pointer to the current awaitable
-                       being awaited on. */
-                    Py_DECREF(yf);
-                    Py_CLEAR(iter);
-                    _PyErr_SetString(tstate, PyExc_RuntimeError,
-                                     "coroutine is being awaited already");
-                    /* The code below jumps to `error` if `iter` is NULL. */
-                }
-            }
-            if (iter == NULL) JUMP_TO_ERROR();
-            _2 = iter;
             break;
         }
 
@@ -6584,7 +5083,6 @@
             stack_pointer[-1] = iter;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6596,15 +5094,11 @@
 
         /* __R2__SEND is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
-        /* __R3__SEND is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
         /* __R0__SEND_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R1__SEND_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__SEND_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__SEND_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _SEND_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -6613,8 +5107,6 @@
         /* __R1__INSTRUMENTED_YIELD_VALUE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_YIELD_VALUE is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_YIELD_VALUE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_YIELD_VALUE is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -6627,7 +5119,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6639,7 +5130,6 @@
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6650,17 +5140,6 @@
             _PyErr_StackItem *exc_info = tstate->exc_info;
             Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__POP_EXCEPT: {
-            PyObject *exc_value;
-            _cache_size = 3;
-            exc_value = _2;
-            _PyErr_StackItem *exc_info = tstate->exc_info;
-            Py_XSETREF(exc_info->exc_value, exc_value == Py_None ? NULL : exc_value);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6673,7 +5152,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6683,7 +5161,6 @@
             value = Py_NewRef(PyExc_AssertionError);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6692,29 +5169,18 @@
             _cache_size = 1;
             value = Py_NewRef(PyExc_AssertionError);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_ASSERTION_ERROR: {
             PyObject *value;
-            _cache_size = 2;
-            value = Py_NewRef(PyExc_AssertionError);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_ASSERTION_ERROR: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             value = Py_NewRef(PyExc_AssertionError);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6726,7 +5192,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6741,7 +5206,6 @@
             }
             _0 = bc;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6755,30 +5219,15 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = bc;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_BUILD_CLASS: {
             PyObject *bc;
-            _cache_size = 2;
-            if (PyMapping_GetOptionalItem(BUILTINS(), &_Py_ID(__build_class__), &bc) < 0) JUMP_TO_ERROR();
-            if (bc == NULL) {
-                _PyErr_SetString(tstate, PyExc_NameError,
-                                 "__build_class__ not found");
-                if (true) JUMP_TO_ERROR();
-            }
-            _2 = bc;
-            break;
-        }
-
-        case __R3__LOAD_BUILD_CLASS: {
-            PyObject *bc;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             if (PyMapping_GetOptionalItem(BUILTINS(), &_Py_ID(__build_class__), &bc) < 0) JUMP_TO_ERROR();
             if (bc == NULL) {
                 _PyErr_SetString(tstate, PyExc_NameError,
@@ -6787,7 +5236,6 @@
             }
             _0 = bc;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6804,7 +5252,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6831,7 +5278,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6857,7 +5303,6 @@
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6882,31 +5327,6 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_NAME: {
-            PyObject *v;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            v = _2;
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            PyObject *ns = LOCALS();
-            int err;
-            if (ns == NULL) {
-                _PyErr_Format(tstate, PyExc_SystemError,
-                              "no locals found when storing %R", name);
-                Py_DECREF(v);
-                if (true) JUMP_TO_ERROR();
-            }
-            if (PyDict_CheckExact(ns))
-            err = PyDict_SetItem(ns, name, v);
-            else
-            err = PyObject_SetItem(ns, name, v);
-            Py_DECREF(v);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6933,7 +5353,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6958,7 +5377,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -6982,35 +5400,11 @@
                 JUMP_TO_ERROR();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__DELETE_NAME: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            PyObject *ns = LOCALS();
-            int err;
-            if (ns == NULL) {
-                _PyErr_Format(tstate, PyExc_SystemError,
-                              "no locals when deleting %R", name);
-                JUMP_TO_ERROR();
-            }
-            err = PyObject_DelItem(ns, name);
-            // Can't use ERROR_IF here.
-            if (err != 0) {
-                _PyEval_FormatExcCheckArg(tstate, PyExc_NameError,
-                    NAME_ERROR_MSG,
-                    name);
-                JUMP_TO_ERROR();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_NAME: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
             PyObject *ns = LOCALS();
@@ -7052,7 +5446,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7069,7 +5462,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7086,7 +5478,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7105,7 +5496,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7125,28 +5515,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNPACK_SEQUENCE: {
-            PyObject *seq;
-            PyObject **top;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            seq = stack_pointer[-1];
-            top = &stack_pointer[-1 + oparg];
-            int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
-            Py_DECREF(seq);
-            if (res == 0) JUMP_TO_ERROR();
-            stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7173,7 +5541,6 @@
             _1 = val0;
             _0 = val1;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7199,7 +5566,6 @@
             Py_DECREF(seq);
             _1 = val0;
             _0 = val1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7207,36 +5573,10 @@
             PyObject *seq;
             PyObject *val1;
             PyObject *val0;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            seq = _1;
-            assert(oparg == 2);
-            if (!PyTuple_CheckExact(seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyTuple_GET_SIZE(seq) != 2) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(UNPACK_SEQUENCE, hit);
-            val0 = Py_NewRef(PyTuple_GET_ITEM(seq, 0));
-            val1 = Py_NewRef(PyTuple_GET_ITEM(seq, 1));
-            Py_DECREF(seq);
-            _2 = val0;
-            _1 = val1;
-            break;
-        }
-
-        case __R3__UNPACK_SEQUENCE_TWO_TUPLE: {
-            PyObject *seq;
-            PyObject *val1;
-            PyObject *val0;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             seq = stack_pointer[-1];
             assert(oparg == 2);
@@ -7255,7 +5595,6 @@
             _1 = val0;
             _0 = val1;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7284,7 +5623,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7312,7 +5650,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7342,7 +5679,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7373,39 +5709,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNPACK_SEQUENCE_TUPLE: {
-            PyObject *seq;
-            PyObject **values;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            seq = stack_pointer[-1];
-            values = &stack_pointer[-1];
-            if (!PyTuple_CheckExact(seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyTuple_GET_SIZE(seq) != oparg) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(UNPACK_SEQUENCE, hit);
-            PyObject **items = _PyTuple_ITEMS(seq);
-            for (int i = oparg; --i >= 0; ) {
-                *values++ = Py_NewRef(items[i]);
-            }
-            Py_DECREF(seq);
-            stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7433,7 +5736,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7461,7 +5763,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7491,7 +5792,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7522,39 +5822,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNPACK_SEQUENCE_LIST: {
-            PyObject *seq;
-            PyObject **values;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            seq = stack_pointer[-1];
-            values = &stack_pointer[-1];
-            if (!PyList_CheckExact(seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyList_GET_SIZE(seq) != oparg) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(UNPACK_SEQUENCE, hit);
-            PyObject **items = _PyList_ITEMS(seq);
-            for (int i = oparg; --i >= 0; ) {
-                *values++ = Py_NewRef(items[i]);
-            }
-            Py_DECREF(seq);
-            stack_pointer += -1 + oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7582,7 +5849,6 @@
             stack_pointer += -1 + oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7599,7 +5865,6 @@
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7618,7 +5883,6 @@
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7638,28 +5902,6 @@
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__UNPACK_EX: {
-            PyObject *seq;
-            PyObject **top;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            seq = stack_pointer[-1];
-            top = &stack_pointer[(oparg & 0xFF) + (oparg >> 8)];
-            int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
-            Py_DECREF(seq);
-            if (res == 0) JUMP_TO_ERROR();
-            stack_pointer += (oparg & 0xFF) + (oparg >> 8);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7676,7 +5918,6 @@
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7695,7 +5936,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7714,7 +5954,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7733,7 +5972,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7751,24 +5989,6 @@
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_ATTR: {
-            PyObject *owner;
-            PyObject *v;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            owner = _2;
-            v = _1;
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            int err = PyObject_SetAttr(owner, name, v);
-            Py_DECREF(v);
-            Py_DECREF(owner);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7784,7 +6004,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7799,7 +6018,6 @@
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7813,20 +6031,6 @@
             Py_DECREF(owner);
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_ATTR: {
-            PyObject *owner;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            owner = _2;
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            int err = PyObject_DelAttr(owner, name);
-            Py_DECREF(owner);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7842,7 +6046,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7858,7 +6061,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7873,7 +6075,6 @@
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7887,20 +6088,6 @@
             Py_DECREF(v);
             if (err) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_GLOBAL: {
-            PyObject *v;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            v = _2;
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            int err = PyDict_SetItem(GLOBALS(), name, v);
-            Py_DECREF(v);
-            if (err) JUMP_TO_ERROR();
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7916,7 +6103,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7936,7 +6122,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -7955,30 +6140,11 @@
                 JUMP_TO_ERROR();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__DELETE_GLOBAL: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            int err = PyDict_Pop(GLOBALS(), name, NULL);
-            // Can't use ERROR_IF here.
-            if (err < 0) {
-                JUMP_TO_ERROR();
-            }
-            if (err == 0) {
-                _PyEval_FormatExcCheckArg(tstate, PyExc_NameError,
-                    NAME_ERROR_MSG, name);
-                JUMP_TO_ERROR();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_GLOBAL: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
             int err = PyDict_Pop(GLOBALS(), name, NULL);
@@ -8010,7 +6176,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8026,7 +6191,6 @@
             Py_INCREF(locals);
             _0 = locals;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8041,31 +6205,15 @@
             }
             Py_INCREF(locals);
             _1 = locals;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_LOCALS: {
             PyObject *locals;
-            _cache_size = 2;
-            locals = LOCALS();
-            if (locals == NULL) {
-                _PyErr_SetString(tstate, PyExc_SystemError,
-                                 "no locals found");
-                if (true) JUMP_TO_ERROR();
-            }
-            Py_INCREF(locals);
-            _2 = locals;
-            break;
-        }
-
-        case __R3__LOAD_LOCALS: {
-            PyObject *locals;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             locals = LOCALS();
             if (locals == NULL) {
                 _PyErr_SetString(tstate, PyExc_SystemError,
@@ -8075,7 +6223,6 @@
             Py_INCREF(locals);
             _0 = locals;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8093,7 +6240,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8127,7 +6273,6 @@
             _0 = v;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8160,7 +6305,6 @@
             Py_DECREF(mod_or_class_dict);
             _0 = v;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8192,38 +6336,6 @@
             }
             Py_DECREF(mod_or_class_dict);
             _1 = v;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_FROM_DICT_OR_GLOBALS: {
-            PyObject *mod_or_class_dict;
-            PyObject *v;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            mod_or_class_dict = _2;
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
-            if (PyMapping_GetOptionalItem(mod_or_class_dict, name, &v) < 0) {
-                JUMP_TO_ERROR();
-            }
-            if (v == NULL) {
-                if (PyDict_GetItemRef(GLOBALS(), name, &v) < 0) {
-                    JUMP_TO_ERROR();
-                }
-                if (v == NULL) {
-                    if (PyMapping_GetOptionalItem(BUILTINS(), name, &v) < 0) {
-                        JUMP_TO_ERROR();
-                    }
-                    if (v == NULL) {
-                        _PyEval_FormatExcCheckArg(
-                            tstate, PyExc_NameError,
-                            NAME_ERROR_MSG, name);
-                        JUMP_TO_ERROR();
-                    }
-                }
-            }
-            Py_DECREF(mod_or_class_dict);
-            _2 = v;
             break;
         }
 
@@ -8257,7 +6369,6 @@
             stack_pointer[-1] = v;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8266,8 +6377,6 @@
         /* __R1__LOAD_NAME is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* __R2__LOAD_NAME is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
-
-        /* __R3__LOAD_NAME is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* _LOAD_NAME is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
@@ -8314,7 +6423,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8361,7 +6469,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8410,7 +6517,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8460,58 +6566,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_GLOBAL: {
-            PyObject *res;
-            PyObject *null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
-            if (PyDict_CheckExact(GLOBALS())
-                && PyDict_CheckExact(BUILTINS()))
-            {
-                res = _PyDict_LoadGlobal((PyDictObject *)GLOBALS(),
-                    (PyDictObject *)BUILTINS(),
-                    name);
-                if (res == NULL) {
-                    if (!_PyErr_Occurred(tstate)) {
-                        /* _PyDict_LoadGlobal() returns NULL without raising
-                         * an exception if the key doesn't exist */
-                        _PyEval_FormatExcCheckArg(tstate, PyExc_NameError,
-                            NAME_ERROR_MSG, name);
-                    }
-                    if (true) JUMP_TO_ERROR();
-                }
-            }
-            else {
-                /* Slow-path if globals or builtins is not a dict */
-                /* namespace 1: globals */
-                if (PyMapping_GetOptionalItem(GLOBALS(), name, &res) < 0) JUMP_TO_ERROR();
-                if (res == NULL) {
-                    /* namespace 2: builtins */
-                    if (PyMapping_GetOptionalItem(BUILTINS(), name, &res) < 0) JUMP_TO_ERROR();
-                    if (res == NULL) {
-                        _PyEval_FormatExcCheckArg(
-                            tstate, PyExc_NameError,
-                            NAME_ERROR_MSG, name);
-                        if (true) JUMP_TO_ERROR();
-                    }
-                }
-            }
-            null = NULL;
-            stack_pointer[0] = res;
-            if (oparg & 1) stack_pointer[1] = null;
-            stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8530,7 +6584,6 @@
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8549,7 +6602,6 @@
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8567,29 +6619,11 @@
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_GLOBALS_VERSION: {
             _cache_size = 2;
-            uint16_t version = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *dict = (PyDictObject *)GLOBALS();
-            if (!PyDict_CheckExact(dict)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (dict->ma_keys->dk_version != version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_GLOBALS_VERSION: {
-            _cache_size = 3;
             uint16_t version = (uint16_t)CURRENT_OPERAND();
             PyDictObject *dict = (PyDictObject *)GLOBALS();
             if (!PyDict_CheckExact(dict)) {
@@ -8619,7 +6653,6 @@
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8638,7 +6671,6 @@
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8656,29 +6688,11 @@
             }
             assert(DK_IS_UNICODE(dict->ma_keys));
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_BUILTINS_VERSION: {
             _cache_size = 2;
-            uint16_t version = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *dict = (PyDictObject *)BUILTINS();
-            if (!PyDict_CheckExact(dict)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (dict->ma_keys->dk_version != version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(DK_IS_UNICODE(dict->ma_keys));
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_BUILTINS_VERSION: {
-            _cache_size = 3;
             uint16_t version = (uint16_t)CURRENT_OPERAND();
             PyDictObject *dict = (PyDictObject *)BUILTINS();
             if (!PyDict_CheckExact(dict)) {
@@ -8714,7 +6728,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8739,7 +6752,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8766,7 +6778,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8794,36 +6805,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_GLOBAL_MODULE: {
-            PyObject *res;
-            PyObject *null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *dict = (PyDictObject *)GLOBALS();
-            PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(dict->ma_keys);
-            res = entries[index].me_value;
-            if (res == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_INCREF(res);
-            STAT_INC(LOAD_GLOBAL, hit);
-            null = NULL;
-            stack_pointer[0] = res;
-            if (oparg & 1) stack_pointer[1] = null;
-            stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8848,7 +6829,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8873,7 +6853,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8900,7 +6879,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8928,36 +6906,6 @@
             stack_pointer += 1 + (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_GLOBAL_BUILTINS: {
-            PyObject *res;
-            PyObject *null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *bdict = (PyDictObject *)BUILTINS();
-            PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(bdict->ma_keys);
-            res = entries[index].me_value;
-            if (res == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_INCREF(res);
-            STAT_INC(LOAD_GLOBAL, hit);
-            null = NULL;
-            stack_pointer[0] = res;
-            if (oparg & 1) stack_pointer[1] = null;
-            stack_pointer += 1 + (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8975,7 +6923,6 @@
             SETLOCAL(oparg, NULL);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -8992,28 +6939,11 @@
             }
             SETLOCAL(oparg, NULL);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__DELETE_FAST: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            PyObject *v = GETLOCAL(oparg);
-            if (v == NULL) {
-                _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError,
-                    UNBOUNDLOCAL_ERROR_MSG,
-                    PyTuple_GetItem(_PyFrame_GetCode(frame)->co_localsplusnames, oparg)
-                );
-                if (1) JUMP_TO_ERROR();
-            }
-            SETLOCAL(oparg, NULL);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_FAST: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             PyObject *v = GETLOCAL(oparg);
             if (v == NULL) {
@@ -9041,7 +6971,6 @@
             SETLOCAL(oparg, NULL);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9058,7 +6987,6 @@
             SETLOCAL(oparg, cell);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9074,27 +7002,11 @@
             }
             SETLOCAL(oparg, cell);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__MAKE_CELL: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            // "initial" is probably NULL but not if it's an arg (or set
-            // via PyFrame_LocalsToFast() before MAKE_CELL has run).
-            PyObject *initial = GETLOCAL(oparg);
-            PyObject *cell = PyCell_New(initial);
-            if (cell == NULL) {
-                JUMP_TO_ERROR();
-            }
-            SETLOCAL(oparg, cell);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__MAKE_CELL: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             // "initial" is probably NULL but not if it's an arg (or set
             // via PyFrame_LocalsToFast() before MAKE_CELL has run).
@@ -9120,7 +7032,6 @@
             SETLOCAL(oparg, cell);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9138,7 +7049,6 @@
             Py_DECREF(oldobj);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9155,28 +7065,11 @@
             }
             Py_DECREF(oldobj);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__DELETE_DEREF: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            PyObject *cell = GETLOCAL(oparg);
-            // Can't use ERROR_IF here.
-            // Fortunately we don't need its superpower.
-            PyObject *oldobj = PyCell_SwapTakeRef((PyCellObject *)cell, NULL);
-            if (oldobj == NULL) {
-                _PyEval_FormatExcUnbound(tstate, _PyFrame_GetCode(frame), oparg);
-                JUMP_TO_ERROR();
-            }
-            Py_DECREF(oldobj);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DELETE_DEREF: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             PyObject *cell = GETLOCAL(oparg);
             // Can't use ERROR_IF here.
@@ -9204,7 +7097,6 @@
             Py_DECREF(oldobj);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9233,7 +7125,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9261,7 +7152,6 @@
             Py_DECREF(class_dict);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9288,33 +7178,6 @@
             }
             Py_DECREF(class_dict);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_FROM_DICT_OR_DEREF: {
-            PyObject *class_dict;
-            PyObject *value;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            class_dict = _2;
-            PyObject *name;
-            assert(class_dict);
-            assert(oparg >= 0 && oparg < _PyFrame_GetCode(frame)->co_nlocalsplus);
-            name = PyTuple_GET_ITEM(_PyFrame_GetCode(frame)->co_localsplusnames, oparg);
-            if (PyMapping_GetOptionalItem(class_dict, name, &value) < 0) {
-                JUMP_TO_ERROR();
-            }
-            if (!value) {
-                PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
-                value = PyCell_GetRef(cell);
-                if (value == NULL) {
-                    _PyEval_FormatExcUnbound(tstate, _PyFrame_GetCode(frame), oparg);
-                    JUMP_TO_ERROR();
-                }
-            }
-            Py_DECREF(class_dict);
-            _2 = value;
             break;
         }
 
@@ -9343,7 +7206,6 @@
             stack_pointer[-1] = value;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9359,7 +7221,6 @@
             }
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9374,31 +7235,15 @@
                 if (true) JUMP_TO_ERROR();
             }
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_DEREF: {
             PyObject *value;
-            _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
-            value = PyCell_GetRef(cell);
-            if (value == NULL) {
-                _PyEval_FormatExcUnbound(tstate, _PyFrame_GetCode(frame), oparg);
-                if (true) JUMP_TO_ERROR();
-            }
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_DEREF: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             oparg = CURRENT_OPARG();
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             value = PyCell_GetRef(cell);
@@ -9408,7 +7253,6 @@
             }
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9426,7 +7270,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9440,7 +7283,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9453,7 +7295,6 @@
             PyCell_SetTakeRef(cell, v);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9465,18 +7306,6 @@
             PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
             PyCell_SetTakeRef(cell, v);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_DEREF: {
-            PyObject *v;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            v = _2;
-            PyCellObject *cell = (PyCellObject *)GETLOCAL(oparg);
-            PyCell_SetTakeRef(cell, v);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9490,7 +7319,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9509,7 +7337,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9527,29 +7354,11 @@
                 frame->localsplus[offset + i] = Py_NewRef(o);
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__COPY_FREE_VARS: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            /* Copy closure variables to free variables */
-            PyCodeObject *co = _PyFrame_GetCode(frame);
-            assert(PyFunction_Check(frame->f_funcobj));
-            PyObject *closure = ((PyFunctionObject *)frame->f_funcobj)->func_closure;
-            assert(oparg == co->co_nfreevars);
-            int offset = co->co_nlocalsplus - oparg;
-            for (int i = 0; i < oparg; ++i) {
-                PyObject *o = PyTuple_GET_ITEM(closure, i);
-                frame->localsplus[offset + i] = Py_NewRef(o);
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COPY_FREE_VARS: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             /* Copy closure variables to free variables */
             PyCodeObject *co = _PyFrame_GetCode(frame);
@@ -9579,7 +7388,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9597,7 +7405,6 @@
             _0 = str;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9617,7 +7424,6 @@
             _0 = str;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9638,29 +7444,6 @@
             _0 = str;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_STRING: {
-            PyObject **pieces;
-            PyObject *str;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            pieces = &stack_pointer[-oparg];
-            str = _PyUnicode_JoinArray(&_Py_STR(empty), pieces, oparg);
-            for (int _i = oparg; --_i >= 0;) {
-                Py_DECREF(pieces[_i]);
-            }
-            if (str == NULL) JUMP_TO_ERROR();
-            _0 = str;
-            stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9679,7 +7462,6 @@
             stack_pointer += 1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9694,7 +7476,6 @@
             _0 = tup;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9711,7 +7492,6 @@
             _0 = tup;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9729,26 +7509,6 @@
             _0 = tup;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_TUPLE: {
-            PyObject **values;
-            PyObject *tup;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            values = &stack_pointer[-oparg];
-            tup = _PyTuple_FromArraySteal(values, oparg);
-            if (tup == NULL) JUMP_TO_ERROR();
-            _0 = tup;
-            stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9764,7 +7524,6 @@
             stack_pointer += 1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9779,7 +7538,6 @@
             _0 = list;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9796,7 +7554,6 @@
             _0 = list;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9814,26 +7571,6 @@
             _0 = list;
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_LIST: {
-            PyObject **values;
-            PyObject *list;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            values = &stack_pointer[-oparg];
-            list = _PyList_FromArraySteal(values, oparg);
-            if (list == NULL) JUMP_TO_ERROR();
-            _0 = list;
-            stack_pointer += -oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9849,7 +7586,6 @@
             stack_pointer += 1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9878,7 +7614,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9909,7 +7644,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -9941,40 +7675,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LIST_EXTEND: {
-            PyObject *iterable;
-            PyObject *list;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            iterable = stack_pointer[-1];
-            list = stack_pointer[-2 - (oparg-1)];
-            PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
-            if (none_val == NULL) {
-                if (_PyErr_ExceptionMatches(tstate, PyExc_TypeError) &&
-                    (Py_TYPE(iterable)->tp_iter == NULL && !PySequence_Check(iterable)))
-                {
-                    _PyErr_Clear(tstate);
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "Value after * must be an iterable, not %.200s",
-                                  Py_TYPE(iterable)->tp_name);
-                }
-                Py_DECREF(iterable);
-                if (true) JUMP_TO_ERROR();
-            }
-            assert(Py_IsNone(none_val));
-            Py_DECREF(iterable);
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10003,7 +7703,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10020,7 +7719,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10039,7 +7737,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10059,28 +7756,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SET_UPDATE: {
-            PyObject *iterable;
-            PyObject *set;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            iterable = stack_pointer[-1];
-            set = stack_pointer[-2 - (oparg-1)];
-            int err = _PySet_Update(set, iterable);
-            Py_DECREF(iterable);
-            if (err < 0) JUMP_TO_ERROR();
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10097,7 +7772,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10106,8 +7780,6 @@
         /* __R1__BUILD_SET is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* __R2__BUILD_SET is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
-
-        /* __R3__BUILD_SET is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* _BUILD_SET is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
@@ -10128,7 +7800,6 @@
             _0 = map;
             stack_pointer += -oparg*2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10151,7 +7822,6 @@
             _0 = map;
             stack_pointer += -oparg*2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10175,32 +7845,6 @@
             _0 = map;
             stack_pointer += -oparg*2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_MAP: {
-            PyObject **values;
-            PyObject *map;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            values = &stack_pointer[-oparg*2];
-            map = _PyDict_FromItems(
-                                    values, 2,
-                                    values+1, 2,
-                                    oparg);
-            for (int _i = oparg*2; --_i >= 0;) {
-                Py_DECREF(values[_i]);
-            }
-            if (map == NULL) JUMP_TO_ERROR();
-            _0 = map;
-            stack_pointer += -oparg*2;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10222,7 +7866,6 @@
             stack_pointer += 1 - oparg*2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10250,7 +7893,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10277,38 +7919,11 @@
                 Py_DECREF(ann_dict);
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__SETUP_ANNOTATIONS: {
             _cache_size = 2;
-            int err;
-            PyObject *ann_dict;
-            if (LOCALS() == NULL) {
-                _PyErr_Format(tstate, PyExc_SystemError,
-                              "no locals found when setting up annotations");
-                if (true) JUMP_TO_ERROR();
-            }
-            /* check if __annotations__ in locals()... */
-            if (PyMapping_GetOptionalItem(LOCALS(), &_Py_ID(__annotations__), &ann_dict) < 0) JUMP_TO_ERROR();
-            if (ann_dict == NULL) {
-                ann_dict = PyDict_New();
-                if (ann_dict == NULL) JUMP_TO_ERROR();
-                err = PyObject_SetItem(LOCALS(), &_Py_ID(__annotations__),
-                                       ann_dict);
-                Py_DECREF(ann_dict);
-                if (err) JUMP_TO_ERROR();
-            }
-            else {
-                Py_DECREF(ann_dict);
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SETUP_ANNOTATIONS: {
-            _cache_size = 3;
             int err;
             PyObject *ann_dict;
             if (LOCALS() == NULL) {
@@ -10356,7 +7971,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10381,7 +7995,6 @@
             _0 = map;
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10408,7 +8021,6 @@
             _0 = map;
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10436,36 +8048,6 @@
             _0 = map;
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_CONST_KEY_MAP: {
-            PyObject *keys;
-            PyObject **values;
-            PyObject *map;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            keys = stack_pointer[-1];
-            values = &stack_pointer[-1 - oparg];
-            assert(PyTuple_CheckExact(keys));
-            assert(PyTuple_GET_SIZE(keys) == (Py_ssize_t)oparg);
-            map = _PyDict_FromItems(
-                                    &PyTuple_GET_ITEM(keys, 0), 1,
-                                    values, 1, oparg);
-            for (int _i = oparg; --_i >= 0;) {
-                Py_DECREF(values[_i]);
-            }
-            Py_DECREF(keys);
-            if (map == NULL) JUMP_TO_ERROR();
-            _0 = map;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10491,7 +8073,6 @@
             stack_pointer += -oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10515,7 +8096,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10541,7 +8121,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10568,35 +8147,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DICT_UPDATE: {
-            PyObject *update;
-            PyObject *dict;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            update = stack_pointer[-1];
-            dict = stack_pointer[-2 - (oparg - 1)];
-            if (PyDict_Update(dict, update) < 0) {
-                if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
-                    _PyErr_Format(tstate, PyExc_TypeError,
-                                  "'%.200s' object is not a mapping",
-                                  Py_TYPE(update)->tp_name);
-                }
-                Py_DECREF(update);
-                if (true) JUMP_TO_ERROR();
-            }
-            Py_DECREF(update);
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10620,7 +8170,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10642,7 +8191,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10666,7 +8214,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10691,33 +8238,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DICT_MERGE: {
-            PyObject *update;
-            PyObject *dict;
-            PyObject *callable;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            update = stack_pointer[-1];
-            dict = stack_pointer[-2 - (oparg - 1)];
-            callable = stack_pointer[-5 - (oparg - 1)];
-            if (_PyDict_MergeEx(dict, update, 2) < 0) {
-                _PyEval_FormatKwargsError(tstate, callable, update);
-                Py_DECREF(update);
-                if (true) JUMP_TO_ERROR();
-            }
-            Py_DECREF(update);
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10739,7 +8259,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10759,7 +8278,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10781,7 +8299,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10804,31 +8321,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__MAP_ADD: {
-            PyObject *value;
-            PyObject *key;
-            PyObject *dict;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            value = stack_pointer[-1];
-            key = stack_pointer[-2];
-            dict = stack_pointer[-3 - (oparg - 1)];
-            assert(PyDict_CheckExact(dict));
-            /* dict[key] = value */
-            // Do not DECREF INPUTS because the function steals the references
-            if (_PyDict_SetItem_Take2((PyDictObject *)dict, key, value) != 0) JUMP_TO_ERROR();
-            stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10848,7 +8340,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10857,8 +8348,6 @@
         /* __R1__INSTRUMENTED_LOAD_SUPER_ATTR is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_LOAD_SUPER_ATTR is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_LOAD_SUPER_ATTR is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_LOAD_SUPER_ATTR is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -10892,7 +8381,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10928,7 +8416,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -10965,45 +8452,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_SUPER_ATTR_ATTR: {
-            PyObject *self;
-            PyObject *class;
-            PyObject *global_super;
-            PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            self = stack_pointer[-1];
-            class = stack_pointer[-2];
-            global_super = stack_pointer[-3];
-            assert(!(oparg & 1));
-            if (global_super != (PyObject *)&PySuper_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyType_Check(class)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_SUPER_ATTR, hit);
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            attr = _PySuper_Lookup((PyTypeObject *)class, self, name, NULL);
-            Py_DECREF(global_super);
-            Py_DECREF(class);
-            Py_DECREF(self);
-            if (attr == NULL) JUMP_TO_ERROR();
-            stack_pointer[-3] = attr;
-            stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11037,7 +8485,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11082,7 +8529,6 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -3;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11127,7 +8573,6 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11172,51 +8617,6 @@
             _1 = self_or_null;
             _0 = attr;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_SUPER_ATTR_METHOD: {
-            PyObject *self;
-            PyObject *class;
-            PyObject *global_super;
-            PyObject *attr;
-            PyObject *self_or_null;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            self = _2;
-            class = _1;
-            global_super = _0;
-            assert(oparg & 1);
-            if (global_super != (PyObject *)&PySuper_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyType_Check(class)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_SUPER_ATTR, hit);
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            PyTypeObject *cls = (PyTypeObject *)class;
-            int method_found = 0;
-            attr = _PySuper_Lookup(cls, self, name,
-                                   Py_TYPE(self)->tp_getattro == PyObject_GenericGetAttr ? &method_found : NULL);
-            Py_DECREF(global_super);
-            Py_DECREF(class);
-            if (attr == NULL) {
-                Py_DECREF(self);
-                if (true) JUMP_TO_ERROR();
-            }
-            if (method_found) {
-                self_or_null = self; // transfer ownership
-            } else {
-                Py_DECREF(self);
-                self_or_null = NULL;
-            }
-            _1 = self_or_null;
-            _0 = attr;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11263,7 +8663,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11309,7 +8708,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11355,7 +8753,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11403,7 +8800,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11452,57 +8848,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *self_or_null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 1);
-            if (oparg & 1) {
-                /* Designed to work in tandem with CALL, pushes two values. */
-                attr = NULL;
-                if (_PyObject_GetMethod(owner, name, &attr)) {
-                    /* We can bypass temporary bound method object.
-                       meth is unbound method and obj is self.
-                       meth | self | arg1 | ... | argN
-                     */
-                    assert(attr != NULL);  // No errors on this branch
-                    self_or_null = owner;  // Transfer ownership
-                }
-                else {
-                    /* meth is not an unbound method (but a regular attr, or
-                       something was returned by a descriptor protocol).  Set
-                       the second element of the stack to NULL, to signal
-                       CALL that it's not a method call.
-                       meth | NULL | arg1 | ... | argN
-                     */
-                    Py_DECREF(owner);
-                    if (attr == NULL) JUMP_TO_ERROR();
-                    self_or_null = NULL;
-                }
-            }
-            else {
-                /* Classic, pushes one value. */
-                attr = PyObject_GetAttr(owner, name);
-                Py_DECREF(owner);
-                if (attr == NULL) JUMP_TO_ERROR();
-            }
-            stack_pointer[-1] = attr;
-            if (oparg & 1) stack_pointer[0] = self_or_null;
-            stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11519,7 +8864,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11537,7 +8881,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11554,7 +8897,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11570,22 +8912,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_TYPE_VERSION: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            uint32_t type_version = (uint32_t)CURRENT_OPERAND();
-            PyTypeObject *tp = Py_TYPE(owner);
-            assert(type_version != 0);
-            if (tp->tp_version_tag != type_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -11601,7 +8927,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11618,7 +8943,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11634,7 +8958,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11649,21 +8972,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_MANAGED_OBJECT_HAS_VALUES: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            assert(Py_TYPE(owner)->tp_dictoffset < 0);
-            assert(Py_TYPE(owner)->tp_flags & Py_TPFLAGS_INLINE_VALUES);
-            if (!_PyObject_InlineValues(owner)->valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -11687,7 +8995,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11711,7 +9018,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11737,7 +9043,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11764,35 +9069,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_INSTANCE_VALUE_0: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            attr = _PyObject_InlineValues(owner)->values[index];
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11818,7 +9094,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11844,7 +9119,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11872,7 +9146,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11901,37 +9174,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_INSTANCE_VALUE_1: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            attr = _PyObject_InlineValues(owner)->values[index];
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = null;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11942,8 +9184,6 @@
         /* __R1__LOAD_ATTR_INSTANCE_VALUE is split on (oparg & 1) */
 
         /* __R2__LOAD_ATTR_INSTANCE_VALUE is split on (oparg & 1) */
-
-        /* __R3__LOAD_ATTR_INSTANCE_VALUE is split on (oparg & 1) */
 
         case _CHECK_ATTR_MODULE: {
             PyObject *owner;
@@ -11962,7 +9202,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -11984,7 +9223,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12005,7 +9243,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12025,26 +9262,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_ATTR_MODULE: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            uint32_t dict_version = (uint32_t)CURRENT_OPERAND();
-            if (!PyModule_CheckExact(owner)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
-            assert(dict != NULL);
-            if (dict->ma_keys->dk_version != dict_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -12074,7 +9291,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12104,7 +9320,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12136,7 +9351,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12169,41 +9383,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_MODULE: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *dict = (PyDictObject *)((PyModuleObject *)owner)->md_dict;
-            assert(dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
-            assert(index < dict->ma_keys->dk_nentries);
-            PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(dict->ma_keys) + index;
-            attr = ep->me_value;
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            if (oparg & 1) stack_pointer[0] = null;
-            stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12220,7 +9399,6 @@
             assert(PyDict_CheckExact((PyObject *)dict));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12238,7 +9416,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12255,7 +9432,6 @@
             assert(PyDict_CheckExact((PyObject *)dict));
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12271,22 +9447,6 @@
             }
             assert(PyDict_CheckExact((PyObject *)dict));
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_ATTR_WITH_HINT: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            assert(Py_TYPE(owner)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-            PyDictObject *dict = _PyObject_GetManagedDict(owner);
-            if (dict == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(PyDict_CheckExact((PyObject *)dict));
-            _2 = owner;
             break;
         }
 
@@ -12333,7 +9493,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12380,7 +9539,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12429,7 +9587,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12479,58 +9636,6 @@
             stack_pointer += (oparg & 1);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_WITH_HINT: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            uint16_t hint = (uint16_t)CURRENT_OPERAND();
-            PyDictObject *dict = _PyObject_GetManagedDict(owner);
-            if (hint >= (size_t)dict->ma_keys->dk_nentries) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
-            if (DK_IS_UNICODE(dict->ma_keys)) {
-                PyDictUnicodeEntry *ep = DK_UNICODE_ENTRIES(dict->ma_keys) + hint;
-                if (ep->me_key != name) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
-                attr = ep->me_value;
-            }
-            else {
-                PyDictKeyEntry *ep = DK_ENTRIES(dict->ma_keys) + hint;
-                if (ep->me_key != name) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
-                attr = ep->me_value;
-            }
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            if (oparg & 1) stack_pointer[0] = null;
-            stack_pointer += (oparg & 1);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12555,7 +9660,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12580,7 +9684,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12607,7 +9710,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12635,36 +9737,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_SLOT_0: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            char *addr = (char *)owner + index;
-            attr = *(PyObject **)addr;
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12691,7 +9763,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12718,7 +9789,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12747,7 +9817,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12777,38 +9846,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_SLOT_1: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            char *addr = (char *)owner + index;
-            attr = *(PyObject **)addr;
-            if (attr == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_ATTR, hit);
-            Py_INCREF(attr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = null;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12819,8 +9856,6 @@
         /* __R1__LOAD_ATTR_SLOT is split on (oparg & 1) */
 
         /* __R2__LOAD_ATTR_SLOT is split on (oparg & 1) */
-
-        /* __R3__LOAD_ATTR_SLOT is split on (oparg & 1) */
 
         case _CHECK_ATTR_CLASS: {
             PyObject *owner;
@@ -12838,7 +9873,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12859,7 +9893,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12879,7 +9912,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12898,25 +9930,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_ATTR_CLASS: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            uint32_t type_version = (uint32_t)CURRENT_OPERAND();
-            if (!PyType_Check(owner)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(type_version != 0);
-            if (((PyTypeObject *)owner)->tp_version_tag != type_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -12936,7 +9949,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12956,7 +9968,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -12978,7 +9989,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13001,31 +10011,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_CLASS_0: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            attr = Py_NewRef(descr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13047,7 +10032,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13069,7 +10053,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13093,7 +10076,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13118,33 +10100,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_CLASS_1: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *null = NULL;
-            (void)null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            attr = Py_NewRef(descr);
-            null = NULL;
-            Py_DECREF(owner);
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = null;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13156,15 +10111,11 @@
 
         /* __R2__LOAD_ATTR_CLASS is split on (oparg & 1) */
 
-        /* __R3__LOAD_ATTR_CLASS is split on (oparg & 1) */
-
         /* __R0__LOAD_ATTR_PROPERTY is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R1__LOAD_ATTR_PROPERTY is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__LOAD_ATTR_PROPERTY is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__LOAD_ATTR_PROPERTY is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _LOAD_ATTR_PROPERTY is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -13173,8 +10124,6 @@
         /* __R1__LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _LOAD_ATTR_GETATTRIBUTE_OVERRIDDEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -13194,7 +10143,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13215,7 +10163,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13235,7 +10182,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13254,25 +10200,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_DORV_NO_DICT: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            assert(Py_TYPE(owner)->tp_dictoffset < 0);
-            assert(Py_TYPE(owner)->tp_flags & Py_TPFLAGS_INLINE_VALUES);
-            if (_PyObject_GetManagedDict(owner)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (_PyObject_InlineValues(owner)->valid == 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -13298,7 +10225,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13324,7 +10250,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13350,7 +10275,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13375,31 +10299,6 @@
             Py_DECREF(owner);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_ATTR_INSTANCE_VALUE: {
-            PyObject *owner;
-            PyObject *value;
-            _cache_size = 3;
-            owner = _2;
-            value = _1;
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            STAT_INC(STORE_ATTR, hit);
-            assert(_PyObject_GetManagedDict(owner) == NULL);
-            PyDictValues *values = _PyObject_InlineValues(owner);
-            PyObject *old_value = values->values[index];
-            values->values[index] = value;
-            if (old_value == NULL) {
-                _PyDictValues_AddToInsertionOrder(values, index);
-            }
-            else {
-                Py_DECREF(old_value);
-            }
-            Py_DECREF(owner);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13408,8 +10307,6 @@
         /* __R1__STORE_ATTR_WITH_HINT is not a viable micro-op for tier 2 because it has unused cache entries */
 
         /* __R2__STORE_ATTR_WITH_HINT is not a viable micro-op for tier 2 because it has unused cache entries */
-
-        /* __R3__STORE_ATTR_WITH_HINT is not a viable micro-op for tier 2 because it has unused cache entries */
 
         /* _STORE_ATTR_WITH_HINT is not a viable micro-op for tier 2 because it has unused cache entries */
 
@@ -13429,7 +10326,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13449,7 +10345,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13469,7 +10364,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13488,25 +10382,6 @@
             Py_DECREF(owner);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__STORE_ATTR_SLOT: {
-            PyObject *owner;
-            PyObject *value;
-            _cache_size = 3;
-            owner = _2;
-            value = _1;
-            uint16_t index = (uint16_t)CURRENT_OPERAND();
-            char *addr = (char *)owner + index;
-            STAT_INC(STORE_ATTR, hit);
-            PyObject *old_value = *(PyObject **)addr;
-            *(PyObject **)addr = value;
-            Py_XDECREF(old_value);
-            Py_DECREF(owner);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13533,7 +10408,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13559,7 +10433,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13585,7 +10458,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13610,31 +10482,6 @@
             }
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COMPARE_OP: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            assert((oparg >> 5) <= Py_GE);
-            res = PyObject_RichCompare(left, right, oparg >> 5);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            if (res == NULL) JUMP_TO_ERROR();
-            if (oparg & 16) {
-                int res_bool = PyObject_IsTrue(res);
-                Py_DECREF(res);
-                if (res_bool < 0) JUMP_TO_ERROR();
-                res = res_bool ? Py_True : Py_False;
-            }
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13659,7 +10506,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13683,7 +10529,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13707,7 +10552,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13730,29 +10574,6 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COMPARE_OP_FLOAT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            STAT_INC(COMPARE_OP, hit);
-            double dleft = PyFloat_AS_DOUBLE(left);
-            double dright = PyFloat_AS_DOUBLE(right);
-            // 1 if NaN, 2 if <, 4 if >, 8 if ==; this matches low four bits of the oparg
-            int sign_ish = COMPARISON_BIT(dleft, dright);
-            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
-            res = (sign_ish & oparg) ? Py_True : Py_False;
-            // It's always a bool, so we don't care about oparg & 16.
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13787,7 +10608,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13821,7 +10641,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13855,7 +10674,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13888,39 +10706,6 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COMPARE_OP_INT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            if (!_PyLong_IsCompact((PyLongObject *)left)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!_PyLong_IsCompact((PyLongObject *)right)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(COMPARE_OP, hit);
-            assert(_PyLong_DigitCount((PyLongObject *)left) <= 1 &&
-                   _PyLong_DigitCount((PyLongObject *)right) <= 1);
-            Py_ssize_t ileft = _PyLong_CompactValue((PyLongObject *)left);
-            Py_ssize_t iright = _PyLong_CompactValue((PyLongObject *)right);
-            // 2 if <, 4 if >, 8 if ==; this matches the low 4 bits of the oparg
-            int sign_ish = COMPARISON_BIT(ileft, iright);
-            _Py_DECREF_SPECIALIZED(left, (destructor)PyObject_Free);
-            _Py_DECREF_SPECIALIZED(right, (destructor)PyObject_Free);
-            res = (sign_ish & oparg) ? Py_True : Py_False;
-            // It's always a bool, so we don't care about oparg & 16.
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13946,7 +10731,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13971,7 +10755,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -13996,7 +10779,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14020,30 +10802,6 @@
             // It's always a bool, so we don't care about oparg & 16.
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COMPARE_OP_STR: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            STAT_INC(COMPARE_OP, hit);
-            int eq = _PyUnicode_Equal(left, right);
-            assert((oparg >> 5) == Py_EQ || (oparg >> 5) == Py_NE);
-            _Py_DECREF_SPECIALIZED(left, _PyUnicode_ExactDealloc);
-            _Py_DECREF_SPECIALIZED(right, _PyUnicode_ExactDealloc);
-            assert(eq == 0 || eq == 1);
-            assert((oparg & 0xf) == COMPARISON_NOT_EQUALS || (oparg & 0xf) == COMPARISON_EQUALS);
-            assert(COMPARISON_NOT_EQUALS + 1 == COMPARISON_EQUALS);
-            res = ((COMPARISON_NOT_EQUALS + eq) & oparg) ? Py_True : Py_False;
-            // It's always a bool, so we don't care about oparg & 16.
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14062,7 +10820,6 @@
             _0 = b;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14081,7 +10838,6 @@
             _0 = b;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14099,24 +10855,6 @@
             b = res ? Py_True : Py_False;
             _0 = b;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__IS_OP: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *b;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            int res = Py_Is(left, right) ^ oparg;
-            Py_DECREF(left);
-            Py_DECREF(right);
-            b = res ? Py_True : Py_False;
-            _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14136,7 +10874,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14157,7 +10894,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14177,7 +10913,6 @@
             _0 = b;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14197,7 +10932,6 @@
             _0 = b;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14216,25 +10950,6 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CONTAINS_OP: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *b;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            int res = PySequence_Contains(right, left);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            if (res < 0) JUMP_TO_ERROR();
-            b = (res ^ oparg) ? Py_True : Py_False;
-            _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14260,7 +10975,6 @@
             _0 = b;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14286,7 +11000,6 @@
             _0 = b;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14311,31 +11024,6 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CONTAINS_OP_SET: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *b;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            if (!(PySet_CheckExact(right) || PyFrozenSet_CheckExact(right))) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CONTAINS_OP, hit);
-            // Note: both set and frozenset use the same seq_contains method!
-            int res = _PySet_Contains((PySetObject *)right, left);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            if (res < 0) JUMP_TO_ERROR();
-            b = (res ^ oparg) ? Py_True : Py_False;
-            _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14362,7 +11050,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14387,7 +11074,6 @@
             _0 = b;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14412,7 +11098,6 @@
             _0 = b;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14436,30 +11121,6 @@
             b = (res ^ oparg) ? Py_True : Py_False;
             _0 = b;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CONTAINS_OP_DICT: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *b;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            right = _2;
-            left = _1;
-            if (!PyDict_CheckExact(right)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CONTAINS_OP, hit);
-            int res = PyDict_Contains(right, left);
-            Py_DECREF(left);
-            Py_DECREF(right);
-            if (res < 0) JUMP_TO_ERROR();
-            b = (res ^ oparg) ? Py_True : Py_False;
-            _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14485,7 +11146,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14517,7 +11177,6 @@
             _1 = match;
             _0 = rest;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14549,7 +11208,6 @@
             _1 = match;
             _0 = rest;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14580,37 +11238,6 @@
             }
             _1 = match;
             _0 = rest;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_EG_MATCH: {
-            PyObject *match_type;
-            PyObject *exc_value;
-            PyObject *rest;
-            PyObject *match;
-            _cache_size = 3;
-            match_type = _2;
-            exc_value = _1;
-            if (_PyEval_CheckExceptStarTypeValid(tstate, match_type) < 0) {
-                Py_DECREF(exc_value);
-                Py_DECREF(match_type);
-                if (true) JUMP_TO_ERROR();
-            }
-            match = NULL;
-            rest = NULL;
-            int res = _PyEval_ExceptionGroupMatch(exc_value, match_type,
-                &match, &rest);
-            Py_DECREF(exc_value);
-            Py_DECREF(match_type);
-            if (res < 0) JUMP_TO_ERROR();
-            assert((match == NULL) == (rest == NULL));
-            if (match == NULL) JUMP_TO_ERROR();
-            if (!Py_IsNone(match)) {
-                PyErr_SetHandledException(match);
-            }
-            _2 = match;
-            _1 = rest;
             break;
         }
 
@@ -14643,7 +11270,6 @@
             stack_pointer[-1] = match;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14665,7 +11291,6 @@
             _1 = b;
             _0 = left;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14687,7 +11312,6 @@
             _1 = b;
             _0 = left;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14708,27 +11332,6 @@
             b = res ? Py_True : Py_False;
             _1 = b;
             _0 = left;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_EXC_MATCH: {
-            PyObject *right;
-            PyObject *left;
-            PyObject *b;
-            _cache_size = 3;
-            right = _2;
-            left = _1;
-            assert(PyExceptionInstance_Check(left));
-            if (_PyEval_CheckExceptTypeValid(tstate, right) < 0) {
-                Py_DECREF(right);
-                if (true) JUMP_TO_ERROR();
-            }
-            int res = PyErr_GivenExceptionMatches(left, right);
-            Py_DECREF(right);
-            b = res ? Py_True : Py_False;
-            _2 = b;
-            _1 = left;
             break;
         }
 
@@ -14750,7 +11353,6 @@
             stack_pointer[-1] = b;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14762,8 +11364,6 @@
 
         /* __R2__POP_JUMP_IF_FALSE is not a viable micro-op for tier 2 because it is replaced */
 
-        /* __R3__POP_JUMP_IF_FALSE is not a viable micro-op for tier 2 because it is replaced */
-
         /* _POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R0__POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is replaced */
@@ -14771,8 +11371,6 @@
         /* __R1__POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R2__POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is replaced */
-
-        /* __R3__POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is replaced */
 
         case _IS_NONE: {
             PyObject *value;
@@ -14789,7 +11387,6 @@
             stack_pointer[-1] = b;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14808,7 +11405,6 @@
             _0 = b;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14826,7 +11422,6 @@
             }
             _0 = b;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14843,23 +11438,6 @@
                 Py_DECREF(value);
             }
             _1 = b;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__IS_NONE: {
-            PyObject *value;
-            PyObject *b;
-            _cache_size = 3;
-            value = _2;
-            if (Py_IsNone(value)) {
-                b = Py_True;
-            }
-            else {
-                b = Py_False;
-                Py_DECREF(value);
-            }
-            _2 = b;
             break;
         }
 
@@ -14876,7 +11454,6 @@
             _1 = len_o;
             _0 = obj;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14892,33 +11469,16 @@
             if (len_o == NULL) JUMP_TO_ERROR();
             _1 = len_o;
             _0 = obj;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GET_LEN: {
             PyObject *obj;
             PyObject *len_o;
-            _cache_size = 2;
-            obj = _1;
-            // PUSH(len(TOS))
-            Py_ssize_t len_i = PyObject_Length(obj);
-            if (len_i < 0) JUMP_TO_ERROR();
-            len_o = PyLong_FromSsize_t(len_i);
-            if (len_o == NULL) JUMP_TO_ERROR();
-            _2 = len_o;
-            _1 = obj;
-            break;
-        }
-
-        case __R3__GET_LEN: {
-            PyObject *obj;
-            PyObject *len_o;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             obj = stack_pointer[-1];
             // PUSH(len(TOS))
             Py_ssize_t len_i = PyObject_Length(obj);
@@ -14928,7 +11488,6 @@
             _1 = len_o;
             _0 = obj;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14946,7 +11505,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -14978,7 +11536,6 @@
             _0 = attrs;
             stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15010,7 +11567,6 @@
             _0 = attrs;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15042,38 +11598,6 @@
             _0 = attrs;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__MATCH_CLASS: {
-            PyObject *names;
-            PyObject *type;
-            PyObject *subject;
-            PyObject *attrs;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            names = _2;
-            type = _1;
-            subject = _0;
-            // Pop TOS and TOS1. Set TOS to a tuple of attributes on success, or
-            // None on failure.
-            assert(PyTuple_CheckExact(names));
-            attrs = _PyEval_MatchClass(tstate, subject, type, oparg, names);
-            Py_DECREF(subject);
-            Py_DECREF(type);
-            Py_DECREF(names);
-            if (attrs) {
-                assert(PyTuple_CheckExact(attrs));  // Success!
-            }
-            else {
-                if (_PyErr_Occurred(tstate)) JUMP_TO_ERROR();
-                // Error!
-                attrs = Py_None;  // Failure!
-            }
-            _0 = attrs;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15106,7 +11630,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15120,7 +11643,6 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15133,37 +11655,22 @@
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__MATCH_MAPPING: {
             PyObject *subject;
             PyObject *res;
-            _cache_size = 2;
-            subject = _1;
-            int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_MAPPING;
-            res = match ? Py_True : Py_False;
-            _2 = res;
-            _1 = subject;
-            break;
-        }
-
-        case __R3__MATCH_MAPPING: {
-            PyObject *subject;
-            PyObject *res;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             subject = stack_pointer[-1];
             int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_MAPPING;
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15178,7 +11685,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15192,7 +11698,6 @@
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15205,37 +11710,22 @@
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__MATCH_SEQUENCE: {
             PyObject *subject;
             PyObject *res;
-            _cache_size = 2;
-            subject = _1;
-            int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_SEQUENCE;
-            res = match ? Py_True : Py_False;
-            _2 = res;
-            _1 = subject;
-            break;
-        }
-
-        case __R3__MATCH_SEQUENCE: {
-            PyObject *subject;
-            PyObject *res;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             subject = stack_pointer[-1];
             int match = Py_TYPE(subject)->tp_flags & Py_TPFLAGS_SEQUENCE;
             res = match ? Py_True : Py_False;
             _1 = res;
             _0 = subject;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15250,7 +11740,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15264,10 +11753,9 @@
             // On successful match, PUSH(values). Otherwise, PUSH(None).
             values_or_none = _PyEval_MatchKeys(tstate, subject, keys);
             if (values_or_none == NULL) JUMP_TO_ERROR();
-            _2 = values_or_none;
-            _1 = keys;
-            _0 = subject;
-            stack_pointer += -2;
+            _1 = values_or_none;
+            _0 = keys;
+            stack_pointer += -1;
             break;
         }
 
@@ -15281,10 +11769,8 @@
             // On successful match, PUSH(values). Otherwise, PUSH(None).
             values_or_none = _PyEval_MatchKeys(tstate, subject, keys);
             if (values_or_none == NULL) JUMP_TO_ERROR();
-            _2 = values_or_none;
-            _1 = keys;
-            _0 = subject;
-            stack_pointer += -1;
+            _1 = values_or_none;
+            _0 = keys;
             break;
         }
 
@@ -15298,30 +11784,9 @@
             // On successful match, PUSH(values). Otherwise, PUSH(None).
             values_or_none = _PyEval_MatchKeys(tstate, subject, keys);
             if (values_or_none == NULL) JUMP_TO_ERROR();
-            _2 = values_or_none;
-            _1 = keys;
-            _0 = subject;
-            break;
-        }
-
-        case __R3__MATCH_KEYS: {
-            PyObject *keys;
-            PyObject *subject;
-            PyObject *values_or_none;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            keys = stack_pointer[-1];
-            subject = stack_pointer[-2];
-            // On successful match, PUSH(values). Otherwise, PUSH(None).
-            values_or_none = _PyEval_MatchKeys(tstate, subject, keys);
-            if (values_or_none == NULL) JUMP_TO_ERROR();
-            _2 = values_or_none;
-            _1 = keys;
-            _0 = subject;
-            stack_pointer += -2;
+            _1 = values_or_none;
+            _0 = keys;
+            stack_pointer += 1;
             break;
         }
 
@@ -15339,7 +11804,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15355,7 +11819,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15370,7 +11833,6 @@
             if (iter == NULL) JUMP_TO_ERROR();
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15384,20 +11846,6 @@
             Py_DECREF(iterable);
             if (iter == NULL) JUMP_TO_ERROR();
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GET_ITER: {
-            PyObject *iterable;
-            PyObject *iter;
-            _cache_size = 3;
-            iterable = _2;
-            /* before: [obj]; after [getiter(obj)] */
-            iter = PyObject_GetIter(iterable);
-            Py_DECREF(iterable);
-            if (iter == NULL) JUMP_TO_ERROR();
-            _2 = iter;
             break;
         }
 
@@ -15413,7 +11861,6 @@
             stack_pointer[-1] = iter;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15449,7 +11896,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15484,7 +11930,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15518,40 +11963,6 @@
                 Py_DECREF(iterable);
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GET_YIELD_FROM_ITER: {
-            PyObject *iterable;
-            PyObject *iter;
-            _cache_size = 3;
-            iterable = _2;
-            /* before: [obj]; after [getiter(obj)] */
-            if (PyCoro_CheckExact(iterable)) {
-                /* `iterable` is a coroutine */
-                if (!(_PyFrame_GetCode(frame)->co_flags & (CO_COROUTINE | CO_ITERABLE_COROUTINE))) {
-                    /* and it is used in a 'yield from' expression of a
-                       regular generator. */
-                    _PyErr_SetString(tstate, PyExc_TypeError,
-                                     "cannot 'yield from' a coroutine object "
-                                     "in a non-coroutine generator");
-                    JUMP_TO_ERROR();
-                }
-                iter = iterable;
-            }
-            else if (PyGen_CheckExact(iterable)) {
-                iter = iterable;
-            }
-            else {
-                /* `iterable` is not a generator. */
-                iter = PyObject_GetIter(iterable);
-                if (iter == NULL) {
-                    JUMP_TO_ERROR();
-                }
-                Py_DECREF(iterable);
-            }
-            _2 = iter;
             break;
         }
 
@@ -15587,7 +11998,6 @@
             stack_pointer[-1] = iter;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15598,8 +12008,6 @@
         /* __R1__FOR_ITER is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R2__FOR_ITER is not a viable micro-op for tier 2 because it is replaced */
-
-        /* __R3__FOR_ITER is not a viable micro-op for tier 2 because it is replaced */
 
         case _FOR_ITER_TIER_TWO: {
             PyObject *iter;
@@ -15629,7 +12037,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15660,7 +12067,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15690,47 +12096,16 @@
             // Common case: no jump, leave it to the code generator
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__FOR_ITER_TIER_TWO: {
             PyObject *iter;
             PyObject *next;
-            _cache_size = 2;
-            iter = _1;
-            /* before: [iter]; after: [iter, iter()] *or* [] (and jump over END_FOR.) */
-            next = (*Py_TYPE(iter)->tp_iternext)(iter);
-            if (next == NULL) {
-                if (_PyErr_Occurred(tstate)) {
-                    if (!_PyErr_ExceptionMatches(tstate, PyExc_StopIteration)) {
-                        JUMP_TO_ERROR();
-                    }
-                    _PyErr_Clear(tstate);
-                }
-                /* iterator ended normally */
-                Py_DECREF(iter);
-                STACK_SHRINK(1);
-                /* The translator sets the deopt target just past END_FOR */
-                if (true) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
-            }
-            // Common case: no jump, leave it to the code generator
-            _2 = next;
-            _1 = iter;
-            break;
-        }
-
-        case __R3__FOR_ITER_TIER_TWO: {
-            PyObject *iter;
-            PyObject *next;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             iter = stack_pointer[-1];
             /* before: [iter]; after: [iter, iter()] *or* [] (and jump over END_FOR.) */
             next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -15754,7 +12129,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15763,8 +12137,6 @@
         /* __R1__INSTRUMENTED_FOR_ITER is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_FOR_ITER is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_FOR_ITER is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_FOR_ITER is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -15778,7 +12150,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15793,7 +12164,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15807,7 +12177,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15820,19 +12189,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__ITER_CHECK_LIST: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            if (Py_TYPE(iter) != &PyListIter_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -15843,8 +12199,6 @@
         /* __R1__ITER_JUMP_LIST is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R2__ITER_JUMP_LIST is not a viable micro-op for tier 2 because it is replaced */
-
-        /* __R3__ITER_JUMP_LIST is not a viable micro-op for tier 2 because it is replaced */
 
         case _GUARD_NOT_EXHAUSTED_LIST: {
             PyObject *iter;
@@ -15863,7 +12217,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15885,7 +12238,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15906,7 +12258,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15926,26 +12277,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_NOT_EXHAUSTED_LIST: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            _PyListIterObject *it = (_PyListIterObject *)iter;
-            assert(Py_TYPE(iter) == &PyListIter_Type);
-            PyListObject *seq = it->it_seq;
-            if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -15964,7 +12295,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15982,7 +12312,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -15999,34 +12328,16 @@
             next = Py_NewRef(PyList_GET_ITEM(seq, it->it_index++));
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__ITER_NEXT_LIST: {
             PyObject *iter;
             PyObject *next;
-            _cache_size = 2;
-            iter = _1;
-            _PyListIterObject *it = (_PyListIterObject *)iter;
-            assert(Py_TYPE(iter) == &PyListIter_Type);
-            PyListObject *seq = it->it_seq;
-            assert(seq);
-            assert(it->it_index < PyList_GET_SIZE(seq));
-            next = Py_NewRef(PyList_GET_ITEM(seq, it->it_index++));
-            _2 = next;
-            _1 = iter;
-            break;
-        }
-
-        case __R3__ITER_NEXT_LIST: {
-            PyObject *iter;
-            PyObject *next;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             iter = stack_pointer[-1];
             _PyListIterObject *it = (_PyListIterObject *)iter;
             assert(Py_TYPE(iter) == &PyListIter_Type);
@@ -16037,7 +12348,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16051,7 +12361,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16066,7 +12375,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16080,7 +12388,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16093,19 +12400,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__ITER_CHECK_TUPLE: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            if (Py_TYPE(iter) != &PyTupleIter_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -16116,8 +12410,6 @@
         /* __R1__ITER_JUMP_TUPLE is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R2__ITER_JUMP_TUPLE is not a viable micro-op for tier 2 because it is replaced */
-
-        /* __R3__ITER_JUMP_TUPLE is not a viable micro-op for tier 2 because it is replaced */
 
         case _GUARD_NOT_EXHAUSTED_TUPLE: {
             PyObject *iter;
@@ -16136,7 +12428,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16158,7 +12449,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16179,7 +12469,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16199,26 +12488,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_NOT_EXHAUSTED_TUPLE: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            _PyTupleIterObject *it = (_PyTupleIterObject *)iter;
-            assert(Py_TYPE(iter) == &PyTupleIter_Type);
-            PyTupleObject *seq = it->it_seq;
-            if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (it->it_index >= PyTuple_GET_SIZE(seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -16237,7 +12506,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16255,7 +12523,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16272,34 +12539,16 @@
             next = Py_NewRef(PyTuple_GET_ITEM(seq, it->it_index++));
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__ITER_NEXT_TUPLE: {
             PyObject *iter;
             PyObject *next;
-            _cache_size = 2;
-            iter = _1;
-            _PyTupleIterObject *it = (_PyTupleIterObject *)iter;
-            assert(Py_TYPE(iter) == &PyTupleIter_Type);
-            PyTupleObject *seq = it->it_seq;
-            assert(seq);
-            assert(it->it_index < PyTuple_GET_SIZE(seq));
-            next = Py_NewRef(PyTuple_GET_ITEM(seq, it->it_index++));
-            _2 = next;
-            _1 = iter;
-            break;
-        }
-
-        case __R3__ITER_NEXT_TUPLE: {
-            PyObject *iter;
-            PyObject *next;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             iter = stack_pointer[-1];
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter;
             assert(Py_TYPE(iter) == &PyTupleIter_Type);
@@ -16310,7 +12559,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16325,7 +12573,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16341,7 +12588,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16356,7 +12602,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16370,20 +12615,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__ITER_CHECK_RANGE: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            _PyRangeIterObject *r = (_PyRangeIterObject *)iter;
-            if (Py_TYPE(r) != &PyRangeIter_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -16394,8 +12625,6 @@
         /* __R1__ITER_JUMP_RANGE is not a viable micro-op for tier 2 because it is replaced */
 
         /* __R2__ITER_JUMP_RANGE is not a viable micro-op for tier 2 because it is replaced */
-
-        /* __R3__ITER_JUMP_RANGE is not a viable micro-op for tier 2 because it is replaced */
 
         case _GUARD_NOT_EXHAUSTED_RANGE: {
             PyObject *iter;
@@ -16409,7 +12638,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16426,7 +12654,6 @@
             _0 = iter;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16442,7 +12669,6 @@
             }
             _0 = iter;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16457,21 +12683,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = iter;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_NOT_EXHAUSTED_RANGE: {
-            PyObject *iter;
-            _cache_size = 3;
-            iter = _2;
-            _PyRangeIterObject *r = (_PyRangeIterObject *)iter;
-            assert(Py_TYPE(r) == &PyRangeIter_Type);
-            if (r->len <= 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = iter;
             break;
         }
 
@@ -16492,7 +12703,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16512,7 +12722,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16531,36 +12740,16 @@
             if (next == NULL) JUMP_TO_ERROR();
             _1 = next;
             _0 = iter;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__ITER_NEXT_RANGE: {
             PyObject *iter;
             PyObject *next;
-            _cache_size = 2;
-            iter = _1;
-            _PyRangeIterObject *r = (_PyRangeIterObject *)iter;
-            assert(Py_TYPE(r) == &PyRangeIter_Type);
-            assert(r->len > 0);
-            long value = r->start;
-            r->start = value + r->step;
-            r->len--;
-            next = PyLong_FromLong(value);
-            if (next == NULL) JUMP_TO_ERROR();
-            _2 = next;
-            _1 = iter;
-            break;
-        }
-
-        case __R3__ITER_NEXT_RANGE: {
-            PyObject *iter;
-            PyObject *next;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             iter = stack_pointer[-1];
             _PyRangeIterObject *r = (_PyRangeIterObject *)iter;
             assert(Py_TYPE(r) == &PyRangeIter_Type);
@@ -16573,7 +12762,6 @@
             _1 = next;
             _0 = iter;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16583,8 +12771,6 @@
 
         /* __R2__FOR_ITER_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
-        /* __R3__FOR_ITER_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
         /* _FOR_ITER_GEN is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R0__BEFORE_ASYNC_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
@@ -16593,8 +12779,6 @@
 
         /* __R2__BEFORE_ASYNC_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
-        /* __R3__BEFORE_ASYNC_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
-
         /* _BEFORE_ASYNC_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* __R0__BEFORE_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
@@ -16602,8 +12786,6 @@
         /* __R1__BEFORE_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* __R2__BEFORE_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
-
-        /* __R3__BEFORE_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
         /* _BEFORE_WITH is not a viable micro-op for tier 2 because it has both popping and not-popping errors */
 
@@ -16643,7 +12825,6 @@
             _1 = res;
             _0 = val;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16685,7 +12866,6 @@
             _1 = res;
             _0 = val;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16728,51 +12908,6 @@
             _1 = res;
             _0 = val;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__WITH_EXCEPT_START: {
-            PyObject *val;
-            PyObject *lasti;
-            PyObject *exit_func;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            val = stack_pointer[-1];
-            lasti = stack_pointer[-3];
-            exit_func = stack_pointer[-4];
-            /* At the top of the stack are 4 values:
-               - val: TOP = exc_info()
-               - unused: SECOND = previous exception
-               - lasti: THIRD = lasti of exception in exc_info()
-               - exit_func: FOURTH = the context.__exit__ bound method
-               We call FOURTH(type(TOP), TOP, GetTraceback(TOP)).
-               Then we push the __exit__ return value.
-             */
-            PyObject *exc, *tb;
-            assert(val && PyExceptionInstance_Check(val));
-            exc = PyExceptionInstance_Class(val);
-            tb = PyException_GetTraceback(val);
-            if (tb == NULL) {
-                tb = Py_None;
-            }
-            else {
-                Py_DECREF(tb);
-            }
-            assert(PyLong_Check(lasti));
-            (void)lasti; // Shut up compiler warning if asserts are off
-            PyObject *stack[4] = {NULL, exc, val, tb};
-            res = PyObject_Vectorcall(exit_func, stack + 1,
-                                      3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            _0 = val;
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16813,7 +12948,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16834,7 +12968,6 @@
             _1 = new_exc;
             _0 = prev_exc;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16854,37 +12987,16 @@
             exc_info->exc_value = Py_NewRef(new_exc);
             _1 = new_exc;
             _0 = prev_exc;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__PUSH_EXC_INFO: {
             PyObject *new_exc;
             PyObject *prev_exc;
-            _cache_size = 2;
-            new_exc = _1;
-            _PyErr_StackItem *exc_info = tstate->exc_info;
-            if (exc_info->exc_value != NULL) {
-                prev_exc = exc_info->exc_value;
-            }
-            else {
-                prev_exc = Py_None;
-            }
-            assert(PyExceptionInstance_Check(new_exc));
-            exc_info->exc_value = Py_NewRef(new_exc);
-            _2 = new_exc;
-            _1 = prev_exc;
-            break;
-        }
-
-        case __R3__PUSH_EXC_INFO: {
-            PyObject *new_exc;
-            PyObject *prev_exc;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             new_exc = stack_pointer[-1];
             _PyErr_StackItem *exc_info = tstate->exc_info;
             if (exc_info->exc_value != NULL) {
@@ -16898,7 +13010,6 @@
             _1 = new_exc;
             _0 = prev_exc;
             stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16921,7 +13032,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16936,7 +13046,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16952,7 +13061,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16967,7 +13075,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16981,20 +13088,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_DORV_VALUES_INST_ATTR_FROM_DICT: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            assert(Py_TYPE(owner)->tp_flags & Py_TPFLAGS_INLINE_VALUES);
-            if (!_PyObject_InlineValues(owner)->valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -17011,7 +13104,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17029,7 +13121,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17046,7 +13137,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17062,22 +13152,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_KEYS_VERSION: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            uint32_t keys_version = (uint32_t)CURRENT_OPERAND();
-            PyTypeObject *owner_cls = Py_TYPE(owner);
-            PyHeapTypeObject *owner_heap_type = (PyHeapTypeObject *)owner_cls;
-            if (owner_heap_type->ht_cached_keys->dk_version != keys_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -17101,7 +13175,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17125,7 +13198,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17151,7 +13223,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17178,35 +13249,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_METHOD_WITH_VALUES: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *self = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            assert(oparg & 1);
-            /* Cached method object */
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            attr = Py_NewRef(descr);
-            assert(_PyType_HasFeature(Py_TYPE(attr), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            self = owner;
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = self;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17230,7 +13272,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17254,7 +13295,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17280,7 +13320,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17307,35 +13346,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_METHOD_NO_DICT: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *self = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            assert(oparg & 1);
-            assert(Py_TYPE(owner)->tp_dictoffset == 0);
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            attr = Py_NewRef(descr);
-            self = owner;
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = self;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17354,7 +13364,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17373,7 +13382,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17394,7 +13402,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17416,30 +13423,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
-            PyObject *owner;
-            PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            assert((oparg & 1) == 0);
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            Py_DECREF(owner);
-            attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17459,7 +13442,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17479,7 +13461,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17501,7 +13482,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17524,31 +13504,6 @@
             stack_pointer[-1] = attr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
-            PyObject *owner;
-            PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            assert((oparg & 1) == 0);
-            assert(Py_TYPE(owner)->tp_dictoffset == 0);
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            Py_DECREF(owner);
-            attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17566,7 +13521,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17585,7 +13539,6 @@
             _0 = owner;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17603,7 +13556,6 @@
             }
             _0 = owner;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17620,23 +13572,6 @@
                 JUMP_TO_JUMP_TARGET();
             }
             _1 = owner;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_ATTR_METHOD_LAZY_DICT: {
-            PyObject *owner;
-            _cache_size = 3;
-            owner = _2;
-            uint16_t dictoffset = (uint16_t)CURRENT_OPERAND();
-            char *ptr = ((char *)owner) + MANAGED_DICT_OFFSET + dictoffset;
-            PyObject *dict = *(PyObject **)ptr;
-            /* This object has a __dict__, just not yet created */
-            if (dict != NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _2 = owner;
             break;
         }
 
@@ -17659,7 +13594,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17682,7 +13616,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17707,7 +13640,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17733,34 +13665,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_ATTR_METHOD_LAZY_DICT: {
-            PyObject *owner;
-            PyObject *attr;
-            PyObject *self = NULL;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
-            PyObject *descr = (PyObject *)CURRENT_OPERAND();
-            assert(oparg & 1);
-            STAT_INC(LOAD_ATTR, hit);
-            assert(descr != NULL);
-            assert(_PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_METHOD_DESCRIPTOR));
-            attr = Py_NewRef(descr);
-            self = owner;
-            stack_pointer[-1] = attr;
-            stack_pointer[0] = self;
-            stack_pointer += 1;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17769,8 +13673,6 @@
         /* __R1__INSTRUMENTED_CALL is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_CALL is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_CALL is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_CALL is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -17782,13 +13684,10 @@
 
         /* __R2__CALL is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
-        /* __R3__CALL is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
         case _CHECK_PERIODIC: {
             _cache_size = 0;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             CHECK_EVAL_BREAKER();
             break;
         }
@@ -17797,7 +13696,6 @@
             _cache_size = 0;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             CHECK_EVAL_BREAKER();
             break;
         }
@@ -17805,20 +13703,12 @@
         case __R1__CHECK_PERIODIC: {
             _cache_size = 1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             CHECK_EVAL_BREAKER();
             break;
         }
 
         case __R2__CHECK_PERIODIC: {
             _cache_size = 2;
-            CLOBBER_REGISTER(_2, rsi);
-            CHECK_EVAL_BREAKER();
-            break;
-        }
-
-        case __R3__CHECK_PERIODIC: {
-            _cache_size = 3;
             CHECK_EVAL_BREAKER();
             break;
         }
@@ -17840,7 +13730,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17861,7 +13750,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17884,7 +13772,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17908,32 +13795,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
-            PyObject *null;
-            PyObject *callable;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            if (null != NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (Py_TYPE(callable) != &PyMethod_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17954,7 +13815,6 @@
             stack_pointer[-1 - oparg] = self;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17975,7 +13835,6 @@
             stack_pointer[-1 - oparg] = self;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -17998,7 +13857,6 @@
             stack_pointer[-1 - oparg] = self;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18022,32 +13880,6 @@
             stack_pointer[-1 - oparg] = self;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
-            PyObject *callable;
-            PyObject *func;
-            PyObject *self;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            callable = stack_pointer[-2 - oparg];
-            STAT_INC(CALL, hit);
-            self = Py_NewRef(((PyMethodObject *)callable)->im_self);
-            stack_pointer[-1 - oparg] = self;  // Patch stack as it is used by _INIT_CALL_PY_EXACT_ARGS
-            func = Py_NewRef(((PyMethodObject *)callable)->im_func);
-            stack_pointer[-2 - oparg] = func;  // This is used by CALL, upon deoptimization
-            Py_DECREF(callable);
-            stack_pointer[-2 - oparg] = func;
-            stack_pointer[-1 - oparg] = self;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18059,7 +13891,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18071,7 +13902,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18082,22 +13912,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__CHECK_PEP_523: {
             _cache_size = 2;
-            if (tstate->interp->eval_frame) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_PEP_523: {
-            _cache_size = 3;
             if (tstate->interp->eval_frame) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -18129,7 +13948,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18157,7 +13975,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18187,7 +14004,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18218,39 +14034,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_FUNCTION_EXACT_ARGS: {
-            PyObject *self_or_null;
-            PyObject *callable;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            uint32_t func_version = (uint32_t)CURRENT_OPERAND();
-            if (!PyFunction_Check(callable)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            if (func->func_version != func_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyCodeObject *code = (PyCodeObject *)func->func_code;
-            if (code->co_argcount != oparg + (self_or_null != NULL)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18271,7 +14054,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18292,7 +14074,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18315,7 +14096,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18339,32 +14119,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_STACK_SPACE: {
-            PyObject *callable;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            callable = stack_pointer[-2 - oparg];
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            PyCodeObject *code = (PyCodeObject *)func->func_code;
-            if (!_PyThreadState_HasStackSpace(tstate, code->co_framesize)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (tstate->py_recursion_remaining <= 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18392,7 +14146,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18420,7 +14173,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18450,7 +14202,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18481,39 +14232,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS_0: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = 0;
-            assert(oparg == CURRENT_OPARG());
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18541,7 +14259,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18569,7 +14286,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18599,7 +14315,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18630,39 +14345,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS_1: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = 1;
-            assert(oparg == CURRENT_OPARG());
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18690,7 +14372,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18718,7 +14399,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18748,7 +14428,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18779,39 +14458,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS_2: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = 2;
-            assert(oparg == CURRENT_OPARG());
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18839,7 +14485,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18867,7 +14512,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18897,7 +14541,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18928,39 +14571,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS_3: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = 3;
-            assert(oparg == CURRENT_OPARG());
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -18988,7 +14598,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19016,7 +14625,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19046,7 +14654,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19077,39 +14684,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS_4: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = 4;
-            assert(oparg == CURRENT_OPARG());
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19136,7 +14710,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19163,7 +14736,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19192,7 +14764,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19222,38 +14793,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INIT_CALL_PY_EXACT_ARGS: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int has_self = (self_or_null != NULL);
-            STAT_INC(CALL, hit);
-            PyFunctionObject *func = (PyFunctionObject *)callable;
-            new_frame = _PyFrame_PushUnchecked(tstate, func, oparg + has_self);
-            PyObject **first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null;
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
-            }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19280,7 +14819,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19307,7 +14845,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19336,7 +14873,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19366,38 +14902,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__PUSH_FRAME: {
-            _PyInterpreterFrame *new_frame;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            new_frame = (_PyInterpreterFrame *)stack_pointer[-1];
-            // Write it out explicitly because it's subtly different.
-            // Eventually this should be the only occurrence of this code.
-            assert(tstate->interp->eval_frame == NULL);
-            stack_pointer += -1;
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            new_frame->previous = frame;
-            CALL_STAT_INC(inlined_py_calls);
-            frame = tstate->current_frame = new_frame;
-            tstate->py_recursion_remaining--;
-            LOAD_SP();
-            LOAD_IP(0);
-            #if LLTRACE && TIER_ONE
-            lltrace = maybe_lltrace_resume_frame(frame, &entry_frame, GLOBALS());
-            if (lltrace < 0) {
-                goto exit_unwind;
-            }
-            #endif
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19406,8 +14910,6 @@
         /* __R1__CALL_PY_WITH_DEFAULTS is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__CALL_PY_WITH_DEFAULTS is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__CALL_PY_WITH_DEFAULTS is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _CALL_PY_WITH_DEFAULTS is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -19436,7 +14938,6 @@
             _0 = res;
             stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19465,7 +14966,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19494,35 +14994,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_TYPE_1: {
-            PyObject *arg;
-            PyObject *null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            arg = _2;
-            null = _1;
-            callable = _0;
-            assert(oparg == 1);
-            if (null != NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (callable != (PyObject *)&PyType_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            res = Py_NewRef(Py_TYPE(arg));
-            Py_DECREF(arg);
-            _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19552,7 +15023,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19583,7 +15053,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19613,7 +15082,6 @@
             _0 = res;
             stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19643,7 +15111,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19673,36 +15140,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_STR_1: {
-            PyObject *arg;
-            PyObject *null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            arg = _2;
-            null = _1;
-            callable = _0;
-            assert(oparg == 1);
-            if (null != NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (callable != (PyObject *)&PyUnicode_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            res = PyObject_Str(arg);
-            Py_DECREF(arg);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19733,7 +15170,6 @@
             stack_pointer += -2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19763,7 +15199,6 @@
             _0 = res;
             stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19793,7 +15228,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19823,36 +15257,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_TUPLE_1: {
-            PyObject *arg;
-            PyObject *null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            arg = _2;
-            null = _1;
-            callable = _0;
-            assert(oparg == 1);
-            if (null != NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (callable != (PyObject *)&PyTuple_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            res = PySequence_Tuple(arg);
-            Py_DECREF(arg);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19861,8 +15265,6 @@
         /* __R1__CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -19880,7 +15282,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19897,7 +15298,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19913,22 +15313,6 @@
                 JUMP_TO_ERROR();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__EXIT_INIT_CHECK: {
-            PyObject *should_be_none;
-            _cache_size = 3;
-            should_be_none = _2;
-            assert(STACK_LEVEL() == 2);
-            if (should_be_none != Py_None) {
-                PyErr_Format(PyExc_TypeError,
-                             "__init__() should return None, not '%.200s'",
-                             Py_TYPE(should_be_none)->tp_name);
-                JUMP_TO_ERROR();
-            }
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19946,7 +15330,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -19986,7 +15369,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20025,7 +15407,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20066,7 +15447,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20108,50 +15488,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_BUILTIN_CLASS: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (!PyType_Check(callable)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyTypeObject *tp = (PyTypeObject *)callable;
-            if (tp->tp_vectorcall == NULL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            res = tp->tp_vectorcall((PyObject *)tp, args, total_args, NULL);
-            /* Free the arguments. */
-            for (int i = 0; i < total_args; i++) {
-                Py_DECREF(args[i]);
-            }
-            Py_DECREF(tp);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20202,7 +15538,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20252,7 +15587,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20304,7 +15638,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20357,61 +15690,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_BUILTIN_O: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            /* Builtin METH_O functions */
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (total_args != 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyCFunction_CheckExact(callable)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyCFunction_GET_FLAGS(callable) != METH_O) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // CPython promises to check all non-vectorcall function calls.
-            if (tstate->c_recursion_remaining <= 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
-            PyObject *arg = args[0];
-            _Py_EnterRecursiveCallTstateUnchecked(tstate);
-            res = _PyCFunction_TrampolineCall(cfunc, PyCFunction_GET_SELF(callable), arg);
-            _Py_LeaveRecursiveCallTstate(tstate);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            Py_DECREF(arg);
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20457,7 +15735,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20502,7 +15779,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20549,7 +15825,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20597,56 +15872,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_BUILTIN_FAST: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            /* Builtin METH_FASTCALL functions, without keywords */
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (!PyCFunction_CheckExact(callable)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyCFunction_GET_FLAGS(callable) != METH_FASTCALL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyCFunction cfunc = PyCFunction_GET_FUNCTION(callable);
-            /* res = func(self, args, nargs) */
-            res = ((PyCFunctionFast)(void(*)(void))cfunc)(
-                PyCFunction_GET_SELF(callable),
-                args,
-                total_args);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            /* Free the arguments. */
-            for (int i = 0; i < total_args; i++) {
-                Py_DECREF(args[i]);
-            }
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20691,7 +15916,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20735,7 +15959,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20781,7 +16004,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20828,55 +16050,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_BUILTIN_FAST_WITH_KEYWORDS: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            /* Builtin METH_FASTCALL | METH_KEYWORDS functions */
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (!PyCFunction_CheckExact(callable)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (PyCFunction_GET_FLAGS(callable) != (METH_FASTCALL | METH_KEYWORDS)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            /* res = func(self, args, nargs, kwnames) */
-            PyCFunctionFastWithKeywords cfunc =
-            (PyCFunctionFastWithKeywords)(void(*)(void))
-            PyCFunction_GET_FUNCTION(callable);
-            res = cfunc(PyCFunction_GET_SELF(callable), args, total_args, NULL);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            /* Free the arguments. */
-            for (int i = 0; i < total_args; i++) {
-                Py_DECREF(args[i]);
-            }
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20921,7 +16094,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -20968,7 +16140,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21016,56 +16187,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_LEN: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            /* len(o) */
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (total_args != 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyInterpreterState *interp = tstate->interp;
-            if (callable != interp->callable_cache.len) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyObject *arg = args[0];
-            Py_ssize_t len_i = PyObject_Length(arg);
-            if (len_i < 0) {
-                JUMP_TO_ERROR();
-            }
-            res = PyLong_FromSsize_t(len_i);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            if (res == NULL) {
-                GOTO_ERROR(error);
-            }
-            Py_DECREF(callable);
-            Py_DECREF(arg);
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21111,7 +16232,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21158,7 +16278,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21207,7 +16326,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21257,58 +16375,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_ISINSTANCE: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            /* isinstance(o, o2) */
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (total_args != 2) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyInterpreterState *interp = tstate->interp;
-            if (callable != interp->callable_cache.isinstance) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyObject *cls = args[1];
-            PyObject *inst = args[0];
-            int retval = PyObject_IsInstance(inst, cls);
-            if (retval < 0) {
-                JUMP_TO_ERROR();
-            }
-            res = PyBool_FromLong(retval);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            if (res == NULL) {
-                GOTO_ERROR(error);
-            }
-            Py_DECREF(inst);
-            Py_DECREF(cls);
-            Py_DECREF(callable);
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21356,7 +16422,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21414,7 +16479,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21471,7 +16535,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21530,7 +16593,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21590,68 +16652,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_METHOD_DESCRIPTOR_O: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            PyMethodDescrObject *method = (PyMethodDescrObject *)callable;
-            if (total_args != 2) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!Py_IS_TYPE(method, &PyMethodDescr_Type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyMethodDef *meth = method->d_method;
-            if (meth->ml_flags != METH_O) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // CPython promises to check all non-vectorcall function calls.
-            if (tstate->c_recursion_remaining <= 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyObject *arg = args[1];
-            PyObject *self = args[0];
-            if (!Py_IS_TYPE(self, method->d_common.d_type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyCFunction cfunc = meth->ml_meth;
-            _Py_EnterRecursiveCallTstateUnchecked(tstate);
-            res = _PyCFunction_TrampolineCall(cfunc, self, arg);
-            _Py_LeaveRecursiveCallTstate(tstate);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            Py_DECREF(self);
-            Py_DECREF(arg);
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21702,7 +16702,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21752,7 +16751,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21804,7 +16802,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21857,61 +16854,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            PyMethodDescrObject *method = (PyMethodDescrObject *)callable;
-            if (!Py_IS_TYPE(method, &PyMethodDescr_Type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyMethodDef *meth = method->d_method;
-            if (meth->ml_flags != (METH_FASTCALL|METH_KEYWORDS)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyTypeObject *d_type = method->d_common.d_type;
-            PyObject *self = args[0];
-            if (!Py_IS_TYPE(self, d_type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            int nargs = total_args - 1;
-            PyCFunctionFastWithKeywords cfunc =
-            (PyCFunctionFastWithKeywords)(void(*)(void))meth->ml_meth;
-            res = cfunc(self, args + 1, nargs, NULL);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            /* Free the arguments. */
-            for (int i = 0; i < total_args; i++) {
-                Py_DECREF(args[i]);
-            }
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -21968,7 +16910,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22024,7 +16965,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22082,7 +17022,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22141,67 +17080,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_METHOD_DESCRIPTOR_NOARGS: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            assert(oparg == 0 || oparg == 1);
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            if (total_args != 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyMethodDescrObject *method = (PyMethodDescrObject *)callable;
-            if (!Py_IS_TYPE(method, &PyMethodDescr_Type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyMethodDef *meth = method->d_method;
-            PyObject *self = args[0];
-            if (!Py_IS_TYPE(self, method->d_common.d_type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (meth->ml_flags != METH_NOARGS) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            // CPython promises to check all non-vectorcall function calls.
-            if (tstate->c_recursion_remaining <= 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyCFunction cfunc = meth->ml_meth;
-            _Py_EnterRecursiveCallTstateUnchecked(tstate);
-            res = _PyCFunction_TrampolineCall(cfunc, self, NULL);
-            _Py_LeaveRecursiveCallTstate(tstate);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            Py_DECREF(self);
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22252,7 +17130,6 @@
             stack_pointer += -1 - oparg;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22302,7 +17179,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22354,7 +17230,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22407,61 +17282,6 @@
             _0 = res;
             stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CALL_METHOD_DESCRIPTOR_FAST: {
-            PyObject **args;
-            PyObject *self_or_null;
-            PyObject *callable;
-            PyObject *res;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            int total_args = oparg;
-            if (self_or_null != NULL) {
-                args--;
-                total_args++;
-            }
-            PyMethodDescrObject *method = (PyMethodDescrObject *)callable;
-            /* Builtin METH_FASTCALL methods, without keywords */
-            if (!Py_IS_TYPE(method, &PyMethodDescr_Type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyMethodDef *meth = method->d_method;
-            if (meth->ml_flags != METH_FASTCALL) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            PyObject *self = args[0];
-            if (!Py_IS_TYPE(self, method->d_common.d_type)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(CALL, hit);
-            PyCFunctionFast cfunc =
-            (PyCFunctionFast)(void(*)(void))meth->ml_meth;
-            int nargs = total_args - 1;
-            res = cfunc(self, args + 1, nargs);
-            assert((res != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            /* Clear the stack of the arguments. */
-            for (int i = 0; i < total_args; i++) {
-                Py_DECREF(args[i]);
-            }
-            Py_DECREF(callable);
-            if (res == NULL) JUMP_TO_ERROR();
-            _0 = res;
-            stack_pointer += -2 - oparg;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22471,8 +17291,6 @@
 
         /* __R2__INSTRUMENTED_CALL_KW is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_CALL_KW is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_CALL_KW is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__CALL_KW is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
@@ -22480,8 +17298,6 @@
         /* __R1__CALL_KW is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__CALL_KW is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__CALL_KW is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _CALL_KW is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -22491,8 +17307,6 @@
 
         /* __R2__INSTRUMENTED_CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
@@ -22500,8 +17314,6 @@
         /* __R1__CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* __R2__CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
-        /* __R3__CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         /* _CALL_FUNCTION_EX is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
@@ -22522,7 +17334,6 @@
             _0 = func;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22542,7 +17353,6 @@
             func = (PyObject *)func_obj;
             _0 = func;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22561,25 +17371,6 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = (PyObject *)func_obj;
             _1 = func;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__MAKE_FUNCTION: {
-            PyObject *codeobj;
-            PyObject *func;
-            _cache_size = 3;
-            codeobj = _2;
-            PyFunctionObject *func_obj = (PyFunctionObject *)
-            PyFunction_New(codeobj, GLOBALS());
-            Py_DECREF(codeobj);
-            if (func_obj == NULL) {
-                JUMP_TO_ERROR();
-            }
-            _PyFunction_SetVersion(
-                                   func_obj, ((PyCodeObject *)codeobj)->co_version);
-            func = (PyObject *)func_obj;
-            _2 = func;
             break;
         }
 
@@ -22600,7 +17391,6 @@
             stack_pointer[-1] = func;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22638,7 +17428,6 @@
             _0 = func;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22676,7 +17465,6 @@
             _0 = func;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22713,43 +17501,6 @@
             }
             _0 = func;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SET_FUNCTION_ATTRIBUTE: {
-            PyObject *func;
-            PyObject *attr;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            func = _2;
-            attr = _1;
-            assert(PyFunction_Check(func));
-            PyFunctionObject *func_obj = (PyFunctionObject *)func;
-            switch(oparg) {
-                case MAKE_FUNCTION_CLOSURE:
-                assert(func_obj->func_closure == NULL);
-                func_obj->func_closure = attr;
-                break;
-                case MAKE_FUNCTION_ANNOTATIONS:
-                assert(func_obj->func_annotations == NULL);
-                func_obj->func_annotations = attr;
-                break;
-                case MAKE_FUNCTION_KWDEFAULTS:
-                assert(PyDict_CheckExact(attr));
-                assert(func_obj->func_kwdefaults == NULL);
-                func_obj->func_kwdefaults = attr;
-                break;
-                case MAKE_FUNCTION_DEFAULTS:
-                assert(PyTuple_CheckExact(attr));
-                assert(func_obj->func_defaults == NULL);
-                func_obj->func_defaults = attr;
-                break;
-                default:
-                Py_UNREACHABLE();
-            }
-            _1 = func;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22788,7 +17539,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22810,7 +17560,6 @@
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22834,7 +17583,6 @@
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22859,33 +17607,6 @@
             _0 = slice;
             stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BUILD_SLICE: {
-            PyObject *step = NULL;
-            PyObject *stop;
-            PyObject *start;
-            PyObject *slice;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            if (oparg == 3) { step = stack_pointer[-((oparg == 3) ? 1 : 0)]; }
-            stop = stack_pointer[-1 - ((oparg == 3) ? 1 : 0)];
-            start = stack_pointer[-2 - ((oparg == 3) ? 1 : 0)];
-            slice = PySlice_New(start, stop, step);
-            Py_DECREF(start);
-            Py_DECREF(stop);
-            Py_XDECREF(step);
-            if (slice == NULL) JUMP_TO_ERROR();
-            _0 = slice;
-            stack_pointer += -2 - ((oparg == 3) ? 1 : 0);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22908,7 +17629,6 @@
             stack_pointer += -1 - ((oparg == 3) ? 1 : 0);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22927,7 +17647,6 @@
             _0 = result;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22945,7 +17664,6 @@
             if (result == NULL) JUMP_TO_ERROR();
             _0 = result;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -22962,23 +17680,6 @@
             Py_DECREF(value);
             if (result == NULL) JUMP_TO_ERROR();
             _1 = result;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CONVERT_VALUE: {
-            PyObject *value;
-            PyObject *result;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            value = _2;
-            conversion_func conv_fn;
-            assert(oparg >= FVC_STR && oparg <= FVC_ASCII);
-            conv_fn = _PyEval_ConversionFuncs[oparg];
-            result = conv_fn(value);
-            Py_DECREF(value);
-            if (result == NULL) JUMP_TO_ERROR();
-            _2 = result;
             break;
         }
 
@@ -22997,7 +17698,6 @@
             stack_pointer[-1] = result;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23019,7 +17719,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23040,7 +17739,6 @@
             }
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23060,26 +17758,6 @@
                 res = value;
             }
             _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__FORMAT_SIMPLE: {
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            value = _2;
-            /* If value is a unicode object, then we know the result
-             * of format(value) is value itself. */
-            if (!PyUnicode_CheckExact(value)) {
-                res = PyObject_Format(value, NULL);
-                Py_DECREF(value);
-                if (res == NULL) JUMP_TO_ERROR();
-            }
-            else {
-                res = value;
-            }
-            _2 = res;
             break;
         }
 
@@ -23101,7 +17779,6 @@
             stack_pointer[-1] = res;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23119,7 +17796,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23137,7 +17813,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23154,23 +17829,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__FORMAT_WITH_SPEC: {
-            PyObject *fmt_spec;
-            PyObject *value;
-            PyObject *res;
-            _cache_size = 3;
-            fmt_spec = _2;
-            value = _1;
-            res = PyObject_Format(value, fmt_spec);
-            Py_DECREF(value);
-            Py_DECREF(fmt_spec);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23189,7 +17847,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23203,7 +17860,6 @@
             top = Py_NewRef(bottom);
             _0 = top;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23219,7 +17875,6 @@
             top = Py_NewRef(bottom);
             _0 = top;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23236,25 +17891,6 @@
             top = Py_NewRef(bottom);
             _0 = top;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COPY: {
-            PyObject *bottom;
-            PyObject *top;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            bottom = stack_pointer[-1 - (oparg-1)];
-            assert(oparg > 0);
-            top = Py_NewRef(bottom);
-            _0 = top;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23270,7 +17906,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23291,7 +17926,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23311,7 +17945,6 @@
             _0 = res;
             stack_pointer += -2;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23331,7 +17964,6 @@
             _0 = res;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23350,25 +17982,6 @@
             if (res == NULL) JUMP_TO_ERROR();
             _0 = res;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__BINARY_OP: {
-            PyObject *rhs;
-            PyObject *lhs;
-            PyObject *res;
-            _cache_size = 3;
-            oparg = CURRENT_OPARG();
-            rhs = _2;
-            lhs = _1;
-            assert(_PyEval_BinaryOps[oparg]);
-            res = _PyEval_BinaryOps[oparg](lhs, rhs);
-            Py_DECREF(lhs);
-            Py_DECREF(rhs);
-            if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23384,7 +17997,6 @@
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23402,7 +18014,6 @@
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23421,27 +18032,6 @@
             stack_pointer[-2 - (oparg-2)] = top;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SWAP: {
-            PyObject *top;
-            PyObject *bottom;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            top = stack_pointer[-1];
-            bottom = stack_pointer[-2 - (oparg-2)];
-            assert(oparg >= 2);
-            _0 = bottom;
-            stack_pointer[-2 - (oparg-2)] = top;
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23457,7 +18047,6 @@
             stack_pointer[-1] = bottom;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23467,8 +18056,6 @@
 
         /* __R2__INSTRUMENTED_INSTRUCTION is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_INSTRUCTION is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_INSTRUCTION is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__INSTRUMENTED_JUMP_FORWARD is not a viable micro-op for tier 2 because it is instrumented */
@@ -23476,8 +18063,6 @@
         /* __R1__INSTRUMENTED_JUMP_FORWARD is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_JUMP_FORWARD is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_JUMP_FORWARD is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_JUMP_FORWARD is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -23487,8 +18072,6 @@
 
         /* __R2__INSTRUMENTED_JUMP_BACKWARD is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_JUMP_BACKWARD is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_JUMP_BACKWARD is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__INSTRUMENTED_POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is instrumented */
@@ -23496,8 +18079,6 @@
         /* __R1__INSTRUMENTED_POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_POP_JUMP_IF_TRUE is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -23507,8 +18088,6 @@
 
         /* __R2__INSTRUMENTED_POP_JUMP_IF_FALSE is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_POP_JUMP_IF_FALSE is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_POP_JUMP_IF_FALSE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__INSTRUMENTED_POP_JUMP_IF_NONE is not a viable micro-op for tier 2 because it is instrumented */
@@ -23517,8 +18096,6 @@
 
         /* __R2__INSTRUMENTED_POP_JUMP_IF_NONE is not a viable micro-op for tier 2 because it is instrumented */
 
-        /* __R3__INSTRUMENTED_POP_JUMP_IF_NONE is not a viable micro-op for tier 2 because it is instrumented */
-
         /* _INSTRUMENTED_POP_JUMP_IF_NONE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R0__INSTRUMENTED_POP_JUMP_IF_NOT_NONE is not a viable micro-op for tier 2 because it is instrumented */
@@ -23526,8 +18103,6 @@
         /* __R1__INSTRUMENTED_POP_JUMP_IF_NOT_NONE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* __R2__INSTRUMENTED_POP_JUMP_IF_NOT_NONE is not a viable micro-op for tier 2 because it is instrumented */
-
-        /* __R3__INSTRUMENTED_POP_JUMP_IF_NOT_NONE is not a viable micro-op for tier 2 because it is instrumented */
 
         /* _INSTRUMENTED_POP_JUMP_IF_NOT_NONE is not a viable micro-op for tier 2 because it is instrumented */
 
@@ -23543,7 +18118,6 @@
             assert(Py_IsTrue(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23559,7 +18133,6 @@
             assert(Py_IsTrue(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23577,7 +18150,6 @@
             assert(Py_IsTrue(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23596,27 +18168,6 @@
             assert(Py_IsTrue(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_IS_TRUE_POP: {
-            PyObject *flag;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            flag = stack_pointer[-1];
-            stack_pointer += -1;
-            if (!Py_IsTrue(flag)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(Py_IsTrue(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23632,7 +18183,6 @@
             assert(Py_IsFalse(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23648,7 +18198,6 @@
             assert(Py_IsFalse(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23666,7 +18215,6 @@
             assert(Py_IsFalse(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23685,27 +18233,6 @@
             assert(Py_IsFalse(flag));
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_IS_FALSE_POP: {
-            PyObject *flag;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            flag = stack_pointer[-1];
-            stack_pointer += -1;
-            if (!Py_IsFalse(flag)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(Py_IsFalse(flag));
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23723,7 +18250,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23741,7 +18267,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23761,7 +18286,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23782,29 +18306,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_IS_NONE_POP: {
-            PyObject *val;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            val = stack_pointer[-1];
-            stack_pointer += -1;
-            if (!Py_IsNone(val)) {
-                Py_DECREF(val);
-                if (1) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
-            }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23820,7 +18321,6 @@
             Py_DECREF(val);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23836,7 +18336,6 @@
             Py_DECREF(val);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23854,7 +18353,6 @@
             Py_DECREF(val);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23873,27 +18371,6 @@
             Py_DECREF(val);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__GUARD_IS_NOT_NONE_POP: {
-            PyObject *val;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            val = stack_pointer[-1];
-            stack_pointer += -1;
-            if (Py_IsNone(val)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            Py_DECREF(val);
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23909,7 +18386,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23925,7 +18401,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23940,26 +18415,11 @@
             PATCH_JUMP(_JIT_TOP);
             #endif
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__JUMP_TO_TOP: {
             _cache_size = 2;
-            SPILL_CACHES();
-            #ifndef _Py_JIT
-            next_uop = &current_executor->trace[1];
-            CHECK_EVAL_BREAKER();
-            #else
-            CHECK_EVAL_BREAKER();
-            PATCH_JUMP(_JIT_TOP);
-            #endif
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__JUMP_TO_TOP: {
-            _cache_size = 3;
             SPILL_CACHES();
             #ifndef _Py_JIT
             next_uop = &current_executor->trace[1];
@@ -23977,7 +18437,6 @@
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23987,7 +18446,6 @@
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -23996,20 +18454,11 @@
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__SET_IP: {
             _cache_size = 2;
-            PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
-            frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SET_IP: {
-            _cache_size = 3;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             break;
@@ -24029,7 +18478,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24047,7 +18495,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24064,28 +18511,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__CHECK_STACK_SPACE_OPERAND: {
             _cache_size = 2;
-            uint32_t framesize = (uint32_t)CURRENT_OPERAND();
-            assert(framesize <= INT_MAX);
-            if (!_PyThreadState_HasStackSpace(tstate, framesize)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (tstate->py_recursion_remaining <= 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_STACK_SPACE_OPERAND: {
-            _cache_size = 3;
             uint32_t framesize = (uint32_t)CURRENT_OPERAND();
             assert(framesize <= INT_MAX);
             if (!_PyThreadState_HasStackSpace(tstate, framesize)) {
@@ -24110,7 +18540,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24125,7 +18554,6 @@
             #endif
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24139,25 +18567,11 @@
             frame->return_offset = oparg;
             #endif
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__SAVE_RETURN_OFFSET: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            #if TIER_ONE
-            frame->return_offset = (uint16_t)(next_instr - this_instr);
-            #endif
-            #if TIER_TWO
-            frame->return_offset = oparg;
-            #endif
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SAVE_RETURN_OFFSET: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             #if TIER_ONE
             frame->return_offset = (uint16_t)(next_instr - this_instr);
@@ -24176,7 +18590,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24188,7 +18601,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24199,22 +18611,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__EXIT_TRACE: {
             _cache_size = 2;
-            if (1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__EXIT_TRACE: {
-            _cache_size = 3;
             if (1) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -24230,7 +18631,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24242,7 +18642,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24253,22 +18652,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__CHECK_VALIDITY: {
             _cache_size = 2;
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_VALIDITY: {
-            _cache_size = 3;
             if (!current_executor->vm_data.valid) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -24285,7 +18673,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24296,7 +18683,6 @@
             value = Py_NewRef(ptr);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24306,31 +18692,19 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_CONST_INLINE: {
             PyObject *value;
-            _cache_size = 2;
-            PyObject *ptr = (PyObject *)CURRENT_OPERAND();
-            value = Py_NewRef(ptr);
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_CONST_INLINE: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24343,7 +18717,6 @@
             stack_pointer += 1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24354,7 +18727,6 @@
             value = ptr;
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24364,31 +18736,19 @@
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__LOAD_CONST_INLINE_BORROW: {
             PyObject *value;
-            _cache_size = 2;
-            PyObject *ptr = (PyObject *)CURRENT_OPERAND();
-            value = ptr;
-            _2 = value;
-            break;
-        }
-
-        case __R3__LOAD_CONST_INLINE_BORROW: {
-            PyObject *value;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            stack_pointer += 2;
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24403,7 +18763,6 @@
             stack_pointer[-1] = value;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24418,7 +18777,6 @@
             _0 = value;
             stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24432,7 +18790,6 @@
             value = ptr;
             _0 = value;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24445,19 +18802,6 @@
             Py_DECREF(pop);
             value = ptr;
             _1 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__POP_TOP_LOAD_CONST_INLINE_BORROW: {
-            PyObject *pop;
-            PyObject *value;
-            _cache_size = 3;
-            pop = _2;
-            PyObject *ptr = (PyObject *)CURRENT_OPERAND();
-            Py_DECREF(pop);
-            value = ptr;
-            _2 = value;
             break;
         }
 
@@ -24473,7 +18817,6 @@
             stack_pointer += 2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24486,19 +18829,20 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__LOAD_CONST_INLINE_WITH_NULL: {
             PyObject *value;
             PyObject *null;
-            _cache_size = 1;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer += 1;
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = Py_NewRef(ptr);
             null = NULL;
-            _2 = null;
-            _1 = value;
+            _1 = null;
+            _0 = value;
             break;
         }
 
@@ -24514,24 +18858,6 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_CONST_INLINE_WITH_NULL: {
-            PyObject *value;
-            PyObject *null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            PyObject *ptr = (PyObject *)CURRENT_OPERAND();
-            value = Py_NewRef(ptr);
-            null = NULL;
-            _1 = null;
-            _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24547,7 +18873,6 @@
             stack_pointer += 2;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24560,19 +18885,20 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__LOAD_CONST_INLINE_BORROW_WITH_NULL: {
             PyObject *value;
             PyObject *null;
-            _cache_size = 1;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer += 1;
             PyObject *ptr = (PyObject *)CURRENT_OPERAND();
             value = ptr;
             null = NULL;
-            _2 = null;
-            _1 = value;
+            _1 = null;
+            _0 = value;
             break;
         }
 
@@ -24588,24 +18914,6 @@
             null = NULL;
             _1 = null;
             _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__LOAD_CONST_INLINE_BORROW_WITH_NULL: {
-            PyObject *value;
-            PyObject *null;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            PyObject *ptr = (PyObject *)CURRENT_OPERAND();
-            value = ptr;
-            null = NULL;
-            _1 = null;
-            _0 = value;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24619,7 +18927,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24633,7 +18940,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24646,24 +18952,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__CHECK_FUNCTION: {
             _cache_size = 2;
-            uint32_t func_version = (uint32_t)CURRENT_OPERAND();
-            assert(PyFunction_Check(frame->f_funcobj));
-            if (((PyFunctionObject *)frame->f_funcobj)->func_version != func_version) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_FUNCTION: {
-            _cache_size = 3;
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
             assert(PyFunction_Check(frame->f_funcobj));
             if (((PyFunctionObject *)frame->f_funcobj)->func_version != func_version) {
@@ -24682,7 +18975,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24695,7 +18987,6 @@
             stack_pointer += -1;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24707,7 +18998,6 @@
             exe->count++;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24718,17 +19008,6 @@
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
             exe->count++;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__INTERNAL_INCREMENT_OPT_COUNTER: {
-            PyObject *opt;
-            _cache_size = 3;
-            opt = _2;
-            _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)opt;
-            exe->count++;
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24768,7 +19047,6 @@
             GOTO_TIER_TWO(executor);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24808,7 +19086,6 @@
             GOTO_TIER_TWO(executor);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24847,50 +19124,11 @@
             exit->executor = executor;
             GOTO_TIER_TWO(executor);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__COLD_EXIT: {
             _cache_size = 2;
-            oparg = CURRENT_OPARG();
-            _PyExecutorObject *previous = (_PyExecutorObject *)tstate->previous_executor;
-            _PyExitData *exit = &previous->exits[oparg];
-            PyCodeObject *code = _PyFrame_GetCode(frame);
-            _Py_CODEUNIT *target = _PyCode_CODE(code) + exit->target;
-            _Py_BackoffCounter temperature = exit->temperature;
-            if (!backoff_counter_triggers(temperature)) {
-                exit->temperature = advance_backoff_counter(temperature);
-                GOTO_TIER_ONE(target);
-            }
-            _PyExecutorObject *executor;
-            if (target->op.code == ENTER_EXECUTOR) {
-                executor = code->co_executors->executors[target->op.arg];
-                Py_INCREF(executor);
-            }
-            else {
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor);
-                if (optimized <= 0) {
-                    exit->temperature = restart_backoff_counter(temperature);
-                    if (optimized < 0) {
-                        Py_DECREF(previous);
-                        tstate->previous_executor = Py_None;
-                        GOTO_UNWIND();
-                    }
-                    GOTO_TIER_ONE(target);
-                }
-            }
-            /* We need two references. One to store in exit->executor and
-             * one to keep the executor alive when executing. */
-            Py_INCREF(executor);
-            exit->executor = executor;
-            GOTO_TIER_TWO(executor);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__COLD_EXIT: {
-            _cache_size = 3;
             oparg = CURRENT_OPARG();
             _PyExecutorObject *previous = (_PyExecutorObject *)tstate->previous_executor;
             _PyExitData *exit = &previous->exits[oparg];
@@ -24940,7 +19178,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24958,7 +19195,6 @@
             }
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -24975,28 +19211,11 @@
                 JUMP_TO_JUMP_TARGET();
             }
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__START_EXECUTOR: {
             _cache_size = 2;
-            PyObject *executor = (PyObject *)CURRENT_OPERAND();
-            Py_DECREF(tstate->previous_executor);
-            tstate->previous_executor = NULL;
-            #ifndef _Py_JIT
-            current_executor = (_PyExecutorObject*)executor;
-            #endif
-            if (!((_PyExecutorObject *)executor)->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__START_EXECUTOR: {
-            _cache_size = 3;
             PyObject *executor = (PyObject *)CURRENT_OPERAND();
             Py_DECREF(tstate->previous_executor);
             tstate->previous_executor = NULL;
@@ -25016,7 +19235,6 @@
             Py_FatalError("Fatal error uop executed.");
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25026,7 +19244,6 @@
             Py_FatalError("Fatal error uop executed.");
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25035,20 +19252,11 @@
             assert(0);
             Py_FatalError("Fatal error uop executed.");
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__FATAL_ERROR: {
             _cache_size = 2;
-            assert(0);
-            Py_FatalError("Fatal error uop executed.");
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__FATAL_ERROR: {
-            _cache_size = 3;
             assert(0);
             Py_FatalError("Fatal error uop executed.");
             break;
@@ -25064,7 +19272,6 @@
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25078,7 +19285,6 @@
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25091,24 +19297,11 @@
             }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__CHECK_VALIDITY_AND_SET_IP: {
             _cache_size = 2;
-            PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__CHECK_VALIDITY_AND_SET_IP: {
-            _cache_size = 3;
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
             if (!current_executor->vm_data.valid) {
                 UOP_STAT_INC(uopcode, miss);
@@ -25123,7 +19316,6 @@
             EXIT_TO_TIER1();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25132,7 +19324,6 @@
             EXIT_TO_TIER1();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25140,19 +19331,11 @@
             _cache_size = 1;
             EXIT_TO_TIER1();
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__DEOPT: {
             _cache_size = 2;
-            EXIT_TO_TIER1();
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__DEOPT: {
-            _cache_size = 3;
             EXIT_TO_TIER1();
             break;
         }
@@ -25162,7 +19345,6 @@
             EXIT_TO_TRACE();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25171,7 +19353,6 @@
             EXIT_TO_TRACE();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25179,19 +19360,11 @@
             _cache_size = 1;
             EXIT_TO_TRACE();
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__SIDE_EXIT: {
             _cache_size = 2;
-            EXIT_TO_TRACE();
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__SIDE_EXIT: {
-            _cache_size = 3;
             EXIT_TO_TRACE();
             break;
         }
@@ -25203,7 +19376,6 @@
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25214,7 +19386,6 @@
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25227,7 +19398,6 @@
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -25241,22 +19411,6 @@
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
-            break;
-        }
-
-        case __R3__ERROR_POP_N: {
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            oparg = CURRENT_OPARG();
-            stack_pointer += -oparg;
-            GOTO_UNWIND();
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
