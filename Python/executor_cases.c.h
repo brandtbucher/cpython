@@ -2740,52 +2740,60 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[-1];
-            _0 = left;
-            stack_pointer += -2;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__GUARD_NOS_INT: {
             PyObject *left;
-            _cache_size = 1;
-            left = stack_pointer[-1];
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer += 1;
+            left = stack_pointer[-2];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[0];
-            _0 = left;
-            stack_pointer += -1;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_NOS_INT: {
             PyObject *left;
-            _cache_size = 2;
-            left = _0;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer += 2;
+            left = stack_pointer[-2];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[1];
-            _0 = left;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R3__GUARD_NOS_INT: {
             PyObject *left;
-            _cache_size = 3;
-            left = _1;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer[2] = _2;
+            stack_pointer += 3;
+            left = stack_pointer[-2];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _2 = stack_pointer[1];
-            _1 = left;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -3259,52 +3267,60 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[-1];
-            _0 = left;
-            stack_pointer += -2;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__GUARD_NOS_FLOAT: {
             PyObject *left;
-            _cache_size = 1;
-            left = stack_pointer[-1];
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer += 1;
+            left = stack_pointer[-2];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[0];
-            _0 = left;
-            stack_pointer += -1;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_NOS_FLOAT: {
             PyObject *left;
-            _cache_size = 2;
-            left = _0;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer += 2;
+            left = stack_pointer[-2];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _1 = stack_pointer[1];
-            _0 = left;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R3__GUARD_NOS_FLOAT: {
             PyObject *left;
-            _cache_size = 3;
-            left = _1;
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer[2] = _2;
+            stack_pointer += 3;
+            left = stack_pointer[-2];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            _2 = stack_pointer[1];
-            _1 = left;
+            CLOBBER_REGISTER(_0, rbx);
+            CLOBBER_REGISTER(_1, r14);
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16624,10 +16640,10 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
-            _1 = val;
-            _0 = stack_pointer[-2];
-            stack_pointer += -2;
+            _1 = res;
+            _0 = val;
+            stack_pointer += -1;
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16636,10 +16652,12 @@
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
-            _cache_size = 1;
-            val = _0;
-            lasti = stack_pointer[-2];
-            exit_func = stack_pointer[-3];
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer += 1;
+            val = stack_pointer[-1];
+            lasti = stack_pointer[-3];
+            exit_func = stack_pointer[-4];
             /* At the top of the stack are 4 values:
                - val: TOP = exc_info()
                - unused: SECOND = previous exception
@@ -16664,10 +16682,10 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
-            _1 = val;
-            _0 = stack_pointer[-1];
+            _1 = res;
+            _0 = val;
             stack_pointer += -1;
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16676,10 +16694,13 @@
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
-            _cache_size = 2;
-            val = _1;
-            lasti = stack_pointer[-1];
-            exit_func = stack_pointer[-2];
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer += 2;
+            val = stack_pointer[-1];
+            lasti = stack_pointer[-3];
+            exit_func = stack_pointer[-4];
             /* At the top of the stack are 4 values:
                - val: TOP = exc_info()
                - unused: SECOND = previous exception
@@ -16704,9 +16725,10 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
-            _1 = val;
-            _0 = stack_pointer[0];
+            _1 = res;
+            _0 = val;
+            stack_pointer += -1;
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
@@ -16715,10 +16737,14 @@
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
-            _cache_size = 3;
-            val = _2;
-            lasti = _0;
-            exit_func = stack_pointer[-1];
+            _cache_size = 0;
+            stack_pointer[0] = _0;
+            stack_pointer[1] = _1;
+            stack_pointer[2] = _2;
+            stack_pointer += 3;
+            val = stack_pointer[-1];
+            lasti = stack_pointer[-3];
+            exit_func = stack_pointer[-4];
             /* At the top of the stack are 4 values:
                - val: TOP = exc_info()
                - unused: SECOND = previous exception
@@ -16743,10 +16769,10 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _2 = res;
-            _1 = val;
-            _0 = stack_pointer[1];
-            stack_pointer += 1;
+            _1 = res;
+            _0 = val;
+            stack_pointer += -1;
+            CLOBBER_REGISTER(_2, rsi);
             break;
         }
 

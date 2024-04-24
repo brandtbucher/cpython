@@ -1128,8 +1128,6 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     assert(next_exit == -1);
     assert(dest == executor->trace);
     // assert(dest->opcode == _START_EXECUTOR);
-    dest->oparg = 0;
-    dest->target = 0;
     _Py_ExecutorInit(executor, dependencies);
 #ifdef Py_DEBUG
     char *python_lltrace = Py_GETENV("PYTHON_LLTRACE");
