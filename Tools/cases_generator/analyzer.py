@@ -197,7 +197,7 @@ class Uop:
     def analyze_stack_cache(self) -> tuple[int, list[StackItem], list[StackItem]]:
         def var_is_cacheable(var: StackItem) -> bool:
             # XXX: type/condition...
-            return not var.is_array() and not var.condition and not var.type and var.name != "unused"
+            return not var.is_array() and not var.condition and not var.type and var.name != "unused" and not var.peek
 
         size = self.stack_cache_state
         if size is None:
@@ -238,7 +238,7 @@ class Uop:
         return spilled_inputs, cached_inputs, cached_outputs
 
 
-STACK_CACHE_SIZE = 3
+STACK_CACHE_SIZE = 1
 
 def add_variants(uop: Uop, uops: dict[str, Uop]) -> None:
     for stack_cache_state in range(STACK_CACHE_SIZE + 1):
