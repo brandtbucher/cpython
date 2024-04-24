@@ -924,7 +924,8 @@ count_exits(_PyUOpInstruction *buffer, int length)
         int opcode = buffer[i].opcode;
         if (opcode == _SIDE_EXIT
             || opcode == __R0__SIDE_EXIT || opcode == __R1__SIDE_EXIT
-            || opcode == __R2__SIDE_EXIT || opcode == __R3__SIDE_EXIT)
+            || opcode == __R2__SIDE_EXIT || opcode == __R3__SIDE_EXIT
+            || opcode == __R4__SIDE_EXIT)
         {
             exit_count++;
         }
@@ -1117,7 +1118,8 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
         assert(opcode != _POP_JUMP_IF_FALSE && opcode != _POP_JUMP_IF_TRUE);
         if (opcode == _SIDE_EXIT
             || opcode == __R0__SIDE_EXIT || opcode == __R1__SIDE_EXIT
-            || opcode == __R2__SIDE_EXIT || opcode == __R3__SIDE_EXIT)
+            || opcode == __R2__SIDE_EXIT || opcode == __R3__SIDE_EXIT
+            || opcode == __R4__SIDE_EXIT)
         {
             executor->exits[next_exit].target = buffer[i].target;
             dest->exit_index = next_exit;
