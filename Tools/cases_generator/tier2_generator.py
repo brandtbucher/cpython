@@ -221,7 +221,7 @@ def generate_tier2(
         spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
         if uop.stack_cache_state is not None:
             out.emit(f"_cache_size = {uop.stack_cache_state - spilled_inputs};")
-            base = uop.stack_cache_state - len(cached_inputs) - spilled_inputs
+            base = uop.stack_cache_state - sum(var.condition != "0" for var in cached_inputs) - spilled_inputs
         else:
             out.emit("_cache_size = 0;")
             base = 0
@@ -231,16 +231,20 @@ def generate_tier2(
         stack.flush(out)
         for name, var in zip(names[base + spilled_inputs:base + spilled_inputs + len(cached_inputs)], cached_inputs, strict=True):
             cast = var.type and "PyObject *"
-            out.emit(stack.push(dataclasses.replace(var, name=name, type=cast)))
+            assign = stack.push(dataclasses.replace(var, name=name, type=cast))
+            if var.condition != "0":
+                out.emit(assign)
         write_uop(uop, out, stack)
         out.start_line()
         for name, var in zip(reversed(names[base:base + len(cached_outputs)]), cached_outputs, strict=True):
             cast = var.type and "PyObject *"
-            out.emit(stack.pop(dataclasses.replace(var, name=name, type=cast)))
+            assign = stack.pop(dataclasses.replace(var, name=name, type=cast))
+            if var.condition != "0":
+                out.emit(assign)
         if not uop.properties.always_exits:
             stack.flush(out)
             ghccc = ["r13", "rbp", "r12", "rbx", "r14", "rsi", "rdi", "r8", "r9", "r15"]
-            for i in range(base + len(cached_outputs), STACK_CACHE_SIZE):
+            for i in range(base + sum(var.condition != "0" for var in cached_outputs), STACK_CACHE_SIZE):
                 out.emit(f"CLOBBER_REGISTER(_{i}, {ghccc[i + 3]});\n")
             if uop.properties.ends_with_eval_breaker:
                 out.emit("CHECK_EVAL_BREAKER();\n")

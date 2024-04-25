@@ -196,8 +196,13 @@ class Uop:
 
     def analyze_stack_cache(self) -> tuple[int, list[StackItem], list[StackItem]]:
         def var_is_cacheable(var: StackItem) -> bool:
-            # XXX: condition...
-            return not var.is_array() and not var.condition and var.name != "unused"
+            if var.is_array():
+                return False
+            if var.condition not in {"", "0", "1"}:
+                return False
+            if var.name == "unused":# and var.condition != "0":
+                return False
+            return True
 
         size = self.stack_cache_state
         if size is None:

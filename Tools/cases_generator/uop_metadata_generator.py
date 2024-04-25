@@ -67,7 +67,7 @@ def generate_names_and_flags(analysis: Analysis, out: CWriter) -> None:
             base = uop.name.removeprefix(f"__R{uop.stack_cache_state}_")
             size = uop.stack_cache_state
             spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
-            new_size = size - spilled_inputs - len(cached_inputs) + len(cached_outputs)
+            new_size = size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs)
             out.emit(f"[{base}][{size}] = {{{uop.name}, {new_size}, {size - spilled_inputs}}},\n")
     out.emit("};\n\n")
     out.emit("#endif // NEED_OPCODE_METADATA\n\n")
