@@ -18416,9 +18416,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18446,9 +18445,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18477,9 +18475,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18509,9 +18506,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18565,9 +18561,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18595,9 +18590,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18626,9 +18620,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18658,9 +18651,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18714,9 +18706,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18744,9 +18735,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18775,9 +18765,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18807,9 +18796,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18863,9 +18851,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18893,9 +18880,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18924,9 +18910,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -18956,9 +18941,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19012,9 +18996,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19042,9 +19025,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19073,9 +19055,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19105,9 +19086,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19159,9 +19139,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19188,9 +19167,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19218,9 +19196,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -19249,9 +19226,8 @@
             for (int i = 0; i < oparg; i++) {
                 first_non_self_local[i] = args[i];
             }
-            stack_pointer[-2 - oparg] = (PyObject *)new_frame;
-            stack_pointer += -1 - oparg;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = (PyObject *)new_frame;
+            stack_pointer += -2 - oparg;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;

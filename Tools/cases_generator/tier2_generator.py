@@ -230,11 +230,13 @@ def generate_tier2(
             out.emit(stack.push(StackItem(name, None, None, "1")))
         stack.flush(out)
         for name, var in zip(names[base + spilled_inputs:base + spilled_inputs + len(cached_inputs)], cached_inputs, strict=True):
-            out.emit(stack.push(dataclasses.replace(var, name=name)))
+            cast = var.type and "PyObject *"
+            out.emit(stack.push(dataclasses.replace(var, name=name, type=cast)))
         write_uop(uop, out, stack)
         out.start_line()
         for name, var in zip(reversed(names[base:base + len(cached_outputs)]), cached_outputs, strict=True):
-            out.emit(stack.pop(dataclasses.replace(var, name=name)))
+            cast = var.type and "PyObject *"
+            out.emit(stack.pop(dataclasses.replace(var, name=name, type=cast)))
         if not uop.properties.always_exits:
             stack.flush(out)
             ghccc = ["r13", "rbp", "r12", "rbx", "r14", "rsi", "rdi", "r8", "r9", "r15"]

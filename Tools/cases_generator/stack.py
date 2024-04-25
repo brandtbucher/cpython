@@ -128,7 +128,12 @@ class Stack:
         self.top_offset.pop(var)
         if not var.peek:
             self.peek_offset.pop(var)
-        indirect = "&" if var.is_array() else ""
+        if var.is_array():
+            cast = f"({var.type})" if var.type != "PyObject **" else ""
+            indirect = "&"
+        else:
+            cast = f"({var.type})" if var.type else ""
+            indirect = ""
         if self.variables:
             popped = self.variables.pop()
             if popped.size != var.size:
@@ -141,19 +146,18 @@ class Stack:
             elif popped.name in UNUSED:
                 self.defined.add(var.name)
                 return (
-                    f"{var.name} = {indirect}stack_pointer[{self.top_offset.to_c()}];\n"
+                    f"{var.name} = {cast}{indirect}stack_pointer[{self.top_offset.to_c()}];\n"
                 )
             elif var.name in UNUSED:
                 return ""
             else:
                 self.defined.add(var.name)
-                return f"{var.name} = {popped.name};\n"
+                return f"{var.name} = {cast}{popped.name};\n"
         self.base_offset.pop(var)
         if var.name in UNUSED:
             return ""
         else:
             self.defined.add(var.name)
-        cast = f"({var.type})" if (not indirect and var.type) else ""
         assign = (
             f"{var.name} = {cast}{indirect}stack_pointer[{self.base_offset.to_c()}];"
         )
@@ -169,10 +173,11 @@ class Stack:
     def push(self, var: StackItem) -> str:
         self.variables.append(var)
         if var.is_array() and var.name not in self.defined and var.name not in UNUSED:
+            cast = f"({var.type})" if var.type != "PyObject **" else ""
             c_offset = self.top_offset.to_c()
             self.top_offset.push(var)
             self.defined.add(var.name)
-            return f"{var.name} = &stack_pointer[{c_offset}];\n"
+            return f"{var.name} = {cast}&stack_pointer[{c_offset}];\n"
         else:
             self.top_offset.push(var)
             return ""
