@@ -200,7 +200,7 @@ class Uop:
                 return False
             if var.condition not in {"", "0", "1"}:
                 return False
-            if var.name == "unused":# and var.condition != "0":
+            if var.name == "unused" and var.condition != "0":
                 return False
             return True
 

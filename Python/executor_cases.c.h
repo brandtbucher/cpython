@@ -10888,9 +10888,8 @@
             Py_DECREF(class);
             Py_DECREF(self);
             if (attr == NULL) JUMP_TO_ERROR();
-            stack_pointer[-3] = attr;
-            stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -3;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -10901,13 +10900,11 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
+            _cache_size = 1;
             oparg = CURRENT_OPARG();
-            self = stack_pointer[-1];
-            class = stack_pointer[-2];
-            global_super = stack_pointer[-3];
+            self = _0;
+            class = stack_pointer[-1];
+            global_super = stack_pointer[-2];
             assert(!(oparg & 1));
             if (global_super != (PyObject *)&PySuper_Type) {
                 UOP_STAT_INC(uopcode, miss);
@@ -10924,9 +10921,8 @@
             Py_DECREF(class);
             Py_DECREF(self);
             if (attr == NULL) JUMP_TO_ERROR();
-            stack_pointer[-3] = attr;
+            _0 = attr;
             stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -10937,14 +10933,11 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
+            _cache_size = 2;
             oparg = CURRENT_OPARG();
-            self = stack_pointer[-1];
-            class = stack_pointer[-2];
-            global_super = stack_pointer[-3];
+            self = _1;
+            class = _0;
+            global_super = stack_pointer[-1];
             assert(!(oparg & 1));
             if (global_super != (PyObject *)&PySuper_Type) {
                 UOP_STAT_INC(uopcode, miss);
@@ -10961,9 +10954,8 @@
             Py_DECREF(class);
             Py_DECREF(self);
             if (attr == NULL) JUMP_TO_ERROR();
-            stack_pointer[-3] = attr;
-            stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -10974,15 +10966,11 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
+            _cache_size = 3;
             oparg = CURRENT_OPARG();
-            self = stack_pointer[-1];
-            class = stack_pointer[-2];
-            global_super = stack_pointer[-3];
+            self = _2;
+            class = _1;
+            global_super = _0;
             assert(!(oparg & 1));
             if (global_super != (PyObject *)&PySuper_Type) {
                 UOP_STAT_INC(uopcode, miss);
@@ -10999,9 +10987,7 @@
             Py_DECREF(class);
             Py_DECREF(self);
             if (attr == NULL) JUMP_TO_ERROR();
-            stack_pointer[-3] = attr;
-            stack_pointer += -2;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17266,8 +17252,8 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17276,19 +17262,16 @@
         case __R1__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
+            _cache_size = 1;
             oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
+            owner = _0;
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
             assert((oparg & 1) == 0);
             STAT_INC(LOAD_ATTR, hit);
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17297,21 +17280,16 @@
         case __R2__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
+            _cache_size = 2;
             oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
+            owner = _1;
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
             assert((oparg & 1) == 0);
             STAT_INC(LOAD_ATTR, hit);
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = attr;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
@@ -17332,8 +17310,8 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17372,8 +17350,8 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17382,11 +17360,9 @@
         case __R1__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
+            _cache_size = 1;
             oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
+            owner = _0;
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
             assert((oparg & 1) == 0);
             assert(Py_TYPE(owner)->tp_dictoffset == 0);
@@ -17394,8 +17370,7 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
@@ -17404,12 +17379,9 @@
         case __R2__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
+            _cache_size = 2;
             oparg = CURRENT_OPARG();
-            owner = stack_pointer[-1];
+            owner = _1;
             PyObject *descr = (PyObject *)CURRENT_OPERAND();
             assert((oparg & 1) == 0);
             assert(Py_TYPE(owner)->tp_dictoffset == 0);
@@ -17417,9 +17389,7 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = attr;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
@@ -17441,8 +17411,8 @@
             assert(descr != NULL);
             Py_DECREF(owner);
             attr = Py_NewRef(descr);
-            stack_pointer[-1] = attr;
-            CLOBBER_REGISTER(_0, rbx);
+            _0 = attr;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_1, r14);
             CLOBBER_REGISTER(_2, rsi);
             break;
