@@ -201,9 +201,9 @@ class Uop:
                 return False
             if var.condition not in {"", "0", "1"}:
                 return False
-            # XXX
-            if var.name == "unused" and var.condition != "0":
-                return False
+            # # XXX
+            # if var.name == "unused" and var.condition != "0":
+            #     return False
             return True
 
         size = self.stack_cache_state

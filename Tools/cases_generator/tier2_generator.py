@@ -215,10 +215,20 @@ def generate_tier2(
             out.emit(f"/* {uop.name} is not a viable micro-op for tier 2 because it {why_not_viable} */\n\n")
             continue
         out.emit(f"case {uop.name}: {{\n")
+        spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
+        for i, var in enumerate(uop.stack.inputs):
+            if var.name == "unused":
+                uop.stack.inputs = uop.stack.inputs.copy()
+                assert uop.stack.inputs[i] == var
+                uop.stack.inputs[i] = dataclasses.replace(var, name=f"unused_{i}")
+        for i, var in enumerate(uop.stack.outputs):
+            if var.name == "unused":
+                uop.stack.outputs = uop.stack.outputs.copy()
+                assert uop.stack.outputs[i] == var
+                uop.stack.outputs[i] = dataclasses.replace(var, name=f"unused_{i}")
         declare_variables(uop, out)
         stack = Stack()
         out.start_line()
-        spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
         if uop.stack_cache_state is not None:
             out.emit(f"_cache_size = {uop.stack_cache_state - spilled_inputs};")
             base = uop.stack_cache_state - spilled_inputs - sum(var.condition != "0" for var in cached_inputs)
@@ -230,16 +240,17 @@ def generate_tier2(
             for name in names[:spilled_inputs]:
                 out.emit(stack.push(StackItem(name, None, None, "1")))
             stack.flush(out)
-            for new, old in zip(names[:uop.stack_cache_state - spilled_inputs], names[spilled_inputs:uop.stack_cache_state], strict=True):
-                out.emit(f"{new} = {old};\n")
+            for old in reversed(names[spilled_inputs:uop.stack_cache_state]):
+                out.emit(stack.push(StackItem(old, None, None, "1")))
+            for new in names[:uop.stack_cache_state - spilled_inputs]:
+                out.emit(stack.pop(StackItem(new, None, None, "1")))
         names_iter = iter(names[base:base + sum(var.condition != "0" for var in cached_inputs)])
         for var in cached_inputs:
             if var.condition != "0":
                 name = next(names_iter)
                 cast = var.type and "PyObject *"
-                out.emit(stack.push(dataclasses.replace(var, name=name, type=cast)))
-            else:
-                stack.push(var)
+                var = dataclasses.replace(var, name=name, type=cast)
+            out.emit(stack.push(var))
         assert next(names_iter, None) is None
         write_uop(uop, out, stack)
         out.start_line()
@@ -248,9 +259,8 @@ def generate_tier2(
             if var.condition != "0":
                 name = next(names_iter)
                 cast = var.type and "PyObject *"
-                out.emit(stack.pop(dataclasses.replace(var, name=name, type=cast)))
-            else:
-                stack.pop(var)
+                var = dataclasses.replace(var, name=name, type=cast)
+            out.emit(stack.pop(var))
         assert next(names_iter, None) is None
         if not uop.properties.always_exits:
             stack.flush(out)

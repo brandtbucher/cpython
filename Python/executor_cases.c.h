@@ -2693,8 +2693,10 @@
         }
 
         case _GUARD_NOS_INT: {
+            PyObject *unused_1;
             PyObject *left;
             _cache_size = 0;
+            unused_1 = stack_pointer[-1];
             left = stack_pointer[-2];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
@@ -2707,67 +2709,67 @@
         }
 
         case __R0__GUARD_NOS_INT: {
+            PyObject *unused_1;
             PyObject *left;
             _cache_size = 0;
+            unused_1 = stack_pointer[-1];
             left = stack_pointer[-2];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
+            stack_pointer += -2;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__GUARD_NOS_INT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
-            left = stack_pointer[-2];
+            _cache_size = 1;
+            unused_1 = _0;
+            left = stack_pointer[-1];
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_NOS_INT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
-            left = stack_pointer[-2];
+            _cache_size = 2;
+            unused_1 = _1;
+            left = _0;
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R3__GUARD_NOS_INT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            left = stack_pointer[-2];
+            _cache_size = 3;
+            unused_1 = _2;
+            left = _1;
             if (!PyLong_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = unused_1;
+            _1 = left;
             break;
         }
 
@@ -3220,8 +3222,10 @@
         }
 
         case _GUARD_NOS_FLOAT: {
+            PyObject *unused_1;
             PyObject *left;
             _cache_size = 0;
+            unused_1 = stack_pointer[-1];
             left = stack_pointer[-2];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
@@ -3234,67 +3238,67 @@
         }
 
         case __R0__GUARD_NOS_FLOAT: {
+            PyObject *unused_1;
             PyObject *left;
             _cache_size = 0;
+            unused_1 = stack_pointer[-1];
             left = stack_pointer[-2];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
+            stack_pointer += -2;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R1__GUARD_NOS_FLOAT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
-            left = stack_pointer[-2];
+            _cache_size = 1;
+            unused_1 = _0;
+            left = stack_pointer[-1];
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
+            stack_pointer += -1;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R2__GUARD_NOS_FLOAT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
-            left = stack_pointer[-2];
+            _cache_size = 2;
+            unused_1 = _1;
+            left = _0;
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
+            _1 = unused_1;
+            _0 = left;
             CLOBBER_REGISTER(_2, rsi);
             break;
         }
 
         case __R3__GUARD_NOS_FLOAT: {
+            PyObject *unused_1;
             PyObject *left;
-            _cache_size = 0;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer[2] = _2;
-            stack_pointer += 3;
-            left = stack_pointer[-2];
+            _cache_size = 3;
+            unused_1 = _2;
+            left = _1;
             if (!PyFloat_CheckExact(left)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            CLOBBER_REGISTER(_0, rbx);
-            CLOBBER_REGISTER(_1, r14);
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = unused_1;
+            _1 = left;
             break;
         }
 
@@ -4936,10 +4940,12 @@
 
         case __R0__LIST_APPEND: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             v = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
@@ -4951,10 +4957,12 @@
 
         case __R1__LIST_APPEND: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
@@ -4965,6 +4973,7 @@
 
         case __R2__LIST_APPEND: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -4972,6 +4981,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
@@ -4982,6 +4992,7 @@
 
         case __R3__LIST_APPEND: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -4990,6 +5001,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             CLOBBER_REGISTER(_0, rbx);
@@ -5000,10 +5012,12 @@
 
         case _LIST_APPEND: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             v = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             list = stack_pointer[-2 - (oparg-1)];
             if (_PyList_AppendTakeRef((PyListObject *)list, v) < 0) JUMP_TO_ERROR();
             stack_pointer += -1;
@@ -5015,10 +5029,12 @@
 
         case __R0__SET_ADD: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             v = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             set = stack_pointer[-2 - (oparg-1)];
             int err = PySet_Add(set, v);
             Py_DECREF(v);
@@ -5032,10 +5048,12 @@
 
         case __R1__SET_ADD: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = PySet_Add(set, v);
             Py_DECREF(v);
@@ -5048,6 +5066,7 @@
 
         case __R2__SET_ADD: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -5055,6 +5074,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = PySet_Add(set, v);
             Py_DECREF(v);
@@ -5067,6 +5087,7 @@
 
         case __R3__SET_ADD: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -5075,6 +5096,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             v = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = PySet_Add(set, v);
             Py_DECREF(v);
@@ -5087,10 +5109,12 @@
 
         case _SET_ADD: {
             PyObject *v;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             v = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             set = stack_pointer[-2 - (oparg-1)];
             int err = PySet_Add(set, v);
             Py_DECREF(v);
@@ -7016,10 +7040,12 @@
 
         case _UNPACK_SEQUENCE: {
             PyObject *seq;
+            PyObject **unused_0;
             PyObject **top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             seq = stack_pointer[-1];
+            unused_0 = &stack_pointer[-1];
             top = &stack_pointer[-1 + oparg];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             Py_DECREF(seq);
@@ -7033,10 +7059,12 @@
 
         case __R0__UNPACK_SEQUENCE: {
             PyObject *seq;
+            PyObject **unused_0;
             PyObject **top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             seq = stack_pointer[-1];
+            unused_0 = &stack_pointer[-1];
             top = &stack_pointer[-1 + oparg];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             Py_DECREF(seq);
@@ -7050,10 +7078,12 @@
 
         case __R1__UNPACK_SEQUENCE: {
             PyObject *seq;
+            PyObject **unused_0;
             PyObject **top;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
             top = &stack_pointer[oparg];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             Py_DECREF(seq);
@@ -7067,6 +7097,7 @@
 
         case __R2__UNPACK_SEQUENCE: {
             PyObject *seq;
+            PyObject **unused_0;
             PyObject **top;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -7074,6 +7105,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
             top = &stack_pointer[oparg];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             Py_DECREF(seq);
@@ -7087,6 +7119,7 @@
 
         case __R3__UNPACK_SEQUENCE: {
             PyObject *seq;
+            PyObject **unused_0;
             PyObject **top;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -7095,6 +7128,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
             top = &stack_pointer[oparg];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg, -1, top);
             Py_DECREF(seq);
@@ -7538,14 +7572,20 @@
 
         case __R0__UNPACK_EX: {
             PyObject *seq;
+            PyObject **unused_0;
+            PyObject *unused_1;
+            PyObject **unused_2;
             PyObject **top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             seq = stack_pointer[-1];
+            unused_0 = &stack_pointer[-1];
+            unused_2 = &stack_pointer[(oparg & 0xFF)];
             top = &stack_pointer[(oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
+            stack_pointer[-1 + (oparg & 0xFF)] = unused_1;
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
@@ -7555,14 +7595,20 @@
 
         case __R1__UNPACK_EX: {
             PyObject *seq;
+            PyObject **unused_0;
+            PyObject *unused_1;
+            PyObject **unused_2;
             PyObject **top;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
+            unused_2 = &stack_pointer[1 + (oparg & 0xFF)];
             top = &stack_pointer[1 + (oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
+            stack_pointer[(oparg & 0xFF)] = unused_1;
             stack_pointer += 1 + (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
@@ -7572,6 +7618,9 @@
 
         case __R2__UNPACK_EX: {
             PyObject *seq;
+            PyObject **unused_0;
+            PyObject *unused_1;
+            PyObject **unused_2;
             PyObject **top;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -7579,10 +7628,13 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
+            unused_2 = &stack_pointer[1 + (oparg & 0xFF)];
             top = &stack_pointer[1 + (oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
+            stack_pointer[(oparg & 0xFF)] = unused_1;
             stack_pointer += 1 + (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
@@ -7592,6 +7644,9 @@
 
         case __R3__UNPACK_EX: {
             PyObject *seq;
+            PyObject **unused_0;
+            PyObject *unused_1;
+            PyObject **unused_2;
             PyObject **top;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -7600,10 +7655,13 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             seq = _0;
+            unused_0 = &stack_pointer[0];
+            unused_2 = &stack_pointer[1 + (oparg & 0xFF)];
             top = &stack_pointer[1 + (oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
+            stack_pointer[(oparg & 0xFF)] = unused_1;
             stack_pointer += 1 + (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
@@ -7613,14 +7671,20 @@
 
         case _UNPACK_EX: {
             PyObject *seq;
+            PyObject **unused_0;
+            PyObject *unused_1;
+            PyObject **unused_2;
             PyObject **top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             seq = stack_pointer[-1];
+            unused_0 = &stack_pointer[-1];
+            unused_2 = &stack_pointer[(oparg & 0xFF)];
             top = &stack_pointer[(oparg & 0xFF) + (oparg >> 8)];
             int res = _PyEval_UnpackIterable(tstate, seq, oparg & 0xFF, oparg >> 8, top);
             Py_DECREF(seq);
             if (res == 0) JUMP_TO_ERROR();
+            stack_pointer[-1 + (oparg & 0xFF)] = unused_1;
             stack_pointer += (oparg & 0xFF) + (oparg >> 8);
             CLOBBER_REGISTER(_0, rbx);
             CLOBBER_REGISTER(_1, r14);
@@ -9799,10 +9863,12 @@
 
         case __R0__LIST_EXTEND: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             iterable = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             list = stack_pointer[-2 - (oparg-1)];
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
             if (none_val == NULL) {
@@ -9828,10 +9894,12 @@
 
         case __R1__LIST_EXTEND: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
             if (none_val == NULL) {
@@ -9856,6 +9924,7 @@
 
         case __R2__LIST_EXTEND: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -9863,6 +9932,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
             if (none_val == NULL) {
@@ -9887,6 +9957,7 @@
 
         case __R3__LIST_EXTEND: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -9895,6 +9966,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             list = stack_pointer[-1 - (oparg-1)];
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
             if (none_val == NULL) {
@@ -9919,10 +9991,12 @@
 
         case _LIST_EXTEND: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *list;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             iterable = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             list = stack_pointer[-2 - (oparg-1)];
             PyObject *none_val = _PyList_Extend((PyListObject *)list, iterable);
             if (none_val == NULL) {
@@ -9948,10 +10022,12 @@
 
         case __R0__SET_UPDATE: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             iterable = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             set = stack_pointer[-2 - (oparg-1)];
             int err = _PySet_Update(set, iterable);
             Py_DECREF(iterable);
@@ -9965,10 +10041,12 @@
 
         case __R1__SET_UPDATE: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = _PySet_Update(set, iterable);
             Py_DECREF(iterable);
@@ -9981,6 +10059,7 @@
 
         case __R2__SET_UPDATE: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -9988,6 +10067,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = _PySet_Update(set, iterable);
             Py_DECREF(iterable);
@@ -10000,6 +10080,7 @@
 
         case __R3__SET_UPDATE: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -10008,6 +10089,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             iterable = _0;
+            unused_1 = &stack_pointer[-(oparg-1)];
             set = stack_pointer[-1 - (oparg-1)];
             int err = _PySet_Update(set, iterable);
             Py_DECREF(iterable);
@@ -10020,10 +10102,12 @@
 
         case _SET_UPDATE: {
             PyObject *iterable;
+            PyObject **unused_1;
             PyObject *set;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             iterable = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-1)];
             set = stack_pointer[-2 - (oparg-1)];
             int err = _PySet_Update(set, iterable);
             Py_DECREF(iterable);
@@ -10429,10 +10513,12 @@
 
         case __R0__DICT_UPDATE: {
             PyObject *update;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             update = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg - 1)];
             dict = stack_pointer[-2 - (oparg - 1)];
             if (PyDict_Update(dict, update) < 0) {
                 if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
@@ -10453,10 +10539,12 @@
 
         case __R1__DICT_UPDATE: {
             PyObject *update;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_1 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
             if (PyDict_Update(dict, update) < 0) {
                 if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
@@ -10476,6 +10564,7 @@
 
         case __R2__DICT_UPDATE: {
             PyObject *update;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -10483,6 +10572,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_1 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
             if (PyDict_Update(dict, update) < 0) {
                 if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
@@ -10502,6 +10592,7 @@
 
         case __R3__DICT_UPDATE: {
             PyObject *update;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -10510,6 +10601,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_1 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
             if (PyDict_Update(dict, update) < 0) {
                 if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
@@ -10529,10 +10621,12 @@
 
         case _DICT_UPDATE: {
             PyObject *update;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             update = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg - 1)];
             dict = stack_pointer[-2 - (oparg - 1)];
             if (PyDict_Update(dict, update) < 0) {
                 if (_PyErr_ExceptionMatches(tstate, PyExc_AttributeError)) {
@@ -10553,12 +10647,18 @@
 
         case __R0__DICT_MERGE: {
             PyObject *update;
+            PyObject **unused_4;
             PyObject *dict;
+            PyObject *unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             update = stack_pointer[-1];
+            unused_4 = &stack_pointer[-1 - (oparg - 1)];
             dict = stack_pointer[-2 - (oparg - 1)];
+            unused_2 = stack_pointer[-3 - (oparg - 1)];
+            unused_1 = stack_pointer[-4 - (oparg - 1)];
             callable = stack_pointer[-5 - (oparg - 1)];
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 _PyEval_FormatKwargsError(tstate, callable, update);
@@ -10575,12 +10675,18 @@
 
         case __R1__DICT_MERGE: {
             PyObject *update;
+            PyObject **unused_4;
             PyObject *dict;
+            PyObject *unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_4 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
+            unused_2 = stack_pointer[-2 - (oparg - 1)];
+            unused_1 = stack_pointer[-3 - (oparg - 1)];
             callable = stack_pointer[-4 - (oparg - 1)];
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 _PyEval_FormatKwargsError(tstate, callable, update);
@@ -10596,7 +10702,10 @@
 
         case __R2__DICT_MERGE: {
             PyObject *update;
+            PyObject **unused_4;
             PyObject *dict;
+            PyObject *unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -10604,7 +10713,10 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_4 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
+            unused_2 = stack_pointer[-2 - (oparg - 1)];
+            unused_1 = stack_pointer[-3 - (oparg - 1)];
             callable = stack_pointer[-4 - (oparg - 1)];
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 _PyEval_FormatKwargsError(tstate, callable, update);
@@ -10620,7 +10732,10 @@
 
         case __R3__DICT_MERGE: {
             PyObject *update;
+            PyObject **unused_4;
             PyObject *dict;
+            PyObject *unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -10629,7 +10744,10 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             update = _0;
+            unused_4 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
+            unused_2 = stack_pointer[-2 - (oparg - 1)];
+            unused_1 = stack_pointer[-3 - (oparg - 1)];
             callable = stack_pointer[-4 - (oparg - 1)];
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 _PyEval_FormatKwargsError(tstate, callable, update);
@@ -10645,12 +10763,18 @@
 
         case _DICT_MERGE: {
             PyObject *update;
+            PyObject **unused_4;
             PyObject *dict;
+            PyObject *unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             update = stack_pointer[-1];
+            unused_4 = &stack_pointer[-1 - (oparg - 1)];
             dict = stack_pointer[-2 - (oparg - 1)];
+            unused_2 = stack_pointer[-3 - (oparg - 1)];
+            unused_1 = stack_pointer[-4 - (oparg - 1)];
             callable = stack_pointer[-5 - (oparg - 1)];
             if (_PyDict_MergeEx(dict, update, 2) < 0) {
                 _PyEval_FormatKwargsError(tstate, callable, update);
@@ -10668,11 +10792,13 @@
         case __R0__MAP_ADD: {
             PyObject *value;
             PyObject *key;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             value = stack_pointer[-1];
             key = stack_pointer[-2];
+            unused_1 = &stack_pointer[-2 - (oparg - 1)];
             dict = stack_pointer[-3 - (oparg - 1)];
             assert(PyDict_CheckExact(dict));
             /* dict[key] = value */
@@ -10688,11 +10814,13 @@
         case __R1__MAP_ADD: {
             PyObject *value;
             PyObject *key;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             value = _0;
             key = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg - 1)];
             dict = stack_pointer[-2 - (oparg - 1)];
             assert(PyDict_CheckExact(dict));
             /* dict[key] = value */
@@ -10708,11 +10836,13 @@
         case __R2__MAP_ADD: {
             PyObject *value;
             PyObject *key;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 2;
             oparg = CURRENT_OPARG();
             value = _1;
             key = _0;
+            unused_1 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
             assert(PyDict_CheckExact(dict));
             /* dict[key] = value */
@@ -10727,6 +10857,7 @@
         case __R3__MAP_ADD: {
             PyObject *value;
             PyObject *key;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 2;
             stack_pointer[0] = _0;
@@ -10736,6 +10867,7 @@
             oparg = CURRENT_OPARG();
             value = _1;
             key = _0;
+            unused_1 = &stack_pointer[-(oparg - 1)];
             dict = stack_pointer[-1 - (oparg - 1)];
             assert(PyDict_CheckExact(dict));
             /* dict[key] = value */
@@ -10750,11 +10882,13 @@
         case _MAP_ADD: {
             PyObject *value;
             PyObject *key;
+            PyObject **unused_1;
             PyObject *dict;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             value = stack_pointer[-1];
             key = stack_pointer[-2];
+            unused_1 = &stack_pointer[-2 - (oparg - 1)];
             dict = stack_pointer[-3 - (oparg - 1)];
             assert(PyDict_CheckExact(dict));
             /* dict[key] = value */
@@ -10782,6 +10916,7 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             self = stack_pointer[-1];
@@ -10815,6 +10950,7 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             self = _0;
@@ -10848,6 +10984,7 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 2;
             oparg = CURRENT_OPARG();
             self = _1;
@@ -10881,6 +11018,7 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 3;
             oparg = CURRENT_OPARG();
             self = _2;
@@ -10913,6 +11051,7 @@
             PyObject *class;
             PyObject *global_super;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             self = stack_pointer[-1];
@@ -16390,11 +16529,13 @@
 
         case __R0__WITH_EXCEPT_START: {
             PyObject *val;
+            PyObject *unused_2;
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
             _cache_size = 0;
             val = stack_pointer[-1];
+            unused_2 = stack_pointer[-2];
             lasti = stack_pointer[-3];
             exit_func = stack_pointer[-4];
             /* At the top of the stack are 4 values:
@@ -16421,20 +16562,22 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            _0 = val;
-            stack_pointer += -1;
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = res;
+            _1 = val;
+            _0 = unused_2;
+            stack_pointer += -2;
             break;
         }
 
         case __R1__WITH_EXCEPT_START: {
             PyObject *val;
+            PyObject *unused_2;
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
             _cache_size = 1;
             val = _0;
+            unused_2 = stack_pointer[-1];
             lasti = stack_pointer[-2];
             exit_func = stack_pointer[-3];
             /* At the top of the stack are 4 values:
@@ -16461,24 +16604,24 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            _0 = val;
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = res;
+            _1 = val;
+            _0 = unused_2;
+            stack_pointer += -1;
             break;
         }
 
         case __R2__WITH_EXCEPT_START: {
             PyObject *val;
+            PyObject *unused_2;
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
-            _cache_size = 1;
-            stack_pointer[0] = _0;
-            stack_pointer += 1;
-            _0 = _1;
-            val = _0;
-            lasti = stack_pointer[-2];
-            exit_func = stack_pointer[-3];
+            _cache_size = 2;
+            val = _1;
+            unused_2 = _0;
+            lasti = stack_pointer[-1];
+            exit_func = stack_pointer[-2];
             /* At the top of the stack are 4 values:
                - val: TOP = exc_info()
                - unused: SECOND = previous exception
@@ -16503,25 +16646,23 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            _0 = val;
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = res;
+            _1 = val;
+            _0 = unused_2;
             break;
         }
 
         case __R3__WITH_EXCEPT_START: {
             PyObject *val;
+            PyObject *unused_2;
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
-            _cache_size = 1;
-            stack_pointer[0] = _0;
-            stack_pointer[1] = _1;
-            stack_pointer += 2;
-            _0 = _2;
-            val = _0;
-            lasti = stack_pointer[-2];
-            exit_func = stack_pointer[-3];
+            _cache_size = 3;
+            val = _2;
+            unused_2 = _1;
+            lasti = _0;
+            exit_func = stack_pointer[-1];
             /* At the top of the stack are 4 values:
                - val: TOP = exc_info()
                - unused: SECOND = previous exception
@@ -16546,19 +16687,22 @@
             res = PyObject_Vectorcall(exit_func, stack + 1,
                                       3 | PY_VECTORCALL_ARGUMENTS_OFFSET, NULL);
             if (res == NULL) JUMP_TO_ERROR();
-            _1 = res;
-            _0 = val;
-            CLOBBER_REGISTER(_2, rsi);
+            _2 = res;
+            _1 = val;
+            _0 = unused_2;
+            stack_pointer += 1;
             break;
         }
 
         case _WITH_EXCEPT_START: {
             PyObject *val;
+            PyObject *unused_2;
             PyObject *lasti;
             PyObject *exit_func;
             PyObject *res;
             _cache_size = 0;
             val = stack_pointer[-1];
+            unused_2 = stack_pointer[-2];
             lasti = stack_pointer[-3];
             exit_func = stack_pointer[-4];
             /* At the top of the stack are 4 values:
@@ -17080,6 +17224,7 @@
         case _LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
@@ -17099,6 +17244,7 @@
         case __R0__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
@@ -17118,6 +17264,7 @@
         case __R1__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             owner = _0;
@@ -17136,6 +17283,7 @@
         case __R2__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 2;
             oparg = CURRENT_OPARG();
             owner = _1;
@@ -17153,6 +17301,7 @@
         case __R3__LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 3;
             oparg = CURRENT_OPARG();
             owner = _2;
@@ -17169,6 +17318,7 @@
         case _LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
@@ -17189,6 +17339,7 @@
         case __R0__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             owner = stack_pointer[-1];
@@ -17209,6 +17360,7 @@
         case __R1__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             owner = _0;
@@ -17228,6 +17380,7 @@
         case __R2__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 2;
             oparg = CURRENT_OPARG();
             owner = _1;
@@ -17246,6 +17399,7 @@
         case __R3__LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             PyObject *owner;
             PyObject *attr;
+            PyObject *unused_1 = NULL;
             _cache_size = 3;
             oparg = CURRENT_OPARG();
             owner = _2;
@@ -17514,10 +17668,12 @@
         }
 
         case _CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *null;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             if (null != NULL) {
@@ -17535,10 +17691,12 @@
         }
 
         case __R0__CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *null;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             if (null != NULL) {
@@ -17556,12 +17714,14 @@
         }
 
         case __R1__CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *null;
             PyObject *callable;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             if (null != NULL) {
@@ -17579,6 +17739,7 @@
         }
 
         case __R2__CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *null;
             PyObject *callable;
             _cache_size = 0;
@@ -17586,6 +17747,7 @@
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             if (null != NULL) {
@@ -17603,6 +17765,7 @@
         }
 
         case __R3__CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *null;
             PyObject *callable;
             _cache_size = 0;
@@ -17611,6 +17774,7 @@
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             if (null != NULL) {
@@ -17628,11 +17792,15 @@
         }
 
         case _INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             PyObject *func;
             PyObject *self;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             STAT_INC(CALL, hit);
             self = Py_NewRef(((PyMethodObject *)callable)->im_self);
@@ -17649,11 +17817,15 @@
         }
 
         case __R0__INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             PyObject *func;
             PyObject *self;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             STAT_INC(CALL, hit);
             self = Py_NewRef(((PyMethodObject *)callable)->im_self);
@@ -17670,6 +17842,8 @@
         }
 
         case __R1__INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             PyObject *func;
             PyObject *self;
@@ -17677,6 +17851,8 @@
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             STAT_INC(CALL, hit);
             self = Py_NewRef(((PyMethodObject *)callable)->im_self);
@@ -17693,6 +17869,8 @@
         }
 
         case __R2__INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             PyObject *func;
             PyObject *self;
@@ -17701,6 +17879,8 @@
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             STAT_INC(CALL, hit);
             self = Py_NewRef(((PyMethodObject *)callable)->im_self);
@@ -17717,6 +17897,8 @@
         }
 
         case __R3__INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             PyObject *func;
             PyObject *self;
@@ -17726,6 +17908,8 @@
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             STAT_INC(CALL, hit);
             self = Py_NewRef(((PyMethodObject *)callable)->im_self);
@@ -17796,10 +17980,12 @@
         }
 
         case _CHECK_FUNCTION_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *self_or_null;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             self_or_null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
@@ -17824,10 +18010,12 @@
         }
 
         case __R0__CHECK_FUNCTION_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *self_or_null;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             self_or_null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
@@ -17852,12 +18040,14 @@
         }
 
         case __R1__CHECK_FUNCTION_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *self_or_null;
             PyObject *callable;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             self_or_null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
@@ -17882,6 +18072,7 @@
         }
 
         case __R2__CHECK_FUNCTION_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *self_or_null;
             PyObject *callable;
             _cache_size = 0;
@@ -17889,6 +18080,7 @@
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             self_or_null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
@@ -17913,6 +18105,7 @@
         }
 
         case __R3__CHECK_FUNCTION_EXACT_ARGS: {
+            PyObject **unused_2;
             PyObject *self_or_null;
             PyObject *callable;
             _cache_size = 0;
@@ -17921,6 +18114,7 @@
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
             self_or_null = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             uint32_t func_version = (uint32_t)CURRENT_OPERAND();
@@ -17945,9 +18139,13 @@
         }
 
         case _CHECK_STACK_SPACE: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             PyFunctionObject *func = (PyFunctionObject *)callable;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -17966,9 +18164,13 @@
         }
 
         case __R0__CHECK_STACK_SPACE: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             PyFunctionObject *func = (PyFunctionObject *)callable;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -17987,11 +18189,15 @@
         }
 
         case __R1__CHECK_STACK_SPACE: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             PyFunctionObject *func = (PyFunctionObject *)callable;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -18010,12 +18216,16 @@
         }
 
         case __R2__CHECK_STACK_SPACE: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             PyFunctionObject *func = (PyFunctionObject *)callable;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -18034,6 +18244,8 @@
         }
 
         case __R3__CHECK_STACK_SPACE: {
+            PyObject **unused_2;
+            PyObject *unused_1;
             PyObject *callable;
             _cache_size = 0;
             stack_pointer[0] = _0;
@@ -18041,6 +18253,8 @@
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_2 = &stack_pointer[-oparg];
+            unused_1 = stack_pointer[-1 - oparg];
             callable = stack_pointer[-2 - oparg];
             PyFunctionObject *func = (PyFunctionObject *)callable;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -18925,6 +19139,7 @@
 
         case _PUSH_FRAME: {
             _PyInterpreterFrame *new_frame;
+            PyObject *unused_0 = NULL;
             _cache_size = 0;
             new_frame = (_PyInterpreterFrame *)stack_pointer[-1];
             // Write it out explicitly because it's subtly different.
@@ -18952,6 +19167,7 @@
 
         case __R0__PUSH_FRAME: {
             _PyInterpreterFrame *new_frame;
+            PyObject *unused_0 = NULL;
             _cache_size = 0;
             new_frame = (_PyInterpreterFrame *)stack_pointer[-1];
             // Write it out explicitly because it's subtly different.
@@ -18979,6 +19195,7 @@
 
         case __R1__PUSH_FRAME: {
             _PyInterpreterFrame *new_frame;
+            PyObject *unused_0 = NULL;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
@@ -19008,6 +19225,7 @@
 
         case __R2__PUSH_FRAME: {
             _PyInterpreterFrame *new_frame;
+            PyObject *unused_0 = NULL;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
@@ -19038,6 +19256,7 @@
 
         case __R3__PUSH_FRAME: {
             _PyInterpreterFrame *new_frame;
+            PyObject *unused_0 = NULL;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
@@ -22860,10 +23079,12 @@
         }
 
         case __R0__COPY: {
+            PyObject **unused_1;
             PyObject *bottom;
             PyObject *top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_1 = &stack_pointer[-(oparg-1)];
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = Py_NewRef(bottom);
@@ -22874,12 +23095,14 @@
         }
 
         case __R1__COPY: {
+            PyObject **unused_1;
             PyObject *bottom;
             PyObject *top;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_1 = &stack_pointer[-(oparg-1)];
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = Py_NewRef(bottom);
@@ -22890,6 +23113,7 @@
         }
 
         case __R2__COPY: {
+            PyObject **unused_1;
             PyObject *bottom;
             PyObject *top;
             _cache_size = 0;
@@ -22897,6 +23121,7 @@
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_1 = &stack_pointer[-(oparg-1)];
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = Py_NewRef(bottom);
@@ -22907,6 +23132,7 @@
         }
 
         case __R3__COPY: {
+            PyObject **unused_1;
             PyObject *bottom;
             PyObject *top;
             _cache_size = 0;
@@ -22915,6 +23141,7 @@
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_1 = &stack_pointer[-(oparg-1)];
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = Py_NewRef(bottom);
@@ -22925,10 +23152,12 @@
         }
 
         case _COPY: {
+            PyObject **unused_1;
             PyObject *bottom;
             PyObject *top;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_1 = &stack_pointer[-(oparg-1)];
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = Py_NewRef(bottom);
@@ -23040,10 +23269,12 @@
 
         case __R0__SWAP: {
             PyObject *top;
+            PyObject **unused_1;
             PyObject *bottom;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             top = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-2)];
             bottom = stack_pointer[-2 - (oparg-2)];
             assert(oparg >= 2);
             _0 = bottom;
@@ -23056,10 +23287,12 @@
 
         case __R1__SWAP: {
             PyObject *top;
+            PyObject **unused_1;
             PyObject *bottom;
             _cache_size = 1;
             oparg = CURRENT_OPARG();
             top = _0;
+            unused_1 = &stack_pointer[-(oparg-2)];
             bottom = stack_pointer[-1 - (oparg-2)];
             assert(oparg >= 2);
             _0 = bottom;
@@ -23071,6 +23304,7 @@
 
         case __R2__SWAP: {
             PyObject *top;
+            PyObject **unused_1;
             PyObject *bottom;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -23078,6 +23312,7 @@
             _0 = _1;
             oparg = CURRENT_OPARG();
             top = _0;
+            unused_1 = &stack_pointer[-(oparg-2)];
             bottom = stack_pointer[-1 - (oparg-2)];
             assert(oparg >= 2);
             _0 = bottom;
@@ -23089,6 +23324,7 @@
 
         case __R3__SWAP: {
             PyObject *top;
+            PyObject **unused_1;
             PyObject *bottom;
             _cache_size = 1;
             stack_pointer[0] = _0;
@@ -23097,6 +23333,7 @@
             _0 = _2;
             oparg = CURRENT_OPARG();
             top = _0;
+            unused_1 = &stack_pointer[-(oparg-2)];
             bottom = stack_pointer[-1 - (oparg-2)];
             assert(oparg >= 2);
             _0 = bottom;
@@ -23108,10 +23345,12 @@
 
         case _SWAP: {
             PyObject *top;
+            PyObject **unused_1;
             PyObject *bottom;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
             top = stack_pointer[-1];
+            unused_1 = &stack_pointer[-1 - (oparg-2)];
             bottom = stack_pointer[-2 - (oparg-2)];
             assert(oparg >= 2);
             stack_pointer[-2 - (oparg-2)] = top;
@@ -24850,8 +25089,10 @@
         }
 
         case _ERROR_POP_N: {
+            PyObject **unused_0;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_0 = &stack_pointer[-oparg];
             stack_pointer += -oparg;
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
@@ -24861,8 +25102,10 @@
         }
 
         case __R0__ERROR_POP_N: {
+            PyObject **unused_0;
             _cache_size = 0;
             oparg = CURRENT_OPARG();
+            unused_0 = &stack_pointer[-oparg];
             stack_pointer += -oparg;
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
@@ -24872,10 +25115,12 @@
         }
 
         case __R1__ERROR_POP_N: {
+            PyObject **unused_0;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer += 1;
             oparg = CURRENT_OPARG();
+            unused_0 = &stack_pointer[-oparg];
             stack_pointer += -oparg;
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
@@ -24885,11 +25130,13 @@
         }
 
         case __R2__ERROR_POP_N: {
+            PyObject **unused_0;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
             stack_pointer += 2;
             oparg = CURRENT_OPARG();
+            unused_0 = &stack_pointer[-oparg];
             stack_pointer += -oparg;
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
@@ -24899,12 +25146,14 @@
         }
 
         case __R3__ERROR_POP_N: {
+            PyObject **unused_0;
             _cache_size = 0;
             stack_pointer[0] = _0;
             stack_pointer[1] = _1;
             stack_pointer[2] = _2;
             stack_pointer += 3;
             oparg = CURRENT_OPARG();
+            unused_0 = &stack_pointer[-oparg];
             stack_pointer += -oparg;
             GOTO_UNWIND();
             CLOBBER_REGISTER(_0, rbx);
