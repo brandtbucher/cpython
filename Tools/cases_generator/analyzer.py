@@ -254,24 +254,28 @@ class Uop:
         cached_inputs.reverse()
         cached_outputs.reverse()
 
-        # XXX: This results in the minimum number of spills, but lots of moves on repeated overflow (like pushing a bunch of stuff to the stack). The *opposite* policy would be just setting "spilled_inputs = size - n_cached_inputs" on overflow, which would just spill all unused caches going into the instruction.
-        final_size = size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs)
-        while final_size > STACK_CACHE_SIZE:
-            spilled_inputs += 1
-            final_size -= 1
-            if n_cached_inputs + spilled_inputs <= size:
-                continue
-            for i, var in enumerate(cached_inputs):
-                if var.condition != "0":
-                    break
-            del cached_inputs[:i + 1]
-            n_cached_inputs -= 1
-        assert n_cached_inputs + spilled_inputs <= size
+        # # Minimum spills, but lots of moves on repeated overflow:
+        # final_size = size - spilled_inputs - n_cached_inputs + n_cached_outputs
+        # while final_size > STACK_CACHE_SIZE:
+        #     spilled_inputs += 1
+        #     final_size -= 1
+        #     if n_cached_inputs + spilled_inputs <= size:
+        #         continue
+        #     for i, var in enumerate(cached_inputs):
+        #         if var.condition != "0":
+        #             break
+        #     del cached_inputs[:i + 1]
+        #     n_cached_inputs -= 1
+        # assert n_cached_inputs + spilled_inputs <= size
+
+        # Minimum moves, but more spills:
+        if size - spilled_inputs - n_cached_inputs + n_cached_outputs > STACK_CACHE_SIZE:
+            spilled_inputs = size - n_cached_inputs
 
         assert 0 <= size <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs <= STACK_CACHE_SIZE
-        assert 0 <= size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) <= STACK_CACHE_SIZE
-        assert 0 <= size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs) <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - n_cached_inputs <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - n_cached_inputs + n_cached_outputs <= STACK_CACHE_SIZE
 
         return spilled_inputs, cached_inputs, cached_outputs
 
