@@ -229,18 +229,26 @@ def generate_tier2(
         for name in names[base:base + spilled_inputs]:
             out.emit(stack.push(StackItem(name, None, None, "1")))
         stack.flush(out)
-        for name, var in zip(names[base + spilled_inputs:base + spilled_inputs + len(cached_inputs)], cached_inputs, strict=True):
-            cast = var.type and "PyObject *"
-            assign = stack.push(dataclasses.replace(var, name=name, type=cast))
+        names_iter = iter(names[base + spilled_inputs:base + spilled_inputs + sum(var.condition != "0" for var in cached_inputs)])
+        for var in cached_inputs:
             if var.condition != "0":
-                out.emit(assign)
+                name = next(names_iter)
+                cast = var.type and "PyObject *"
+                out.emit(stack.push(dataclasses.replace(var, name=name, type=cast)))
+            else:
+                stack.push(var)
+        assert next(names_iter, None) is None
         write_uop(uop, out, stack)
         out.start_line()
-        for name, var in zip(reversed(names[base:base + len(cached_outputs)]), cached_outputs, strict=True):
-            cast = var.type and "PyObject *"
-            assign = stack.pop(dataclasses.replace(var, name=name, type=cast))
+        names_iter = reversed(names[base:base + sum(var.condition != "0" for var in cached_outputs)])
+        for var in reversed(cached_outputs):
             if var.condition != "0":
-                out.emit(assign)
+                name = next(names_iter)
+                cast = var.type and "PyObject *"
+                out.emit(stack.pop(dataclasses.replace(var, name=name, type=cast)))
+            else:
+                stack.pop(var)
+        assert next(names_iter, None) is None
         if not uop.properties.always_exits:
             stack.flush(out)
             ghccc = ["r13", "rbp", "r12", "rbx", "r14", "rsi", "rdi", "r8", "r9", "r15"]

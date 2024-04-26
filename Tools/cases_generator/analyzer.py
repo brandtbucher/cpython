@@ -200,6 +200,7 @@ class Uop:
                 return False
             if var.condition not in {"", "0", "1"}:
                 return False
+            # XXX
             if var.name == "unused" and var.condition != "0":
                 return False
             return True
@@ -212,33 +213,46 @@ class Uop:
             return size, [], []
 
         cached_inputs = []
-        for var in self.stack.inputs[::-1][:size]:
-            if not var_is_cacheable(var):
-                break
-            cached_inputs.append(var)
-
         cached_outputs = []
-        for var in self.stack.outputs[::-1][:STACK_CACHE_SIZE]:
-            if not var_is_cacheable(var):
-                break
-            cached_outputs.append(var)
-
+        spilling_inputs = False
+        spilling_outputs = False
+        i = o = 0
+        for input_var, output_var in reversed(list(itertools.zip_longest(self.stack.inputs, self.stack.outputs))):
+            input_is_cached = i < size
+            output_is_cached = o < STACK_CACHE_SIZE
+            if input_var is not None and input_is_cached:
+                if var_is_cacheable(input_var) and not spilling_inputs:
+                    cached_inputs.append(input_var)
+                else:
+                    spilling_inputs = True
+            if output_var is not None and output_is_cached:
+                if var_is_cacheable(output_var) and not spilling_outputs:
+                    cached_outputs.append(output_var)
+                else:
+                    spilling_outputs = True
+            i += input_var is not None
+            o += output_var is not None
+        if spilling_inputs or spilling_outputs:
+            spilled_inputs = size - sum(var.condition != "0" for var in cached_inputs)
+        else:
+            spilled_inputs = 0
+        cached_inputs.reverse()
+        cached_outputs.reverse()
         # XXX
-        spilled_inputs = 0
-        if size - spilled_inputs - len(cached_inputs) + len(cached_outputs) > STACK_CACHE_SIZE:
+        if size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs) > STACK_CACHE_SIZE:
             # XXX: Interaction with peek... size - len(cached_inputs)?
             spilled_inputs = size
             cached_inputs = []
 
-        if not all(map(var_is_cacheable, self.stack.inputs)) or not all(map(var_is_cacheable, self.stack.outputs)):
-            # XXX: Interaction with peek... size - len(cached_inputs)?
-            spilled_inputs = size
-            cached_inputs = []
+        # if not all(map(var_is_cacheable, self.stack.inputs)) or not all(map(var_is_cacheable, self.stack.outputs)):
+        #     # XXX: Interaction with peek... size - len(cached_inputs)?
+        #     spilled_inputs = size
+        #     cached_inputs = []
 
         assert 0 <= size <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs <= STACK_CACHE_SIZE
-        assert 0 <= size - spilled_inputs - len(cached_inputs) <= STACK_CACHE_SIZE
-        assert 0 <= size - spilled_inputs - len(cached_inputs) + len(cached_outputs) <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) <= STACK_CACHE_SIZE
+        assert 0 <= size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs) <= STACK_CACHE_SIZE
 
         return spilled_inputs, cached_inputs, cached_outputs
 
