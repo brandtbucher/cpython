@@ -221,15 +221,18 @@ def generate_tier2(
         spilled_inputs, cached_inputs, cached_outputs = uop.analyze_stack_cache()
         if uop.stack_cache_state is not None:
             out.emit(f"_cache_size = {uop.stack_cache_state - spilled_inputs};")
-            base = uop.stack_cache_state - sum(var.condition != "0" for var in cached_inputs) - spilled_inputs
+            base = uop.stack_cache_state - spilled_inputs - sum(var.condition != "0" for var in cached_inputs)
         else:
             out.emit("_cache_size = 0;")
             base = 0
         names = [f"_{i}" for i in range(STACK_CACHE_SIZE)]
-        for name in names[base:base + spilled_inputs]:
-            out.emit(stack.push(StackItem(name, None, None, "1")))
-        stack.flush(out)
-        names_iter = iter(names[base + spilled_inputs:base + spilled_inputs + sum(var.condition != "0" for var in cached_inputs)])
+        if spilled_inputs:
+            for name in names[:spilled_inputs]:
+                out.emit(stack.push(StackItem(name, None, None, "1")))
+            stack.flush(out)
+            for new, old in zip(names[:uop.stack_cache_state - spilled_inputs], names[spilled_inputs:uop.stack_cache_state], strict=True):
+                out.emit(f"{new} = {old};\n")
+        names_iter = iter(names[base:base + sum(var.condition != "0" for var in cached_inputs)])
         for var in cached_inputs:
             if var.condition != "0":
                 name = next(names_iter)

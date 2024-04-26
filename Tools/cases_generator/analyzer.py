@@ -195,6 +195,7 @@ class Uop:
         return False
 
     def analyze_stack_cache(self) -> tuple[int, list[StackItem], list[StackItem]]:
+
         def var_is_cacheable(var: StackItem) -> bool:
             if var.is_array():
                 return False
@@ -212,42 +213,60 @@ class Uop:
         if self.properties.stores_sp:
             return size, [], []
 
+        # First, find the *maximum* number of cached inputs:
         cached_inputs = []
-        cached_outputs = []
+        n_cached_inputs = 0
         spilling_inputs = False
+        for var in reversed(self.stack.inputs):
+            if size <= n_cached_inputs:
+                break
+            real = var.condition != "0"
+            if real and not var_is_cacheable(var):
+                spilling_inputs = True
+                break
+            cached_inputs.append(var)
+            n_cached_inputs += real
+        # Next, find the maximum number of cached outputs:
+        cached_outputs = []
+        n_cached_outputs = 0
         spilling_outputs = False
-        i = o = 0
-        for input_var, output_var in reversed(list(itertools.zip_longest(self.stack.inputs, self.stack.outputs))):
-            input_is_cached = i < size
-            output_is_cached = o < STACK_CACHE_SIZE
-            if input_var is not None and input_is_cached:
-                if var_is_cacheable(input_var) and not spilling_inputs:
-                    cached_inputs.append(input_var)
-                else:
-                    spilling_inputs = True
-            if output_var is not None and output_is_cached:
-                if var_is_cacheable(output_var) and not spilling_outputs:
-                    cached_outputs.append(output_var)
-                else:
-                    spilling_outputs = True
-            i += input_var is not None
-            o += output_var is not None
-        if spilling_inputs or spilling_outputs:
-            spilled_inputs = size - sum(var.condition != "0" for var in cached_inputs)
-        else:
-            spilled_inputs = 0
+        for var in reversed(self.stack.outputs):
+            if STACK_CACHE_SIZE <= n_cached_outputs:
+                break
+            real = var.condition != "0"
+            if real and not var_is_cacheable(var):
+                spilling_outputs = True
+                break
+            cached_outputs.append(var)
+            n_cached_outputs += real
+        # Now, model the state of the caches to determine how many input spills
+        # are required:
+        # We could actually just move inputs instead of spilling them?
+        spilled_inputs = 0
+        if spilling_inputs:
+            # XXX: We don't have to do this if there's no possibility of error...?
+            spilled_inputs = size - n_cached_inputs
+        if spilling_outputs:
+            # XXX: This is a bit drastic...?
+            if n_cached_inputs < size:
+                spilled_inputs = size - n_cached_inputs
+
         cached_inputs.reverse()
         cached_outputs.reverse()
-        # XXX
-        if size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs) > STACK_CACHE_SIZE:
-            # XXX: Interaction with peek... size - len(cached_inputs)?
-            spilled_inputs = size
-            cached_inputs = []
 
-        # if not all(map(var_is_cacheable, self.stack.inputs)) or not all(map(var_is_cacheable, self.stack.outputs)):
-        #     # XXX: Interaction with peek... size - len(cached_inputs)?
-        #     spilled_inputs = size
-        #     cached_inputs = []
+        # XXX: This results in the minimum number of spills, but lots of moves on repeated overflow (like pushing a bunch of stuff to the stack). The *opposite* policy would be just setting "spilled_inputs = size - n_cached_inputs" on overflow, which would just spill all unused caches going into the instruction.
+        final_size = size - spilled_inputs - sum(var.condition != "0" for var in cached_inputs) + sum(var.condition != "0" for var in cached_outputs)
+        while final_size > STACK_CACHE_SIZE:
+            spilled_inputs += 1
+            final_size -= 1
+            if n_cached_inputs + spilled_inputs <= size:
+                continue
+            for i, var in enumerate(cached_inputs):
+                if var.condition != "0":
+                    break
+            del cached_inputs[:i + 1]
+            n_cached_inputs -= 1
+        assert n_cached_inputs + spilled_inputs <= size
 
         assert 0 <= size <= STACK_CACHE_SIZE
         assert 0 <= size - spilled_inputs <= STACK_CACHE_SIZE
