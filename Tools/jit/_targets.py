@@ -442,8 +442,79 @@ class _MachO(
                 raise NotImplementedError(relocation)
         return _stencils.Hole(offset, kind, value, symbol, addend)
 
+class _WASM(
+    _Target["XXX", "XXX"]
+):  # pylint: disable = too-few-public-methods
+    def _handle_section(
+        self, section: "XXX", group: _stencils.StencilGroup
+    ) -> None:
+        # assert section["Address"] >= len(group.code.body)
+        # assert "SectionData" in section
+        # flags = {flag["Name"] for flag in section["Attributes"]["Flags"]}
+        # name = section["Name"]["Value"]
+        # name = name.removeprefix(self.prefix)
+        # if "Debug" in flags:
+        #     return
+        # if "SomeInstructions" in flags:
+        #     value = _stencils.HoleValue.CODE
+        #     stencil = group.code
+        #     start_address = 0
+        #     group.symbols[name] = value, section["Address"] - start_address
+        # else:
+        #     value = _stencils.HoleValue.DATA
+        #     stencil = group.data
+        #     start_address = len(group.code.body)
+        #     group.symbols[name] = value, len(group.code.body)
+        # base = section["Address"] - start_address
+        # group.symbols[section["Index"]] = value, base
+        # stencil.body.extend(
+        #     [0] * (section["Address"] - len(group.code.body) - len(group.data.body))
+        # )
+        # stencil.body.extend(section["SectionData"]["Bytes"])
+        # assert "Symbols" in section
+        # for wrapped_symbol in section["Symbols"]:
+        #     symbol = wrapped_symbol["Symbol"]
+        #     offset = symbol["Value"] - start_address
+        #     name = symbol["Name"]["Name"]
+        #     name = name.removeprefix(self.prefix)
+        #     group.symbols[name] = value, offset
+        # assert "Relocations" in section
+        # for wrapped_relocation in section["Relocations"]:
+        #     relocation = wrapped_relocation["Relocation"]
+        #     hole = self._handle_relocation(base, relocation, stencil.body)
+        #     stencil.holes.append(hole)
+        ...
 
-def get_target(host: str) -> _COFF | _ELF | _MachO:
+    def _handle_relocation(
+        self, base: int, relocation: "XXX", raw: bytes
+    ) -> _stencils.Hole:
+        symbol: str | None
+        match relocation:
+            case {
+                "Offset": offset,
+                "Symbol": s,
+                "Type": {"Name": "R_WASM_FUNCTION_INDEX_LEB" as kind},
+            }:
+                ...
+            case {
+                "Addend": addend,
+                "Offset": offset,
+                "Symbol": s,
+                "Type": {"Name": "R_WASM_MEMORY_ADDR_SLEB" as kind},
+            }:
+                ...
+            case {
+                "Index": s,
+                "Offset": offset,
+                "Type": {"Name": "R_WASM_TYPE_INDEX_LEB" as kind},
+            }:
+                ...
+            case _:
+                raise NotImplementedError(relocation)
+        return _stencils.Hole(offset, kind, value, symbol, addend)
+
+
+def get_target(host: str) -> _COFF | _ELF | _MachO | _WASM:
     """Build a _Target for the given host "triple" and options."""
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
         return _MachO(host, alignment=8, prefix="_")
@@ -464,4 +535,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     if re.fullmatch(r"x86_64-.*-linux-gnu", host):
         args = ["-fpic"]
         return _ELF(host, args=args)
+    if re.fullmatch(r"wasm32-.*-wasi", host):
+        args = ["--sysroot=/opt/wasi-sdk/build/install/opt/wasi-sdk/share/wasi-sysroot", "-mtail-call"]
+        return _WASM(host, args=args)
     raise ValueError(host)
