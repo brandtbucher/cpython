@@ -123,9 +123,6 @@ error_tier_two:
 exit_to_tier1:
     tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(_PyCode_CODE(_PyFrame_GetCode(frame)) + _target);
-exit_to_tier1_dynamic:
-    tstate->previous_executor = (PyObject *)current_executor;
-    GOTO_TIER_ONE(frame->instr_ptr);
 exit_to_trace:
     {
         _PyExitData *exit = &current_executor->exits[_exit_index];
