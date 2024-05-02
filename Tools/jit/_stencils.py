@@ -200,6 +200,15 @@ class StencilGroup:
         match hole:
             case Hole(
                 offset=offset,
+                kind="ARM64_RELOC_BRANCH26" | "R_AARCH64_JUMP26",
+                value=HoleValue.CONTINUE,
+                symbol=None,
+                addend=0,
+            ) as hole:
+                # b #4
+                jump = b"\x00\x00\x00\x14"
+            case Hole(
+                offset=offset,
                 kind="IMAGE_REL_AMD64_REL32",
                 value=HoleValue.GOT,
                 symbol="_JIT_CONTINUE",
@@ -218,15 +227,6 @@ class StencilGroup:
                 # jmp 5
                 jump = b"\xE9\x00\x00\x00\x00"
                 offset -= 1
-            case Hole(
-                offset=offset,
-                kind="R_AARCH64_JUMP26",
-                value=HoleValue.CONTINUE,
-                symbol=None,
-                addend=0,
-            ) as hole:
-                # b #4
-                jump = b"\x00\x00\x00\x14"
             case Hole(
                 offset=offset,
                 kind="R_X86_64_GOTPCRELX",
