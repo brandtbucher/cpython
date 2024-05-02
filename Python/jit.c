@@ -446,7 +446,6 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size
     #endif
         switch (instruction->format) {
             case UOP_FORMAT_TARGET:
-                patches[HoleValue_TARGET] = (uintptr_t)instruction->target;
                 break;
             case UOP_FORMAT_EXIT:
                 if (instruction->error_target < length) {

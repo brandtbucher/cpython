@@ -99,7 +99,6 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     PATCH_VALUE(uint32_t, _operand_lo, _JIT_OPERAND_LO)
     uint64_t _operand = ((uint64_t)_operand_hi << 32) | _operand_lo;
 #endif
-    PATCH_VALUE(_Py_CODEUNIT *, _target, _JIT_TARGET)
 
     OPT_STAT_INC(uops_executed);
     UOP_STAT_INC(uopcode, execution_count);
