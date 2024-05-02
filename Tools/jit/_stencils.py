@@ -94,58 +94,9 @@ class Stencil:
         """Pad the stencil to the given alignment."""
         offset = len(self.body)
         padding = -offset % alignment
-        self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
-        self.body.extend([0] * padding)
-
-    def remove_jump(self, *, alignment: int = 1) -> None:
-        """Remove a zero-length continuation jump, if it exists."""
-        hole = max(self.holes, key=lambda hole: hole.offset)
-        match hole:
-            case Hole(
-                offset=offset,
-                kind="IMAGE_REL_AMD64_REL32",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
-                addend=-4,
-            ) as hole:
-                # jmp qword ptr [rip]
-                jump = b"\x48\xFF\x25\x00\x00\x00\x00"
-                offset -= 3
-            case Hole(
-                offset=offset,
-                kind="IMAGE_REL_I386_REL32" | "X86_64_RELOC_BRANCH",
-                value=HoleValue.CONTINUE,
-                symbol=None,
-                addend=-4,
-            ) as hole:
-                # jmp 5
-                jump = b"\xE9\x00\x00\x00\x00"
-                offset -= 1
-            case Hole(
-                offset=offset,
-                kind="R_AARCH64_JUMP26",
-                value=HoleValue.CONTINUE,
-                symbol=None,
-                addend=0,
-            ) as hole:
-                # b #4
-                jump = b"\x00\x00\x00\x14"
-            case Hole(
-                offset=offset,
-                kind="R_X86_64_GOTPCRELX",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
-                addend=addend,
-            ) as hole:
-                assert _signed(addend) == -4
-                # jmp qword ptr [rip]
-                jump = b"\xFF\x25\x00\x00\x00\x00"
-                offset -= 2
-            case _:
-                return
-        if self.body[offset:] == jump and offset % alignment == 0:
-            self.body = self.body[:offset]
-            self.holes.remove(hole)
+        if padding:
+            self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
+            self.body.extend([0] * padding)
 
 
 @dataclasses.dataclass
@@ -175,7 +126,7 @@ class StencilGroup:
                 self.code.pad(alignment)
                 self._emit_aarch64_trampoline(plt, hole)
                 self.code.holes.remove(hole)
-        self.code.remove_jump(alignment=alignment)
+        self._remove_jump(alignment=alignment)
         self.code.pad(alignment)
         self.data.pad(8)
         for stencil in [self.code, self.data]:
@@ -239,6 +190,56 @@ class StencilGroup:
         instruction &= 0xFC000000
         instruction |= ((plt[hole.symbol] - hole.offset) >> 2) & 0x03FFFFFF
         self.code.body[where] = instruction.to_bytes(4, sys.byteorder)
+
+    def _remove_jump(self, *, alignment: int = 1) -> None:
+        """Remove a zero-length continuation jump, if it exists."""
+        hole = max(self.code.holes, key=lambda hole: hole.offset)
+        match hole:
+            case Hole(
+                offset=offset,
+                kind="IMAGE_REL_AMD64_REL32",
+                value=HoleValue.GOT,
+                symbol="_JIT_CONTINUE",
+                addend=-4,
+            ) as hole:
+                # jmp qword ptr [rip]
+                jump = b"\x48\xFF\x25\x00\x00\x00\x00"
+                offset -= 3
+            case Hole(
+                offset=offset,
+                kind="IMAGE_REL_I386_REL32" | "X86_64_RELOC_BRANCH",
+                value=HoleValue.CONTINUE,
+                symbol=None,
+                addend=-4,
+            ) as hole:
+                # jmp 5
+                jump = b"\xE9\x00\x00\x00\x00"
+                offset -= 1
+            case Hole(
+                offset=offset,
+                kind="R_AARCH64_JUMP26",
+                value=HoleValue.CONTINUE,
+                symbol=None,
+                addend=0,
+            ) as hole:
+                # b #4
+                jump = b"\x00\x00\x00\x14"
+            case Hole(
+                offset=offset,
+                kind="R_X86_64_GOTPCRELX",
+                value=HoleValue.GOT,
+                symbol="_JIT_CONTINUE",
+                addend=addend,
+            ) as hole:
+                assert _signed(addend) == -4
+                # jmp qword ptr [rip]
+                jump = b"\xFF\x25\x00\x00\x00\x00"
+                offset -= 2
+            case _:
+                return
+        if self.code.body[offset:] == jump and offset % alignment == 0:
+            self.code.body = self.code.body[:offset]
+            self.code.holes.remove(hole)
 
     def _got_lookup(self, got: dict[str, int], symbol: str) -> int:
         return len(self.data.body) + got.setdefault(symbol, 8 * len(got))
