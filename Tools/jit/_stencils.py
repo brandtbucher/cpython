@@ -97,43 +97,6 @@ class Stencil:
         self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
         self.body.extend([0] * padding)
 
-    def emit_aarch64_trampoline(self, hole: Hole) -> None:
-        """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
-        base = len(self.body)
-        where = slice(hole.offset, hole.offset + 4)
-        instruction = int.from_bytes(self.body[where], sys.byteorder)
-        instruction &= 0xFC000000
-        instruction |= ((base - hole.offset) >> 2) & 0x03FFFFFF
-        self.body[where] = instruction.to_bytes(4, sys.byteorder)
-        self.disassembly += [
-            f"{base + 4 * 0:x}: d2800008      mov     x8, #0x0",
-            f"{base + 4 * 0:016x}:  R_AARCH64_MOVW_UABS_G0_NC    {hole.symbol}",
-            f"{base + 4 * 1:x}: f2a00008      movk    x8, #0x0, lsl #16",
-            f"{base + 4 * 1:016x}:  R_AARCH64_MOVW_UABS_G1_NC    {hole.symbol}",
-            f"{base + 4 * 2:x}: f2c00008      movk    x8, #0x0, lsl #32",
-            f"{base + 4 * 2:016x}:  R_AARCH64_MOVW_UABS_G2_NC    {hole.symbol}",
-            f"{base + 4 * 3:x}: f2e00008      movk    x8, #0x0, lsl #48",
-            f"{base + 4 * 3:016x}:  R_AARCH64_MOVW_UABS_G3       {hole.symbol}",
-            f"{base + 4 * 4:x}: d61f0100      br      x8",
-        ]
-        for code in [
-            0xD2800008.to_bytes(4, sys.byteorder),
-            0xF2A00008.to_bytes(4, sys.byteorder),
-            0xF2C00008.to_bytes(4, sys.byteorder),
-            0xF2E00008.to_bytes(4, sys.byteorder),
-            0xD61F0100.to_bytes(4, sys.byteorder),
-        ]:
-            self.body.extend(code)
-        for i, kind in enumerate(
-            [
-                "R_AARCH64_MOVW_UABS_G0_NC",
-                "R_AARCH64_MOVW_UABS_G1_NC",
-                "R_AARCH64_MOVW_UABS_G2_NC",
-                "R_AARCH64_MOVW_UABS_G3",
-            ]
-        ):
-            self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
-
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
         hole = max(self.holes, key=lambda hole: hole.offset)
@@ -202,6 +165,7 @@ class StencilGroup:
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
         got: dict[str, int] = {}
+        plt: dict[str, int] = {}
         for hole in self.code.holes.copy():
             if (
                 hole.kind
@@ -209,7 +173,7 @@ class StencilGroup:
                 and hole.value is HoleValue.ZERO
             ):
                 self.code.pad(alignment)
-                self.code.emit_aarch64_trampoline(hole)
+                self._emit_aarch64_trampoline(plt, hole)
                 self.code.holes.remove(hole)
         self.code.remove_jump(alignment=alignment)
         self.code.pad(alignment)
@@ -235,6 +199,46 @@ class StencilGroup:
         self._emit_got(got)
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
+
+    def _emit_aarch64_trampoline(self, plt: dict[str, int], hole: Hole) -> None:
+        """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
+        assert hole.symbol is not None
+        if hole.symbol not in plt:
+            base = len(self.code.body)
+            self.code.disassembly += [
+                f"{base + 4 * 0:x}: d2800008      mov     x8, #0x0",
+                f"{base + 4 * 0:016x}:  R_AARCH64_MOVW_UABS_G0_NC    {hole.symbol}",
+                f"{base + 4 * 1:x}: f2a00008      movk    x8, #0x0, lsl #16",
+                f"{base + 4 * 1:016x}:  R_AARCH64_MOVW_UABS_G1_NC    {hole.symbol}",
+                f"{base + 4 * 2:x}: f2c00008      movk    x8, #0x0, lsl #32",
+                f"{base + 4 * 2:016x}:  R_AARCH64_MOVW_UABS_G2_NC    {hole.symbol}",
+                f"{base + 4 * 3:x}: f2e00008      movk    x8, #0x0, lsl #48",
+                f"{base + 4 * 3:016x}:  R_AARCH64_MOVW_UABS_G3       {hole.symbol}",
+                f"{base + 4 * 4:x}: d61f0100      br      x8",
+            ]
+            for code in [
+                0xD2800008.to_bytes(4, sys.byteorder),
+                0xF2A00008.to_bytes(4, sys.byteorder),
+                0xF2C00008.to_bytes(4, sys.byteorder),
+                0xF2E00008.to_bytes(4, sys.byteorder),
+                0xD61F0100.to_bytes(4, sys.byteorder),
+            ]:
+                self.code.body.extend(code)
+            for i, kind in enumerate(
+                [
+                    "R_AARCH64_MOVW_UABS_G0_NC",
+                    "R_AARCH64_MOVW_UABS_G1_NC",
+                    "R_AARCH64_MOVW_UABS_G2_NC",
+                    "R_AARCH64_MOVW_UABS_G3",
+                ]
+            ):
+                self.code.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
+            plt[hole.symbol] = base
+        where = slice(hole.offset, hole.offset + 4)
+        instruction = int.from_bytes(self.code.body[where], sys.byteorder)
+        instruction &= 0xFC000000
+        instruction |= ((plt[hole.symbol] - hole.offset) >> 2) & 0x03FFFFFF
+        self.code.body[where] = instruction.to_bytes(4, sys.byteorder)
 
     def _got_lookup(self, got: dict[str, int], symbol: str) -> int:
         return len(self.data.body) + got.setdefault(symbol, 8 * len(got))
