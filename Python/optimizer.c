@@ -306,7 +306,7 @@ _PyUOpPrint(const _PyUOpInstruction *uop)
     }
     switch(uop->format) {
         case UOP_FORMAT_TARGET:
-            printf(" (%d, target=%d, operand=%#" PRIx64,
+            printf(" (%d, target=%p, operand=%#" PRIx64,
                 uop->oparg,
                 uop->target,
                 (uint64_t)uop->operand);
@@ -361,7 +361,7 @@ uop_item(_PyExecutorObject *self, Py_ssize_t index)
         Py_DECREF(oname);
         return NULL;
     }
-    PyObject *target = PyLong_FromUnsignedLong(self->trace[index].target);
+    PyObject *target = PyLong_FromVoidPtr(self->trace[index].target);
     if (oparg == NULL) {
         Py_DECREF(oparg);
         Py_DECREF(oname);
@@ -476,7 +476,7 @@ add_to_trace(
     uint16_t opcode,
     uint16_t oparg,
     uint64_t operand,
-    uint32_t target)
+    _Py_CODEUNIT *target)
 {
     trace[trace_length].opcode = opcode;
     trace[trace_length].format = UOP_FORMAT_TARGET;
@@ -583,12 +583,12 @@ translate_bytecode_to_trace(
             PyUnicode_AsUTF8(code->co_filename),
             code->co_firstlineno,
             2 * INSTR_IP(initial_instr, code));
-    ADD_TO_TRACE(_START_EXECUTOR, 0, (uintptr_t)instr, INSTR_IP(instr, code));
-    uint32_t target = 0;
+    ADD_TO_TRACE(_START_EXECUTOR, 0, (uintptr_t)instr, instr);
+    _Py_CODEUNIT *target = NULL;
 
 top:  // Jump here after _PUSH_FRAME or likely branches
     for (;;) {
-        target = INSTR_IP(instr, code);
+        target = instr;
         // Need space for _DEOPT
         max_length--;
 
@@ -596,7 +596,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
         uint32_t oparg = instr->op.arg;
         uint32_t extended = 0;
 
-        DPRINTF(2, "%d: %s(%d)\n", target, _PyOpcode_OpName[opcode], oparg);
+        DPRINTF(2, "%d: %s(%d)\n", INSTR_IP(target, code), _PyOpcode_OpName[opcode], oparg);
 
         if (opcode == ENTER_EXECUTOR) {
             assert(oparg < 256);
@@ -668,7 +668,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                 }
                 uint32_t uopcode = BRANCH_TO_GUARD[opcode - POP_JUMP_IF_FALSE][jump_likely];
                 DPRINTF(2, "%d: %s(%d): counter=%04x, bitcount=%d, likely=%d, confidence=%d, uopcode=%s\n",
-                        target, _PyOpcode_OpName[opcode], oparg,
+                        INSTR_IP(target, code), _PyOpcode_OpName[opcode], oparg,
                         counter, bitcount, jump_likely, confidence, _PyUOpName(uopcode));
                 if (confidence < CONFIDENCE_CUTOFF) {
                     DPRINTF(2, "Confidence too low (%d < %d)\n", confidence, CONFIDENCE_CUTOFF);
@@ -681,10 +681,10 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                     DPRINTF(2, "Jump likely (%04x = %d bits), continue at byte offset %d\n",
                             instr[1].cache, bitcount, 2 * INSTR_IP(target_instr, code));
                     instr = target_instr;
-                    ADD_TO_TRACE(uopcode, 0, 0, INSTR_IP(next_instr, code));
+                    ADD_TO_TRACE(uopcode, 0, 0, next_instr);
                     goto top;
                 }
-                ADD_TO_TRACE(uopcode, 0, 0, INSTR_IP(target_instr, code));
+                ADD_TO_TRACE(uopcode, 0, 0, target_instr);
                 break;
             }
 
@@ -695,7 +695,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                 if (target == initial_instr) {
                     /* We have looped round to the start */
                     RESERVE(1);
-                    ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 0);
+                    ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, initial_instr);
                 }
                 else {
                     OPT_STAT_INC(inner_loop);
@@ -771,9 +771,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 assert(uop != 0);
                                 if (uop == _FOR_ITER_TIER_TWO) {
                                     target += 1 + INLINE_CACHE_ENTRIES_FOR_ITER + oparg + 2 + extended;
-                                    assert(_PyCode_CODE(code)[target-2].op.code == END_FOR ||
-                                            _PyCode_CODE(code)[target-2].op.code == INSTRUMENTED_END_FOR);
-                                    assert(_PyCode_CODE(code)[target-1].op.code == POP_TOP);
+                                    assert(target[-2].op.code == END_FOR ||
+                                           target[-2].op.code == INSTRUMENTED_END_FOR);
+                                    assert(target[-1].op.code == POP_TOP);
                                 }
                                 break;
                             default:
@@ -830,7 +830,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                             new_code->co_firstlineno);
                                     OPT_STAT_INC(recursive_call);
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, _PyCode_CODE(new_code));
                                     goto done;
                                 }
                                 if (new_code->co_version != func_version) {
@@ -839,13 +839,13 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                     // TODO: Reason about this -- is it better to bail or not?
                                     DPRINTF(2, "Bailing because co_version != func_version\n");
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, _PyCode_CODE(new_code));
                                     goto done;
                                 }
                                 if (opcode == FOR_ITER_GEN) {
                                     DPRINTF(2, "Bailing due to dynamic target\n");
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                    ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, _PyCode_CODE(new_code));
                                     goto done;
                                 }
                                 // Increment IP to the return address
@@ -881,7 +881,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                             }
                             DPRINTF(2, "Bail, new_code == NULL\n");
                             ADD_TO_TRACE(uop, oparg, 0, target);
-                            ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                            ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, _PyCode_CODE(new_code));
                             goto done;
                         }
 
@@ -958,7 +958,7 @@ count_exits(_PyUOpInstruction *buffer, int length)
     return exit_count;
 }
 
-static void make_exit(_PyUOpInstruction *inst, int opcode, int target)
+static void make_exit(_PyUOpInstruction *inst, int opcode, _Py_CODEUNIT *target)
 {
     inst->opcode = opcode;
     inst->oparg = 0;
@@ -972,9 +972,9 @@ static int
 prepare_for_execution(_PyUOpInstruction *buffer, int length)
 {
     int32_t current_jump = -1;
-    int32_t current_jump_target = -1;
+    _Py_CODEUNIT *current_jump_target = NULL;
     int32_t current_error = -1;
-    int32_t current_error_target = -1;
+    _Py_CODEUNIT *current_error_target = NULL;
     int32_t current_popped = -1;
     /* Leaving in NOPs slows down the interpreter and messes up the stats */
     _PyUOpInstruction *copy_to = &buffer[0];
@@ -992,7 +992,7 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
     for (int i = 0; i < length; i++) {
         _PyUOpInstruction *inst = &buffer[i];
         int opcode = inst->opcode;
-        int32_t target = (int32_t)uop_get_target(inst);
+        _Py_CODEUNIT *target = uop_get_target(inst);
         if (_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)) {
             if (target != current_jump_target) {
                 uint16_t exit_op;
@@ -1022,9 +1022,9 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
                 current_popped = popped;
                 current_error = next_spare;
                 current_error_target = target;
-                make_exit(&buffer[next_spare], _ERROR_POP_N, 0);
+                make_exit(&buffer[next_spare], _ERROR_POP_N, NULL);
                 buffer[next_spare].oparg = popped;
-                buffer[next_spare].operand = target;
+                buffer[next_spare].operand = (uintptr_t)target;
                 next_spare++;
             }
             buffer[i].error_target = current_error;
@@ -1070,10 +1070,6 @@ target_unused(int opcode)
 static void
 sanity_check(_PyExecutorObject *executor)
 {
-    for (uint32_t i = 0; i < executor->exit_count; i++) {
-        _PyExitData *exit = &executor->exits[i];
-        CHECK(exit->target < (1 << 25));
-    }
     bool ended = false;
     uint32_t i = 0;
     CHECK(executor->trace[0].opcode == _START_EXECUTOR || executor->trace[0].opcode == _COLD_EXIT);
@@ -1161,7 +1157,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
             next_exit--;
         }
         if (opcode == _DYNAMIC_EXIT) {
-            executor->exits[next_exit].target = 0;
+            executor->exits[next_exit].target = NULL;
             dest->oparg = next_exit;
             next_exit--;
         }
@@ -1363,7 +1359,6 @@ counter_optimize(
     int Py_UNUSED(curr_stackentries)
 )
 {
-    PyCodeObject *code = _PyFrame_GetCode(frame);
     int oparg = instr->op.arg;
     while (instr->op.code == EXTENDED_ARG) {
         instr++;
@@ -1379,7 +1374,7 @@ counter_optimize(
         { .opcode = _LOAD_CONST_INLINE_BORROW, .operand = (uintptr_t)self },
         { .opcode = _INTERNAL_INCREMENT_OPT_COUNTER },
         { .opcode = _EXIT_TRACE, .jump_target = 4, .format=UOP_FORMAT_JUMP },
-        { .opcode = _SIDE_EXIT, .target = (uint32_t)(target - _PyCode_CODE(code)), .format=UOP_FORMAT_TARGET }
+        { .opcode = _SIDE_EXIT, .target = target, .format=UOP_FORMAT_TARGET }
     };
     _PyExecutorObject *executor = make_executor_from_uops(buffer, 5, &EMPTY_FILTER);
     if (executor == NULL) {

@@ -4182,7 +4182,7 @@ dummy_func(
             _PyExecutorObject *previous = (_PyExecutorObject *)tstate->previous_executor;
             _PyExitData *exit = &previous->exits[oparg];
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            _Py_CODEUNIT *target = _PyCode_CODE(code) + exit->target;
+            _Py_CODEUNIT *target = exit->target;
             _Py_BackoffCounter temperature = exit->temperature;
             if (!backoff_counter_triggers(temperature)) {
                 exit->temperature = advance_backoff_counter(temperature);
@@ -4271,8 +4271,8 @@ dummy_func(
             EXIT_TO_TRACE();
         }
 
-        tier2 op(_ERROR_POP_N, (target/2, unused[oparg] --)) {
-            frame->instr_ptr = ((_Py_CODEUNIT *)_PyFrame_GetCode(frame)->co_code_adaptive) + target;
+        tier2 op(_ERROR_POP_N, (target/4, unused[oparg] --)) {
+            frame->instr_ptr = (_Py_CODEUNIT *)target;
             SYNC_SP();
             GOTO_UNWIND();
         }

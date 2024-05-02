@@ -98,7 +98,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     PATCH_VALUE(uint32_t, _operand_lo, _JIT_OPERAND_LO)
     uint64_t _operand = ((uint64_t)_operand_hi << 32) | _operand_lo;
 #endif
-    PATCH_VALUE(uint32_t, _target, _JIT_TARGET)
+    PATCH_VALUE(_Py_CODEUNIT *, _target, _JIT_TARGET)
     PATCH_VALUE(uint16_t, _exit_index, _JIT_EXIT_INDEX)
 
     OPT_STAT_INC(uops_executed);
@@ -122,7 +122,7 @@ error_tier_two:
     GOTO_TIER_ONE(NULL);
 exit_to_tier1:
     tstate->previous_executor = (PyObject *)current_executor;
-    GOTO_TIER_ONE(_PyCode_CODE(_PyFrame_GetCode(frame)) + _target);
+    GOTO_TIER_ONE(_target);
 exit_to_trace:
     {
         _PyExitData *exit = &current_executor->exits[_exit_index];

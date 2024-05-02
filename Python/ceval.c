@@ -1075,7 +1075,7 @@ jump_to_jump_target:
 
 exit_to_tier1:
     assert(next_uop[-1].format == UOP_FORMAT_TARGET);
-    next_instr = next_uop[-1].target + _PyCode_CODE(_PyFrame_GetCode(frame));
+    next_instr = next_uop[-1].target;
 goto_to_tier1:
 #ifdef Py_DEBUG
     if (lltrace >= 2) {

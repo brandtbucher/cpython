@@ -4222,7 +4222,7 @@
             _PyExecutorObject *previous = (_PyExecutorObject *)tstate->previous_executor;
             _PyExitData *exit = &previous->exits[oparg];
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            _Py_CODEUNIT *target = _PyCode_CODE(code) + exit->target;
+            _Py_CODEUNIT *target = exit->target;
             _Py_BackoffCounter temperature = exit->temperature;
             if (!backoff_counter_triggers(temperature)) {
                 exit->temperature = advance_backoff_counter(temperature);
@@ -4329,8 +4329,8 @@
 
         case _ERROR_POP_N: {
             oparg = CURRENT_OPARG();
-            uint32_t target = (uint32_t)CURRENT_OPERAND();
-            frame->instr_ptr = ((_Py_CODEUNIT *)_PyFrame_GetCode(frame)->co_code_adaptive) + target;
+            PyObject *target = (PyObject *)CURRENT_OPERAND();
+            frame->instr_ptr = (_Py_CODEUNIT *)target;
             stack_pointer += -oparg;
             GOTO_UNWIND();
             break;

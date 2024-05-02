@@ -52,7 +52,7 @@ typedef struct {
     uint16_t format:2;
     uint16_t oparg;
     union {
-        uint32_t target;
+        _Py_CODEUNIT *target;
         struct {
             union {
                 uint16_t exit_index;
@@ -64,7 +64,7 @@ typedef struct {
     uint64_t operand;  // A cache entry
 } _PyUOpInstruction;
 
-static inline uint32_t uop_get_target(const _PyUOpInstruction *inst)
+static inline _Py_CODEUNIT *uop_get_target(const _PyUOpInstruction *inst)
 {
     assert(inst->format == UOP_FORMAT_TARGET);
     return inst->target;
@@ -89,7 +89,7 @@ static inline uint16_t uop_get_error_target(const _PyUOpInstruction *inst)
 }
 
 typedef struct _exit_data {
-    uint32_t target;
+    _Py_CODEUNIT *target;
     _Py_BackoffCounter temperature;
     const struct _PyExecutorObject *executor;
 } _PyExitData;
