@@ -4318,7 +4318,9 @@
         }
 
         case _DEOPT: {
-            EXIT_TO_TIER1();
+            PyObject *target = (PyObject *)CURRENT_OPERAND();
+            tstate->previous_executor = (PyObject *)current_executor;
+            GOTO_TIER_ONE((_Py_CODEUNIT *)target);
             break;
         }
 

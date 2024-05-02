@@ -120,9 +120,6 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
 error_tier_two:
     tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(NULL);
-exit_to_tier1:
-    tstate->previous_executor = (PyObject *)current_executor;
-    GOTO_TIER_ONE(_target);
 exit_to_trace:
     {
         _PyExitData *exit = &current_executor->exits[_exit_index];

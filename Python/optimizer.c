@@ -1008,6 +1008,9 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
                     exit_op = _DEOPT;
                 }
                 make_exit(&buffer[next_spare], exit_op, target);
+                if (exit_op == _DEOPT) {
+                    buffer[next_spare].operand = target;
+                }
                 current_jump_target = target;
                 current_jump = next_spare;
                 next_spare++;

@@ -4263,8 +4263,9 @@ dummy_func(
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
         }
 
-        tier2 op(_DEOPT, (--)) {
-            EXIT_TO_TIER1();
+        tier2 op(_DEOPT, (target/4 --)) {
+            tstate->previous_executor = (PyObject *)current_executor;
+            GOTO_TIER_ONE((_Py_CODEUNIT *)target);
         }
 
         tier2 op(_SIDE_EXIT, (--)) {
