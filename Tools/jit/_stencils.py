@@ -117,17 +117,19 @@ class StencilGroup:
         """Fix up all GOT and internal relocations for this stencil group."""
         got: dict[str, int] = {}
         plt: dict[str, int] = {}
-        for hole in self.code.holes.copy():
+        for hole in self.code.holes:
             if (
                 hole.kind
                 in {"R_AARCH64_CALL26", "R_AARCH64_JUMP26", "ARM64_RELOC_BRANCH26"}
                 and hole.value is HoleValue.ZERO
             ):
-                self.code.pad(alignment)
+                self.data.pad(alignment)
                 self._emit_aarch64_trampoline(plt, hole)
-                self.code.holes.remove(hole)
+                assert hole.symbol is not None
+                hole.addend = plt[hole.symbol]
+                hole.symbol = None
+                hole.value = HoleValue.DATA
         self._remove_jump(alignment=alignment)
-        self.code.pad(alignment)
         self.data.pad(8)
         for stencil in [self.code, self.data]:
             for hole in stencil.holes:
@@ -148,6 +150,7 @@ class StencilGroup:
                         f"Add PyAPI_FUNC(...) or PyAPI_DATA(...) to declaration of {hole.symbol}!"
                     )
         self._emit_got(got)
+        self.data.pad(max(alignment, 8))
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
 
@@ -155,8 +158,8 @@ class StencilGroup:
         """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
         assert hole.symbol is not None
         if hole.symbol not in plt:
-            base = len(self.code.body)
-            self.code.disassembly += [
+            base = len(self.data.body)
+            self.data.disassembly += [
                 f"{base + 4 * 0:x}: d2800008      mov     x8, #0x0",
                 f"{base + 4 * 0:016x}:  R_AARCH64_MOVW_UABS_G0_NC    {hole.symbol}",
                 f"{base + 4 * 1:x}: f2a00008      movk    x8, #0x0, lsl #16",
@@ -174,7 +177,7 @@ class StencilGroup:
                 0xF2E00008.to_bytes(4, sys.byteorder),
                 0xD61F0100.to_bytes(4, sys.byteorder),
             ]:
-                self.code.body.extend(code)
+                self.data.body.extend(code)
             for i, kind in enumerate(
                 [
                     "R_AARCH64_MOVW_UABS_G0_NC",
@@ -183,13 +186,13 @@ class StencilGroup:
                     "R_AARCH64_MOVW_UABS_G3",
                 ]
             ):
-                self.code.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
+                self.data.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
             plt[hole.symbol] = base
-        where = slice(hole.offset, hole.offset + 4)
-        instruction = int.from_bytes(self.code.body[where], sys.byteorder)
-        instruction &= 0xFC000000
-        instruction |= ((plt[hole.symbol] - hole.offset) >> 2) & 0x03FFFFFF
-        self.code.body[where] = instruction.to_bytes(4, sys.byteorder)
+        # where = slice(hole.offset, hole.offset + 4)
+        # instruction = int.from_bytes(self.code.body[where], sys.byteorder)
+        # instruction &= 0xFC000000
+        # instruction |= ((plt[hole.symbol] - hole.offset) >> 2) & 0x03FFFFFF
+        # self.code.body[where] = instruction.to_bytes(4, sys.byteorder)
 
     def _remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
