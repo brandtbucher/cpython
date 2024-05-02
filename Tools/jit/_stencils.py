@@ -130,6 +130,7 @@ class StencilGroup:
                 hole.symbol = None
                 hole.value = HoleValue.DATA
         self._remove_jump(alignment=alignment)
+        self.code.pad(alignment)
         self.data.pad(8)
         for stencil in [self.code, self.data]:
             for hole in stencil.holes:
