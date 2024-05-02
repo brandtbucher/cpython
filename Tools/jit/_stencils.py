@@ -198,10 +198,10 @@ class StencilGroup:
     symbols: dict[int | str, tuple[HoleValue, int]] = dataclasses.field(
         default_factory=dict, init=False
     )
-    _got: dict[str, int] = dataclasses.field(default_factory=dict, init=False)
 
     def process_relocations(self, *, alignment: int = 1) -> None:
         """Fix up all GOT and internal relocations for this stencil group."""
+        got: dict[str, int] = {}
         for hole in self.code.holes.copy():
             if (
                 hole.kind
@@ -219,7 +219,7 @@ class StencilGroup:
                 if hole.value is HoleValue.GOT:
                     assert hole.symbol is not None
                     hole.value = HoleValue.DATA
-                    hole.addend += self._global_offset_table_lookup(hole.symbol)
+                    hole.addend += self._got_lookup(got, hole.symbol)
                     hole.symbol = None
                 elif hole.symbol in self.symbols:
                     hole.value, addend = self.symbols[hole.symbol]
@@ -232,16 +232,16 @@ class StencilGroup:
                     raise ValueError(
                         f"Add PyAPI_FUNC(...) or PyAPI_DATA(...) to declaration of {hole.symbol}!"
                     )
-        self._emit_global_offset_table()
+        self._emit_got(got)
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
 
-    def _global_offset_table_lookup(self, symbol: str) -> int:
-        return len(self.data.body) + self._got.setdefault(symbol, 8 * len(self._got))
+    def _got_lookup(self, got: dict[str, int], symbol: str) -> int:
+        return len(self.data.body) + got.setdefault(symbol, 8 * len(got))
 
-    def _emit_global_offset_table(self) -> None:
-        got = len(self.data.body)
-        for s, offset in self._got.items():
+    def _emit_got(self, got: dict[str, int]) -> None:
+        got_offset = len(self.data.body)
+        for s, offset in got.items():
             if s in self.symbols:
                 value, addend = self.symbols[s]
                 symbol = None
@@ -249,7 +249,7 @@ class StencilGroup:
                 value, symbol = symbol_to_value(s)
                 addend = 0
             self.data.holes.append(
-                Hole(got + offset, "R_X86_64_64", value, symbol, addend)
+                Hole(got_offset + offset, "R_X86_64_64", value, symbol, addend)
             )
             value_part = value.name if value is not HoleValue.ZERO else ""
             if value_part and not symbol and not addend:
