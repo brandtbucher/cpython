@@ -318,9 +318,8 @@ _PyUOpPrint(const _PyUOpInstruction *uop)
                 (uint64_t)uop->operand);
             break;
         case UOP_FORMAT_EXIT:
-            printf(" (%d, exit_index=%d, operand=%#" PRIx64,
+            printf(" (%d, operand=%#" PRIx64,
                 uop->oparg,
-                uop->exit_index,
                 (uint64_t)uop->operand);
             break;
         default:
@@ -951,7 +950,7 @@ count_exits(_PyUOpInstruction *buffer, int length)
     int exit_count = 0;
     for (int i = 0; i < length; i++) {
         int opcode = buffer[i].opcode;
-        if (opcode == _SIDE_EXIT || opcode == _DYNAMIC_EXIT) {
+        if (opcode == _SIDE_EXIT || opcode == _EVAL_BREAKER_EXIT || opcode == _DYNAMIC_EXIT) {
             exit_count++;
         }
     }
@@ -1009,7 +1008,7 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
                 }
                 make_exit(&buffer[next_spare], exit_op, target);
                 if (exit_op == _DEOPT) {
-                    buffer[next_spare].operand = target;
+                    buffer[next_spare].operand = (uintptr_t)target;
                 }
                 current_jump_target = target;
                 current_jump = next_spare;
@@ -1087,7 +1086,6 @@ sanity_check(_PyExecutorObject *executor)
                 break;
             case UOP_FORMAT_EXIT:
                 CHECK(opcode == _SIDE_EXIT);
-                CHECK(inst->exit_index < executor->exit_count);
                 break;
             case UOP_FORMAT_JUMP:
                 CHECK(inst->jump_target < executor->code_size);
@@ -1115,9 +1113,6 @@ sanity_check(_PyExecutorObject *executor)
             opcode == _SIDE_EXIT ||
             opcode == _EVAL_BREAKER_EXIT ||
             opcode == _ERROR_POP_N);
-        if (opcode == _SIDE_EXIT) {
-            CHECK(inst->format == UOP_FORMAT_EXIT);
-        }
     }
 }
 
@@ -1153,15 +1148,14 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
         dest--;
         *dest = buffer[i];
         assert(opcode != _POP_JUMP_IF_FALSE && opcode != _POP_JUMP_IF_TRUE);
-        if (opcode == _SIDE_EXIT) {
+        if (opcode == _SIDE_EXIT || opcode == _EVAL_BREAKER_EXIT) {
             executor->exits[next_exit].target = buffer[i].target;
-            dest->exit_index = next_exit;
-            dest->format = UOP_FORMAT_EXIT;
+            dest->operand = (uintptr_t)&executor->exits[next_exit];
             next_exit--;
         }
         if (opcode == _DYNAMIC_EXIT) {
             executor->exits[next_exit].target = NULL;
-            dest->oparg = next_exit;
+            dest->operand = (uintptr_t)&executor->exits[next_exit];
             next_exit--;
         }
     }

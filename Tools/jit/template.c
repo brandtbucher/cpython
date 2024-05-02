@@ -86,7 +86,8 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     // Locals that the instruction implementations expect to exist:
     PATCH_VALUE(_PyExecutorObject *, current_executor, _JIT_EXECUTOR)
     int oparg;
-    int uopcode = _JIT_OPCODE;
+    uint64_t trace_uop_execution_counter = 0;
+    uint16_t uopcode = _JIT_OPCODE;
     _Py_CODEUNIT *next_instr;
     // Other stuff we need handy:
     PATCH_VALUE(uint16_t, _oparg, _JIT_OPARG)
@@ -99,7 +100,6 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
     uint64_t _operand = ((uint64_t)_operand_hi << 32) | _operand_lo;
 #endif
     PATCH_VALUE(_Py_CODEUNIT *, _target, _JIT_TARGET)
-    PATCH_VALUE(uint16_t, _exit_index, _JIT_EXIT_INDEX)
 
     OPT_STAT_INC(uops_executed);
     UOP_STAT_INC(uopcode, execution_count);
@@ -120,11 +120,4 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *
 error_tier_two:
     tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(NULL);
-exit_to_trace:
-    {
-        _PyExitData *exit = &current_executor->exits[_exit_index];
-        Py_INCREF(exit->executor);
-        tstate->previous_executor = (PyObject *)current_executor;
-        GOTO_TIER_TWO(exit->executor);
-    }
 }

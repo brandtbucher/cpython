@@ -4254,9 +4254,9 @@
         }
 
         case _DYNAMIC_EXIT: {
-            oparg = CURRENT_OPARG();
+            PyObject *exit_cast = (PyObject *)CURRENT_OPERAND();
             tstate->previous_executor = (PyObject *)current_executor;
-            _PyExitData *exit = (_PyExitData *)&current_executor->exits[oparg];
+            _PyExitData *exit = (_PyExitData *)exit_cast;
             _Py_CODEUNIT *target = frame->instr_ptr;
             _PyExecutorObject *executor;
             if (target->op.code == ENTER_EXECUTOR) {
@@ -4325,7 +4325,12 @@
         }
 
         case _SIDE_EXIT: {
-            EXIT_TO_TRACE();
+            PyObject *exit_cast = (PyObject *)CURRENT_OPERAND();
+            _PyExitData *exit = (_PyExitData *)exit_cast;
+            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
+            tstate->previous_executor = (PyObject *)current_executor;
+            Py_INCREF(exit->executor);
+            GOTO_TIER_TWO(exit->executor);
             break;
         }
 
@@ -4356,12 +4361,17 @@
         }
 
         case _EVAL_BREAKER_EXIT: {
+            PyObject *exit_cast = (PyObject *)CURRENT_OPERAND();
             _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
             QSBR_QUIESCENT_STATE(tstate);
             if (_Py_HandlePending(tstate) != 0) {
                 GOTO_UNWIND();
             }
-            EXIT_TO_TRACE();
+            _PyExitData *exit = (_PyExitData *)exit_cast;
+            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
+            tstate->previous_executor = (PyObject *)current_executor;
+            Py_INCREF(exit->executor);
+            GOTO_TIER_TWO(exit->executor);
             break;
         }
 

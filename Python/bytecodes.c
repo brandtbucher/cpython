@@ -4212,9 +4212,9 @@ dummy_func(
             GOTO_TIER_TWO(executor);
         }
 
-        tier2 op(_DYNAMIC_EXIT, (--)) {
+        tier2 op(_DYNAMIC_EXIT, (exit_cast/4 --)) {
             tstate->previous_executor = (PyObject *)current_executor;
-            _PyExitData *exit = (_PyExitData *)&current_executor->exits[oparg];
+            _PyExitData *exit = (_PyExitData *)exit_cast;
             _Py_CODEUNIT *target = frame->instr_ptr;
             _PyExecutorObject *executor;
             if (target->op.code == ENTER_EXECUTOR) {
@@ -4268,8 +4268,12 @@ dummy_func(
             GOTO_TIER_ONE((_Py_CODEUNIT *)target);
         }
 
-        tier2 op(_SIDE_EXIT, (--)) {
-            EXIT_TO_TRACE();
+        tier2 op(_SIDE_EXIT, (exit_cast/4 --)) {
+            _PyExitData *exit = (_PyExitData *)exit_cast;
+            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
+            tstate->previous_executor = (PyObject *)current_executor;
+            Py_INCREF(exit->executor);
+            GOTO_TIER_TWO(exit->executor);
         }
 
         tier2 op(_ERROR_POP_N, (target/4, unused[oparg] --)) {
@@ -4293,13 +4297,17 @@ dummy_func(
             assert(eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
         }
 
-        tier2 op(_EVAL_BREAKER_EXIT, (--)) {
+        tier2 op(_EVAL_BREAKER_EXIT, (exit_cast/4 --)) {
             _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
             QSBR_QUIESCENT_STATE(tstate);
             if (_Py_HandlePending(tstate) != 0) {
                 GOTO_UNWIND();
             }
-            EXIT_TO_TRACE();
+            _PyExitData *exit = (_PyExitData *)exit_cast;
+            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
+            tstate->previous_executor = (PyObject *)current_executor;
+            Py_INCREF(exit->executor);
+            GOTO_TIER_TWO(exit->executor);
         }
 
 // END BYTECODES //

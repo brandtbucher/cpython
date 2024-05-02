@@ -440,5 +440,3 @@ do { \
 #define JUMP_TO_JUMP_TARGET() goto jump_to_jump_target
 #define JUMP_TO_ERROR() goto jump_to_error_target
 #define GOTO_UNWIND() goto error_tier_two
-#define EXIT_TO_TRACE() goto exit_to_trace
-#define EXIT_TO_TIER1() goto exit_to_tier1
