@@ -36,27 +36,13 @@ typedef struct {
 #define UOP_FORMAT_JUMP 2
 #define UOP_FORMAT_UNUSED 3
 
-/* Depending on the format,
- * the 32 bits between the oparg and operand are:
- * UOP_FORMAT_TARGET:
- *    _Py_CODEUNIT *target;
- * UOP_FORMAT_EXIT
- *    uint16_t error_target;
- * UOP_FORMAT_JUMP
- *    uint16_t jump_target;
- *    uint16_t error_target;
- */
 typedef struct {
     uint16_t opcode:14;
     uint16_t format:2;
     uint16_t oparg;
-    union {
-        _Py_CODEUNIT *target;
-        struct {
-            uint16_t jump_target;
-            uint16_t error_target;
-        };
-    };
+    uint16_t jump_target;
+    uint16_t error_target;
+    _Py_CODEUNIT *target;
     uint64_t operand;  // A cache entry
 } _PyUOpInstruction;
 
