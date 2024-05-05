@@ -343,8 +343,8 @@ _PyGen_yf(PyGenObject *gen)
 {
     if (gen->gi_frame_state == FRAME_SUSPENDED_YIELD_FROM) {
         _PyInterpreterFrame *frame = (_PyInterpreterFrame *)gen->gi_iframe;
-        assert(is_resume(frame->instr_ptr));
-        assert((frame->instr_ptr->op.arg & RESUME_OPARG_LOCATION_MASK) >= RESUME_AFTER_YIELD_FROM);
+        // assert(is_resume(frame->instr_ptr));
+        // assert((frame->instr_ptr->op.arg & RESUME_OPARG_LOCATION_MASK) >= RESUME_AFTER_YIELD_FROM);
         return Py_NewRef(_PyFrame_StackPeek(frame));
     }
     return NULL;

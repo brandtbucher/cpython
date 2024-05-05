@@ -2170,7 +2170,7 @@
             break;
         }
 
-        case _DYNAMIC_EXIT: {
+        case _GUARD_INSTR_PTR: {
             break;
         }
 

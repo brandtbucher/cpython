@@ -112,7 +112,7 @@ typedef struct _PyOptimizerObject _PyOptimizerObject;
 typedef int (*optimize_func)(
     _PyOptimizerObject* self, struct _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr, _PyExecutorObject **exec_ptr,
-    int curr_stackentries);
+    int curr_stackentries, int dynamic);
 
 struct _PyOptimizerObject {
     PyObject_HEAD

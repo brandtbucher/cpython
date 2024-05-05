@@ -4361,19 +4361,24 @@
             _PyExecutorObject *previous = (_PyExecutorObject *)tstate->previous_executor;
             _PyExitData *exit = &previous->exits[oparg];
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            _Py_CODEUNIT *target = _PyCode_CODE(code) + exit->target;
+            bool dynamic = exit->target == UINT32_MAX;
+            _Py_CODEUNIT *target = dynamic ? frame->instr_ptr
+        : _PyCode_CODE(code) + exit->target;
             _Py_BackoffCounter temperature = exit->temperature;
-            if (!backoff_counter_triggers(temperature)) {
-                exit->temperature = advance_backoff_counter(temperature);
-                GOTO_TIER_ONE(target);
-            }
             _PyExecutorObject *executor;
             if (target->op.code == ENTER_EXECUTOR) {
                 executor = code->co_executors->executors[target->op.arg];
                 Py_INCREF(executor);
+                if (dynamic) {
+                    GOTO_TIER_TWO(executor);
+                }
+            }
+            else if (!backoff_counter_triggers(temperature)) {
+                exit->temperature = advance_backoff_counter(temperature);
+                GOTO_TIER_ONE(target);
             }
             else {
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor);
+                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, dynamic);
                 if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(temperature);
                     if (optimized < 0) {
@@ -4392,37 +4397,12 @@
             break;
         }
 
-        case _DYNAMIC_EXIT: {
-            oparg = CURRENT_OPARG();
-            tstate->previous_executor = (PyObject *)current_executor;
-            _PyExitData *exit = (_PyExitData *)&current_executor->exits[oparg];
-            _Py_CODEUNIT *target = frame->instr_ptr;
-            _PyExecutorObject *executor;
-            if (target->op.code == ENTER_EXECUTOR) {
-                PyCodeObject *code = (PyCodeObject *)frame->f_executable;
-                executor = code->co_executors->executors[target->op.arg];
-                Py_INCREF(executor);
+        case _GUARD_INSTR_PTR: {
+            PyObject *location = (PyObject *)CURRENT_OPERAND();
+            if ((_Py_CODEUNIT *)location != frame->instr_ptr) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
             }
-            else {
-                if (!backoff_counter_triggers(exit->temperature)) {
-                    exit->temperature = advance_backoff_counter(exit->temperature);
-                    GOTO_TIER_ONE(target);
-                }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor);
-                if (optimized <= 0) {
-                    exit->temperature = restart_backoff_counter(exit->temperature);
-                    if (optimized < 0) {
-                        Py_DECREF(current_executor);
-                        tstate->previous_executor = Py_None;
-                        GOTO_UNWIND();
-                    }
-                    GOTO_TIER_ONE(target);
-                }
-                else {
-                    exit->temperature = initial_temperature_backoff_counter();
-                }
-            }
-            GOTO_TIER_TWO(executor);
             break;
         }
 
@@ -4433,10 +4413,6 @@
             #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
             #endif
-            if (!((_PyExecutorObject *)executor)->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             break;
         }
 

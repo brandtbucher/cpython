@@ -253,8 +253,8 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_CHECK_FUNCTION] = HAS_DEOPT_FLAG,
     [_INTERNAL_INCREMENT_OPT_COUNTER] = 0,
     [_COLD_EXIT] = HAS_ARG_FLAG | HAS_ESCAPES_FLAG,
-    [_DYNAMIC_EXIT] = HAS_ARG_FLAG | HAS_ESCAPES_FLAG,
-    [_START_EXECUTOR] = HAS_DEOPT_FLAG,
+    [_GUARD_INSTR_PTR] = HAS_EXIT_FLAG,
+    [_START_EXECUTOR] = 0,
     [_FATAL_ERROR] = 0,
     [_CHECK_VALIDITY_AND_SET_IP] = HAS_DEOPT_FLAG,
     [_DEOPT] = 0,
@@ -344,7 +344,6 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_DEOPT] = "_DEOPT",
     [_DICT_MERGE] = "_DICT_MERGE",
     [_DICT_UPDATE] = "_DICT_UPDATE",
-    [_DYNAMIC_EXIT] = "_DYNAMIC_EXIT",
     [_END_SEND] = "_END_SEND",
     [_ERROR_POP_N] = "_ERROR_POP_N",
     [_EXIT_INIT_CHECK] = "_EXIT_INIT_CHECK",
@@ -368,6 +367,7 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_GUARD_DORV_NO_DICT] = "_GUARD_DORV_NO_DICT",
     [_GUARD_DORV_VALUES_INST_ATTR_FROM_DICT] = "_GUARD_DORV_VALUES_INST_ATTR_FROM_DICT",
     [_GUARD_GLOBALS_VERSION] = "_GUARD_GLOBALS_VERSION",
+    [_GUARD_INSTR_PTR] = "_GUARD_INSTR_PTR",
     [_GUARD_IS_FALSE_POP] = "_GUARD_IS_FALSE_POP",
     [_GUARD_IS_NONE_POP] = "_GUARD_IS_NONE_POP",
     [_GUARD_IS_NOT_NONE_POP] = "_GUARD_IS_NOT_NONE_POP",
@@ -982,7 +982,7 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _COLD_EXIT:
             return 0;
-        case _DYNAMIC_EXIT:
+        case _GUARD_INSTR_PTR:
             return 0;
         case _START_EXECUTOR:
             return 0;

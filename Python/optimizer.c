@@ -124,7 +124,8 @@ never_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec,
-    int Py_UNUSED(stack_entries))
+    int Py_UNUSED(stack_entries),
+    int dynamic)
 {
     // This may be called if the optimizer is reset
     return 0;
@@ -209,7 +210,7 @@ PyUnstable_SetOptimizer(_PyOptimizerObject *optimizer)
 int
 _PyOptimizer_Optimize(
     _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
-    PyObject **stack_pointer, _PyExecutorObject **executor_ptr)
+    PyObject **stack_pointer, _PyExecutorObject **executor_ptr, int dynamic)
 {
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
@@ -218,7 +219,7 @@ _PyOptimizer_Optimize(
         return 0;
     }
     _PyOptimizerObject *opt = interp->optimizer;
-    int err = opt->optimize(opt, frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)));
+    int err = opt->optimize(opt, frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)), dynamic);
     if (err <= 0) {
         return err;
     }
@@ -570,7 +571,8 @@ translate_bytecode_to_trace(
     _Py_CODEUNIT *instr,
     _PyUOpInstruction *trace,
     int buffer_size,
-    _PyBloomFilter *dependencies)
+    _PyBloomFilter *dependencies,
+    int dynamic)
 {
     bool progress_needed = true;
     PyCodeObject *code = _PyFrame_GetCode(frame);
@@ -581,7 +583,7 @@ translate_bytecode_to_trace(
     _Py_CODEUNIT *initial_instr = instr;
     int trace_length = 0;
     // Leave space for possible trailing _EXIT_TRACE
-    int max_length = buffer_size-2;
+    int max_length = buffer_size-3-dynamic;
     struct {
         PyFunctionObject *func;
         PyCodeObject *code;
@@ -605,6 +607,10 @@ translate_bytecode_to_trace(
             code->co_firstlineno,
             2 * INSTR_IP(initial_instr, code));
     ADD_TO_TRACE(_START_EXECUTOR, 0, (uintptr_t)instr, INSTR_IP(instr, code));
+    if (dynamic) {
+        ADD_TO_TRACE(_GUARD_INSTR_PTR, 0, (uintptr_t)instr, UINT32_MAX);
+    }
+    ADD_TO_TRACE(_CHECK_VALIDITY, 0, (uintptr_t)instr, INSTR_IP(instr, code));
     uint32_t target = 0;
 
 top:  // Jump here after _PUSH_FRAME or likely branches
@@ -870,7 +876,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 if (opcode == FOR_ITER_GEN) {
                                     DPRINTF(2, "Bailing due to dynamic target\n");
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, UINT32_MAX);
                                     goto done;
                                 }
                                 // Increment IP to the return address
@@ -906,7 +912,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                             }
                             DPRINTF(2, "Bail, new_code == NULL\n");
                             ADD_TO_TRACE(uop, oparg, 0, target);
-                            ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                            ADD_TO_TRACE(_EXIT_TRACE, 0, 0, UINT32_MAX);
                             goto done;
                         }
 
@@ -976,7 +982,7 @@ count_exits(_PyUOpInstruction *buffer, int length)
     int exit_count = 0;
     for (int i = 0; i < length; i++) {
         int opcode = buffer[i].opcode;
-        if (opcode == _EXIT_TRACE || opcode == _DYNAMIC_EXIT) {
+        if (opcode == _EXIT_TRACE) {
             exit_count++;
         }
     }
@@ -1098,7 +1104,7 @@ sanity_check(_PyExecutorObject *executor)
 {
     for (uint32_t i = 0; i < executor->exit_count; i++) {
         _PyExitData *exit = &executor->exits[i];
-        CHECK(exit->target < (1 << 25));
+        CHECK(exit->target < (1 << 25) || exit->target == UINT32_MAX);
     }
     bool ended = false;
     uint32_t i = 0;
@@ -1183,11 +1189,6 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
             executor->exits[next_exit].target = buffer[i].target;
             dest->exit_index = next_exit;
             dest->format = UOP_FORMAT_EXIT;
-            next_exit--;
-        }
-        if (opcode == _DYNAMIC_EXIT) {
-            executor->exits[next_exit].target = 0;
-            dest->oparg = next_exit;
             next_exit--;
         }
     }
@@ -1282,17 +1283,19 @@ uop_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec_ptr,
-    int curr_stackentries)
+    int curr_stackentries,
+    int dynamic)
 {
     _PyBloomFilter dependencies;
     _Py_BloomFilter_Init(&dependencies);
     _PyUOpInstruction buffer[UOP_MAX_TRACE_LENGTH];
     OPT_STAT_INC(attempts);
-    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH, &dependencies);
+    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH, &dependencies, dynamic);
     if (length <= 0) {
         // Error or nothing translated
         return length;
     }
+    length++;
     assert(length < UOP_MAX_TRACE_LENGTH);
     OPT_STAT_INC(traces_created);
     char *env_var = Py_GETENV("PYTHON_UOPS_OPTIMIZE");
@@ -1385,7 +1388,8 @@ counter_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec_ptr,
-    int Py_UNUSED(curr_stackentries)
+    int Py_UNUSED(curr_stackentries),
+    int dynamic
 )
 {
     PyCodeObject *code = _PyFrame_GetCode(frame);
