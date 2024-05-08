@@ -1487,6 +1487,8 @@ gc_collect_full(PyThreadState *tstate,
     add_stats(gcstate, 2, stats);
 }
 
+#include "pycore_jit.h"
+
 /* This is the main function. Read this to understand how the
  * collection process works. */
 static void
@@ -1503,6 +1505,16 @@ gc_collect_region(PyThreadState *tstate,
 
     assert(gcstate->garbage != NULL);
     assert(!_PyErr_Occurred(tstate));
+
+    for (_PyExecutorObject *exec = tstate->interp->executor_list_head;
+         exec != NULL; exec = exec->vm_data.links.next)
+    {
+        assert(exec->vm_data.valid);
+        if (Py_REFCNT(exec) == 1) {
+            _PyJIT_Free(exec);
+            _PyJIT_Compile(exec, exec->trace, exec->code_size);
+        }
+    }
 
     gc_list_init(&unreachable);
     deduce_unreachable(from, &unreachable);
