@@ -1504,6 +1504,8 @@ gc_collect_region(PyThreadState *tstate,
     assert(gcstate->garbage != NULL);
     assert(!_PyErr_Occurred(tstate));
 
+    _Py_Executors_InvalidateAll(tstate->interp, 0);
+
     gc_list_init(&unreachable);
     deduce_unreachable(from, &unreachable);
     validate_consistent_old_space(from);
