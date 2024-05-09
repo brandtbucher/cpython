@@ -408,16 +408,6 @@ optimize_uops(
     _PyUOpInstruction *first_valid_check_stack = NULL;
     _PyUOpInstruction *corresponding_check_stack = NULL;
 
-    // Peel the first (really, the second) iteration of loops:
-    int loop_size = trace_len - 2;
-    _PyUOpInstruction *loop = &trace[1];
-    _PyUOpInstruction *jump = loop + loop_size;
-    if (jump->opcode == _JUMP_TO_TOP && trace_len + loop_size <= UOP_MAX_TRACE_LENGTH) {
-        jump->target = trace_len - 1;
-        memmove(jump, loop, (loop_size + 1) * sizeof(_PyUOpInstruction));
-        trace_len += loop_size;
-    }
-
     if (_Py_uop_abstractcontext_init(ctx) < 0) {
         goto out_of_space;
     }
