@@ -715,9 +715,27 @@ top:  // Jump here after _PUSH_FRAME or likely branches
             {
                 _Py_CODEUNIT *target = instr + 1 + _PyOpcode_Caches[opcode] - (int)oparg;
                 if (target == initial_instr) {
-                    /* We have looped round to the start */
-                    RESERVE(1);
-                    ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 1);
+                    // See if we have room to peel the loop body (don't use
+                    // RESERVE, since we just want to close the loop normally if
+                    // we're out of room). The peeled loop body will be the same
+                    // size as the current trace, since it *won't* start with
+                    // _START_EXECUTOR, but *will* end with _JUMP_TO_TOP.
+                    int head = trace_length;
+                    int tail = buffer_size - max_length;
+                    if ((head + tail) * 2 <= buffer_size) {
+                        max_length -= tail;
+                        RESERVE_RAW(head, "_JUMP_TO_TOP");
+                        for (int i = 1; i < head; i++) {
+                            _PyUOpInstruction *uop = &trace[i];
+                            ADD_TO_TRACE(uop->opcode, uop->oparg, uop->operand, uop->target);
+                        }
+                        ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, head);
+                    }
+                    else {
+                        /* We have looped round to the start */
+                        RESERVE(1);
+                        ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 1);
+                    }
                 }
                 else {
                     OPT_STAT_INC(inner_loop);
