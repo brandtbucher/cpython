@@ -1004,6 +1004,14 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
     int32_t current_popped = -1;
     int32_t current_exit_op = -1;
     /* Leaving in NOPs slows down the interpreter and messes up the stats */
+    _PyUOpInstruction *jump_to_top = &buffer[length - 1];
+    if (jump_to_top->opcode == _JUMP_TO_TOP) {
+        int nops = 0;
+        for (int i = 0; i < (int)jump_to_top->target; i++) {
+            nops += (buffer[i].opcode == _NOP);
+        }
+        jump_to_top->target -= nops;
+    }
     _PyUOpInstruction *copy_to = &buffer[0];
     for (int i = 0; i < length; i++) {
         _PyUOpInstruction *inst = &buffer[i];
