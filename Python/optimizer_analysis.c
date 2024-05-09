@@ -497,6 +497,10 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
      * instruction could have escaped. */
     int last_set_ip = -1;
     bool may_have_escaped = true;
+    int barrier = 0;
+    if (buffer[buffer_size - 1].opcode == _JUMP_TO_TOP) {
+        barrier = buffer[buffer_size - 1].target;
+    }
     for (int pc = 0; pc < buffer_size; pc++) {
         int opcode = buffer[pc].opcode;
         switch (opcode) {
@@ -530,6 +534,9 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {
                     last--;
+                }
+                if (last < &buffer[barrier] && barrier <= pc) {
+                    break;
                 }
                 if (last->opcode == _LOAD_CONST_INLINE  ||
                     last->opcode == _LOAD_CONST_INLINE_BORROW ||

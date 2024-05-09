@@ -580,6 +580,8 @@ translate_bytecode_to_trace(
     _Py_BloomFilter_Add(dependencies, initial_code);
     _Py_CODEUNIT *initial_instr = instr;
     int trace_length = 0;
+    _Py_CODEUNIT *real_initial_instr = instr;
+    int peeling = 0;
     // Leave space for possible trailing _EXIT_TRACE
     int max_length = buffer_size-2;
     struct {
@@ -714,28 +716,18 @@ top:  // Jump here after _PUSH_FRAME or likely branches
             case JUMP_BACKWARD_NO_INTERRUPT:
             {
                 _Py_CODEUNIT *target = instr + 1 + _PyOpcode_Caches[opcode] - (int)oparg;
-                if (target == initial_instr) {
-                    // See if we have room to peel the loop body (don't use
-                    // RESERVE, since we just want to close the loop normally if
-                    // we're out of room). The peeled loop body will be the same
-                    // size as the current trace, since it *won't* start with
-                    // _START_EXECUTOR, but *will* end with _JUMP_TO_TOP.
-                    int head = trace_length;
-                    int tail = buffer_size - max_length;
-                    if ((head + tail) * 2 <= buffer_size) {
-                        max_length -= tail;
-                        RESERVE_RAW(head, "_JUMP_TO_TOP");
-                        for (int i = 1; i < head; i++) {
-                            _PyUOpInstruction *uop = &trace[i];
-                            ADD_TO_TRACE(uop->opcode, uop->oparg, uop->operand, uop->target);
-                        }
-                        ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, head);
+                if (instr == real_initial_instr) {
+                    if (peeling) {
+                        assert(trace_length == 1 + 2 * peeling);
                     }
                     else {
-                        /* We have looped round to the start */
-                        RESERVE(1);
-                        ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 1);
+                        peeling = trace_length - 1;
+                        progress_needed = true;
+                        goto top;
                     }
+                }
+                else if (target == initial_instr) {
+                    peeling = trace_length - 1;
                 }
                 else {
                     OPT_STAT_INC(inner_loop);
@@ -962,7 +954,16 @@ done:
                 progress_needed ? "no progress" : "too short");
         return 0;
     }
-    if (trace[trace_length-1].opcode != _JUMP_TO_TOP) {
+    if (peeling) {
+        // EXEC AAAA BBBB CCCC AAAA BBBB CCCC JUMP
+        //                     ^ peeling      ^ trace_length
+        //                     ^ target
+        // EXEC AAAA BBBB CCCC AAAA BBBB JUMP
+        //                     ^ peeling ^ trace_length
+        //                ^ target
+        ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, trace_length - peeling);
+    }
+    else {
         ADD_TO_TRACE(_EXIT_TRACE, 0, 0, target);
     }
     DPRINTF(1,
