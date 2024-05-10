@@ -715,6 +715,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
             {
                 _Py_CODEUNIT *target = instr + 1 + _PyOpcode_Caches[opcode] - (int)oparg;
                 if (target == initial_instr) {
+                    /* We have looped round to the start */
                     int end = trace_length;
                     assert(trace[0].opcode == _START_EXECUTOR);
                     for (int i = 1; i < end; i++) {
@@ -729,7 +730,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                         if (OPCODE_HAS_EXIT(opcode)) {
                             stubs++;
                         }
-                        // uop + stubs + _JUMP_TO_TOP all need to fit:
+                        // uop + stubs + _JUMP_TO_TOP all need to fit. Don't use
+                        // RESERVE since we need to insert _JUMP_TO_TOP once
+                        // we're out of space:
                         if (max_length < trace_length + 1 + stubs + 1) {
                             break;
                         }
