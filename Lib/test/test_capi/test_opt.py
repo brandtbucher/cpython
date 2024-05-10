@@ -1165,8 +1165,8 @@ class TestUopsOptimization(unittest.TestCase):
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
         uop_names = [uop[0] for uop in uops_and_operands]
-        self.assertEqual(uop_names.count("_PUSH_FRAME"), 15)
-        self.assertEqual(uop_names.count("_POP_FRAME"), 15)
+        self.assertEqual(uop_names.count("_PUSH_FRAME"), 23)
+        self.assertEqual(uop_names.count("_POP_FRAME"), 20)
 
         self.assertEqual(uop_names.count("_CHECK_STACK_SPACE"), 0)
         self.assertEqual(uop_names.count("_CHECK_STACK_SPACE_OPERAND"), 1)
