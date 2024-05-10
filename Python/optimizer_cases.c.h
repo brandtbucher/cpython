@@ -1291,9 +1291,7 @@
             if (sym_matches_type(iter, &PyListIter_Type)) {
                 REPLACE_OP(this_instr, _NOP, 0, 0);
             }
-            if (!sym_set_type(iter, &PyListIter_Type)) {
-                goto hit_bottom;
-            }
+            sym_set_type(iter, &PyListIter_Type);
             break;
         }
 
@@ -1317,9 +1315,7 @@
             if (sym_matches_type(iter, &PyTupleIter_Type)) {
                 REPLACE_OP(this_instr, _NOP, 0, 0);
             }
-            if (!sym_set_type(iter, &PyTupleIter_Type)) {
-                goto hit_bottom;
-            }
+            sym_set_type(iter, &PyTupleIter_Type);
             break;
         }
 
@@ -1343,9 +1339,7 @@
             if (sym_matches_type(iter, &PyRangeIter_Type)) {
                 REPLACE_OP(this_instr, _NOP, 0, 0);
             }
-            if (!sym_set_type(iter, &PyRangeIter_Type)) {
-                goto hit_bottom;
-            }
+            sym_set_type(iter, &PyRangeIter_Type);
             break;
         }
 

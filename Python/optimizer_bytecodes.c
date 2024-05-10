@@ -758,27 +758,21 @@ dummy_func(void) {
         if (sym_matches_type(iter, &PyListIter_Type)) {
             REPLACE_OP(this_instr, _NOP, 0, 0);
         }
-        if (!sym_set_type(iter, &PyListIter_Type)) {
-            goto hit_bottom;
-        }
+        sym_set_type(iter, &PyListIter_Type);
     }
 
     op(_ITER_CHECK_RANGE, (iter -- iter)) {
         if (sym_matches_type(iter, &PyRangeIter_Type)) {
             REPLACE_OP(this_instr, _NOP, 0, 0);
         }
-        if (!sym_set_type(iter, &PyRangeIter_Type)) {
-            goto hit_bottom;
-        }
+        sym_set_type(iter, &PyRangeIter_Type);
     }
 
     op(_ITER_CHECK_TUPLE, (iter -- iter)) {
         if (sym_matches_type(iter, &PyTupleIter_Type)) {
             REPLACE_OP(this_instr, _NOP, 0, 0);
         }
-        if (!sym_set_type(iter, &PyTupleIter_Type)) {
-            goto hit_bottom;
-        }
+        sym_set_type(iter, &PyTupleIter_Type);
     }
 
     op(_JUMP_TO_TOP, (--)) {
