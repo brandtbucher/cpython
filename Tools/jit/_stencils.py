@@ -86,6 +86,7 @@ _PATCH_FUNCS = {
     "R_X86_64_GOTPCREL": "patch_32r",
     "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
     "R_X86_64_PC32": "patch_32r",
+    "R_X86_64_PLT32": "patch_32r",
     "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
     "X86_64_RELOC_BRANCH": "patch_32r",
@@ -317,11 +318,7 @@ class StencilGroup:
                 self.code.pad(alignment)
                 self.code.emit_aarch64_trampoline(hole)
                 self.code.holes.remove(hole)
-            if (
-                hole.kind
-                in {"R_X86_64_PLT32", }
-                and hole.value is HoleValue.ZERO
-            ):
+            if hole.kind == "R_X86_64_PLT32" and hole.value is HoleValue.ZERO:
                 self.code.pad(alignment)
                 self.code.emit_x86_64_trampoline(hole)
                 self.code.holes.remove(hole)
