@@ -190,7 +190,6 @@ class Stencil:
         self.body.extend([0] * padding)
 
     def emit_aarch64_trampoline(self, hole: Hole) -> None:
-        """Even with the large code model, AArch64 Linux insists on 28-bit jumps."""
         base = len(self.body)
         where = slice(hole.offset, hole.offset + 4)
         instruction = int.from_bytes(self.body[where], sys.byteorder)
@@ -225,6 +224,21 @@ class Stencil:
             ]
         ):
             self.holes.append(hole.replace(offset=base + 4 * i, kind=kind))
+
+    def emit_x86_64_trampoline(self, hole: Hole) -> None:
+        base = len(self.body)
+        self.body[hole.offset: hole.offset + 4] = int.to_bytes(4, base - (hole.offset + 4), signed=True)
+        self.disassembly += [
+            f"{base +  0:x}:       movabs rax, 0x0",
+            f"{base +  2:016x}:  R_X86_64_64    {hole.symbol}",
+            f"{base + 10:x}:       jmp    rax",
+        ]
+        for code in [
+            [0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            [0xFF, 0xE0],
+        ]:
+            self.body.extend(code)
+        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64"))
 
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
@@ -302,6 +316,14 @@ class StencilGroup:
             ):
                 self.code.pad(alignment)
                 self.code.emit_aarch64_trampoline(hole)
+                self.code.holes.remove(hole)
+            if (
+                hole.kind
+                in {"R_X86_64_PLT32", }
+                and hole.value is HoleValue.ZERO
+            ):
+                self.code.pad(alignment)
+                self.code.emit_x86_64_trampoline(hole)
                 self.code.holes.remove(hole)
         self.code.remove_jump(alignment=alignment)
         self.code.pad(alignment)
