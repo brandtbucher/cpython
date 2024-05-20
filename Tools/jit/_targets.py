@@ -133,10 +133,7 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-asynchronous-unwind-tables",
             # Don't call built-in functions that we can't find or patch:
             "-fno-builtin",
-            # Emit relaxable 64-bit calls/jumps, so we don't have to worry about
-            # about emitting in-range trampolines for out-of-range targets.
-            # We can probably remove this and emit trampolines in the future:
-            "-fno-plt",
+            "-fno-pic",
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
             "-std=c11",
@@ -502,23 +499,25 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     # ghccc currently crashes Clang when combined with musttail on aarch64. :(
     target: _COFF | _ELF | _MachO
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
+        args = ["-mcmodel=large"]
         target = _MachO(host, alignment=8, prefix="_")
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
-        args = ["-fms-runtime-lib=dll"]
+        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=large"]
         target = _COFF(host, alignment=8, args=args)
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        args = ["-fpic"]
+        args = ["-mcmodel=large"]
         target = _ELF(host, alignment=8, args=args)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
-        args = ["-DPy_NO_ENABLE_SHARED"]
+        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=large"]
         target = _COFF(host, args=args, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
-        target = _MachO(host, ghccc=True, prefix="_")
+        args = ["-mcmodel=large"]
+        target = _MachO(host, args=args, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
-        args = ["-fms-runtime-lib=dll"]
+        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=large"]
         target = _COFF(host, args=args, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        args = ["-fpic"]
+        args = ["-mcmodel=large"]
         target = _ELF(host, args=args, ghccc=True)
     else:
         raise ValueError(host)
