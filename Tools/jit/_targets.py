@@ -508,16 +508,16 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-mcmodel=large"]
         target = _ELF(host, alignment=8, args=args)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
-        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=large"]
+        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=small"]
         target = _COFF(host, args=args, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
-        args = ["-mcmodel=large"]
+        args = ["-mcmodel=medium"]
         target = _MachO(host, args=args, ghccc=True, prefix="_")
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
-        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=large"]
+        args = ["-DPy_NO_ENABLE_SHARED", "-mcmodel=medium"]
         target = _COFF(host, args=args, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        args = ["-mcmodel=large"]
+        args = ["-mcmodel=medium"]
         target = _ELF(host, args=args, ghccc=True)
     else:
         raise ValueError(host)
