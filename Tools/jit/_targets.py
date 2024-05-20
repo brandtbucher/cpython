@@ -502,8 +502,8 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-mcmodel=large"]
         target = _MachO(host, alignment=8, prefix="_")
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
-        args = ["-mcmodel=large"]
-        target = _COFF(host, alignment=8, args=args)
+        # XXX: Bug in clang: error: invalid argument '-mcmodel=large' only allowed with '-fno-pic'
+        target = _COFF(host, alignment=8)
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
         args = ["-mcmodel=large"]
         target = _ELF(host, alignment=8, args=args)
