@@ -1829,7 +1829,7 @@ dummy_func(
             ERROR_IF(attr == NULL, error);
         }
 
-        inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super, class, self -- attr, self_or_null)) {
+        tier1 inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super, class, self -- attr, self_or_null)) {
             assert(oparg & 1);
             DEOPT_IF(global_super != (PyObject *)&PySuper_Type);
             DEOPT_IF(!PyType_Check(class));
@@ -3935,7 +3935,7 @@ dummy_func(
             func = (PyObject *)func_obj;
         }
 
-        inst(SET_FUNCTION_ATTRIBUTE, (attr, func -- func)) {
+        tier1 inst(SET_FUNCTION_ATTRIBUTE, (attr, func -- func)) {
             assert(PyFunction_Check(func));
             PyFunctionObject *func_obj = (PyFunctionObject *)func;
             switch(oparg) {

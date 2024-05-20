@@ -1875,49 +1875,6 @@
             break;
         }
 
-        case _LOAD_SUPER_ATTR_METHOD: {
-            PyObject *self;
-            PyObject *class;
-            PyObject *global_super;
-            PyObject *attr;
-            PyObject *self_or_null;
-            oparg = CURRENT_OPARG();
-            self = stack_pointer[-1];
-            class = stack_pointer[-2];
-            global_super = stack_pointer[-3];
-            assert(oparg & 1);
-            if (global_super != (PyObject *)&PySuper_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyType_Check(class)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_SUPER_ATTR, hit);
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            PyTypeObject *cls = (PyTypeObject *)class;
-            int method_found = 0;
-            attr = _PySuper_Lookup(cls, self, name,
-                                   Py_TYPE(self)->tp_getattro == PyObject_GenericGetAttr ? &method_found : NULL);
-            Py_DECREF(global_super);
-            Py_DECREF(class);
-            if (attr == NULL) {
-                Py_DECREF(self);
-                if (true) JUMP_TO_ERROR();
-            }
-            if (method_found) {
-                self_or_null = self; // transfer ownership
-            } else {
-                Py_DECREF(self);
-                self_or_null = NULL;
-            }
-            stack_pointer[-3] = attr;
-            stack_pointer[-2] = self_or_null;
-            stack_pointer += -1;
-            break;
-        }
-
         case _LOAD_ATTR: {
             PyObject *owner;
             PyObject *attr;
@@ -3996,41 +3953,6 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = (PyObject *)func_obj;
             stack_pointer[-1] = func;
-            break;
-        }
-
-        case _SET_FUNCTION_ATTRIBUTE: {
-            PyObject *func;
-            PyObject *attr;
-            oparg = CURRENT_OPARG();
-            func = stack_pointer[-1];
-            attr = stack_pointer[-2];
-            assert(PyFunction_Check(func));
-            PyFunctionObject *func_obj = (PyFunctionObject *)func;
-            switch(oparg) {
-                case MAKE_FUNCTION_CLOSURE:
-                assert(func_obj->func_closure == NULL);
-                func_obj->func_closure = attr;
-                break;
-                case MAKE_FUNCTION_ANNOTATIONS:
-                assert(func_obj->func_annotations == NULL);
-                func_obj->func_annotations = attr;
-                break;
-                case MAKE_FUNCTION_KWDEFAULTS:
-                assert(PyDict_CheckExact(attr));
-                assert(func_obj->func_kwdefaults == NULL);
-                func_obj->func_kwdefaults = attr;
-                break;
-                case MAKE_FUNCTION_DEFAULTS:
-                assert(PyTuple_CheckExact(attr));
-                assert(func_obj->func_defaults == NULL);
-                func_obj->func_defaults = attr;
-                break;
-                default:
-                Py_UNREACHABLE();
-            }
-            stack_pointer[-2] = func;
-            stack_pointer += -1;
             break;
         }
 

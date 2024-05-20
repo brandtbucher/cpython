@@ -85,7 +85,6 @@ _PATCH_FUNCS = {
     "R_X86_64_64": "patch_64",
     "R_X86_64_GOTPCREL": "patch_32r",
     "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
-    "R_X86_64_PC32": "patch_32r",
     "R_X86_64_PLT32": "patch_32r",
     "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
@@ -137,6 +136,7 @@ class Hole:
     replace = dataclasses.replace
 
     def __post_init__(self) -> None:
+        assert self.kind in _PATCH_FUNCS, self.__dict__
         self.func = _PATCH_FUNCS[self.kind]
 
     def fold(self, other: typing.Self) -> typing.Self | None:
@@ -229,7 +229,7 @@ class Stencil:
     def emit_x86_64_trampoline(self, hole: Hole) -> None:
         base = len(self.body)
         self.body[hole.offset : hole.offset + 4] = int.to_bytes(
-            4, base - (hole.offset + 4), signed=True
+            base - (hole.offset + 4), 4, signed=True, byteorder=sys.byteorder
         )
         self.disassembly += [
             f"{base +  0:x}:       movabs rax, 0x0",
@@ -241,7 +241,8 @@ class Stencil:
             [0xFF, 0xE0],
         ]:
             self.body.extend(code)
-        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64"))
+        assert _signed(hole.addend) == -4
+        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64", addend=0))
 
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""

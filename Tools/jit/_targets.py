@@ -517,7 +517,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-mcmodel=medium"]
         target = _COFF(host, args=args, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        args = ["-mcmodel=medium"]
+        args = ["-mcmodel=medium", "-mlarge-data-threshold=0"]
         target = _ELF(host, args=args, ghccc=True)
     else:
         raise ValueError(host)
