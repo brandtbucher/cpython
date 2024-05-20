@@ -228,7 +228,9 @@ class Stencil:
 
     def emit_x86_64_trampoline(self, hole: Hole) -> None:
         base = len(self.body)
-        self.body[hole.offset: hole.offset + 4] = int.to_bytes(4, base - (hole.offset + 4), signed=True)
+        self.body[hole.offset : hole.offset + 4] = int.to_bytes(
+            4, base - (hole.offset + 4), signed=True
+        )
         self.disassembly += [
             f"{base +  0:x}:       movabs rax, 0x0",
             f"{base +  2:016x}:  R_X86_64_64    {hole.symbol}",
@@ -318,7 +320,10 @@ class StencilGroup:
                 self.code.pad(alignment)
                 self.code.emit_aarch64_trampoline(hole)
                 self.code.holes.remove(hole)
-            if hole.kind in {"IMAGE_REL_AMD64_REL32", "R_X86_64_PLT32"} and hole.value is HoleValue.ZERO:
+            if (
+                hole.kind in {"IMAGE_REL_AMD64_REL32", "R_X86_64_PLT32"}
+                and hole.value is HoleValue.ZERO
+            ):
                 self.code.pad(alignment)
                 self.code.emit_x86_64_trampoline(hole)
                 self.code.holes.remove(hole)
