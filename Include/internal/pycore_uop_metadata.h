@@ -131,7 +131,6 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_DICT_MERGE] = HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_MAP_ADD] = HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_LOAD_SUPER_ATTR_ATTR] = HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
-    [_LOAD_SUPER_ATTR_METHOD] = HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_LOAD_ATTR] = HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_GUARD_TYPE_VERSION] = HAS_EXIT_FLAG,
     [_CHECK_MANAGED_OBJECT_HAS_VALUES] = HAS_DEOPT_FLAG,
@@ -227,7 +226,6 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_CALL_METHOD_DESCRIPTOR_NOARGS] = HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_CALL_METHOD_DESCRIPTOR_FAST] = HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_MAKE_FUNCTION] = HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG,
-    [_SET_FUNCTION_ATTRIBUTE] = HAS_ARG_FLAG | HAS_ESCAPES_FLAG,
     [_RETURN_GENERATOR] = HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG,
     [_BUILD_SLICE] = HAS_ARG_FLAG | HAS_ERROR_FLAG,
     [_CONVERT_VALUE] = HAS_ARG_FLAG | HAS_ERROR_FLAG,
@@ -443,7 +441,6 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_LOAD_LOCALS] = "_LOAD_LOCALS",
     [_LOAD_SPECIAL] = "_LOAD_SPECIAL",
     [_LOAD_SUPER_ATTR_ATTR] = "_LOAD_SUPER_ATTR_ATTR",
-    [_LOAD_SUPER_ATTR_METHOD] = "_LOAD_SUPER_ATTR_METHOD",
     [_MAKE_CELL] = "_MAKE_CELL",
     [_MAKE_FUNCTION] = "_MAKE_FUNCTION",
     [_MAP_ADD] = "_MAP_ADD",
@@ -466,7 +463,6 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_SAVE_RETURN_OFFSET] = "_SAVE_RETURN_OFFSET",
     [_SETUP_ANNOTATIONS] = "_SETUP_ANNOTATIONS",
     [_SET_ADD] = "_SET_ADD",
-    [_SET_FUNCTION_ATTRIBUTE] = "_SET_FUNCTION_ATTRIBUTE",
     [_SET_IP] = "_SET_IP",
     [_SET_UPDATE] = "_SET_UPDATE",
     [_START_EXECUTOR] = "_START_EXECUTOR",
@@ -738,8 +734,6 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 3 + (oparg - 1);
         case _LOAD_SUPER_ATTR_ATTR:
             return 3;
-        case _LOAD_SUPER_ATTR_METHOD:
-            return 3;
         case _LOAD_ATTR:
             return 1;
         case _GUARD_TYPE_VERSION:
@@ -930,8 +924,6 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 2 + oparg;
         case _MAKE_FUNCTION:
             return 1;
-        case _SET_FUNCTION_ATTRIBUTE:
-            return 2;
         case _RETURN_GENERATOR:
             return 0;
         case _BUILD_SLICE:

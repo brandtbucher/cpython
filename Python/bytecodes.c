@@ -2024,7 +2024,7 @@ dummy_func(
             attr_st = PyStackRef_FromPyObjectSteal(attr);
         }
 
-        inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super_st, class_st, self_st -- attr, self_or_null)) {
+        tier1 inst(LOAD_SUPER_ATTR_METHOD, (unused/1, global_super_st, class_st, self_st -- attr, self_or_null)) {
             PyObject *global_super = PyStackRef_AsPyObjectBorrow(global_super_st);
             PyObject *class = PyStackRef_AsPyObjectBorrow(class_st);
             PyObject *self = PyStackRef_AsPyObjectBorrow(self_st);
@@ -4327,7 +4327,7 @@ dummy_func(
             func = PyStackRef_FromPyObjectSteal((PyObject *)func_obj);
         }
 
-        inst(SET_FUNCTION_ATTRIBUTE, (attr_st, func_st -- func_st)) {
+        tier1 inst(SET_FUNCTION_ATTRIBUTE, (attr_st, func_st -- func_st)) {
             PyObject *func = PyStackRef_AsPyObjectBorrow(func_st);
             PyObject *attr = PyStackRef_AsPyObjectBorrow(attr_st);
 

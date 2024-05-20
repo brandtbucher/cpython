@@ -81,7 +81,6 @@ _PATCH_FUNCS = {
     "R_X86_64_64": "patch_64",
     "R_X86_64_GOTPCREL": "patch_32r",
     "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
-    "R_X86_64_PC32": "patch_32r",
     "R_X86_64_PLT32": "patch_32r",
     "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
@@ -131,6 +130,7 @@ class Hole:
     replace = dataclasses.replace
 
     def __post_init__(self) -> None:
+        assert self.kind in _PATCH_FUNCS, self.__dict__
         self.func = _PATCH_FUNCS[self.kind]
 
     def fold(self, other: typing.Self) -> typing.Self | None:

@@ -2078,54 +2078,6 @@
             break;
         }
 
-        case _LOAD_SUPER_ATTR_METHOD: {
-            _PyStackRef self_st;
-            _PyStackRef class_st;
-            _PyStackRef global_super_st;
-            _PyStackRef attr;
-            _PyStackRef self_or_null;
-            oparg = CURRENT_OPARG();
-            self_st = stack_pointer[-1];
-            class_st = stack_pointer[-2];
-            global_super_st = stack_pointer[-3];
-            PyObject *global_super = PyStackRef_AsPyObjectBorrow(global_super_st);
-            PyObject *class = PyStackRef_AsPyObjectBorrow(class_st);
-            PyObject *self = PyStackRef_AsPyObjectBorrow(self_st);
-            assert(oparg & 1);
-            if (global_super != (PyObject *)&PySuper_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (!PyType_Check(class)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            STAT_INC(LOAD_SUPER_ATTR, hit);
-            PyObject *name = GETITEM(FRAME_CO_NAMES, oparg >> 2);
-            PyTypeObject *cls = (PyTypeObject *)class;
-            int method_found = 0;
-            PyObject *attr_o = _PySuper_Lookup(cls, self, name,
-                Py_TYPE(self)->tp_getattro == PyObject_GenericGetAttr ? &method_found : NULL);
-            PyStackRef_CLOSE(global_super_st);
-            PyStackRef_CLOSE(class_st);
-            if (attr_o == NULL) {
-                PyStackRef_CLOSE(self_st);
-                if (true) JUMP_TO_ERROR();
-            }
-            if (method_found) {
-                self_or_null = self_st; // transfer ownership
-            } else {
-                PyStackRef_CLOSE(self_st);
-                self_or_null = PyStackRef_NULL;
-            }
-            attr = PyStackRef_FromPyObjectSteal(attr_o);
-            stack_pointer[-3] = attr;
-            stack_pointer[-2] = self_or_null;
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
-
         case _LOAD_ATTR: {
             _PyStackRef owner;
             _PyStackRef attr;
@@ -4516,49 +4468,6 @@
                                    func_obj, ((PyCodeObject *)codeobj)->co_version);
             func = PyStackRef_FromPyObjectSteal((PyObject *)func_obj);
             stack_pointer[-1] = func;
-            break;
-        }
-
-        case _SET_FUNCTION_ATTRIBUTE: {
-            _PyStackRef func_st;
-            _PyStackRef attr_st;
-            oparg = CURRENT_OPARG();
-            func_st = stack_pointer[-1];
-            attr_st = stack_pointer[-2];
-            PyObject *func = PyStackRef_AsPyObjectBorrow(func_st);
-            PyObject *attr = PyStackRef_AsPyObjectBorrow(attr_st);
-            assert(PyFunction_Check(func));
-            PyFunctionObject *func_obj = (PyFunctionObject *)func;
-            switch(oparg) {
-                case MAKE_FUNCTION_CLOSURE:
-                assert(func_obj->func_closure == NULL);
-                func_obj->func_closure = attr;
-                break;
-                case MAKE_FUNCTION_ANNOTATIONS:
-                assert(func_obj->func_annotations == NULL);
-                func_obj->func_annotations = attr;
-                break;
-                case MAKE_FUNCTION_KWDEFAULTS:
-                assert(PyDict_CheckExact(attr));
-                assert(func_obj->func_kwdefaults == NULL);
-                func_obj->func_kwdefaults = attr;
-                break;
-                case MAKE_FUNCTION_DEFAULTS:
-                assert(PyTuple_CheckExact(attr));
-                assert(func_obj->func_defaults == NULL);
-                func_obj->func_defaults = attr;
-                break;
-                case MAKE_FUNCTION_ANNOTATE:
-                assert(PyCallable_Check(attr));
-                assert(func_obj->func_annotate == NULL);
-                func_obj->func_annotate = attr;
-                break;
-                default:
-                Py_UNREACHABLE();
-            }
-            stack_pointer[-2] = func_st;
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 

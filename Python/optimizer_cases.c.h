@@ -963,18 +963,6 @@
             break;
         }
 
-        case _LOAD_SUPER_ATTR_METHOD: {
-            _Py_UopsSymbol *attr;
-            _Py_UopsSymbol *self_or_null;
-            attr = sym_new_not_null(ctx);
-            self_or_null = sym_new_not_null(ctx);
-            stack_pointer[-3] = attr;
-            stack_pointer[-2] = self_or_null;
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
-
         case _LOAD_ATTR: {
             _Py_UopsSymbol *owner;
             _Py_UopsSymbol *attr;
@@ -1894,15 +1882,6 @@
             _Py_UopsSymbol *func;
             func = sym_new_not_null(ctx);
             stack_pointer[-1] = func;
-            break;
-        }
-
-        case _SET_FUNCTION_ATTRIBUTE: {
-            _Py_UopsSymbol *func_st;
-            func_st = sym_new_not_null(ctx);
-            stack_pointer[-2] = func_st;
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
