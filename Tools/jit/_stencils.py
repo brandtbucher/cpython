@@ -82,6 +82,7 @@ _PATCH_FUNCS = {
     "R_X86_64_GOTPCREL": "patch_32r",
     "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
     "R_X86_64_PC32": "patch_32r",
+    "R_X86_64_PLT32": "patch_32r",
     "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
     "X86_64_RELOC_BRANCH": "patch_32r",
@@ -217,6 +218,34 @@ class Stencil:
         self.trampolines[hole.symbol] = base
         return new_hole
 
+    def emit_x86_64_trampoline(self, hole: Hole, alignment: int) -> Hole:
+        assert hole.symbol is not None
+        reuse_trampoline = hole.symbol in self.trampolines
+        if reuse_trampoline:
+            # Re-use the base address of the previously created trampoline
+            base = self.trampolines[hole.symbol]
+        else:
+            self.pad(alignment)
+            base = len(self.body)
+        new_hole = hole.replace(addend=base, symbol=None, value=HoleValue.DATA)
+
+        if reuse_trampoline:
+            return new_hole
+
+        self.disassembly += [
+            f"{base +  0:x}:       movabs rax, 0x0",
+            f"{base +  2:016x}:  R_X86_64_64    {hole.symbol}",
+            f"{base + 10:x}:       jmp    rax",
+        ]
+        for code in [
+            [0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            [0xFF, 0xE0],
+        ]:
+            self.body.extend(code)
+        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64"))
+        self.trampolines[hole.symbol] = base
+        return new_hole
+
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
         hole = max(self.holes, key=lambda hole: hole.offset)
@@ -292,6 +321,14 @@ class StencilGroup:
                 and hole.value is HoleValue.ZERO
             ):
                 new_hole = self.data.emit_aarch64_trampoline(hole, alignment)
+                self.code.holes.remove(hole)
+                self.code.holes.append(new_hole)
+            if (
+                hole.kind
+                in {"R_X86_64_PLT32"}
+                and hole.value is HoleValue.ZERO
+            ):
+                new_hole = self.code.emit_x86_64_trampoline(hole, alignment)
                 self.code.holes.remove(hole)
                 self.code.holes.append(new_hole)
         self.code.remove_jump(alignment=alignment)
