@@ -318,7 +318,7 @@ class StencilGroup:
                 self.code.pad(alignment)
                 self.code.emit_aarch64_trampoline(hole)
                 self.code.holes.remove(hole)
-            if hole.kind == "R_X86_64_PLT32" and hole.value is HoleValue.ZERO:
+            if hole.kind in {"IMAGE_REL_AMD64_REL32", "R_X86_64_PLT32"} and hole.value is HoleValue.ZERO:
                 self.code.pad(alignment)
                 self.code.emit_x86_64_trampoline(hole)
                 self.code.holes.remove(hole)
@@ -336,13 +336,6 @@ class StencilGroup:
                     hole.value, addend = self.symbols[hole.symbol]
                     hole.addend += addend
                     hole.symbol = None
-                elif (
-                    hole.kind in {"IMAGE_REL_AMD64_REL32"}
-                    and hole.value is HoleValue.ZERO
-                ):
-                    raise ValueError(
-                        f"Add PyAPI_FUNC(...) or PyAPI_DATA(...) to declaration of {hole.symbol}!"
-                    )
         self._emit_global_offset_table()
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
