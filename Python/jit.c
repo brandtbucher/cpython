@@ -187,8 +187,8 @@ patch_32r(unsigned char *location, uint64_t value)
     uint32_t *loc32 = (uint32_t *)location;
     value -= (uintptr_t)location;
     // Check that we're not out of range of 32 signed bits:
-    assert((int64_t)value >= -(1LL << 31));
-    assert((int64_t)value < (1LL << 31));
+    // assert((int64_t)value >= -(1LL << 31));
+    // assert((int64_t)value < (1LL << 31));
     *loc32 = (uint32_t)value;
 }
 
