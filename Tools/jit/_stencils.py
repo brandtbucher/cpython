@@ -66,23 +66,15 @@ _PATCH_FUNCS = {
     "IMAGE_REL_I386_DIR32": "patch_32",
     "IMAGE_REL_I386_REL32": "patch_x86_64_32rx",
     # aarch64-unknown-linux-gnu:
-    "R_AARCH64_ABS64": "patch_64",
-    "R_AARCH64_ADD_ABS_LO12_NC": "patch_aarch64_12",
-    "R_AARCH64_ADR_GOT_PAGE": "patch_aarch64_21rx",
-    "R_AARCH64_ADR_PREL_PG_HI21": "patch_aarch64_21r",
     "R_AARCH64_CALL26": "patch_aarch64_26r",
     "R_AARCH64_JUMP26": "patch_aarch64_26r",
-    "R_AARCH64_LD64_GOT_LO12_NC": "patch_aarch64_12x",
     "R_AARCH64_MOVW_UABS_G0_NC": "patch_aarch64_16a",
     "R_AARCH64_MOVW_UABS_G1_NC": "patch_aarch64_16b",
     "R_AARCH64_MOVW_UABS_G2_NC": "patch_aarch64_16c",
     "R_AARCH64_MOVW_UABS_G3": "patch_aarch64_16d",
     # x86_64-unknown-linux-gnu:
     "R_X86_64_64": "patch_64",
-    "R_X86_64_GOTPCREL": "patch_32r",
-    "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
     "R_X86_64_PLT32": "patch_32r",
-    "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
     "X86_64_RELOC_BRANCH": "patch_32r",
     "X86_64_RELOC_GOT": "patch_x86_64_32rx",
@@ -281,15 +273,15 @@ class Stencil:
                 jump = b"\x00\x00\x00\x14"
             case Hole(
                 offset=offset,
-                kind="R_X86_64_GOTPCRELX",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
+                kind="R_X86_64_PLT32",
+                value=HoleValue.CONTINUE,
+                symbol=None,
                 addend=addend,
             ) as hole:
                 assert _signed(addend) == -4
-                # jmp qword ptr [rip]
-                jump = b"\xFF\x25\x00\x00\x00\x00"
-                offset -= 2
+                # jmp 5
+                jump = b"\xE9\x00\x00\x00\x00"
+                offset -= 1
             case _:
                 return
         if self.body[offset:] == jump and offset % alignment == 0:

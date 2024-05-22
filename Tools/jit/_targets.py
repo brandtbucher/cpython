@@ -366,21 +366,6 @@ class _ELF(
                 "Addend": addend,
                 "Offset": offset,
                 "Symbol": {"Name": s},
-                "Type": {
-                    "Name": "R_AARCH64_ADR_GOT_PAGE"
-                    | "R_AARCH64_LD64_GOT_LO12_NC"
-                    | "R_X86_64_GOTPCREL"
-                    | "R_X86_64_GOTPCRELX"
-                    | "R_X86_64_REX_GOTPCRELX" as kind
-                },
-            }:
-                offset += base
-                s = s.removeprefix(self.prefix)
-                value, symbol = _stencils.HoleValue.GOT, s
-            case {
-                "Addend": addend,
-                "Offset": offset,
-                "Symbol": {"Name": s},
                 "Type": {"Name": kind},
             }:
                 offset += base
