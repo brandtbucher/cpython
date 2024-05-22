@@ -527,7 +527,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         target = _MachO(host, args=args, code_alignment=4, data_alignment=8, prefix="_")
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
-        target = _COFF(host, args=args, code_alignment=4, data_alignment=16)  # XXX: Check align
+        target = _COFF(host, args=args, code_alignment=4, data_alignment=16)
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
         args = ["-mcmodel=large"]
         # Builds (but crashes) without data_alignment:
@@ -535,18 +535,21 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]
         # Works with data_alignment=4:
-        target = _COFF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True, prefix="_")
+        target = _COFF(
+            host, args=args, code_alignment=1, data_alignment=8, ghccc=True, prefix="_"
+        )
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
         # Works without data_alignment:
-        target = _MachO(host, code_alignment=1, data_alignment=8, ghccc=True, prefix="_")
+        target = _MachO(
+            host, code_alignment=1, data_alignment=8, ghccc=True, prefix="_"
+        )
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
         # Works with data_alignment=4:
         target = _COFF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        args = ["-fpic"]
         # Works with data_alignment=4:
-        target = _ELF(host, args=args, code_alignment=1, data_alignment=8, ghccc=True)
+        target = _ELF(host, code_alignment=1, data_alignment=8, ghccc=True)
     else:
         raise ValueError(host)
     return target

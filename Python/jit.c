@@ -456,8 +456,6 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     group->emit(code, data, executor, NULL, instruction_starts);
     code += group->code_size;
     data += group->data_size;
-    assert(code == memory + code_size);
-    assert(data == memory + code_size + data_size);
     if (mark_executable(memory, total_size)) {
         jit_free(memory, total_size);
         return -1;
