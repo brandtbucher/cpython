@@ -146,6 +146,9 @@
             static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1, "incorrect cache size");
             PyObject *right;
             PyObject *left;
+            PyObject *dleft;
+            PyObject *dright;
+            PyObject *dres;
             PyObject *res;
             // _GUARD_BOTH_FLOAT
             right = stack_pointer[-1];
@@ -154,14 +157,23 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
+            // _UNBOX_BOTH_FLOAT
+            {
+                dleft = *(PyObject **)&((PyFloatObject *)left)->ob_fval;
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                dright = *(PyObject **)&((PyFloatObject *)right)->ob_fval;
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            }
             /* Skip 1 cache entry */
             // _BINARY_OP_ADD_FLOAT
             {
                 STAT_INC(BINARY_OP, hit);
-                double dres =
-                ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-                DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+                *(double *)&dres = *(double *)&dleft + *(double *)&dright;
+            }
+            // _BOX_FLOAT
+            {
+                res = PyFloat_FromDouble(*(double *)&dres);
+                // ERROR_IF(res == NULL, error);
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -278,6 +290,9 @@
             static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1, "incorrect cache size");
             PyObject *right;
             PyObject *left;
+            PyObject *dleft;
+            PyObject *dright;
+            PyObject *dres;
             PyObject *res;
             // _GUARD_BOTH_FLOAT
             right = stack_pointer[-1];
@@ -286,14 +301,23 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
+            // _UNBOX_BOTH_FLOAT
+            {
+                dleft = *(PyObject **)&((PyFloatObject *)left)->ob_fval;
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                dright = *(PyObject **)&((PyFloatObject *)right)->ob_fval;
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            }
             /* Skip 1 cache entry */
             // _BINARY_OP_MULTIPLY_FLOAT
             {
                 STAT_INC(BINARY_OP, hit);
-                double dres =
-                ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-                DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+                *(double *)&dres = *(double *)&dleft * *(double *)&dright;
+            }
+            // _BOX_FLOAT
+            {
+                res = PyFloat_FromDouble(*(double *)&dres);
+                // ERROR_IF(res == NULL, error);
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -336,6 +360,9 @@
             static_assert(INLINE_CACHE_ENTRIES_BINARY_OP == 1, "incorrect cache size");
             PyObject *right;
             PyObject *left;
+            PyObject *dleft;
+            PyObject *dright;
+            PyObject *dres;
             PyObject *res;
             // _GUARD_BOTH_FLOAT
             right = stack_pointer[-1];
@@ -344,14 +371,23 @@
                 DEOPT_IF(!PyFloat_CheckExact(left), BINARY_OP);
                 DEOPT_IF(!PyFloat_CheckExact(right), BINARY_OP);
             }
+            // _UNBOX_BOTH_FLOAT
+            {
+                dleft = *(PyObject **)&((PyFloatObject *)left)->ob_fval;
+                _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+                dright = *(PyObject **)&((PyFloatObject *)right)->ob_fval;
+                _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+            }
             /* Skip 1 cache entry */
             // _BINARY_OP_SUBTRACT_FLOAT
             {
                 STAT_INC(BINARY_OP, hit);
-                double dres =
-                ((PyFloatObject *)left)->ob_fval -
-                ((PyFloatObject *)right)->ob_fval;
-                DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+                *(double *)&dres = *(double *)&dleft - *(double *)&dright;
+            }
+            // _BOX_FLOAT
+            {
+                res = PyFloat_FromDouble(*(double *)&dres);
+                // ERROR_IF(res == NULL, error);
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;

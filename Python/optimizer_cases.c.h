@@ -331,6 +331,34 @@
             break;
         }
 
+        case _UNBOX_BOTH_FLOAT: {
+            assert(this_instr[-2].opcode == _CHECK_VALIDITY_AND_SET_IP);
+            if ((this_instr[-1].opcode == _NOP ||
+                    this_instr[-1].opcode == _GUARD_NOS_FLOAT)
+                && this_instr[-3].opcode == _BOX_FLOAT)
+            {
+                REPLACE_OP((&this_instr[-3]), _NOP, 0, 0);
+                REPLACE_OP((&this_instr[-2]), _SET_IP, 0, 0);
+                REPLACE_OP(this_instr, _UNBOX_NOS_FLOAT, 0, 0);
+            }
+            break;
+        }
+
+        case _UNBOX_NOS_FLOAT: {
+            break;
+        }
+
+        case _UNBOX_TOS_FLOAT: {
+            break;
+        }
+
+        case _BOX_FLOAT: {
+            _Py_UopsSymbol *res;
+            res = sym_new_type(ctx, &PyFloat_Type);
+            stack_pointer[-1] = res;
+            break;
+        }
+
         case _BINARY_OP_MULTIPLY_FLOAT: {
             _Py_UopsSymbol *right;
             _Py_UopsSymbol *left;

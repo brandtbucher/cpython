@@ -67,6 +67,10 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_GUARD_BOTH_FLOAT] = HAS_EXIT_FLAG,
     [_GUARD_NOS_FLOAT] = HAS_EXIT_FLAG,
     [_GUARD_TOS_FLOAT] = HAS_EXIT_FLAG,
+    [_UNBOX_BOTH_FLOAT] = HAS_PURE_FLAG,
+    [_UNBOX_NOS_FLOAT] = HAS_PURE_FLAG,
+    [_UNBOX_TOS_FLOAT] = HAS_PURE_FLAG,
+    [_BOX_FLOAT] = HAS_ESCAPES_FLAG | HAS_PURE_FLAG,
     [_BINARY_OP_MULTIPLY_FLOAT] = HAS_PURE_FLAG,
     [_BINARY_OP_ADD_FLOAT] = HAS_PURE_FLAG,
     [_BINARY_OP_SUBTRACT_FLOAT] = HAS_PURE_FLAG,
@@ -283,6 +287,7 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_BINARY_SUBSCR_LIST_INT] = "_BINARY_SUBSCR_LIST_INT",
     [_BINARY_SUBSCR_STR_INT] = "_BINARY_SUBSCR_STR_INT",
     [_BINARY_SUBSCR_TUPLE_INT] = "_BINARY_SUBSCR_TUPLE_INT",
+    [_BOX_FLOAT] = "_BOX_FLOAT",
     [_BUILD_CONST_KEY_MAP] = "_BUILD_CONST_KEY_MAP",
     [_BUILD_LIST] = "_BUILD_LIST",
     [_BUILD_MAP] = "_BUILD_MAP",
@@ -503,6 +508,9 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_UNARY_INVERT] = "_UNARY_INVERT",
     [_UNARY_NEGATIVE] = "_UNARY_NEGATIVE",
     [_UNARY_NOT] = "_UNARY_NOT",
+    [_UNBOX_BOTH_FLOAT] = "_UNBOX_BOTH_FLOAT",
+    [_UNBOX_NOS_FLOAT] = "_UNBOX_NOS_FLOAT",
+    [_UNBOX_TOS_FLOAT] = "_UNBOX_TOS_FLOAT",
     [_UNPACK_EX] = "_UNPACK_EX",
     [_UNPACK_SEQUENCE] = "_UNPACK_SEQUENCE",
     [_UNPACK_SEQUENCE_LIST] = "_UNPACK_SEQUENCE_LIST",
@@ -609,6 +617,14 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _GUARD_NOS_FLOAT:
             return 2;
         case _GUARD_TOS_FLOAT:
+            return 1;
+        case _UNBOX_BOTH_FLOAT:
+            return 2;
+        case _UNBOX_NOS_FLOAT:
+            return 2;
+        case _UNBOX_TOS_FLOAT:
+            return 1;
+        case _BOX_FLOAT:
             return 1;
         case _BINARY_OP_MULTIPLY_FLOAT:
             return 2;

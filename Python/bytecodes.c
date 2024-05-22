@@ -483,36 +483,49 @@ dummy_func(
             EXIT_IF(!PyFloat_CheckExact(value));
         }
 
-        pure op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- res)) {
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval *
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+        pure op(_UNBOX_BOTH_FLOAT, (left, right -- dleft, dright)) {
+            dleft = *(PyObject **)&((PyFloatObject *)left)->ob_fval;
+            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
+            dright = *(PyObject **)&((PyFloatObject *)right)->ob_fval;
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
         }
 
-        pure op(_BINARY_OP_ADD_FLOAT, (left, right -- res)) {
-            STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval +
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+        pure op(_UNBOX_NOS_FLOAT, (left, unused -- dleft, unused)) {
+            dleft = *(PyObject **)&((PyFloatObject *)left)->ob_fval;
+            _Py_DECREF_SPECIALIZED(left, _PyFloat_ExactDealloc);
         }
 
-        pure op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- res)) {
+        pure op(_UNBOX_TOS_FLOAT, (right -- dright)) {
+            dright = *(PyObject **)&((PyFloatObject *)right)->ob_fval;
+            _Py_DECREF_SPECIALIZED(right, _PyFloat_ExactDealloc);
+        }
+
+        pure op(_BOX_FLOAT, (dres -- res)) {
+            res = PyFloat_FromDouble(*(double *)&dres);
+            // ERROR_IF(res == NULL, error);
+        }
+
+        pure op(_BINARY_OP_MULTIPLY_FLOAT, (dleft, dright -- dres)) {
             STAT_INC(BINARY_OP, hit);
-            double dres =
-                ((PyFloatObject *)left)->ob_fval -
-                ((PyFloatObject *)right)->ob_fval;
-            DECREF_INPUTS_AND_REUSE_FLOAT(left, right, dres, res);
+            *(double *)&dres = *(double *)&dleft * *(double *)&dright;
+        }
+
+        pure op(_BINARY_OP_ADD_FLOAT, (dleft, dright -- dres)) {
+            STAT_INC(BINARY_OP, hit);
+            *(double *)&dres = *(double *)&dleft + *(double *)&dright;
+        }
+
+        pure op(_BINARY_OP_SUBTRACT_FLOAT, (dleft, dright -- dres)) {
+            STAT_INC(BINARY_OP, hit);
+            *(double *)&dres = *(double *)&dleft - *(double *)&dright;
         }
 
         macro(BINARY_OP_MULTIPLY_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_MULTIPLY_FLOAT;
+            _GUARD_BOTH_FLOAT + _UNBOX_BOTH_FLOAT + unused/1 + _BINARY_OP_MULTIPLY_FLOAT + _BOX_FLOAT;
         macro(BINARY_OP_ADD_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_ADD_FLOAT;
+            _GUARD_BOTH_FLOAT + _UNBOX_BOTH_FLOAT + unused/1 + _BINARY_OP_ADD_FLOAT + _BOX_FLOAT;
         macro(BINARY_OP_SUBTRACT_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_SUBTRACT_FLOAT;
+            _GUARD_BOTH_FLOAT + _UNBOX_BOTH_FLOAT + unused/1 + _BINARY_OP_SUBTRACT_FLOAT + _BOX_FLOAT;
 
         op(_GUARD_BOTH_UNICODE, (left, right -- left, right)) {
             EXIT_IF(!PyUnicode_CheckExact(left));

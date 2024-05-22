@@ -753,6 +753,28 @@ dummy_func(void) {
             REPLACE_OP(this_instr, _NOP, 0 ,0);
         }
     }
+    
+    op(_UNBOX_BOTH_FLOAT, (unused, unused -- unused, unused)) {
+        assert(this_instr[-2].opcode == _CHECK_VALIDITY_AND_SET_IP);
+        if ((this_instr[-1].opcode == _NOP || 
+             this_instr[-1].opcode == _GUARD_NOS_FLOAT)
+            && this_instr[-3].opcode == _BOX_FLOAT)
+        {
+            REPLACE_OP((&this_instr[-3]), _NOP, 0, 0);
+            REPLACE_OP((&this_instr[-2]), _SET_IP, 0, 0);
+            REPLACE_OP(this_instr, _UNBOX_NOS_FLOAT, 0, 0);
+        }
+    }
+
+    op(_UNBOX_NOS_FLOAT, (unused, unused -- unused, unused)) {
+    }
+
+    op(_UNBOX_TOS_FLOAT, (unused -- unused)) {
+    }
+
+    op(_BOX_FLOAT, (unused -- res)) {
+        res = sym_new_type(ctx, &PyFloat_Type);
+    }
 
     op(_JUMP_TO_TOP, (--)) {
         ctx->done = true;
