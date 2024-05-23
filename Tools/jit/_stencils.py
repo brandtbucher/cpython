@@ -183,14 +183,6 @@ class Stencil:
     disassembly: list[str] = dataclasses.field(default_factory=list, init=False)
     alignment: int = dataclasses.field(default=1, init=False)
 
-    # def pad(self, alignment: int = 0) -> None:  # XXX
-    #     """Pad the stencil to the given alignment."""
-    #     offset = len(self.body)
-    #     padding = -offset % (alignment or self.alignment)  # XXX
-    #     if padding:
-    #         self.disassembly.append(f"{offset:x}: {' '.join(['00'] * padding)}")
-    #     self.body.extend([0] * padding)
-
     def pad(self) -> None:
         """Pad the stencil to the given alignment."""
         offset = len(self.body)
@@ -339,7 +331,6 @@ class StencilGroup:
         self.data.holes.sort(key=lambda hole: hole.offset)
 
     def _global_offset_table_lookup(self, symbol: str) -> int:
-        # self.data.pad(8)  # XXX: Needed on AArch64 when data_alignment < 8
         self.data.pad()
         return len(self.data.body) + self._got.setdefault(symbol, 8 * len(self._got))
 
