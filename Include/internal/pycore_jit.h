@@ -13,6 +13,12 @@ extern "C" {
 
 typedef _Py_CODEUNIT *(*jit_func)(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate);
 
+#ifdef _PyJIT_ACTIVE
+
+typedef __attribute__((preserve_none)) jit_func jit_func_preserve_none;
+
+#endif  // _PyJIT_ACTIVE
+
 int _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction *trace, size_t length);
 void _PyJIT_Free(_PyExecutorObject *executor);
 

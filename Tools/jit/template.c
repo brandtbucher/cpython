@@ -48,7 +48,7 @@
 do {  \
     OPT_STAT_INC(traces_executed);                \
     __attribute__((musttail))                     \
-    return ((jit_func)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate); \
+    return ((jit_func_preserve_none)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -71,7 +71,7 @@ do {  \
 do {                                                         \
     PyAPI_DATA(void) ALIAS;                                  \
     __attribute__((musttail))                                \
-    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate); \
+    return ((jit_func_preserve_none)&ALIAS)(frame, stack_pointer, tstate); \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
@@ -80,7 +80,7 @@ do {                                                         \
 #undef JUMP_TO_ERROR
 #define JUMP_TO_ERROR() PATCH_JUMP(_JIT_ERROR_TARGET)
 
-_Py_CODEUNIT *
+__attribute__((preserve_none)) _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, PyObject **stack_pointer, PyThreadState *tstate)
 {
     // Locals that the instruction implementations expect to exist:
