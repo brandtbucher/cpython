@@ -46,42 +46,108 @@ jit_error(const char *message)
     PyErr_Format(PyExc_RuntimeWarning, "JIT %s (%d)", message, hint);
 }
 
-static unsigned char *
-jit_alloc(size_t size)
+#define LOCK_JIT(J)   PyMutex_Lock(&(J)->lock)
+#define UNLOCK_JIT(J) PyMutex_Unlock(&(J)->lock)
+
+static int mark_writeable(unsigned char *memory, size_t size);
+
+static int
+jit_alloc(size_t size, jit_arena **arena, unsigned char **memory)
 {
     assert(size);
     assert(size % get_page_size() == 0);
+    assert(size <= 64 * get_page_size());
+    jit_state *jit = &_PyInterpreterState_GET()->jit;
+    LOCK_JIT(jit);
+again:
+    if (jit->arena) {
+        size_t pages = size / get_page_size();
+        uint64_t mask = (1ULL << pages) - 1;
+        for (unsigned group = 0; group < Py_ARRAY_LENGTH(jit->arena->used); group++) {
+            for (unsigned page = 0; page <= 64 - pages; page++) {
+                if (jit->arena->used[group] & (mask << page)) {
+                    continue;
+                }
+                *arena = jit->arena;
+                *memory = jit->arena->base + (group * 64 + page) * get_page_size();
+                if ((jit->arena->seen[group] & (mask << page)) && mark_writeable(*memory, size)) {
+                    goto failure;
+                }
+                jit->arena->seen[group] |= (mask << page);
+                jit->arena->used[group] |= (mask << page);
+                goto success;
+            }
+        }
+    }
+    jit->arena = PyMem_Malloc(sizeof(jit_arena));
+    if (jit->arena == NULL) {
+        PyErr_NoMemory();
+        goto failure;
+    }
+    for (unsigned group = 0; group < Py_ARRAY_LENGTH(jit->arena->used); group++) {
+        jit->arena->seen[group] = 0;
+        jit->arena->used[group] = 0;
+    }
 #ifdef MS_WINDOWS
     int flags = MEM_COMMIT | MEM_RESERVE;
-    unsigned char *memory = VirtualAlloc(NULL, size, flags, PAGE_READWRITE);
-    int failed = memory == NULL;
+    jit->arena->base = VirtualAlloc(NULL, JIT_ALLOC_PAGES * get_page_size(), flags, PAGE_READWRITE);
+    int failed = jit->arena->base == NULL;
 #else
     int flags = MAP_ANONYMOUS | MAP_PRIVATE;
-    unsigned char *memory = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
-    int failed = memory == MAP_FAILED;
+    jit->arena->base = mmap(NULL, JIT_ALLOC_PAGES * get_page_size(), PROT_READ | PROT_WRITE, flags, -1, 0);
+    int failed = jit->arena->base == MAP_FAILED;
 #endif
     if (failed) {
         jit_error("unable to allocate memory");
-        return NULL;
+        PyMem_Free(jit->arena);
+        jit->arena = NULL;
+        goto failure;
     }
-    return memory;
+    goto again;
+success:
+    UNLOCK_JIT(jit);
+    return 0;
+failure:
+    UNLOCK_JIT(jit);
+    return -1;
 }
 
 static int
-jit_free(unsigned char *memory, size_t size)
+jit_free(size_t size, jit_arena *arena, unsigned char *memory)
 {
     assert(size);
     assert(size % get_page_size() == 0);
+    jit_state *jit = &_PyInterpreterState_GET()->jit;
+    LOCK_JIT(jit);
+    int group = (memory - arena->base) / get_page_size() / 64;
+    int page = (memory - arena->base) / get_page_size() % 64;
+    uint64_t mask = ((1ULL << (size / get_page_size())) - 1);
+    assert((arena->used[group] & (mask << page)) == (mask << page));
+    arena->used[group] &= ~(mask << page);
+    for (unsigned group = 0; group < Py_ARRAY_LENGTH(arena->used); group++) {
+        if (arena->used[group]) {
+            goto success;
+        }
+    }
+    if (arena == jit->arena) {
+        jit->arena = NULL;
+    }
 #ifdef MS_WINDOWS
-    int failed = !VirtualFree(memory, 0, MEM_RELEASE);
+    int failed = !VirtualFree(arena->base, 0, MEM_RELEASE);
 #else
-    int failed = munmap(memory, size);
+    int failed = munmap(arena->base, JIT_ALLOC_PAGES * get_page_size());
 #endif
     if (failed) {
         jit_error("unable to free memory");
-        return -1;
+        goto failure;
     }
+    PyMem_Free(arena);
+success:
+    UNLOCK_JIT(jit);
     return 0;
+failure:
+    UNLOCK_JIT(jit);
+    return -1;
 }
 
 static int
@@ -106,6 +172,26 @@ mark_executable(unsigned char *memory, size_t size)
 #endif
     if (failed) {
         jit_error("unable to protect executable memory");
+        return -1;
+    }
+    return 0;
+}
+
+static int
+mark_writeable(unsigned char *memory, size_t size)
+{
+    if (size == 0) {
+        return 0;
+    }
+    assert(size % get_page_size() == 0);
+#ifdef MS_WINDOWS
+    int old;
+    int failed = !VirtualProtect(memory, size, PAGE_READWRITE, &old);
+#else
+    int failed = mprotect(memory, size, PROT_READ | PROT_WRITE);
+#endif
+    if (failed) {
+        jit_error("unable to protect writeable memory");
         return -1;
     }
     return 0;
@@ -419,8 +505,9 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     assert((page_size & (page_size - 1)) == 0);
     size_t padding = page_size - ((code_size + data_size) & (page_size - 1));
     size_t total_size = code_size + data_size + padding;
-    unsigned char *memory = jit_alloc(total_size);
-    if (memory == NULL) {
+    jit_arena *arena;
+    unsigned char *memory;
+    if (jit_alloc(total_size, &arena, &memory)) {
         return -1;
     }
     // Update the offsets of each instruction:
@@ -455,9 +542,10 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     assert(code == memory + code_size);
     assert(data == memory + code_size + data_size);
     if (mark_executable(memory, total_size)) {
-        jit_free(memory, total_size);
+        jit_free(total_size, arena, memory);
         return -1;
     }
+    executor->jit_arena = arena;
     executor->jit_code = memory;
     executor->jit_side_entry = memory + trampoline.code_size;
     executor->jit_size = total_size;
@@ -467,13 +555,15 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
 void
 _PyJIT_Free(_PyExecutorObject *executor)
 {
-    unsigned char *memory = (unsigned char *)executor->jit_code;
     size_t size = executor->jit_size;
+    jit_arena *arena = executor->jit_arena;
+    unsigned char *memory = (unsigned char *)executor->jit_code;
     if (memory) {
+        executor->jit_arena = NULL;
         executor->jit_code = NULL;
         executor->jit_side_entry = NULL;
         executor->jit_size = 0;
-        if (jit_free(memory, size)) {
+        if (jit_free(size, arena, memory)) {
             PyErr_WriteUnraisable(NULL);
         }
     }

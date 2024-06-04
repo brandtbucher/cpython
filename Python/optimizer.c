@@ -1212,6 +1212,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     sanity_check(executor);
 #endif
 #ifdef _Py_JIT
+    executor->jit_arena = NULL;
     executor->jit_code = NULL;
     executor->jit_side_entry = NULL;
     executor->jit_size = 0;
@@ -1244,6 +1245,7 @@ init_cold_exit_executor(_PyExecutorObject *executor, int oparg)
     sanity_check(executor);
 #endif
 #ifdef _Py_JIT
+    executor->jit_arena = NULL;
     executor->jit_code = NULL;
     executor->jit_side_entry = NULL;
     executor->jit_size = 0;

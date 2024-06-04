@@ -663,6 +663,9 @@ init_interpreter(PyInterpreterState *interp,
         interp->dtoa = (struct _dtoa_state)_dtoa_state_INIT(interp);
     }
 
+    interp->jit.arena = NULL;
+    interp->jit.lock = (PyMutex){0};
+
     interp->_initialized = 1;
     return _PyStatus_OK();
 }
@@ -906,6 +909,13 @@ interpreter_clear(PyInterpreterState *interp, PyThreadState *tstate)
     // XXX Once we have one allocator per interpreter (i.e.
     // per-interpreter GC) we must ensure that all of the interpreter's
     // objects have been cleaned up at the point.
+
+    // if (interp->jit.arena) {
+    //     for (int i = 0; i < 16; i++) {
+    //         printf("XXX: %d %lu\n", i, interp->jit.arena->used[i]);
+    //     }
+    // }
+    // assert(interp->jit.arena == NULL);
 }
 
 

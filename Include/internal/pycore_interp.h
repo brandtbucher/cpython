@@ -27,6 +27,7 @@ extern "C" {
 #include "pycore_global_objects.h"// struct _Py_interp_cached_objects
 #include "pycore_import.h"        // struct _import_state
 #include "pycore_instruments.h"   // _PY_MONITORING_EVENTS
+#include "pycore_jit.h"           // jit_state
 #include "pycore_list.h"          // struct _Py_list_state
 #include "pycore_mimalloc.h"      // struct _mimalloc_interp_state
 #include "pycore_object_state.h"  // struct _py_object_state
@@ -274,6 +275,8 @@ struct _is {
     /* the initial PyInterpreterState.threads.head */
     _PyThreadStateImpl _initial_thread;
     Py_ssize_t _interactive_src_count;
+
+    jit_state jit;
 };
 
 
