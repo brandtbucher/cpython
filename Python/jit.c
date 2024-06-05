@@ -46,129 +46,170 @@ jit_error(const char *message)
     PyErr_Format(PyExc_RuntimeWarning, "JIT %s (%d)", message, hint);
 }
 
-#define LOCK_JIT(J)   PyMutex_Lock(&(J)->lock)
-#define UNLOCK_JIT(J) PyMutex_Unlock(&(J)->lock)
+size_t
+jit_round_up(size_t size, size_t alignment)
+{
+    assert((alignment & (alignment - 1)) == 0);
+    return size + alignment - (size & (alignment - 1));
+}
 
-static int mark_writeable(unsigned char *memory, size_t size);
+static size_t allocated = 0;
+static size_t wasted = 0;
+static size_t ticks = 0;
+
+static jit_arena *
+jit_alloc_arena(void)
+{
+#ifdef MS_WINDOWS
+    int flags = MEM_COMMIT | MEM_RESERVE;
+    jit_arena *arena = VirtualAlloc(NULL, (JIT_ALLOC_PAGES + 2) * get_page_size(), flags, PAGE_READWRITE);
+    int failed = arena == NULL;
+#else
+    int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+    jit_arena *arena = mmap(NULL, (JIT_ALLOC_PAGES + 2) * get_page_size(), PROT_READ | PROT_WRITE, flags, -1, 0);
+    int failed = arena == MAP_FAILED;
+#endif
+    if (failed) {
+        jit_error("unable to allocate memory");
+        return NULL;
+    }
+    for (size_t page = 0; page < Py_ARRAY_LENGTH(arena->used); page++) {
+        arena->used[page] = 0;
+    }
+    arena->base = (unsigned char *)arena + (0 + 2) * get_page_size();
+    return arena;
+}
+
+//  1 (16384): 3072: 83.330864%
+//  2  (8192): 3072: 67.740036%
+//  4  (4096): 3072: 47.461105%
+//  8  (2048): 3072: 29.373699%
+// 16  (1024): 3072: 15.429018%
+// 32   (512): 3072: 9.898035%
+// 64   (256): 3072: 4.842486%
+
+#define CHUNKS_PER_PAGE (64)
+
+static unsigned char *
+jit_alloc_from_arena(size_t size, jit_arena *arena)
+{
+    assert(size);
+    size_t chunk_size = get_page_size() / CHUNKS_PER_PAGE;
+    size_t chunks_needed = jit_round_up(size, chunk_size) / chunk_size;
+    // printf("XXX: %lu %lu\n", size, chunks_needed);
+    size_t chunk_start = 0;
+    for (size_t chunk = 0; chunk < Py_ARRAY_LENGTH(arena->used) * CHUNKS_PER_PAGE; chunk++) {
+        // if ((arena->used[chunk / CHUNKS_PER_PAGE]) && (size == 0)) {  // XXX
+        //     abort();
+        // }
+        if (arena->used[chunk / CHUNKS_PER_PAGE] & (1ULL << (chunk % CHUNKS_PER_PAGE))) {
+            chunk_start = chunk + 1;
+        }
+        else if ((chunk + 1 - chunk_start) == chunks_needed) {
+            for (size_t bit = 0; bit < chunks_needed; bit++) {
+                arena->used[(chunk_start + bit) / CHUNKS_PER_PAGE] |= 1ULL << ((chunk_start + bit) % CHUNKS_PER_PAGE);
+            }
+            return arena->base + chunk_start * chunk_size;
+        }
+    }
+    return NULL;
+}
 
 static int
 jit_alloc(size_t size, jit_arena **arena, unsigned char **memory)
 {
     assert(size);
-    assert(size % get_page_size() == 0);
-    assert(size <= 64 * get_page_size());
+    allocated += size;
+    wasted += jit_round_up(size, get_page_size() / CHUNKS_PER_PAGE) - size;
+    if (++ticks % (1 << 10) == 0) {
+        printf("XXX: %lu: %f%%\n", ticks, (float)wasted / (allocated + wasted) * 100);
+    }
     jit_state *jit = &_PyInterpreterState_GET()->jit;
-    LOCK_JIT(jit);
-again:
-    if (jit->arena) {
-        size_t pages = size / get_page_size();
-        uint64_t mask = (1ULL << pages) - 1;
-        for (unsigned group = 0; group < Py_ARRAY_LENGTH(jit->arena->used); group++) {
-            for (unsigned page = 0; page <= 64 - pages; page++) {
-                if (jit->arena->used[group] & (mask << page)) {
-                    continue;
-                }
-                *arena = jit->arena;
-                *memory = jit->arena->base + (group * 64 + page) * get_page_size();
-                if ((jit->arena->seen[group] & (mask << page)) && mark_writeable(*memory, size)) {
-                    goto failure;
-                }
-                jit->arena->seen[group] |= (mask << page);
-                jit->arena->used[group] |= (mask << page);
-                goto success;
-            }
+    *arena = jit->arena;
+    while (*arena) {
+        *memory = jit_alloc_from_arena(size, *arena);
+        if (*memory) {
+            return 0;
         }
+        *arena = (*arena)->next;
     }
-    jit->arena = PyMem_Malloc(sizeof(jit_arena));
-    if (jit->arena == NULL) {
-        PyErr_NoMemory();
-        goto failure;
+    jit_arena *new_arena = jit_alloc_arena();
+    if (new_arena == NULL) {
+        return -1;
     }
-    for (unsigned group = 0; group < Py_ARRAY_LENGTH(jit->arena->used); group++) {
-        jit->arena->seen[group] = 0;
-        jit->arena->used[group] = 0;
+    new_arena->prev = NULL;
+    new_arena->next = jit->arena;
+    if (jit->arena) {
+        jit->arena->prev = new_arena;
     }
-#ifdef MS_WINDOWS
-    int flags = MEM_COMMIT | MEM_RESERVE;
-    jit->arena->base = VirtualAlloc(NULL, JIT_ALLOC_PAGES * get_page_size(), flags, PAGE_READWRITE);
-    int failed = jit->arena->base == NULL;
-#else
-    int flags = MAP_ANONYMOUS | MAP_PRIVATE;
-    jit->arena->base = mmap(NULL, JIT_ALLOC_PAGES * get_page_size(), PROT_READ | PROT_WRITE, flags, -1, 0);
-    int failed = jit->arena->base == MAP_FAILED;
-#endif
-    if (failed) {
-        jit_error("unable to allocate memory");
-        PyMem_Free(jit->arena);
-        jit->arena = NULL;
-        goto failure;
-    }
-    goto again;
-success:
-    UNLOCK_JIT(jit);
+    jit->arena = new_arena;
+    *arena = jit->arena;
+    *memory = jit_alloc_from_arena(size, *arena);
+    assert(*memory);
     return 0;
-failure:
-    UNLOCK_JIT(jit);
-    return -1;
 }
 
 static int
 jit_free(size_t size, jit_arena *arena, unsigned char *memory)
 {
     assert(size);
-    assert(size % get_page_size() == 0);
-    jit_state *jit = &_PyInterpreterState_GET()->jit;
-    LOCK_JIT(jit);
-    int group = (memory - arena->base) / get_page_size() / 64;
-    int page = (memory - arena->base) / get_page_size() % 64;
-    uint64_t mask = ((1ULL << (size / get_page_size())) - 1);
-    assert((arena->used[group] & (mask << page)) == (mask << page));
-    arena->used[group] &= ~(mask << page);
-    for (unsigned group = 0; group < Py_ARRAY_LENGTH(arena->used); group++) {
-        if (arena->used[group]) {
-            goto success;
+    allocated -= size;
+    wasted -= jit_round_up(size, get_page_size() / CHUNKS_PER_PAGE) - size;
+    // printf("Wasted: %f%%\n", (float)wasted / (allocated + wasted) * 100);
+    size_t chunk_size = get_page_size() / CHUNKS_PER_PAGE;
+    size_t chunks_needed = jit_round_up(size, chunk_size) / chunk_size;
+    assert((memory - arena->base) % chunk_size == 0);
+    size_t chunk_start = (memory - arena->base) / chunk_size;
+    for (size_t bit = 0; bit < chunks_needed; bit++) {
+        assert(arena->used[(chunk_start + bit) / CHUNKS_PER_PAGE] & (1ULL << ((chunk_start + bit) % CHUNKS_PER_PAGE)));
+        arena->used[(chunk_start + bit) / CHUNKS_PER_PAGE] &= ~(1ULL << ((chunk_start + bit) % CHUNKS_PER_PAGE));
+    }
+    for (size_t page = 0; page < Py_ARRAY_LENGTH(arena->used); page++) {
+        if (arena->used[page]) {
+            return 0;
         }
     }
-    if (arena == jit->arena) {
-        jit->arena = NULL;
+    jit_state *jit = &_PyInterpreterState_GET()->jit;
+    if (arena->prev) {
+        arena->prev->next = arena->next;
+    }
+    else {
+        jit->arena = arena->next;
+    }
+    if (arena->next) {
+        arena->next->prev = arena->prev;
     }
 #ifdef MS_WINDOWS
-    int failed = !VirtualFree(arena->base, 0, MEM_RELEASE);
+    int failed = !VirtualFree(arena, 0, MEM_RELEASE);
 #else
-    int failed = munmap(arena->base, JIT_ALLOC_PAGES * get_page_size());
+    int failed = munmap(arena, (JIT_ALLOC_PAGES + 2) * get_page_size());
 #endif
     if (failed) {
         jit_error("unable to free memory");
-        goto failure;
+        return -1;
     }
-    PyMem_Free(arena);
-success:
-    UNLOCK_JIT(jit);
     return 0;
-failure:
-    UNLOCK_JIT(jit);
-    return -1;
 }
 
 static int
 mark_executable(unsigned char *memory, size_t size)
 {
-    if (size == 0) {
-        return 0;
-    }
-    assert(size % get_page_size() == 0);
+    assert(size);
+    size_t page_size = get_page_size();
+    unsigned char *base = (unsigned char *)((uintptr_t)memory & ~(page_size - 1));
+    size = jit_round_up(size + memory - base, page_size);
     // Do NOT ever leave the memory writable! Also, don't forget to flush the
     // i-cache (I cannot begin to tell you how horrible that is to debug):
 #ifdef MS_WINDOWS
-    if (!FlushInstructionCache(GetCurrentProcess(), memory, size)) {
+    if (!FlushInstructionCache(GetCurrentProcess(), base, size)) {
         jit_error("unable to flush instruction cache");
         return -1;
     }
     int old;
-    int failed = !VirtualProtect(memory, size, PAGE_EXECUTE_READ, &old);
+    int failed = !VirtualProtect(base, size, PAGE_EXECUTE_READ, &old);
 #else
-    __builtin___clear_cache((char *)memory, (char *)memory + size);
-    int failed = mprotect(memory, size, PROT_EXEC | PROT_READ);
+    __builtin___clear_cache((char *)base, (char *)base + size);
+    int failed = mprotect(base, size, PROT_EXEC | PROT_READ);
 #endif
     if (failed) {
         jit_error("unable to protect executable memory");
@@ -180,15 +221,15 @@ mark_executable(unsigned char *memory, size_t size)
 static int
 mark_writeable(unsigned char *memory, size_t size)
 {
-    if (size == 0) {
-        return 0;
-    }
-    assert(size % get_page_size() == 0);
+    assert(size);
+    size_t page_size = get_page_size();
+    unsigned char *base = (unsigned char *)((uintptr_t)memory & ~(page_size - 1));
+    size = jit_round_up(size + memory - base, page_size);
 #ifdef MS_WINDOWS
     int old;
-    int failed = !VirtualProtect(memory, size, PAGE_READWRITE, &old);
+    int failed = !VirtualProtect(base, size, PAGE_READWRITE, &old);
 #else
-    int failed = mprotect(memory, size, PROT_READ | PROT_WRITE);
+    int failed = mprotect(base, size, PROT_READ | PROT_WRITE);
 #endif
     if (failed) {
         jit_error("unable to protect writeable memory");
@@ -500,15 +541,17 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     group = &stencil_groups[_FATAL_ERROR];
     code_size += group->code_size;
     data_size += group->data_size;
-    // Round up to the nearest page:
-    size_t page_size = get_page_size();
-    assert((page_size & (page_size - 1)) == 0);
-    size_t padding = page_size - ((code_size + data_size) & (page_size - 1));
-    size_t total_size = code_size + data_size + padding;
+    size_t total_size = code_size + data_size;
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    _PyEval_StopTheWorld(interp);
     jit_arena *arena;
     unsigned char *memory;
     if (jit_alloc(total_size, &arena, &memory)) {
-        return -1;
+        goto failure;
+    }
+    if (mark_writeable(memory, total_size)) {
+        jit_free(total_size, arena, memory);
+        goto failure;
     }
     // Update the offsets of each instruction:
     for (size_t i = 0; i < length; i++) {
@@ -543,13 +586,17 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     assert(data == memory + code_size + data_size);
     if (mark_executable(memory, total_size)) {
         jit_free(total_size, arena, memory);
-        return -1;
+        goto failure;
     }
     executor->jit_arena = arena;
     executor->jit_code = memory;
     executor->jit_side_entry = memory + trampoline.code_size;
     executor->jit_size = total_size;
+    _PyEval_StartTheWorld(interp);
     return 0;
+failure:
+    _PyEval_StartTheWorld(interp);
+    return -1;
 }
 
 void
@@ -563,9 +610,12 @@ _PyJIT_Free(_PyExecutorObject *executor)
         executor->jit_code = NULL;
         executor->jit_side_entry = NULL;
         executor->jit_size = 0;
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        _PyEval_StopTheWorld(interp);
         if (jit_free(size, arena, memory)) {
             PyErr_WriteUnraisable(NULL);
         }
+        _PyEval_StartTheWorld(interp);
     }
 }
 

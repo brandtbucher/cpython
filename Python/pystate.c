@@ -664,7 +664,6 @@ init_interpreter(PyInterpreterState *interp,
     }
 
     interp->jit.arena = NULL;
-    interp->jit.lock = (PyMutex){0};
 
     interp->_initialized = 1;
     return _PyStatus_OK();
