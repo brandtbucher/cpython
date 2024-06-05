@@ -3650,23 +3650,21 @@ dummy_func(
             _CALL_TUPLE_1 +
             _CHECK_PERIODIC;
 
-        inst(CALL_ALLOC_AND_ENTER_INIT, (unused/1, unused/2, callable, null, args[oparg] -- unused)) {
+        inst(CALL_ALLOC_AND_ENTER_INIT, (unused/1, type_version/2, callable, null, args[oparg] -- unused)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             /* This instruction does the following:
              * 1. Creates the object (by calling ``object.__new__``)
              * 2. Pushes a shim frame to the frame stack (to cleanup after ``__init__``)
              * 3. Pushes the frame for ``__init__`` to the frame stack
              * */
-            _PyCallCache *cache = (_PyCallCache *)&this_instr[1];
             DEOPT_IF(!PyStackRef_IsNull(null));
             DEOPT_IF(!PyType_Check(callable_o));
             PyTypeObject *tp = (PyTypeObject *)callable_o;
-            DEOPT_IF(tp->tp_version_tag != read_u32(cache->func_version));
+            DEOPT_IF(tp->tp_version_tag != type_version);
             assert(tp->tp_flags & Py_TPFLAGS_INLINE_VALUES);
             PyHeapTypeObject *cls = (PyHeapTypeObject *)callable_o;
             PyFunctionObject *init = (PyFunctionObject *)cls->_spec_cache.init;
             PyCodeObject *code = (PyCodeObject *)init->func_code;
-            DEOPT_IF(code->co_argcount != oparg+1);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize + _Py_InitCleanup.co_framesize));
             STAT_INC(CALL, hit);
             PyObject *self = _PyType_NewManagedObject(tp);
@@ -3679,16 +3677,17 @@ dummy_func(
             assert(_PyCode_CODE((PyCodeObject *)shim->f_executable)[0].op.code == EXIT_INIT_CHECK);
             /* Push self onto stack of shim */
             Py_INCREF(self);
-            shim->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
+            shim->localsplus[0] = PyStackRef_FromPyObjectNew(self);
             Py_INCREF(init);
-            _PyInterpreterFrame *init_frame = _PyFrame_PushUnchecked(tstate, init, oparg+1);
-            /* Copy self followed by args to __init__ frame */
-            init_frame->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
-            for (int i = 0; i < oparg; i++) {
-                init_frame->localsplus[i+1] = args[i];
+            *--args = PyStackRef_FromPyObjectSteal(self);
+            _PyInterpreterFrame *init_frame = _PyEvalFramePushAndInit(
+                tstate, init, NULL, args, oparg + 1, NULL
+            );
+            STACK_SHRINK(oparg + 2);
+            if (init_frame == NULL) {
+                ERROR_NO_POP();
             }
-            frame->return_offset = (uint16_t)(next_instr - this_instr);
-            STACK_SHRINK(oparg+2);
+            frame->return_offset = INLINE_CACHE_ENTRIES_CALL + 1;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             /* Link frames */
             init_frame->previous = shim;
