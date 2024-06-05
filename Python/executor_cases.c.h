@@ -3540,8 +3540,6 @@
             break;
         }
 
-        /* _CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
-
         case _EXIT_INIT_CHECK: {
             PyObject *should_be_none;
             should_be_none = stack_pointer[-1];
