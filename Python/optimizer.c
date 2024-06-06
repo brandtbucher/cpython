@@ -1290,7 +1290,6 @@ uop_optimize(
         return length;
     }
     assert(length < UOP_MAX_TRACE_LENGTH);
-    OPT_STAT_INC(traces_created);
     char *env_var = Py_GETENV("PYTHON_UOPS_OPTIMIZE");
     if (env_var == NULL || *env_var == '\0' || *env_var > '0') {
         length = _Py_uop_analyze_and_optimize(frame, buffer,
@@ -1302,14 +1301,14 @@ uop_optimize(
     }
     int effective_length = effective_trace_length(buffer, length);
     // Don't create traces that don't do anything:
-    if (effective_length < 3) {
-        assert(effective_length == 2);
+    if (effective_length < 4) {
         assert(buffer[0].opcode == _START_EXECUTOR);
-        // ...then zero or more _NOPs...
+        // ...maybe one non-_NOP...
         assert(buffer[length - 1].opcode == _EXIT_TRACE);
         OPT_STAT_INC(trace_too_short);
         return 0;
     }
+    OPT_STAT_INC(traces_created);
     assert(length < UOP_MAX_TRACE_LENGTH);
     assert(length >= 1);
     /* Fix up */
@@ -1328,7 +1327,6 @@ uop_optimize(
         assert(_PyOpcode_uop_name[buffer[pc].opcode]);
         assert(strncmp(_PyOpcode_uop_name[buffer[pc].opcode], _PyOpcode_uop_name[opcode], strlen(_PyOpcode_uop_name[opcode])) == 0);
     }
-    OPT_HIST(effective_trace_length(buffer, length), optimized_trace_length_hist);
     length = prepare_for_execution(buffer, length);
     assert(length <= UOP_MAX_TRACE_LENGTH);
     _PyExecutorObject *executor = make_executor_from_uops(buffer, length,  &dependencies);
