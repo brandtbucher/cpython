@@ -87,7 +87,9 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
             return 0;
         case CALL:
             return 2 + oparg;
-        case CALL_ALLOC_AND_ENTER_INIT:
+        case CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS:
+            return 2 + oparg;
+        case CALL_ALLOC_AND_ENTER_INIT_GENERAL:
             return 2 + oparg;
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return 2 + oparg;
@@ -536,7 +538,9 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
             return 0;
         case CALL:
             return 1;
-        case CALL_ALLOC_AND_ENTER_INIT:
+        case CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS:
+            return 1;
+        case CALL_ALLOC_AND_ENTER_INIT_GENERAL:
             return 1;
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return 0;
@@ -1019,7 +1023,8 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[264] = {
     [BUILD_TUPLE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG },
     [CACHE] = { true, INSTR_FMT_IX, 0 },
     [CALL] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
-    [CALL_ALLOC_AND_ENTER_INIT] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
+    [CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
+    [CALL_ALLOC_AND_ENTER_INIT_GENERAL] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [CALL_BOUND_METHOD_EXACT_ARGS] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_EXIT_FLAG },
     [CALL_BOUND_METHOD_GENERAL] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [CALL_BUILTIN_CLASS] = { true, INSTR_FMT_IBC00, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_DEOPT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -1418,7 +1423,8 @@ const char *_PyOpcode_OpName[264] = {
     [BUILD_TUPLE] = "BUILD_TUPLE",
     [CACHE] = "CACHE",
     [CALL] = "CALL",
-    [CALL_ALLOC_AND_ENTER_INIT] = "CALL_ALLOC_AND_ENTER_INIT",
+    [CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS] = "CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS",
+    [CALL_ALLOC_AND_ENTER_INIT_GENERAL] = "CALL_ALLOC_AND_ENTER_INIT_GENERAL",
     [CALL_BOUND_METHOD_EXACT_ARGS] = "CALL_BOUND_METHOD_EXACT_ARGS",
     [CALL_BOUND_METHOD_GENERAL] = "CALL_BOUND_METHOD_GENERAL",
     [CALL_BUILTIN_CLASS] = "CALL_BUILTIN_CLASS",
@@ -1669,7 +1675,8 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [BUILD_TUPLE] = BUILD_TUPLE,
     [CACHE] = CACHE,
     [CALL] = CALL,
-    [CALL_ALLOC_AND_ENTER_INIT] = CALL,
+    [CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS] = CALL,
+    [CALL_ALLOC_AND_ENTER_INIT_GENERAL] = CALL,
     [CALL_BOUND_METHOD_EXACT_ARGS] = CALL,
     [CALL_BOUND_METHOD_GENERAL] = CALL,
     [CALL_BUILTIN_CLASS] = CALL,
@@ -1889,7 +1896,6 @@ const uint8_t _PyOpcode_Deopt[256] = {
     case 146: \
     case 147: \
     case 148: \
-    case 223: \
     case 224: \
     case 225: \
     case 226: \

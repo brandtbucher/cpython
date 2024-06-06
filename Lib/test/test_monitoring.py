@@ -1006,7 +1006,7 @@ class ExceptionMonitoringTest(CheckEvents):
         events = self.get_events(f, TEST_TOOL, recorders)
         adaptive_insts = dis.get_instructions(f, adaptive=True)
         self.assertIn(
-            "CALL_ALLOC_AND_ENTER_INIT",
+            "CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS",
             [i.opname for i in adaptive_insts]
         )
         #There should be only one unwind event
