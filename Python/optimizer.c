@@ -542,7 +542,7 @@ add_to_trace(
     if (trace_stack_depth >= TRACE_STACK_SIZE) { \
         DPRINTF(2, "Trace stack overflow\n"); \
         OPT_STAT_INC(trace_stack_overflow); \
-        trace_length = 0; \
+        trace_length = 1; \
         goto done; \
     } \
     assert(func == NULL || func->func_code == (PyObject *)code); \
@@ -932,16 +932,14 @@ done:
         TRACE_STACK_POP();
     }
     assert(code == initial_code);
-    // Skip short traces like _SET_IP, LOAD_FAST, _SET_IP, _EXIT_TRACE
-    if (progress_needed || trace_length < 5) {
+    if (progress_needed) {
         OPT_STAT_INC(trace_too_short);
         DPRINTF(2,
-                "No trace for %s (%s:%d) at byte offset %d (%s)\n",
+                "No trace for %s (%s:%d) at byte offset %d (no progress)\n",
                 PyUnicode_AsUTF8(code->co_qualname),
                 PyUnicode_AsUTF8(code->co_filename),
                 code->co_firstlineno,
-                2 * INSTR_IP(initial_instr, code),
-                progress_needed ? "no progress" : "too short");
+                2 * INSTR_IP(initial_instr, code));
         return 0;
     }
     if (trace[trace_length-1].opcode != _JUMP_TO_TOP) {
@@ -1254,7 +1252,6 @@ init_cold_exit_executor(_PyExecutorObject *executor, int oparg)
     return 0;
 }
 
-#ifdef Py_STATS
 /* Returns the effective trace length.
  * Ignores NOPs and trailing exit and error handling.*/
 int effective_trace_length(_PyUOpInstruction *buffer, int length)
@@ -1274,7 +1271,6 @@ int effective_trace_length(_PyUOpInstruction *buffer, int length)
     Py_FatalError("No terminating instruction");
     Py_UNREACHABLE();
 }
-#endif
 
 static int
 uop_optimize(
@@ -1303,6 +1299,16 @@ uop_optimize(
         if (length <= 0) {
             return length;
         }
+    }
+    int effective_length = effective_trace_length(buffer, length);
+    // Don't create traces that don't do anything:
+    if (effective_length < 3) {
+        assert(effective_length == 2);
+        assert(buffer[0].opcode == _START_EXECUTOR);
+        // ...then zero or more _NOPs...
+        assert(buffer[length - 1].opcode == _EXIT_TRACE);
+        OPT_STAT_INC(trace_too_short);
+        return 0;
     }
     assert(length < UOP_MAX_TRACE_LENGTH);
     assert(length >= 1);
