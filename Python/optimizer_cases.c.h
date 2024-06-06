@@ -1816,12 +1816,6 @@
             break;
         }
 
-        case _CALL_ALLOC_AND_ENTER_INIT: {
-            stack_pointer += -1 - oparg;
-            assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
-
         case _EXIT_INIT_CHECK: {
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());

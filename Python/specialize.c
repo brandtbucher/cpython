@@ -1811,7 +1811,12 @@ specialize_class_call(PyObject *callable, _Py_CODEUNIT *instr, int nargs)
         if (init != NULL) {
             _PyCallCache *cache = (_PyCallCache *)(instr + 1);
             write_u32(cache->func_version, tp->tp_version_tag);
-            _Py_SET_OPCODE(*instr, CALL_ALLOC_AND_ENTER_INIT);
+            if (((PyCodeObject *)init->func_code)->co_argcount == nargs + 1) {
+                _Py_SET_OPCODE(*instr, CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS);
+            }
+            else {
+                _Py_SET_OPCODE(*instr, CALL_ALLOC_AND_ENTER_INIT_GENERAL);
+            }
             return 0;
         }
     }
@@ -2568,7 +2573,7 @@ success:
 }
 
 /* Code init cleanup.
- * CALL_ALLOC_AND_ENTER_INIT will set up
+ * CALL_ALLOC_AND_ENTER_INIT_* will set up
  * the frame to execute the EXIT_INIT_CHECK
  * instruction.
  * Ends with a RESUME so that it is not traced.
