@@ -3808,6 +3808,39 @@
             break;
         }
 
+        case _CALL_LIST_APPEND: {
+            PyObject *arg;
+            PyObject *self;
+            PyObject *callable;
+            oparg = CURRENT_OPARG();
+            arg = stack_pointer[-1];
+            self = stack_pointer[-2];
+            callable = stack_pointer[-3];
+            assert(oparg == 1);
+            PyInterpreterState *interp = tstate->interp;
+            if (callable != interp->callable_cache.list_append) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            assert(self != NULL);
+            if (!PyList_Check(self)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            STAT_INC(CALL, hit);
+            int err = _PyList_AppendTakeRef((PyListObject *)self, arg);
+            Py_DECREF(self);
+            Py_DECREF(callable);
+            if (err) JUMP_TO_ERROR();
+            #if TIER_ONE
+            // Skip POP_TOP
+            assert(next_instr->op.code == POP_TOP);
+            SKIP_OVER(1);
+            #endif
+            stack_pointer += -3;
+            break;
+        }
+
         case _CALL_METHOD_DESCRIPTOR_O: {
             PyObject **args;
             PyObject *self_or_null;

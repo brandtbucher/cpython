@@ -1712,6 +1712,11 @@
             break;
         }
 
+        case _CALL_LIST_APPEND: {
+            stack_pointer += -3;
+            break;
+        }
+
         case _CALL_METHOD_DESCRIPTOR_O: {
             _Py_UopsSymbol *res;
             res = sym_new_not_null(ctx);

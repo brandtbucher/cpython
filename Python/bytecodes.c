@@ -3625,23 +3625,22 @@ dummy_func(
         }
 
         // This is secretly a super-instruction
-        tier1 inst(CALL_LIST_APPEND, (unused/1, unused/2, callable, self, arg -- unused)) {
+        inst(CALL_LIST_APPEND, (unused/1, unused/2, callable, self, arg -- )) {
             assert(oparg == 1);
             PyInterpreterState *interp = tstate->interp;
             DEOPT_IF(callable != interp->callable_cache.list_append);
             assert(self != NULL);
             DEOPT_IF(!PyList_Check(self));
             STAT_INC(CALL, hit);
-            if (_PyList_AppendTakeRef((PyListObject *)self, arg) < 0) {
-                goto pop_1_error;  // Since arg is DECREF'ed already
-            }
+            int err = _PyList_AppendTakeRef((PyListObject *)self, arg);
             Py_DECREF(self);
             Py_DECREF(callable);
-            STACK_SHRINK(3);
+            ERROR_IF(err, error);
+        #if TIER_ONE
             // Skip POP_TOP
             assert(next_instr->op.code == POP_TOP);
             SKIP_OVER(1);
-            DISPATCH();
+        #endif
         }
 
          op(_CALL_METHOD_DESCRIPTOR_O, (callable, self_or_null, args[oparg] -- res)) {
