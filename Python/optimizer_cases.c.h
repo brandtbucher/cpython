@@ -1657,6 +1657,47 @@
             break;
         }
 
+        case _CALL_ALLOC_AND_ENTER_INIT_COMMON: {
+            PyFunctionObject *init;
+            init = sym_new_not_null(ctx);
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init;
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS: {
+            _Py_UopsSymbol **args;
+            _Py_UopsSymbol *init;
+            _Py_UOpsAbstractFrame *init_frame;
+            args = &stack_pointer[-(oparg + 1)];
+            init = stack_pointer[-1 - (oparg + 1)];
+            /* The _Py_UOpsAbstractFrame design assumes that we can copy arguments across directly */
+            (void)init;
+            (void)args;
+            first_valid_check_stack = NULL;
+            init_frame = NULL;
+            ctx->done = true;
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -(oparg + 1);
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_GENERAL: {
+            _Py_UopsSymbol **args;
+            _Py_UopsSymbol *init;
+            _Py_UOpsAbstractFrame *init_frame;
+            args = &stack_pointer[-(oparg + 1)];
+            init = stack_pointer[-1 - (oparg + 1)];
+            /* The _Py_UOpsAbstractFrame design assumes that we can copy arguments across directly */
+            (void)init;
+            (void)args;
+            first_valid_check_stack = NULL;
+            init_frame = NULL;
+            ctx->done = true;
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -(oparg + 1);
+            break;
+        }
+
         case _EXIT_INIT_CHECK: {
             stack_pointer += -1;
             break;
