@@ -4055,6 +4055,130 @@
             break;
         }
 
+        case _CALL_ALLOC_AND_ENTER_INIT_COMMON: {
+            _PyStackRef *args;
+            _PyStackRef callable;
+            PyFunctionObject *init;
+            oparg = CURRENT_OPARG();
+            args = &stack_pointer[-(oparg + 1)];
+            callable = stack_pointer[-1 - (oparg + 1)];
+            uint32_t func_version = (uint32_t)CURRENT_OPERAND();
+            PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
+            /* This instruction does the following:
+             * 1. Creates the object (by calling ``object.__new__``)
+             * 2. Pushes a shim frame to the frame stack (to cleanup after ``__init__``)
+             * 3. Pushes the frame for ``__init__`` to the frame stack
+             * */
+            if (!PyStackRef_IsNull(args[0])) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (!PyType_Check(callable_o)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            PyTypeObject *tp = (PyTypeObject *)callable_o;
+            if (!(tp->tp_flags & Py_TPFLAGS_HEAPTYPE)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            PyHeapTypeObject *cls = (PyHeapTypeObject *)callable_o;
+            init = (PyFunctionObject *)cls->_spec_cache.init;
+            if (init == NULL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (init->func_version != func_version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            PyCodeObject *code = (PyCodeObject *)init->func_code;
+            if (!_PyThreadState_HasStackSpace(tstate, code->co_framesize + _Py_InitCleanup.co_framesize)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            STAT_INC(CALL, hit);
+            PyObject *self = _PyType_NewManagedObject(tp);
+            if (self == NULL) {
+                JUMP_TO_ERROR();
+            }
+            PyStackRef_CLOSE(callable);
+            Py_INCREF(init);
+            args[0] = PyStackRef_FromPyObjectSteal(self);
+            stack_pointer[-1 - (oparg + 1)].bits = (uintptr_t)init;
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS: {
+            _PyStackRef *args;
+            PyFunctionObject *init;
+            _PyInterpreterFrame *init_frame;
+            oparg = CURRENT_OPARG();
+            args = &stack_pointer[-(oparg + 1)];
+            init = (PyFunctionObject *)stack_pointer[-1 - (oparg + 1)].bits;
+            _PyInterpreterFrame *shim_frame = _PyFrame_PushTrampolineUnchecked(tstate, (PyCodeObject *)&_Py_InitCleanup, 1);
+            assert(_PyCode_CODE((PyCodeObject *)shim_frame->f_executable)[0].op.code == EXIT_INIT_CHECK);
+            /* Push self onto stack of shim_frame */
+            shim_frame->localsplus[0] = PyStackRef_DUP(args[0]);
+            _PyInterpreterFrame *new_frame = shim_frame;
+            // _PUSH_FRAME:
+            assert(tstate->interp->eval_frame == NULL);
+            stack_pointer += -1 - (oparg + 1);
+            assert(WITHIN_STACK_BOUNDS());
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            new_frame->previous = frame;
+            CALL_STAT_INC(inlined_py_calls);
+            frame = tstate->current_frame = new_frame;
+            tstate->py_recursion_remaining--;
+            LOAD_SP();
+            LOAD_IP(0);
+            LLTRACE_RESUME_FRAME();
+            // This part differs from _CALL_ALLOC_AND_ENTER_INIT_GENERAL:
+            ////////////////////////////////////////////////////////////////////
+            init_frame = _PyFrame_PushUnchecked(tstate, init, oparg + 1);
+            memcpy(init_frame->localsplus, args, (oparg + 1) * sizeof(_PyStackRef));
+            ////////////////////////////////////////////////////////////////////
+            stack_pointer[0].bits = (uintptr_t)init_frame;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_GENERAL: {
+            _PyStackRef *args;
+            PyFunctionObject *init;
+            _PyInterpreterFrame *init_frame;
+            oparg = CURRENT_OPARG();
+            args = &stack_pointer[-(oparg + 1)];
+            init = (PyFunctionObject *)stack_pointer[-1 - (oparg + 1)].bits;
+            _PyInterpreterFrame *shim_frame = _PyFrame_PushTrampolineUnchecked(tstate, (PyCodeObject *)&_Py_InitCleanup, 1);
+            assert(_PyCode_CODE((PyCodeObject *)shim_frame->f_executable)[0].op.code == EXIT_INIT_CHECK);
+            /* Push self onto stack of shim_frame */
+            shim_frame->localsplus[0] = PyStackRef_DUP(args[0]);
+            _PyInterpreterFrame *new_frame = shim_frame;
+            // _PUSH_FRAME:
+            assert(tstate->interp->eval_frame == NULL);
+            stack_pointer += -1 - (oparg + 1);
+            assert(WITHIN_STACK_BOUNDS());
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            new_frame->previous = frame;
+            CALL_STAT_INC(inlined_py_calls);
+            frame = tstate->current_frame = new_frame;
+            tstate->py_recursion_remaining--;
+            LOAD_SP();
+            LOAD_IP(0);
+            LLTRACE_RESUME_FRAME();
+            // This part differs from _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS:
+            ////////////////////////////////////////////////////////////////////
+            init_frame = _PyEvalFramePushAndInit(tstate, init, NULL, args, oparg + 1, NULL);
+            if (init_frame == NULL) JUMP_TO_ERROR();
+            ////////////////////////////////////////////////////////////////////
+            stack_pointer[0].bits = (uintptr_t)init_frame;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _EXIT_INIT_CHECK: {
             _PyStackRef should_be_none;
             should_be_none = stack_pointer[-1];

@@ -5,6 +5,7 @@
 #include "pycore_interp.h"
 #include "pycore_backoff.h"
 #include "pycore_bitutils.h"        // _Py_popcount32()
+#include "pycore_ceval.h"
 #include "pycore_object.h"          // _PyObject_GC_UNTRACK()
 #include "pycore_opcode_metadata.h" // _PyOpcode_OpName[]
 #include "pycore_opcode_utils.h"  // MAX_REAL_OPCODE
@@ -720,6 +721,8 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                         }
                     }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
+                    _Py_CODEUNIT *orig_instr = instr;
+                    PyCodeObject *orig_code = code;
                     for (int i = 0; i < nuops; i++) {
                         oparg = orig_oparg;
                         uint32_t uop = expansion->uops[i].uop;
@@ -731,13 +734,13 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 assert(opcode != JUMP_BACKWARD_NO_INTERRUPT && opcode != JUMP_BACKWARD);
                                 break;
                             case OPARG_CACHE_1:
-                                operand = read_u16(&instr[offset].cache);
+                                operand = read_u16(&orig_instr[offset].cache);
                                 break;
                             case OPARG_CACHE_2:
-                                operand = read_u32(&instr[offset].cache);
+                                operand = read_u32(&orig_instr[offset].cache);
                                 break;
                             case OPARG_CACHE_4:
-                                operand = read_u64(&instr[offset].cache);
+                                operand = read_u64(&orig_instr[offset].cache);
                                 break;
                             case OPARG_TOP:  // First half of super-instr
                                 oparg = orig_oparg >> 4;
@@ -756,9 +759,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 {
                                     uint32_t next_inst = target + 1 + INLINE_CACHE_ENTRIES_FOR_ITER + (oparg > 255);
                                     uint32_t jump_target = next_inst + oparg;
-                                    assert(base_opcode(code, jump_target) == END_FOR ||
-                                        base_opcode(code, jump_target) == INSTRUMENTED_END_FOR);
-                                    assert(base_opcode(code, jump_target+1) == POP_TOP);
+                                    assert(base_opcode(orig_code, jump_target) == END_FOR ||
+                                        base_opcode(orig_code, jump_target) == INSTRUMENTED_END_FOR);
+                                    assert(base_opcode(orig_code, jump_target+1) == POP_TOP);
                                 }
 #endif
                                 break;
@@ -811,14 +814,14 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 offsetof(_PyCallCache, func_version)/sizeof(_Py_CODEUNIT)
                                 // Add one to account for the actual opcode/oparg pair:
                                 + 1;
-                            uint32_t func_version = read_u32(&instr[func_version_offset].cache);
+                            uint32_t func_version = read_u32(&orig_instr[func_version_offset].cache);
                             PyCodeObject *new_code = NULL;
                             PyFunctionObject *new_func =
                                 _PyFunction_LookupByVersion(func_version, (PyObject **) &new_code);
                             DPRINTF(2, "Function: version=%#x; new_func=%p, new_code=%p\n",
                                     (int)func_version, new_func, new_code);
                             if (new_code != NULL) {
-                                if (new_code == code) {
+                                if (new_code == orig_code) {
                                     // Recursive call, bail (we could be here forever).
                                     DPRINTF(2, "Bailing on recursive call to %s (%s:%d)\n",
                                             PyUnicode_AsUTF8(new_code->co_qualname),
@@ -839,7 +842,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                     goto done;
                                 }
                                 // Increment IP to the return address
-                                instr += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + 1;
+                                if (instr == orig_instr) {
+                                    instr += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + 1;
+                                }
                                 TRACE_STACK_PUSH();
                                 _Py_BloomFilter_Add(dependencies, new_code);
                                 /* Set the operand to the callee's function or code object,
@@ -873,6 +878,19 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                             ADD_TO_TRACE(uop, oparg, 0, target);
                             ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
                             goto done;
+                        }
+
+                        if (uop == _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS ||
+                            uop == _CALL_ALLOC_AND_ENTER_INIT_GENERAL)
+                        {
+                            PyCodeObject *new_code = (PyCodeObject *)&_Py_InitCleanup;
+                            // Increment IP to the return address:
+                            instr += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + 1;
+                            TRACE_STACK_PUSH();
+                            _Py_BloomFilter_Add(dependencies, new_code);
+                            code = new_code;
+                            func = NULL;
+                            instr = _PyCode_CODE(code);
                         }
 
                         // All other instructions

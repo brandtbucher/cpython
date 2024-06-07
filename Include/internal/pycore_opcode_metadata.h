@@ -82,9 +82,9 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case CALL:
             return 2 + oparg;
         case CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS:
-            return 2 + oparg;
+            return 1 + (oparg + 1);
         case CALL_ALLOC_AND_ENTER_INIT_GENERAL:
-            return 2 + oparg;
+            return 1 + (oparg + 1);
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return 2 + oparg;
         case CALL_BOUND_METHOD_GENERAL:
@@ -529,9 +529,9 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
         case CALL:
             return 1;
         case CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS:
-            return 1;
+            return 0;
         case CALL_ALLOC_AND_ENTER_INIT_GENERAL:
-            return 1;
+            return 0;
         case CALL_BOUND_METHOD_EXACT_ARGS:
             return 0;
         case CALL_BOUND_METHOD_GENERAL:
@@ -1239,6 +1239,8 @@ _PyOpcode_macro_expansion[256] = {
     [BUILD_SLICE] = { .nuops = 1, .uops = { { _BUILD_SLICE, 0, 0 } } },
     [BUILD_STRING] = { .nuops = 1, .uops = { { _BUILD_STRING, 0, 0 } } },
     [BUILD_TUPLE] = { .nuops = 1, .uops = { { _BUILD_TUPLE, 0, 0 } } },
+    [CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS] = { .nuops = 5, .uops = { { _CHECK_PEP_523, 0, 0 }, { _CALL_ALLOC_AND_ENTER_INIT_COMMON, 2, 1 }, { _SAVE_RETURN_OFFSET, 7, 3 }, { _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS, 0, 0 }, { _PUSH_FRAME, 0, 0 } } },
+    [CALL_ALLOC_AND_ENTER_INIT_GENERAL] = { .nuops = 5, .uops = { { _CHECK_PEP_523, 0, 0 }, { _CALL_ALLOC_AND_ENTER_INIT_COMMON, 2, 1 }, { _SAVE_RETURN_OFFSET, 7, 3 }, { _CALL_ALLOC_AND_ENTER_INIT_GENERAL, 0, 0 }, { _PUSH_FRAME, 0, 0 } } },
     [CALL_BOUND_METHOD_EXACT_ARGS] = { .nuops = 9, .uops = { { _CHECK_PEP_523, 0, 0 }, { _CHECK_CALL_BOUND_METHOD_EXACT_ARGS, 0, 0 }, { _INIT_CALL_BOUND_METHOD_EXACT_ARGS, 0, 0 }, { _CHECK_FUNCTION_VERSION, 2, 1 }, { _CHECK_FUNCTION_EXACT_ARGS, 0, 0 }, { _CHECK_STACK_SPACE, 0, 0 }, { _INIT_CALL_PY_EXACT_ARGS, 0, 0 }, { _SAVE_RETURN_OFFSET, 7, 3 }, { _PUSH_FRAME, 0, 0 } } },
     [CALL_BOUND_METHOD_GENERAL] = { .nuops = 6, .uops = { { _CHECK_PEP_523, 0, 0 }, { _CHECK_METHOD_VERSION, 2, 1 }, { _EXPAND_METHOD, 0, 0 }, { _PY_FRAME_GENERAL, 0, 0 }, { _SAVE_RETURN_OFFSET, 7, 3 }, { _PUSH_FRAME, 0, 0 } } },
     [CALL_BUILTIN_CLASS] = { .nuops = 2, .uops = { { _CALL_BUILTIN_CLASS, 0, 0 }, { _CHECK_PERIODIC, 0, 0 } } },

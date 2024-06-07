@@ -307,6 +307,7 @@ _Py_eval_breaker_bit_is_set(PyThreadState *tstate, uintptr_t bit)
 void _Py_set_eval_breaker_bit_all(PyInterpreterState *interp, uintptr_t bit);
 void _Py_unset_eval_breaker_bit_all(PyInterpreterState *interp, uintptr_t bit);
 
+extern const struct _PyCode_DEF(8) _Py_InitCleanup;
 
 #ifdef __cplusplus
 }

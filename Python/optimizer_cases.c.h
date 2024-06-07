@@ -1489,13 +1489,10 @@
         }
 
         case _LOAD_SPECIAL: {
-            _Py_UopsSymbol *owner;
             _Py_UopsSymbol *attr;
             _Py_UopsSymbol *self_or_null;
-            owner = stack_pointer[-1];
-            (void)owner;
             attr = sym_new_not_null(ctx);
-            self_or_null = sym_new_unknown(ctx);
+            self_or_null = sym_new_not_null(ctx);
             stack_pointer[-1] = attr;
             stack_pointer[0] = self_or_null;
             stack_pointer += 1;
@@ -1812,6 +1809,43 @@
             res = sym_new_not_null(ctx);
             stack_pointer[-3] = res;
             stack_pointer += -2;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_COMMON: {
+            _Py_UopsSymbol **args;
+            _Py_UopsSymbol *init;
+            _Py_UOpsAbstractFrame *init_frame;
+            args = &stack_pointer[-(oparg + 1)];
+            init = stack_pointer[-1 - (oparg + 1)];
+            uint32_t func_version = (uint32_t)this_instr->operand;
+            /* The _Py_UOpsAbstractFrame design assumes that we can copy arguments across directly */
+            (void)init;
+            (void)args;
+            first_valid_check_stack = NULL;
+            init_frame = NULL;
+            ctx->done = true;
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -(oparg + 1);
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS: {
+            _PyInterpreterFrame *init_frame;
+            init_frame = sym_new_not_null(ctx);
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -(oparg + 1);
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _CALL_ALLOC_AND_ENTER_INIT_GENERAL: {
+            _PyInterpreterFrame *init_frame;
+            init_frame = sym_new_not_null(ctx);
+            stack_pointer[-1 - (oparg + 1)] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -(oparg + 1);
             assert(WITHIN_STACK_BOUNDS());
             break;
         }

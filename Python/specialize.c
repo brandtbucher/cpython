@@ -1810,7 +1810,12 @@ specialize_class_call(PyObject *callable, _Py_CODEUNIT *instr, int nargs)
         }
         if (init != NULL) {
             _PyCallCache *cache = (_PyCallCache *)(instr + 1);
-            write_u32(cache->func_version, tp->tp_version_tag);
+            int version = _PyFunction_GetVersionForCurrentState(init);
+            if (version == 0) {
+                SPECIALIZATION_FAIL(CALL, SPEC_FAIL_OUT_OF_VERSIONS);
+                return -1;
+            }
+            write_u32(cache->func_version, version);
             if (((PyCodeObject *)init->func_code)->co_argcount == nargs + 1) {
                 _Py_SET_OPCODE(*instr, CALL_ALLOC_AND_ENTER_INIT_EXACT_ARGS);
             }

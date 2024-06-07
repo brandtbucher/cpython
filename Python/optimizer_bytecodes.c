@@ -778,10 +778,13 @@ dummy_func(void) {
         }
     }
 
-    op(_LOAD_SPECIAL, (owner -- attr, self_or_null)) {
-        (void)owner;
-        attr = sym_new_not_null(ctx);
-        self_or_null = sym_new_unknown(ctx);
+    op(_CALL_ALLOC_AND_ENTER_INIT_COMMON, (init, args[oparg + 1] -- init_frame: _Py_UOpsAbstractFrame *)) {
+        /* The _Py_UOpsAbstractFrame design assumes that we can copy arguments across directly */
+        (void)init;
+        (void)args;
+        first_valid_check_stack = NULL;
+        init_frame = NULL;
+        ctx->done = true;
     }
 
     op(_JUMP_TO_TOP, (--)) {
