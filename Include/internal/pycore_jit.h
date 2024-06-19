@@ -15,8 +15,16 @@ typedef _Py_CODEUNIT *(*jit_func)(_PyInterpreterFrame *frame, PyObject **stack_p
 
 int _PyJIT_Compile(_PyExecutorObject *executor);
 void _PyJIT_Free(_PyExecutorObject *executor);
+int _PyJIT_Recompile(PyInterpreterState *interp);
 
 #endif  // _Py_JIT
+
+typedef struct {
+    Py_ssize_t refs;
+    Py_ssize_t test_refs;
+    unsigned char *memory;
+    size_t size;
+} jit_allocation;
 
 #ifdef __cplusplus
 }

@@ -55,44 +55,55 @@ jit_error(const char *message)
     PyErr_Format(PyExc_RuntimeWarning, "JIT %s (%d)", message, hint);
 }
 
-static unsigned char *
+static jit_allocation *
 jit_alloc(size_t size)
 {
-    size = round_up_to_page(size);
-    assert(size);
-    assert(size % get_page_size() == 0);
+    size_t total_size = round_up_to_page(size);
+    assert(total_size);
+    assert(total_size % get_page_size() == 0);
 #ifdef MS_WINDOWS
     int flags = MEM_COMMIT | MEM_RESERVE;
-    unsigned char *memory = VirtualAlloc(NULL, size, flags, PAGE_READWRITE);
+    unsigned char *memory = VirtualAlloc(NULL, total_size, flags, PAGE_READWRITE);
     int failed = memory == NULL;
 #else
     int flags = MAP_ANONYMOUS | MAP_PRIVATE;
-    unsigned char *memory = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
+    unsigned char *memory = mmap(NULL, total_size, PROT_READ | PROT_WRITE, flags, -1, 0);
     int failed = memory == MAP_FAILED;
 #endif
     if (failed) {
         jit_error("unable to allocate memory");
         return NULL;
     }
-    return memory;
+    jit_allocation *allocation = PyMem_Malloc(sizeof(jit_allocation));
+    if (allocation == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    allocation->refs = 1;
+    allocation->memory = memory;
+    allocation->size = size;
+    return allocation;
 }
 
-static int
-jit_free(unsigned char *memory, size_t size)
+static void
+jit_free(jit_allocation *allocation)
 {
-    size = round_up_to_page(size);
+    if (_Py_atomic_add_ssize(&allocation->refs, -1) != 1) {
+        return;
+    }
+    size_t size = round_up_to_page(allocation->size);
     assert(size);
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
-    int failed = !VirtualFree(memory, 0, MEM_RELEASE);
+    int failed = !VirtualFree(allocation->memory, 0, MEM_RELEASE);
 #else
-    int failed = munmap(memory, size);
+    int failed = munmap(allocation->memory, size);
 #endif
     if (failed) {
         jit_error("unable to free memory");
-        return -1;
+        PyErr_WriteUnraisable(NULL);
     }
-    return 0;
+    PyMem_Free(allocation);
 }
 
 static int
@@ -405,7 +416,7 @@ patch_x86_64_32rx(unsigned char *location, uint64_t value)
 #include "jit_stencils.h"
 
 static size_t
-jit_size(_PyExecutorObject *executor)
+compute_size(_PyExecutorObject *executor)
 {
     const _PyUOpInstruction *trace = executor->trace;
     size_t length = executor->code_size;
@@ -423,7 +434,7 @@ jit_size(_PyExecutorObject *executor)
 }
 
 static void
-jit_compile(_PyExecutorObject *executor, unsigned char *memory)
+compile(_PyExecutorObject *executor, unsigned char *memory)
 {
     const _PyUOpInstruction *trace = executor->trace;
     size_t length = executor->code_size;
@@ -467,22 +478,88 @@ jit_compile(_PyExecutorObject *executor, unsigned char *memory)
     data += group->data_size;
 }
 
+#define FOR_EACH_IDLE_EXECUTOR(I, E, S)                    \
+    for (_PyExecutorObject *(E) = (I)->executor_list_head; \
+         (E) != NULL; (E) = (E)->vm_data.links.next)       \
+    {                                                      \
+        if (Py_REFCNT((E)) == 1 && (E)->vm_data.code) {    \
+            S                                              \
+        }                                                  \
+    }
+
+int
+_PyJIT_Recompile(PyInterpreterState *interp)
+{
+    FOR_EACH_IDLE_EXECUTOR(interp, executor,
+        jit_allocation *allocation = (jit_allocation *)executor->jit_allocation;
+        allocation->test_refs = allocation->refs;
+    )
+    size_t freed_size = 0;
+    FOR_EACH_IDLE_EXECUTOR(interp, executor,
+        jit_allocation *allocation = (jit_allocation *)executor->jit_allocation;
+        if (--allocation->test_refs == 0) {
+            freed_size += round_up_to_page(allocation->size);
+        }
+    )
+    size_t size = 0;
+    FOR_EACH_IDLE_EXECUTOR(interp, executor,
+        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
+            continue;
+        }
+        size += executor->jit_size;
+    )
+    if (size == 0 || freed_size <= round_up_to_page(size)) {
+        return 0;
+    }
+    jit_allocation *allocation = jit_alloc(size);
+    if (allocation == NULL) {
+        return -1;
+    }
+    size_t offset = 0;
+    FOR_EACH_IDLE_EXECUTOR(interp, executor,
+        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
+            continue;
+        }
+        compile(executor, allocation->memory + offset);
+        offset += executor->jit_size;
+    )
+    if (mark_executable(allocation->memory, allocation->size)) {
+        jit_free(allocation);
+        return -1;
+    }
+    offset = 0;
+    FOR_EACH_IDLE_EXECUTOR(interp, executor,
+        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
+            continue;
+        }
+        jit_free((jit_allocation *)executor->jit_allocation);
+        _Py_atomic_add_ssize(&allocation->refs, 1);
+        executor->jit_allocation = allocation;
+        executor->jit_code = allocation->memory + offset;
+        executor->jit_side_entry = allocation->memory + offset + trampoline.code_size;
+        offset += executor->jit_size;
+    )
+    jit_free(allocation);
+    return 0;
+}
+
 // Compiles executor in-place. Don't forget to call _PyJIT_Free later!
 int
 _PyJIT_Compile(_PyExecutorObject *executor)
 {
-    size_t size = jit_size(executor);
-    unsigned char *memory = jit_alloc(size);
-    if (memory == NULL) {
+    size_t size = compute_size(executor);
+    jit_allocation *allocation = jit_alloc(size);
+    if (allocation == NULL) {
         return -1;
     }
-    jit_compile(executor, memory);
-    if (mark_executable(memory, size)) {
-        jit_free(memory, size);
+    compile(executor, allocation->memory);
+    if (mark_executable(allocation->memory, allocation->size)) {
+        jit_free(allocation);
         return -1;
     }
-    executor->jit_code = memory;
-    executor->jit_side_entry = memory + trampoline.code_size;
+    executor->jit_allocation = allocation;
+    executor->jit_code = allocation->memory;
+    executor->jit_side_entry = allocation->memory + trampoline.code_size;
     executor->jit_size = size;
     return 0;
 }
@@ -490,16 +567,13 @@ _PyJIT_Compile(_PyExecutorObject *executor)
 void
 _PyJIT_Free(_PyExecutorObject *executor)
 {
-    unsigned char *memory = (unsigned char *)executor->jit_code;
-    size_t size = executor->jit_size;
-    if (memory) {
-        executor->jit_code = NULL;
-        executor->jit_side_entry = NULL;
-        executor->jit_size = 0;
-        if (jit_free(memory, size)) {
-            PyErr_WriteUnraisable(NULL);
-        }
+    if (executor->jit_allocation) {
+        jit_free((jit_allocation *)executor->jit_allocation);
+        executor->jit_allocation = NULL;
     }
+    executor->jit_code = NULL;
+    executor->jit_side_entry = NULL;
+    executor->jit_size = 0;
 }
 
 #endif  // _Py_JIT

@@ -6,6 +6,7 @@
 #include "pycore_dict.h"          // _PyDict_MaybeUntrack()
 #include "pycore_initconfig.h"
 #include "pycore_interp.h"        // PyInterpreterState.gc
+#include "pycore_jit.h"           // _PyJIT_Recompile
 #include "pycore_object.h"
 #include "pycore_object_alloc.h"  // _PyObject_MallocWithType()
 #include "pycore_object_stack.h"
@@ -1231,6 +1232,11 @@ gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
 
     assert(!_PyErr_Occurred(tstate));
     _Py_atomic_store_int(&gcstate->collecting, 0);
+#ifdef _Py_JIT
+    if (_PyJIT_Recompile(interp)) {
+        PyErr_WriteUnraisable(NULL);
+    }
+#endif
     return n + m;
 }
 

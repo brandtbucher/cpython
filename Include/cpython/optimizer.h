@@ -71,9 +71,10 @@ typedef struct _PyExecutorObject {
     _PyVMData vm_data; /* Used by the VM, but opaque to the optimizer */
     uint32_t exit_count;
     uint32_t code_size;
-    size_t jit_size;
+    void *jit_allocation;
     void *jit_code;
     void *jit_side_entry;
+    size_t jit_size;
     _PyExitData exits[1];
 } _PyExecutorObject;
 

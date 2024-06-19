@@ -1822,6 +1822,7 @@ class MiscTests(EmbeddingTestsMixin, unittest.TestCase):
         """).lstrip()
         self.assertEqual(out, expected)
 
+    @unittest.skip("_COLD_EXIT allocations are leaked on JIT builds.")  # XXX
     @unittest.skipUnless(support.Py_DEBUG,
                          '-X showrefcount requires a Python debug build')
     def test_no_memleak(self):

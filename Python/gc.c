@@ -8,6 +8,7 @@
 #include "pycore_dict.h"          // _PyDict_MaybeUntrack()
 #include "pycore_initconfig.h"
 #include "pycore_interp.h"        // PyInterpreterState.gc
+#include "pycore_jit.h"           // _PyJIT_Recompile
 #include "pycore_object.h"
 #include "pycore_object_alloc.h"  // _PyObject_MallocWithType()
 #include "pycore_pyerrors.h"
@@ -1833,6 +1834,11 @@ _PyGC_Collect(PyThreadState *tstate, int generation, _PyGC_Reason reason)
 #endif
     validate_old(gcstate);
     _Py_atomic_store_int(&gcstate->collecting, 0);
+#ifdef _Py_JIT
+    if (_PyJIT_Recompile(tstate->interp)) {
+        PyErr_WriteUnraisable(NULL);
+    }
+#endif
     return stats.uncollectable + stats.collected;
 }
 
