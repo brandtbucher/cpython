@@ -35,6 +35,15 @@ get_page_size(void)
 #endif
 }
 
+static size_t
+round_up_to_page(size_t size)
+{
+    size_t page_size = get_page_size();
+    assert((page_size & (page_size - 1)) == 0);
+    size_t padding = page_size - (size & (page_size - 1));
+    return size + padding;
+}
+
 static void
 jit_error(const char *message)
 {
@@ -49,6 +58,7 @@ jit_error(const char *message)
 static unsigned char *
 jit_alloc(size_t size)
 {
+    size = round_up_to_page(size);
     assert(size);
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
@@ -70,6 +80,7 @@ jit_alloc(size_t size)
 static int
 jit_free(unsigned char *memory, size_t size)
 {
+    size = round_up_to_page(size);
     assert(size);
     assert(size % get_page_size() == 0);
 #ifdef MS_WINDOWS
@@ -87,6 +98,7 @@ jit_free(unsigned char *memory, size_t size)
 static int
 mark_executable(unsigned char *memory, size_t size)
 {
+    size = round_up_to_page(size);
     if (size == 0) {
         return 0;
     }
@@ -392,44 +404,45 @@ patch_x86_64_32rx(unsigned char *location, uint64_t value)
 
 #include "jit_stencils.h"
 
-// Compiles executor in-place. Don't forget to call _PyJIT_Free later!
-int
-_PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], size_t length)
+static size_t
+jit_size(_PyExecutorObject *executor)
 {
+    const _PyUOpInstruction *trace = executor->trace;
+    size_t length = executor->code_size;
+    const StencilGroup *group;
+    size_t size = 0;
+    group = &trampoline;
+    size += group->code_size + group->data_size;
+    for (size_t i = 0; i < length; i++) {
+        group = &stencil_groups[trace[i].opcode];
+        size += group->code_size + group->data_size;
+    }
+    group = &stencil_groups[_FATAL_ERROR];
+    size += group->code_size + group->data_size;
+    return size;
+}
+
+static void
+jit_compile(_PyExecutorObject *executor, unsigned char *memory)
+{
+    const _PyUOpInstruction *trace = executor->trace;
+    size_t length = executor->code_size;
     const StencilGroup *group;
     // Loop once to find the total compiled size:
     uintptr_t instruction_starts[UOP_MAX_TRACE_LENGTH];
-    size_t code_size = 0;
-    size_t data_size = 0;
+    uintptr_t offset = 0;
     group = &trampoline;
-    code_size += group->code_size;
-    data_size += group->data_size;
+    offset += group->code_size;
     for (size_t i = 0; i < length; i++) {
         const _PyUOpInstruction *instruction = &trace[i];
         group = &stencil_groups[instruction->opcode];
-        instruction_starts[i] = code_size;
-        code_size += group->code_size;
-        data_size += group->data_size;
+        instruction_starts[i] = (uintptr_t)memory + offset;
+        offset += group->code_size;
     }
     group = &stencil_groups[_FATAL_ERROR];
-    code_size += group->code_size;
-    data_size += group->data_size;
-    // Round up to the nearest page:
-    size_t page_size = get_page_size();
-    assert((page_size & (page_size - 1)) == 0);
-    size_t padding = page_size - ((code_size + data_size) & (page_size - 1));
-    size_t total_size = code_size + data_size + padding;
-    unsigned char *memory = jit_alloc(total_size);
-    if (memory == NULL) {
-        return -1;
-    }
-    // Update the offsets of each instruction:
-    for (size_t i = 0; i < length; i++) {
-        instruction_starts[i] += (uintptr_t)memory;
-    }
-    // Loop again to emit the code:
+    offset += group->code_size;
     unsigned char *code = memory;
-    unsigned char *data = memory + code_size;
+    unsigned char *data = memory + offset;
     // Compile the trampoline, which handles converting between the native
     // calling convention and the calling convention used by jitted code
     // (which may be different for efficiency reasons). On platforms where
@@ -452,15 +465,25 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     group->emit(code, data, executor, NULL, instruction_starts);
     code += group->code_size;
     data += group->data_size;
-    assert(code == memory + code_size);
-    assert(data == memory + code_size + data_size);
-    if (mark_executable(memory, total_size)) {
-        jit_free(memory, total_size);
+}
+
+// Compiles executor in-place. Don't forget to call _PyJIT_Free later!
+int
+_PyJIT_Compile(_PyExecutorObject *executor)
+{
+    size_t size = jit_size(executor);
+    unsigned char *memory = jit_alloc(size);
+    if (memory == NULL) {
+        return -1;
+    }
+    jit_compile(executor, memory);
+    if (mark_executable(memory, size)) {
+        jit_free(memory, size);
         return -1;
     }
     executor->jit_code = memory;
     executor->jit_side_entry = memory + trampoline.code_size;
-    executor->jit_size = total_size;
+    executor->jit_size = size;
     return 0;
 }
 
