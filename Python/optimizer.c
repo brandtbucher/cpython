@@ -703,6 +703,15 @@ top:  // Jump here after _PUSH_FRAME or likely branches
 
             default:
             {
+                if (instr[0].op.code != ENTER_EXECUTOR &&
+                    _PyOpcode_Deopt[opcode] != opcode &&
+                    _PyOpcode_Deopt[opcode] != RESUME)
+                {
+                    // Reset the backoff so exponential backoff doesn't prevent
+                    // us from re-specializing. We can't replace the opcode
+                    // since we might trace into this function again:
+                    instr[1].counter = adaptive_counter_cooldown();
+                }
                 const struct opcode_macro_expansion *expansion = &_PyOpcode_macro_expansion[opcode];
                 if (expansion->nuops > 0) {
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
