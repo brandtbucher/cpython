@@ -478,36 +478,92 @@ compile(_PyExecutorObject *executor, unsigned char *memory)
     data += group->data_size;
 }
 
-#define FOR_EACH_IDLE_EXECUTOR(I, E, S)                    \
-    for (_PyExecutorObject *(E) = (I)->executor_list_head; \
-         (E) != NULL; (E) = (E)->vm_data.links.next)       \
-    {                                                      \
-        if (Py_REFCNT((E)) == 1 && (E)->vm_data.code) {    \
-            S                                              \
-        }                                                  \
+typedef size_t (*callback_t)(_PyExecutorObject *, jit_allocation *, size_t);
+
+static size_t
+call_for_each_idle_executor(PyInterpreterState *interp, callback_t callback,
+                            jit_allocation *allocation)
+{
+    size_t accumulator = 0;
+    for (_PyExecutorObject *executor = interp->executor_list_head;
+         executor != NULL; executor = executor->vm_data.links.next)
+    {
+        if (Py_REFCNT(executor) == 1 && executor->vm_data.code) {
+            accumulator = callback(executor, allocation, accumulator);
+        }
     }
+    return accumulator;
+}
+
+static size_t
+setref(_PyExecutorObject *executor, jit_allocation *Py_UNUSED(allocation),
+       size_t Py_UNUSED(accumulator))
+{
+    jit_allocation *this_allocation = (jit_allocation *)executor->jit_allocation;
+    this_allocation->test_refs = this_allocation->refs;
+    return 0;
+}
+
+static size_t
+decref(_PyExecutorObject *executor, jit_allocation *Py_UNUSED(allocation),
+       size_t accumulator)
+{
+    jit_allocation *this_allocation = (jit_allocation *)executor->jit_allocation;
+    if (--this_allocation->test_refs == 0) {
+        accumulator += round_up_to_page(this_allocation->size);
+    }
+    return accumulator;
+}
+
+static size_t
+resize(_PyExecutorObject *executor, jit_allocation *Py_UNUSED(allocation),
+       size_t accumulator)
+{
+    jit_allocation *this_allocation = (jit_allocation *)executor->jit_allocation;
+    if (this_allocation->test_refs == 0) {
+        accumulator += executor->jit_size;
+    }
+    return accumulator;
+}
+
+static size_t
+recompile(_PyExecutorObject *executor, jit_allocation *allocation,
+       size_t accumulator)
+{
+    jit_allocation *this_allocation = (jit_allocation *)executor->jit_allocation;
+    if (this_allocation->test_refs == 0) {
+        compile(executor, allocation->memory + accumulator);
+        accumulator += executor->jit_size;
+    }
+    return accumulator;
+}
+
+static size_t
+fixup(_PyExecutorObject *executor, jit_allocation *allocation,
+      size_t accumulator)
+{
+    jit_allocation *this_allocation = (jit_allocation *)executor->jit_allocation;
+    if (this_allocation->test_refs == 0) {
+        jit_free(this_allocation);
+        allocation->refs += 1;
+        executor->jit_allocation = allocation;
+        executor->jit_code = allocation->memory + accumulator;
+        executor->jit_side_entry = allocation->memory + accumulator + trampoline.code_size;
+        accumulator += executor->jit_size;
+    }
+    return accumulator;
+}
 
 int
 _PyJIT_Recompile(PyInterpreterState *interp)
 {
-    FOR_EACH_IDLE_EXECUTOR(interp, executor,
-        jit_allocation *allocation = (jit_allocation *)executor->jit_allocation;
-        allocation->test_refs = allocation->refs;
-    )
-    size_t freed_size = 0;
-    FOR_EACH_IDLE_EXECUTOR(interp, executor,
-        jit_allocation *allocation = (jit_allocation *)executor->jit_allocation;
-        if (--allocation->test_refs == 0) {
-            freed_size += round_up_to_page(allocation->size);
-        }
-    )
-    size_t size = 0;
-    FOR_EACH_IDLE_EXECUTOR(interp, executor,
-        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
-            continue;
-        }
-        size += executor->jit_size;
-    )
+    if (interp->jit_recompile == 0) {
+        return 0;
+    }
+    interp->jit_recompile = 0;
+    call_for_each_idle_executor(interp, setref, NULL);
+    size_t freed_size = call_for_each_idle_executor(interp, decref, NULL);
+    size_t size = call_for_each_idle_executor(interp, resize, NULL);
     if (size == 0 || freed_size <= round_up_to_page(size)) {
         return 0;
     }
@@ -515,31 +571,14 @@ _PyJIT_Recompile(PyInterpreterState *interp)
     if (allocation == NULL) {
         return -1;
     }
-    size_t offset = 0;
-    FOR_EACH_IDLE_EXECUTOR(interp, executor,
-        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
-            continue;
-        }
-        compile(executor, allocation->memory + offset);
-        offset += executor->jit_size;
-    )
+    call_for_each_idle_executor(interp, recompile, allocation);
     if (mark_executable(allocation->memory, allocation->size)) {
         jit_free(allocation);
         return -1;
     }
-    offset = 0;
-    FOR_EACH_IDLE_EXECUTOR(interp, executor,
-        if (((jit_allocation *)executor->jit_allocation)->test_refs) {
-            continue;
-        }
-        jit_free((jit_allocation *)executor->jit_allocation);
-        _Py_atomic_add_ssize(&allocation->refs, 1);
-        executor->jit_allocation = allocation;
-        executor->jit_code = allocation->memory + offset;
-        executor->jit_side_entry = allocation->memory + offset + trampoline.code_size;
-        offset += executor->jit_size;
-    )
-    jit_free(allocation);
+    call_for_each_idle_executor(interp, fixup, allocation);
+    assert(1 < allocation->refs);
+    allocation->refs -= 1;
     return 0;
 }
 
@@ -561,6 +600,7 @@ _PyJIT_Compile(_PyExecutorObject *executor)
     executor->jit_code = allocation->memory;
     executor->jit_side_entry = allocation->memory + trampoline.code_size;
     executor->jit_size = size;
+    _Py_atomic_store_uint8(&_PyInterpreterState_GET()->jit_recompile, 1);
     return 0;
 }
 
@@ -574,6 +614,7 @@ _PyJIT_Free(_PyExecutorObject *executor)
     executor->jit_code = NULL;
     executor->jit_side_entry = NULL;
     executor->jit_size = 0;
+    _Py_atomic_store_uint8(&_PyInterpreterState_GET()->jit_recompile, 1);
 }
 
 #endif  // _Py_JIT
