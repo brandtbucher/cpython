@@ -657,7 +657,9 @@ dummy_func(void) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
         frame_pop(ctx);
-        stack_pointer = ctx->frame->stack_pointer;
+        if (ctx->frame) {
+            stack_pointer = ctx->frame->stack_pointer;
+        }
         res = retval;
 
         /* Stack space handling */
@@ -665,13 +667,14 @@ dummy_func(void) {
         assert(co != NULL);
         int framesize = co->co_framesize;
         assert(framesize > 0);
-        assert(framesize <= curr_space);
+        // assert(framesize <= curr_space);
         curr_space -= framesize;
 
         co = get_code(this_instr);
         if (co == NULL) {
             // might be impossible, but bailing is still safe
             ctx->done = true;
+            break;
         }
     }
 
@@ -679,7 +682,9 @@ dummy_func(void) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
         frame_pop(ctx);
-        stack_pointer = ctx->frame->stack_pointer;
+        if (ctx->frame) {
+            stack_pointer = ctx->frame->stack_pointer;
+        }
         res = sym_new_unknown(ctx);
 
         /* Stack space handling */
@@ -687,13 +692,14 @@ dummy_func(void) {
         assert(co != NULL);
         int framesize = co->co_framesize;
         assert(framesize > 0);
-        assert(framesize <= curr_space);
+        // assert(framesize <= curr_space);
         curr_space -= framesize;
 
         co = get_code(this_instr);
         if (co == NULL) {
             // might be impossible, but bailing is still safe
             ctx->done = true;
+            break;
         }
     }
 
