@@ -932,6 +932,9 @@ dummy_func(
             _PyEval_FrameClearAndPop(tstate, dying);
             LOAD_SP();
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             res = retval;
             LLTRACE_RESUME_FRAME();
         }
@@ -952,6 +955,9 @@ dummy_func(
             _PyEval_FrameClearAndPop(tstate, dying);
             _PyFrame_StackPush(frame, retval);
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             goto resume_frame;
         }
 
@@ -976,6 +982,9 @@ dummy_func(
             _PyEval_FrameClearAndPop(tstate, dying);
             _PyFrame_StackPush(frame, PyStackRef_FromPyObjectSteal(retval));
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             goto resume_frame;
         }
 
@@ -1193,6 +1202,9 @@ dummy_func(
             /* We don't know which of these is relevant here, so keep them equal */
             assert(INLINE_CACHE_ENTRIES_SEND == INLINE_CACHE_ENTRIES_FOR_ITER);
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+            #if TIER_TWO
+            frame->instr_ptr += 1 + INLINE_CACHE_ENTRIES_SEND;
+            #endif
             goto resume_frame;
         }
 
@@ -1227,6 +1239,9 @@ dummy_func(
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
             #endif
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+            #if TIER_TWO
+            frame->instr_ptr += 1 + INLINE_CACHE_ENTRIES_SEND;
+            #endif
             LOAD_SP();
             value = retval;
             LLTRACE_RESUME_FRAME();
@@ -2874,7 +2889,8 @@ dummy_func(
                 }
                 /* iterator ended normally */
                 assert(next_instr[oparg].op.code == END_FOR ||
-                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR);
+                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR ||
+                       next_instr[oparg].op.code == ENTER_EXECUTOR);
                 PyStackRef_CLOSE(iter);
                 STACK_SHRINK(1);
                 /* Jump forward oparg, then skip following END_FOR and POP_TOP instruction */
@@ -2925,7 +2941,8 @@ dummy_func(
                 }
                 /* iterator ended normally */
                 assert(next_instr[oparg].op.code == END_FOR ||
-                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR);
+                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR ||
+                       next_instr[oparg].op.code == ENTER_EXECUTOR);
                 STACK_SHRINK(1);
                 PyStackRef_CLOSE(iter_stackref);
                 /* Skip END_FOR and POP_TOP */
@@ -3601,6 +3618,9 @@ dummy_func(
             tstate->py_recursion_remaining--;
             LOAD_SP();
             LOAD_IP(0);
+            #if TIER_TWO
+            frame->instr_ptr += 0;
+            #endif
             LLTRACE_RESUME_FRAME();
         }
 
@@ -4383,6 +4403,9 @@ dummy_func(
             _PyThreadState_PopFrame(tstate, frame);
             frame = tstate->current_frame = prev;
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             LOAD_SP();
             LLTRACE_RESUME_FRAME();
         }

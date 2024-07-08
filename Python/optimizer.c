@@ -178,6 +178,11 @@ _PyOptimizer_Optimize(
     _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
     _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr)
 {
+    if (!PyCode_Check(frame->f_executable) ||
+        !PyFunction_Check(frame->f_funcobj))
+    {
+        return 0;
+    }
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     PyInterpreterState *interp = _PyInterpreterState_GET();
@@ -507,19 +512,25 @@ add_to_trace(
         goto done; \
     } \
     assert(func == NULL || func->func_code == (PyObject *)code); \
+    assert(code != NULL); \
     trace_stack[trace_stack_depth].func = func; \
     trace_stack[trace_stack_depth].code = code; \
     trace_stack[trace_stack_depth].instr = instr; \
     trace_stack_depth++;
 #define TRACE_STACK_POP() \
     if (trace_stack_depth <= 0) { \
-        Py_FatalError("Trace stack underflow\n"); \
+        func = NULL; \
+        code = NULL; \
+        instr = NULL; \
     } \
-    trace_stack_depth--; \
-    func = trace_stack[trace_stack_depth].func; \
-    code = trace_stack[trace_stack_depth].code; \
-    assert(func == NULL || func->func_code == (PyObject *)code); \
-    instr = trace_stack[trace_stack_depth].instr;
+    else { \
+        trace_stack_depth--; \
+        func = trace_stack[trace_stack_depth].func; \
+        code = trace_stack[trace_stack_depth].code; \
+        assert(func == NULL || func->func_code == (PyObject *)code); \
+        assert(code != NULL); \
+        instr = trace_stack[trace_stack_depth].instr; \
+    }
 
 /* Returns the length of the trace on success,
  * 0 if it failed to produce a worthwhile trace,
@@ -709,7 +720,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                     int nuops = expansion->nuops;
                     RESERVE(nuops + 1); /* One extra for exit */
                     int16_t last_op = expansion->uops[nuops-1].uop;
-                    if (last_op == _RETURN_VALUE || last_op == _RETURN_GENERATOR || last_op == _YIELD_VALUE) {
+                    if (last_op == _YIELD_VALUE) {
                         // Check for trace stack underflow now:
                         // We can't bail e.g. in the middle of
                         // LOAD_CONST + _RETURN_VALUE.
@@ -771,7 +782,7 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 Py_FatalError("garbled expansion");
                         }
 
-                        if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR || uop == _YIELD_VALUE) {
+                        if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR) {
                             TRACE_STACK_POP();
                             /* Set the operand to the function or code object returned to,
                              * to assist optimization passes. (See _PUSH_FRAME below.)
@@ -783,7 +794,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 operand = (uintptr_t)code | 1;
                             }
                             else {
-                                operand = 0;
+                                ADD_TO_TRACE(uop, oparg, 0, target);
+                                ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                goto done;
                             }
                             ADD_TO_TRACE(uop, oparg, operand, target);
                             DPRINTF(2,
@@ -847,11 +860,9 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                                 if (new_func != NULL) {
                                     operand = (uintptr_t)new_func;
                                 }
-                                else if (new_code != NULL) {
-                                    operand = (uintptr_t)new_code | 1;
-                                }
                                 else {
-                                    operand = 0;
+                                    assert(new_code != NULL);
+                                    operand = (uintptr_t)new_code | 1;
                                 }
                                 ADD_TO_TRACE(uop, oparg, operand, target);
                                 code = new_code;
@@ -892,7 +903,8 @@ done:
     while (trace_stack_depth > 0) {
         TRACE_STACK_POP();
     }
-    assert(code == initial_code);
+    assert(code == NULL || code == initial_code);
+    code = initial_code;
     // Skip short traces like _SET_IP, LOAD_FAST, _SET_IP, _EXIT_TRACE
     if (progress_needed || trace_length < 5) {
         OPT_STAT_INC(trace_too_short);

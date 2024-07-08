@@ -448,10 +448,12 @@ optimize_uops(
                 DPRINTF(1, "\nUnknown opcode in abstract interpreter\n");
                 Py_UNREACHABLE();
         }
-        assert(ctx->frame != NULL);
-        DPRINTF(3, " stack_level %d\n", STACK_LEVEL());
-        ctx->frame->stack_pointer = stack_pointer;
-        assert(STACK_LEVEL() >= 0);
+        // assert(ctx->frame != NULL);
+        if (ctx->frame) {
+            DPRINTF(3, " stack_level %d\n", STACK_LEVEL());
+            ctx->frame->stack_pointer = stack_pointer;
+            assert(STACK_LEVEL() >= 0);
+        }
     }
     if (ctx->out_of_space) {
         DPRINTF(3, "\n");
