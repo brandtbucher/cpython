@@ -5396,6 +5396,15 @@
             break;
         }
 
+        case _CHECK_CALLER_IP: {
+            PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND();
+            if (frame->previous->instr_ptr != (_Py_CODEUNIT *)instr_ptr) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
         case _INTERNAL_INCREMENT_OPT_COUNTER: {
             _PyStackRef opt;
             opt = stack_pointer[-1];

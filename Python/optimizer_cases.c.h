@@ -2361,6 +2361,13 @@
             break;
         }
 
+        case _CHECK_CALLER_IP: {
+            PyObject *instr_ptr = (PyObject *)this_instr->operand;
+            (void)instr_ptr;
+            ctx->done = true;  // XXX
+            break;
+        }
+
         case _INTERNAL_INCREMENT_OPT_COUNTER: {
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());

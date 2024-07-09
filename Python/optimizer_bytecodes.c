@@ -832,6 +832,11 @@ dummy_func(void) {
         self_or_null = sym_new_unknown(ctx);
     }
 
+    op(_CHECK_CALLER_IP, (instr_ptr/4--)) {
+        (void)instr_ptr;
+        ctx->done = true;  // XXX
+    }
+
     op(_JUMP_TO_TOP, (--)) {
         ctx->done = true;
     }

@@ -4768,6 +4768,10 @@ dummy_func(
             DEOPT_IF(((PyFunctionObject *)frame->f_funcobj)->func_version != func_version);
         }
 
+        op(_CHECK_CALLER_IP, (instr_ptr/4 --)) {
+            EXIT_IF(frame->previous->instr_ptr != (_Py_CODEUNIT *)instr_ptr);
+        }
+
         /* Internal -- for testing executors */
         op(_INTERNAL_INCREMENT_OPT_COUNTER, (opt --)) {
             _PyCounterOptimizerObject *exe = (_PyCounterOptimizerObject *)PyStackRef_AsPyObjectBorrow(opt);

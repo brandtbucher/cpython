@@ -509,9 +509,14 @@ add_to_trace(
     trace_stack[trace_stack_depth].code = code; \
     trace_stack[trace_stack_depth].instr = instr; \
     trace_stack_depth++;
-#define TRACE_STACK_POP() \
+#define TRACE_STACK_POP(Y) \
     if (trace_stack_depth <= 0) { \
-        Py_FatalError("Trace stack underflow\n"); \
+        frame = frame->previous; \
+        func = NULL; /* XXX */ \
+        code = _PyFrame_GetCode(frame); \
+        instr = frame->instr_ptr; \
+        instr += (Y) ? INLINE_CACHE_ENTRIES_SEND + 1 : frame->return_offset; \
+        TRACE_STACK_PUSH(); \
     } \
     trace_stack_depth--; \
     func = trace_stack[trace_stack_depth].func; \
@@ -715,9 +720,14 @@ translate_bytecode_to_trace(
                         // We can't bail e.g. in the middle of
                         // LOAD_CONST + _RETURN_VALUE.
                         if (trace_stack_depth == 0) {
-                            DPRINTF(2, "Trace stack underflow\n");
-                            OPT_STAT_INC(trace_stack_underflow);
-                            goto done;
+                            if ((first && progress_needed) || // XXX Check IP on other side.
+                                !PyCode_Check(frame->previous->f_executable))
+                            {
+                                DPRINTF(2, "Trace stack underflow\n");
+                                OPT_STAT_INC(trace_stack_underflow);
+                                goto done;
+                            }
+                            ADD_TO_TRACE(_CHECK_CALLER_IP, 0, (uint64_t)frame->previous->instr_ptr, target);
                         }
                     }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
@@ -772,7 +782,7 @@ translate_bytecode_to_trace(
                         }
 
                         if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR || uop == _YIELD_VALUE) {
-                            TRACE_STACK_POP();
+                            TRACE_STACK_POP(uop == _YIELD_VALUE);
                             /* Set the operand to the function or code object returned to,
                              * to assist optimization passes. (See _PUSH_FRAME below.)
                              */
@@ -912,18 +922,17 @@ translate_bytecode_to_trace(
 
 done:
     while (trace_stack_depth > 0) {
-        TRACE_STACK_POP();
+        TRACE_STACK_POP(0);
     }
-    assert(code == initial_code);
     // Skip short traces where we can't even translate a single instruction:
     if (first) {
         OPT_STAT_INC(trace_too_short);
         DPRINTF(2,
                 "No trace for %s (%s:%d) at byte offset %d (no progress)\n",
-                PyUnicode_AsUTF8(code->co_qualname),
-                PyUnicode_AsUTF8(code->co_filename),
-                code->co_firstlineno,
-                2 * INSTR_IP(initial_instr, code));
+                PyUnicode_AsUTF8(initial_code->co_qualname),
+                PyUnicode_AsUTF8(initial_code->co_filename),
+                initial_code->co_firstlineno,
+                2 * INSTR_IP(initial_instr, initial_code));
         return 0;
     }
     if (!is_terminator(&trace[trace_length-1])) {
@@ -933,10 +942,10 @@ done:
     }
     DPRINTF(1,
             "Created a proto-trace for %s (%s:%d) at byte offset %d -- length %d\n",
-            PyUnicode_AsUTF8(code->co_qualname),
-            PyUnicode_AsUTF8(code->co_filename),
-            code->co_firstlineno,
-            2 * INSTR_IP(initial_instr, code),
+            PyUnicode_AsUTF8(initial_code->co_qualname),
+            PyUnicode_AsUTF8(initial_code->co_filename),
+            initial_code->co_firstlineno,
+            2 * INSTR_IP(initial_instr, initial_code),
             trace_length);
     OPT_HIST(trace_length, trace_length_hist);
     return trace_length;

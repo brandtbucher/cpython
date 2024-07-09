@@ -271,6 +271,7 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_LOAD_CONST_INLINE_WITH_NULL] = HAS_PURE_FLAG,
     [_LOAD_CONST_INLINE_BORROW_WITH_NULL] = HAS_PURE_FLAG,
     [_CHECK_FUNCTION] = HAS_DEOPT_FLAG,
+    [_CHECK_CALLER_IP] = HAS_EXIT_FLAG,
     [_INTERNAL_INCREMENT_OPT_COUNTER] = 0,
     [_DYNAMIC_EXIT] = HAS_ESCAPES_FLAG,
     [_START_EXECUTOR] = 0,
@@ -334,6 +335,7 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_CHECK_ATTR_METHOD_LAZY_DICT] = "_CHECK_ATTR_METHOD_LAZY_DICT",
     [_CHECK_ATTR_MODULE] = "_CHECK_ATTR_MODULE",
     [_CHECK_ATTR_WITH_HINT] = "_CHECK_ATTR_WITH_HINT",
+    [_CHECK_CALLER_IP] = "_CHECK_CALLER_IP",
     [_CHECK_CALL_BOUND_METHOD_EXACT_ARGS] = "_CHECK_CALL_BOUND_METHOD_EXACT_ARGS",
     [_CHECK_EG_MATCH] = "_CHECK_EG_MATCH",
     [_CHECK_EXC_MATCH] = "_CHECK_EXC_MATCH",
@@ -1055,6 +1057,8 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _LOAD_CONST_INLINE_BORROW_WITH_NULL:
             return 0;
         case _CHECK_FUNCTION:
+            return 0;
+        case _CHECK_CALLER_IP:
             return 0;
         case _INTERNAL_INCREMENT_OPT_COUNTER:
             return 1;
