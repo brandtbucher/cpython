@@ -34,7 +34,6 @@ CONVERT_VALUE = opmap['CONVERT_VALUE']
 SET_FUNCTION_ATTRIBUTE = opmap['SET_FUNCTION_ATTRIBUTE']
 FUNCTION_ATTR_FLAGS = ('defaults', 'kwdefaults', 'annotations', 'closure')
 
-ENTER_EXECUTOR = opmap['ENTER_EXECUTOR']
 LOAD_CONST = opmap['LOAD_CONST']
 RETURN_CONST = opmap['RETURN_CONST']
 LOAD_GLOBAL = opmap['LOAD_GLOBAL']
@@ -212,24 +211,7 @@ def _deoptop(op):
 
 def _get_code_array(co, adaptive):
     if adaptive:
-        code = co._co_code_adaptive
-        res = []
-        found = False
-        for i in range(0, len(code), 2):
-            op, arg = code[i], code[i+1]
-            if op == ENTER_EXECUTOR:
-                try:
-                    ex = get_executor(co, i)
-                except (ValueError, RuntimeError):
-                    ex = None
-
-                if ex:
-                    op, arg = ex.get_opcode(), ex.get_oparg()
-                    found = True
-
-            res.append(op.to_bytes())
-            res.append(arg.to_bytes())
-        return code if not found else b''.join(res)
+        return co._co_code_adaptive
     else:
         return co.co_code
 

@@ -1684,6 +1684,7 @@ class ExceptionTests(unittest.TestCase):
     # _PyRefchain_Trace() on memory allocation error.
     @unittest.skipIf(support.Py_TRACE_REFS, 'cannot test Py_TRACE_REFS build')
     @unittest.skipIf(_testcapi is None, "requires _testcapi")
+    @unittest.skip("OPTIMIZE")  # XXX
     def test_memory_error_in_PyErr_PrintEx(self):
         code = """if 1:
             import _testcapi

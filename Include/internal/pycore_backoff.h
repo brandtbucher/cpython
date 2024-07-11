@@ -105,16 +105,16 @@ backoff_counter_triggers(_Py_BackoffCounter counter)
     return counter.value == 0;
 }
 
-/* Initial JUMP_BACKWARD counter.
+/* Initial OPTIMIZE counter.
  * This determines when we create a trace for a loop.
 * Backoff sequence 16, 32, 64, 128, 256, 512, 1024, 2048, 4096. */
-#define JUMP_BACKWARD_INITIAL_VALUE 16
-#define JUMP_BACKWARD_INITIAL_BACKOFF 4
+#define OPTIMIZE_INITIAL_VALUE 16
+#define OPTIMIZE_INITIAL_BACKOFF 4
 static inline _Py_BackoffCounter
-initial_jump_backoff_counter(void)
+initial_optimize_backoff_counter(void)
 {
-    return make_backoff_counter(JUMP_BACKWARD_INITIAL_VALUE,
-                                JUMP_BACKWARD_INITIAL_BACKOFF);
+    return make_backoff_counter(OPTIMIZE_INITIAL_VALUE,
+                                OPTIMIZE_INITIAL_BACKOFF);
 }
 
 /* Initial exit temperature.

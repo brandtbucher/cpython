@@ -27,8 +27,8 @@ typedef struct {
 } _PyBloomFilter;
 
 typedef struct {
-    uint8_t opcode;
-    uint8_t oparg;
+    // uint8_t opcode;
+    // uint8_t oparg;
     uint8_t valid;
     uint8_t linked;
     int index;           // Index of ENTER_EXECUTOR (if code isn't NULL, below).

@@ -331,12 +331,6 @@ _PyInstruction_GetLength(PyCodeObject *code, int offset)
     }
     assert(opcode != 0);
     assert(!is_instrumented(opcode));
-    if (opcode == ENTER_EXECUTOR) {
-        int exec_index = _PyCode_CODE(code)[offset].op.arg;
-        _PyExecutorObject *exec = code->co_executors->executors[exec_index];
-        opcode = _PyOpcode_Deopt[exec->vm_data.opcode];
-
-    }
     assert(opcode != ENTER_EXECUTOR);
     assert(opcode == _PyOpcode_Deopt[opcode]);
     return 1 + _PyOpcode_Caches[opcode];
@@ -1742,7 +1736,6 @@ force_instrument_lock_held(PyCodeObject *code, PyInterpreterState *interp)
     for (int i = code->_co_firsttraceable; i < code_len; i+= _PyInstruction_GetLength(code, i)) {
         _Py_CODEUNIT *instr = &_PyCode_CODE(code)[i];
         CHECK(instr->op.code != 0);
-        assert(instr->op.code != ENTER_EXECUTOR);
         int base_opcode = _Py_GetBaseOpcode(code, i);
         assert(base_opcode != ENTER_EXECUTOR);
         if (opcode_has_event(base_opcode)) {

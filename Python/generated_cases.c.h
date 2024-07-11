@@ -2938,13 +2938,14 @@
 
         TARGET(ENTER_EXECUTOR) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
-            next_instr += 1;
+            next_instr += 2;
             INSTRUCTION_STATS(ENTER_EXECUTOR);
+            static_assert(INLINE_CACHE_ENTRIES_OPTIMIZE == 1, "incorrect cache size");
+            /* Skip 1 cache entry */
             #ifdef _Py_TIER2
             PyCodeObject *code = _PyFrame_GetCode(frame);
             _PyExecutorObject *executor = code->co_executors->executors[oparg & 255];
-            assert(executor->vm_data.index == INSTR_OFFSET() - 1);
+            assert(executor->vm_data.index == this_instr - _PyCode_CODE(code));
             assert(executor->vm_data.code == code);
             assert(executor->vm_data.valid);
             assert(tstate->previous_executor == NULL);
@@ -2952,13 +2953,7 @@
              * This avoids any potentially infinite loops
              * involving _RESUME_CHECK */
             if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                opcode = executor->vm_data.opcode;
-                oparg = (oparg & ~255) | executor->vm_data.oparg;
-                next_instr = this_instr;
-                if (_PyOpcode_Caches[_PyOpcode_Deopt[opcode]]) {
-                    PAUSE_ADAPTIVE_COUNTER(this_instr[1].counter);
-                }
-                DISPATCH_GOTO();
+                DISPATCH();
             }
             tstate->previous_executor = Py_None;
             Py_INCREF(executor);
@@ -3662,9 +3657,8 @@
         TARGET(INSTRUMENTED_JUMP_BACKWARD) {
             _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
             (void)this_instr;
-            next_instr += 2;
+            next_instr += 1;
             INSTRUCTION_STATS(INSTRUMENTED_JUMP_BACKWARD);
-            /* Skip 1 cache entry */
             CHECK_EVAL_BREAKER();
             INSTRUMENTED_JUMP(this_instr, next_instr - oparg, PY_MONITORING_EVENT_JUMP);
             DISPATCH();
@@ -3923,41 +3917,12 @@
         }
 
         TARGET(JUMP_BACKWARD) {
-            _Py_CODEUNIT *this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
-            next_instr += 2;
+            frame->instr_ptr = next_instr;
+            next_instr += 1;
             INSTRUCTION_STATS(JUMP_BACKWARD);
-            /* Skip 1 cache entry */
             CHECK_EVAL_BREAKER();
             assert(oparg <= INSTR_OFFSET());
             JUMPBY(-oparg);
-            #ifdef _Py_TIER2
-            #if ENABLE_SPECIALIZATION
-            _Py_BackoffCounter counter = this_instr[1].counter;
-            if (backoff_counter_triggers(counter) && this_instr->op.code == JUMP_BACKWARD) {
-                _Py_CODEUNIT *start = this_instr;
-                /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
-                while (oparg > 255) {
-                    oparg >>= 8;
-                    start--;
-                }
-                _PyExecutorObject *executor;
-                int optimized = _PyOptimizer_Optimize(frame, start, stack_pointer, &executor);
-                if (optimized < 0) goto error;
-                if (optimized) {
-                    assert(tstate->previous_executor == NULL);
-                    tstate->previous_executor = Py_None;
-                    GOTO_TIER_TWO(executor);
-                }
-                else {
-                    this_instr[1].counter = restart_backoff_counter(counter);
-                }
-            }
-            else {
-                ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
-            }
-            #endif  /* ENABLE_SPECIALIZATION */
-            #endif /* _Py_TIER2 */
             DISPATCH();
         }
 
@@ -5343,6 +5308,33 @@
             DISPATCH();
         }
 
+        TARGET(OPTIMIZE) {
+            frame->instr_ptr = next_instr;
+            next_instr += 2;
+            INSTRUCTION_STATS(OPTIMIZE);
+            PREDICTED(OPTIMIZE);
+            _Py_CODEUNIT *this_instr = next_instr - 2;
+            (void)this_instr;
+            uint16_t counter = read_u16(&this_instr[1].cache);
+            (void)counter;
+            #ifdef _Py_TIER2
+            #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
+                _PyExecutorObject *executor;
+                int optimized = _PyOptimizer_Optimize(frame, this_instr, stack_pointer, &executor);
+                if (optimized < 0) goto error;
+                if (optimized) {
+                    assert(tstate->previous_executor == NULL);
+                    tstate->previous_executor = Py_None;
+                    GOTO_TIER_TWO(executor);
+                }
+            }
+            ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            #endif  /* ENABLE_SPECIALIZATION */
+            #endif /* _Py_TIER2 */
+            DISPATCH();
+        }
+
         TARGET(POP_EXCEPT) {
             frame->instr_ptr = next_instr;
             next_instr += 1;
@@ -5605,8 +5597,7 @@
                 }
                 assert(this_instr->op.code == RESUME ||
                        this_instr->op.code == RESUME_CHECK ||
-                       this_instr->op.code == INSTRUMENTED_RESUME ||
-                       this_instr->op.code == ENTER_EXECUTOR);
+                       this_instr->op.code == INSTRUMENTED_RESUME);
                 if (this_instr->op.code == RESUME) {
                     #if ENABLE_SPECIALIZATION
                     FT_ATOMIC_STORE_UINT8_RELAXED(this_instr->op.code, RESUME_CHECK);
@@ -6775,8 +6766,7 @@
                    frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
             #endif
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
             LOAD_SP();

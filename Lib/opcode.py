@@ -91,9 +91,6 @@ _cache_format = {
     "SEND": {
         "counter": 1,
     },
-    "JUMP_BACKWARD": {
-        "counter": 1,
-    },
     "TO_BOOL": {
         "counter": 1,
         "version": 2,
@@ -108,6 +105,9 @@ _cache_format = {
         "counter": 1,
     },
     "POP_JUMP_IF_NOT_NONE": {
+        "counter": 1,
+    },
+    "OPTIMIZE": {
         "counter": 1,
     },
 }

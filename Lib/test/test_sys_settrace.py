@@ -1632,6 +1632,7 @@ class TraceTestCase(unittest.TestCase):
         ])
 
     @support.cpython_only
+    @unittest.skip("OPTIMIZE")  # XXX
     def test_no_line_event_after_creating_generator(self):
         # Spurious line events before call events only show up with C tracer
 

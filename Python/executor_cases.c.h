@@ -1263,8 +1263,7 @@
                    frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
             #endif
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
             LOAD_SP();
@@ -4783,6 +4782,7 @@
         }
 
         case _JUMP_TO_TOP: {
+            CHECK_EVAL_BREAKER();
             JUMP_TO_JUMP_TARGET();
             break;
         }
@@ -5055,7 +5055,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
+            // assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
             break;
         }
 

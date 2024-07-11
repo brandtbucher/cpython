@@ -2741,6 +2741,73 @@ prepare_localsplus(_PyCompile_CodeUnitMetadata *umd, cfg_builder *g, int code_fl
     return nlocalsplus;
 }
 
+static int
+insert_optimize(basicblock *b, int pos)
+{
+    while (b && b->b_iused <= pos) {
+        b = b->b_next;
+        pos = 0;
+    }
+    if (b == NULL) {
+        return SUCCESS;
+    }
+    cfg_instr *next = &b->b_instr[pos];
+    if (next->i_opcode == OPTIMIZE) {
+        return SUCCESS;
+    }
+    cfg_instr optimize = {
+        .i_opcode = OPTIMIZE,
+        .i_oparg = 0,
+        .i_loc = next->i_loc,
+        .i_target = NULL,
+        .i_except = next->i_except,
+    };
+    return basicblock_insert_instruction(b, pos, &optimize);
+}
+
+static int
+insert_optimizes(cfg_builder *g)
+{
+    // 1: Caller-to-callee transfers.
+    // 2: Callee-to-caller transfers.
+    // 3: Control-flow joins.
+    // 4: Control-flow splits.
+    // RETURN_IF_ERROR(insert_optimize(g->g_entryblock, 0));
+    for (basicblock *b = g->g_entryblock; b != NULL; b = b->b_next) {
+        b->b_visited = false;
+    }
+    for (basicblock *b = g->g_entryblock; b != NULL; b = b->b_next) {
+        b->b_visited = true;
+        cfg_instr *last = basicblock_last_instr(b);
+        if (last && OPCODE_HAS_JUMP(last->i_opcode) && last->i_target->b_visited) {
+            RETURN_IF_ERROR(insert_optimize(last->i_target, 0));
+        }
+        // // Merge points:
+        // if (b->b_predecessors > 1) {
+        //     RETURN_IF_ERROR(insert_optimize(b, 0));
+        // }
+        for (int i = 0; i < b->b_iused; i++) {
+            switch (b->b_instr[i].i_opcode) {
+        //         case CALL:  // 2
+                case RETURN_GENERATOR:  // 1
+                case YIELD_VALUE:  // 1
+                    RETURN_IF_ERROR(insert_optimize(b, i + 1));
+                    break;
+            }
+        }
+        // cfg_instr *last = basicblock_last_instr(b);
+        // if (last && OPCODE_HAS_JUMP(last->i_opcode)) {
+        //     RETURN_IF_ERROR(insert_optimize(last->i_target, 0));
+        //     if (!IS_UNCONDITIONAL_JUMP_OPCODE(last->i_opcode)) {
+        //         if (last->i_opcode != SEND && last->i_opcode != FOR_ITER) {  // XXX
+        //             RETURN_IF_ERROR(insert_optimize(b->b_next, 0));
+        //         }
+        //     }
+        // }
+    }
+    return SUCCESS;
+}
+
 cfg_builder *
 _PyCfg_FromInstructionSequence(_PyInstructionSequence *seq)
 {
@@ -2848,6 +2915,8 @@ _PyCfg_OptimizedCfgToInstructionSequence(cfg_builder *g,
     }
 
     RETURN_IF_ERROR(convert_pseudo_ops(g));
+
+    RETURN_IF_ERROR(insert_optimizes(g));
 
     /* Order of basic blocks must have been determined by now */
 

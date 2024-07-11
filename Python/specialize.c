@@ -139,7 +139,7 @@ print_spec_stats(FILE *out, OpcodeStats *stats)
     fprintf(out, "opcode[BINARY_SLICE].specializable : 1\n");
     fprintf(out, "opcode[STORE_SLICE].specializable : 1\n");
     for (int i = 0; i < 256; i++) {
-        if (_PyOpcode_Caches[i] && i != JUMP_BACKWARD) {
+        if (_PyOpcode_Caches[i]) {
             fprintf(out, "opcode[%s].specializable : 1\n", _PyOpcode_OpName[i]);
         }
         PRINT_STAT(i, specialization.success);
@@ -431,8 +431,8 @@ _PyCode_Quicken(PyCodeObject *code)
         if (caches) {
             // The initial value depends on the opcode
             switch (opcode) {
-                case JUMP_BACKWARD:
-                    instructions[i + 1].counter = initial_jump_backoff_counter();
+                case OPTIMIZE:
+                    instructions[i + 1].counter = initial_optimize_backoff_counter();
                     break;
                 case POP_JUMP_IF_FALSE:
                 case POP_JUMP_IF_TRUE:
@@ -1848,7 +1848,7 @@ specialize_method_descriptor(PyMethodDescrObject *descr, _Py_CODEUNIT *instr,
             PyInterpreterState *interp = _PyInterpreterState_GET();
             PyObject *list_append = interp->callable_cache.list_append;
             _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_CALL + 1];
-            bool pop = (next.op.code == POP_TOP);
+            bool pop = (next.op.code == POP_TOP);  // XXX
             int oparg = instr->op.arg;
             if ((PyObject *)descr == list_append && oparg == 1 && pop) {
                 instr->op.code = CALL_LIST_APPEND;

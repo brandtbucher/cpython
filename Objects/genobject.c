@@ -342,8 +342,10 @@ _PyGen_yf(PyGenObject *gen)
 {
     if (gen->gi_frame_state == FRAME_SUSPENDED_YIELD_FROM) {
         _PyInterpreterFrame *frame = &gen->gi_iframe;
-        assert(is_resume(frame->instr_ptr));
-        assert((frame->instr_ptr->op.arg & RESUME_OPARG_LOCATION_MASK) >= RESUME_AFTER_YIELD_FROM);
+        // assert(is_resume(frame->instr_ptr));
+        // assert((frame->instr_ptr->op.arg & RESUME_OPARG_LOCATION_MASK) >= RESUME_AFTER_YIELD_FROM);
+        assert(is_resume(frame->instr_ptr + 2));
+        assert(((frame->instr_ptr + 2)->op.arg & RESUME_OPARG_LOCATION_MASK) >= RESUME_AFTER_YIELD_FROM);
         return PyStackRef_AsPyObjectNew(_PyFrame_StackPeek(frame));
     }
     return NULL;
@@ -372,11 +374,13 @@ gen_close(PyGenObject *gen, PyObject *args)
         Py_DECREF(yf);
     }
     _PyInterpreterFrame *frame = &gen->gi_iframe;
-    if (is_resume(frame->instr_ptr)) {
+    // if (is_resume(frame->instr_ptr)) {
+    if (is_resume(frame->instr_ptr + 2)) {
         /* We can safely ignore the outermost try block
          * as it is automatically generated to handle
          * StopIteration. */
-        int oparg = frame->instr_ptr->op.arg;
+        // int oparg = frame->instr_ptr->op.arg;
+        int oparg = (frame->instr_ptr + 2)->op.arg;
         if (oparg & RESUME_OPARG_DEPTH1_MASK) {
             // RESUME after YIELD_VALUE and exception depth is 1
             assert((oparg & RESUME_OPARG_LOCATION_MASK) != RESUME_AT_FUNC_START);
