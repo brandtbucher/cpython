@@ -2780,7 +2780,7 @@ insert_optimizes(cfg_builder *g)
         b->b_visited = true;
         cfg_instr *last = basicblock_last_instr(b);
         if (last && OPCODE_HAS_JUMP(last->i_opcode) && last->i_target->b_visited) {
-            RETURN_IF_ERROR(insert_optimize(last->i_target, 0));
+            RETURN_IF_ERROR(insert_optimize(b, b->b_iused - 1));
         }
         // // Merge points:
         // if (b->b_predecessors > 1) {
