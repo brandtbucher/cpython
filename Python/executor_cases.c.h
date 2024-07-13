@@ -4847,7 +4847,8 @@
                     Py_INCREF(executor);
                 }
                 else {
-                    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, false);
+                    int new_depth = (current_executor->vm_data.depth + 1) % 4;
+                    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, new_depth == 0);
                     if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
                         if (optimized < 0) {
@@ -4858,6 +4859,7 @@
                         tstate->previous_executor = (PyObject *)current_executor;
                         GOTO_TIER_ONE(target);
                     }
+                    executor->vm_data.depth = new_depth;
                 }
                 exit->executor = executor;
             }
@@ -4979,7 +4981,7 @@
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, false);
+                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, true);
                 if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(exit->temperature);
                     if (optimized < 0) {
@@ -4990,6 +4992,7 @@
                     GOTO_TIER_ONE(target);
                 }
                 else {
+                    executor->vm_data.depth = 0;
                     exit->temperature = initial_temperature_backoff_counter();
                 }
             }
