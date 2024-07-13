@@ -111,7 +111,7 @@ never_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec,
-    int Py_UNUSED(stack_entries))
+    int Py_UNUSED(stack_entries), bool Py_UNUSED(progress_needed))
 {
     // This may be called if the optimizer is reset
     return 0;
@@ -176,32 +176,37 @@ _Py_SetTier2Optimizer(_PyOptimizerObject *optimizer)
 int
 _PyOptimizer_Optimize(
     _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
-    _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr)
+    _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr, bool progress_needed)
 {
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     PyInterpreterState *interp = _PyInterpreterState_GET();
-    if (!has_space_for_executor(code, start)) {
+    if (progress_needed && !has_space_for_executor(code, start)) {
         return 0;
     }
     _PyOptimizerObject *opt = interp->optimizer;
-    int err = opt->optimize(opt, frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)));
+    int err = opt->optimize(opt, frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)), progress_needed);
     if (err <= 0) {
         return err;
     }
     assert(*executor_ptr != NULL);
-    int index = get_index_for_executor(code, start);
-    if (index < 0) {
-        /* Out of memory. Don't raise and assume that the
-         * error will show up elsewhere.
-         *
-         * If an optimizer has already produced an executor,
-         * it might get confused by the executor disappearing,
-         * but there is not much we can do about that here. */
-        Py_DECREF(*executor_ptr);
-        return 0;
+    if (progress_needed) {
+        int index = get_index_for_executor(code, start);
+        if (index < 0) {
+            /* Out of memory. Don't raise and assume that the
+            * error will show up elsewhere.
+            *
+            * If an optimizer has already produced an executor,
+            * it might get confused by the executor disappearing,
+            * but there is not much we can do about that here. */
+            Py_DECREF(*executor_ptr);
+            return 0;
+        }
+        insert_executor(code, start, index, *executor_ptr);
     }
-    insert_executor(code, start, index, *executor_ptr);
+    else {
+        (*executor_ptr)->vm_data.code = NULL;
+    }
     assert((*executor_ptr)->vm_data.valid);
     return 1;
 }
@@ -531,9 +536,8 @@ translate_bytecode_to_trace(
     _Py_CODEUNIT *instr,
     _PyUOpInstruction *trace,
     int buffer_size,
-    _PyBloomFilter *dependencies)
+    _PyBloomFilter *dependencies, bool progress_needed)
 {
-    bool progress_needed = true;
     PyCodeObject *code = _PyFrame_GetCode(frame);
     PyFunctionObject *func = (PyFunctionObject *)frame->f_funcobj;
     assert(PyFunction_Check(func));
@@ -567,6 +571,7 @@ translate_bytecode_to_trace(
             2 * INSTR_IP(initial_instr, code));
     ADD_TO_TRACE(_START_EXECUTOR, 0, (uintptr_t)instr, INSTR_IP(instr, code));
     uint32_t target = 0;
+    bool first = true;
 
 top:  // Jump here after _PUSH_FRAME or likely branches
     for (;;) {
@@ -602,9 +607,10 @@ top:  // Jump here after _PUSH_FRAME or likely branches
 
         /* Special case the first instruction,
          * so that we can guarantee forward progress */
-        if (progress_needed) {
-            progress_needed = false;
+        if (first) {
+            first = false;
             if (opcode == JUMP_BACKWARD || opcode == JUMP_BACKWARD_NO_INTERRUPT) {
+                progress_needed = false;
                 instr += 1 + _PyOpcode_Caches[opcode] - (int32_t)oparg;
                 initial_instr = instr;
                 if (opcode == JUMP_BACKWARD) {
@@ -612,7 +618,8 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                 }
                 continue;
             }
-            else {
+            else if (progress_needed) {
+                progress_needed = false;
                 if (OPCODE_HAS_EXIT(opcode) || OPCODE_HAS_DEOPT(opcode)) {
                     opcode = _PyOpcode_Deopt[opcode];
                 }
@@ -1205,13 +1212,13 @@ uop_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec_ptr,
-    int curr_stackentries)
+    int curr_stackentries, bool progress_needed)
 {
     _PyBloomFilter dependencies;
     _Py_BloomFilter_Init(&dependencies);
     _PyUOpInstruction buffer[UOP_MAX_TRACE_LENGTH];
     OPT_STAT_INC(attempts);
-    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH, &dependencies);
+    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH, &dependencies, progress_needed);
     if (length <= 0) {
         // Error or nothing translated
         return length;
@@ -1308,7 +1315,7 @@ counter_optimize(
     _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec_ptr,
-    int Py_UNUSED(curr_stackentries)
+    int Py_UNUSED(curr_stackentries), bool Py_UNUSED(progress_needed)
 )
 {
     PyCodeObject *code = _PyFrame_GetCode(frame);
