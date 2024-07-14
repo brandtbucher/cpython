@@ -66,6 +66,7 @@ _PATCH_FUNCS = {
     "IMAGE_REL_I386_DIR32": "patch_32",
     "IMAGE_REL_I386_REL32": "patch_x86_64_32rx",
     # aarch64-unknown-linux-gnu:
+    "R_AARCH64_ABS64": "patch_64",
     "R_AARCH64_CALL26": "patch_aarch64_26r",
     "R_AARCH64_JUMP26": "patch_aarch64_26r",
     "R_AARCH64_MOVW_UABS_G0_NC": "patch_aarch64_16a",
@@ -320,7 +321,7 @@ class StencilGroup:
                 in {"IMAGE_REL_AMD64_REL32", "R_X86_64_PLT32"}
                 and hole.value is HoleValue.ZERO
             ):
-                new_hole = self.code.emit_x86_64_trampoline(hole, alignment)
+                new_hole = self.data.emit_x86_64_trampoline(hole, alignment)
                 self.code.holes.remove(hole)
                 self.code.holes.append(new_hole)
         self.code.remove_jump(alignment=alignment)
