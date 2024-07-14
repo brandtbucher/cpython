@@ -4847,7 +4847,7 @@
                     Py_INCREF(executor);
                 }
                 else {
-                    int new_depth = (current_executor->vm_data.depth + 1) % 4;
+                    int new_depth = (current_executor->vm_data.depth + 1) % 8;
                     int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, new_depth == 0);
                     if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
