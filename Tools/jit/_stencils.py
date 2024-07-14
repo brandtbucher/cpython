@@ -235,7 +235,8 @@ class Stencil:
             [0xFF, 0xE0],
         ]:
             self.body.extend(code)
-        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64"))
+        assert _signed(hole.addend) == -4
+        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64", addend=0))
         self.trampolines[hole.symbol] = base
         return new_hole
 
