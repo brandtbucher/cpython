@@ -220,7 +220,8 @@ class Stencil:
         else:
             self.pad(alignment)
             base = len(self.body)
-        new_hole = hole.replace(addend=base, symbol=None, value=HoleValue.DATA)
+        assert _signed(hole.addend) == -4
+        new_hole = hole.replace(addend=base - 4, symbol=None, value=HoleValue.DATA)
 
         if reuse_trampoline:
             return new_hole
@@ -235,7 +236,6 @@ class Stencil:
             [0xFF, 0xE0],
         ]:
             self.body.extend(code)
-        assert _signed(hole.addend) == -4
         self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64", addend=0))
         self.trampolines[hole.symbol] = base
         return new_hole
