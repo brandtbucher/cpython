@@ -227,16 +227,16 @@ class Stencil:
             return new_hole
 
         self.disassembly += [
-            f"{base +  0:x}:       movabs rax, 0x0",
-            f"{base +  2:016x}:  R_X86_64_64    {hole.symbol}",
-            f"{base + 10:x}:       jmp    rax",
+            f"{base +  0:x}: ff 25 00 00 00 00             jmp qword ptr [rip]",
+            f"{base +  0:016x}: 00 00 00 00 00 00 00 00",
+            f"{base +  6:016x}:  R_X86_64_64    {hole.symbol}",
         ]
         for code in [
-            [0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-            [0xFF, 0xE0],
+            [0xFF, 0x25, 0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
         ]:
             self.body.extend(code)
-        self.holes.append(hole.replace(offset=base + 2, kind="R_X86_64_64", addend=0))
+        self.holes.append(hole.replace(offset=base + 6, kind="R_X86_64_64", addend=0))
         self.trampolines[hole.symbol] = base
         return new_hole
 
