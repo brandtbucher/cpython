@@ -206,6 +206,30 @@ _PyOptimizer_Optimize(
     return 1;
 }
 
+int
+_PyOptimizer_WarmUpSideExit(_PyInterpreterFrame *frame, _Py_CODEUNIT *target,
+                            _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr,
+                            _PyExitData *exit)
+{
+    if (target->op.code == ENTER_EXECUTOR) {
+        *executor_ptr = _PyFrame_GetCode(frame)->co_executors->executors[target->op.arg];
+        Py_INCREF(*executor_ptr);
+        return 1;
+    }
+    _Py_BackoffCounter temperature = exit->temperature;
+    if (!backoff_counter_triggers(temperature)) {
+        exit->temperature = advance_backoff_counter(temperature);
+        return 0;
+    }
+    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, executor_ptr);
+    if (optimized <= 0) {
+        exit->temperature = restart_backoff_counter(temperature);
+        return optimized;
+    }
+    exit->temperature = initial_temperature_backoff_counter();
+    return 1;
+}
+
 _PyExecutorObject *
 _Py_GetExecutor(PyCodeObject *code, int offset)
 {

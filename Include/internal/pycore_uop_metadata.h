@@ -251,6 +251,7 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_CHECK_STACK_SPACE_OPERAND] = HAS_DEOPT_FLAG,
     [_SAVE_RETURN_OFFSET] = HAS_ARG_FLAG,
     [_EXIT_TRACE] = HAS_ESCAPES_FLAG,
+    [_DYNAMIC_EXIT] = HAS_ESCAPES_FLAG,
     [_CHECK_VALIDITY] = HAS_DEOPT_FLAG,
     [_LOAD_CONST_INLINE] = HAS_PURE_FLAG,
     [_LOAD_CONST_INLINE_BORROW] = HAS_PURE_FLAG,
@@ -259,7 +260,6 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_LOAD_CONST_INLINE_BORROW_WITH_NULL] = HAS_PURE_FLAG,
     [_CHECK_FUNCTION] = HAS_DEOPT_FLAG,
     [_INTERNAL_INCREMENT_OPT_COUNTER] = 0,
-    [_DYNAMIC_EXIT] = HAS_ESCAPES_FLAG,
     [_START_EXECUTOR] = 0,
     [_FATAL_ERROR] = 0,
     [_CHECK_VALIDITY_AND_SET_IP] = HAS_DEOPT_FLAG,
@@ -990,6 +990,8 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 0;
         case _EXIT_TRACE:
             return 0;
+        case _DYNAMIC_EXIT:
+            return 0;
         case _CHECK_VALIDITY:
             return 0;
         case _LOAD_CONST_INLINE:
@@ -1006,8 +1008,6 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 0;
         case _INTERNAL_INCREMENT_OPT_COUNTER:
             return 1;
-        case _DYNAMIC_EXIT:
-            return 0;
         case _START_EXECUTOR:
             return 0;
         case _FATAL_ERROR:

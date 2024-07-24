@@ -2152,7 +2152,12 @@
 
         case _EXIT_TRACE: {
             PyObject *exit_p = (PyObject *)this_instr->operand;
+            (void)exit_p;
             ctx->done = true;
+            break;
+        }
+
+        case _DYNAMIC_EXIT: {
             break;
         }
 
@@ -2220,10 +2225,6 @@
         case _INTERNAL_INCREMENT_OPT_COUNTER: {
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
-
-        case _DYNAMIC_EXIT: {
             break;
         }
 

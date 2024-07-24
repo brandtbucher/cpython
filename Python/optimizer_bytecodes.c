@@ -789,6 +789,7 @@ dummy_func(void) {
     }
 
     op(_EXIT_TRACE, (--)) {
+        (void)exit_p;
         ctx->done = true;
     }
 
