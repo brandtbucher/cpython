@@ -799,7 +799,8 @@ top:  // Jump here after _PUSH_FRAME or likely branches
                             assert(i + 1 == nuops);
                             if (opcode == FOR_ITER_GEN ||
                                 opcode == LOAD_ATTR_PROPERTY ||
-                                opcode == SEND_GEN)
+                                opcode == SEND_GEN ||
+                                opcode == CALL_ALLOC_AND_ENTER_INIT)
                             {
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 ADD_TO_TRACE(uop, oparg, 0, target);

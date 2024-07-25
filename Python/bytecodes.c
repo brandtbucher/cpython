@@ -3650,18 +3650,17 @@ dummy_func(
             _CALL_TUPLE_1 +
             _CHECK_PERIODIC;
 
-        inst(CALL_ALLOC_AND_ENTER_INIT, (unused/1, unused/2, callable, null, args[oparg] -- unused)) {
+        op(_CALL_ALLOC_AND_ENTER_INIT_FRAME, (type_version/2, callable, null, args[oparg] -- init_frame: _PyInterpreterFrame *)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             /* This instruction does the following:
              * 1. Creates the object (by calling ``object.__new__``)
              * 2. Pushes a shim frame to the frame stack (to cleanup after ``__init__``)
              * 3. Pushes the frame for ``__init__`` to the frame stack
              * */
-            _PyCallCache *cache = (_PyCallCache *)&this_instr[1];
             DEOPT_IF(!PyStackRef_IsNull(null));
             DEOPT_IF(!PyType_Check(callable_o));
             PyTypeObject *tp = (PyTypeObject *)callable_o;
-            DEOPT_IF(tp->tp_version_tag != read_u32(cache->func_version));
+            DEOPT_IF(tp->tp_version_tag != type_version);
             assert(tp->tp_flags & Py_TPFLAGS_INLINE_VALUES);
             PyHeapTypeObject *cls = (PyHeapTypeObject *)callable_o;
             PyFunctionObject *init = (PyFunctionObject *)cls->_spec_cache.init;
@@ -3681,26 +3680,30 @@ dummy_func(
             Py_INCREF(self);
             shim->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
             Py_INCREF(init);
-            _PyInterpreterFrame *init_frame = _PyFrame_PushUnchecked(tstate, init, oparg+1);
+            init_frame = _PyFrame_PushUnchecked(tstate, init, oparg+1);
             /* Copy self followed by args to __init__ frame */
             init_frame->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
             for (int i = 0; i < oparg; i++) {
                 init_frame->localsplus[i+1] = args[i];
             }
-            frame->return_offset = (uint16_t)(next_instr - this_instr);
-            STACK_SHRINK(oparg+2);
+            frame->return_offset = (uint16_t)(1 + INLINE_CACHE_ENTRIES_CALL);
+            SYNC_SP();
             _PyFrame_SetStackPointer(frame, stack_pointer);
-            /* Link frames */
-            init_frame->previous = shim;
             shim->previous = frame;
-            frame = tstate->current_frame = init_frame;
             CALL_STAT_INC(inlined_py_calls);
-            /* Account for pushing the extra frame.
-             * We don't check recursion depth here,
-             * as it will be checked after start_frame */
+            frame = tstate->current_frame = shim;
             tstate->py_recursion_remaining--;
-            goto start_frame;
+            LOAD_SP();
+            // LOAD_IP(0);
+            // frame->return_offset = (uint16_t)(0);
         }
+
+        macro(CALL_ALLOC_AND_ENTER_INIT) =
+            unused/1 +
+            _CHECK_PEP_523 +
+            _CALL_ALLOC_AND_ENTER_INIT_FRAME +
+            // _SAVE_RETURN_OFFSET +
+            _PUSH_FRAME;
 
         inst(EXIT_INIT_CHECK, (should_be_none -- )) {
             assert(STACK_LEVEL() == 2);

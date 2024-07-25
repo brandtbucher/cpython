@@ -4055,7 +4055,82 @@
             break;
         }
 
-        /* _CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
+        case _CALL_ALLOC_AND_ENTER_INIT_FRAME: {
+            _PyStackRef *args;
+            _PyStackRef null;
+            _PyStackRef callable;
+            _PyInterpreterFrame *init_frame;
+            oparg = CURRENT_OPARG();
+            args = &stack_pointer[-oparg];
+            null = stack_pointer[-1 - oparg];
+            callable = stack_pointer[-2 - oparg];
+            uint32_t type_version = (uint32_t)CURRENT_OPERAND();
+            PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
+            /* This instruction does the following:
+             * 1. Creates the object (by calling ``object.__new__``)
+             * 2. Pushes a shim frame to the frame stack (to cleanup after ``__init__``)
+             * 3. Pushes the frame for ``__init__`` to the frame stack
+             * */
+            if (!PyStackRef_IsNull(null)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (!PyType_Check(callable_o)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            PyTypeObject *tp = (PyTypeObject *)callable_o;
+            if (tp->tp_version_tag != type_version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            assert(tp->tp_flags & Py_TPFLAGS_INLINE_VALUES);
+            PyHeapTypeObject *cls = (PyHeapTypeObject *)callable_o;
+            PyFunctionObject *init = (PyFunctionObject *)cls->_spec_cache.init;
+            PyCodeObject *code = (PyCodeObject *)init->func_code;
+            if (code->co_argcount != oparg+1) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (!_PyThreadState_HasStackSpace(tstate, code->co_framesize + _Py_InitCleanup.co_framesize)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            STAT_INC(CALL, hit);
+            PyObject *self = _PyType_NewManagedObject(tp);
+            if (self == NULL) {
+                JUMP_TO_ERROR();
+            }
+            PyStackRef_CLOSE(callable);
+            _PyInterpreterFrame *shim = _PyFrame_PushTrampolineUnchecked(
+                tstate, (PyCodeObject *)&_Py_InitCleanup, 1);
+            assert(_PyCode_CODE((PyCodeObject *)shim->f_executable)[0].op.code == EXIT_INIT_CHECK);
+            /* Push self onto stack of shim */
+            Py_INCREF(self);
+            shim->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
+            Py_INCREF(init);
+            init_frame = _PyFrame_PushUnchecked(tstate, init, oparg+1);
+            /* Copy self followed by args to __init__ frame */
+            init_frame->localsplus[0] = PyStackRef_FromPyObjectSteal(self);
+            for (int i = 0; i < oparg; i++) {
+                init_frame->localsplus[i+1] = args[i];
+            }
+            frame->return_offset = (uint16_t)(1 + INLINE_CACHE_ENTRIES_CALL);
+            stack_pointer += -2 - oparg;
+            assert(WITHIN_STACK_BOUNDS());
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            shim->previous = frame;
+            CALL_STAT_INC(inlined_py_calls);
+            frame = tstate->current_frame = shim;
+            tstate->py_recursion_remaining--;
+            LOAD_SP();
+            // LOAD_IP(0);
+            // frame->return_offset = (uint16_t)(0);
+            stack_pointer[0].bits = (uintptr_t)init_frame;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
 
         case _EXIT_INIT_CHECK: {
             _PyStackRef should_be_none;

@@ -1816,7 +1816,14 @@
             break;
         }
 
-        /* _CALL_ALLOC_AND_ENTER_INIT is not a viable micro-op for tier 2 */
+        case _CALL_ALLOC_AND_ENTER_INIT_FRAME: {
+            _PyInterpreterFrame *init_frame;
+            init_frame = sym_new_not_null(ctx);
+            stack_pointer[-2 - oparg] = (_Py_UopsSymbol *)init_frame;
+            stack_pointer += -1 - oparg;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
 
         case _EXIT_INIT_CHECK: {
             stack_pointer += -1;
