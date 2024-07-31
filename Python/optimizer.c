@@ -715,7 +715,7 @@ translate_bytecode_to_trace(
                         // We can't bail e.g. in the middle of
                         // LOAD_CONST + _RETURN_VALUE.
                         if (trace_stack_depth == 0) {
-                            if (!PyCode_Check(frame->previous->f_executable)) {
+                            if (!PyCode_Check(frame->previous->f_executable) || progress_needed) {
                                 DPRINTF(2, "Trace stack underflow\n");
                                 OPT_STAT_INC(trace_stack_underflow);
                                 goto done;
