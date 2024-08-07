@@ -258,6 +258,7 @@ uop_dealloc(_PyExecutorObject *self) {
     _PyObject_GC_UNTRACK(self);
     assert(self->vm_data.code == NULL);
     unlink_executor(self);
+    Py_CLEAR(self->refs);
 #ifdef _Py_JIT
     _PyJIT_Free(self);
 #endif
@@ -361,6 +362,7 @@ static int
 executor_traverse(PyObject *o, visitproc visit, void *arg)
 {
     _PyExecutorObject *executor = (_PyExecutorObject *)o;
+    Py_VISIT(executor->refs);
     for (uint32_t i = 0; i < executor->exit_count; i++) {
         Py_VISIT(executor->exits[i].executor);
     }
@@ -1061,6 +1063,7 @@ allocate_executor(int exit_count, int length)
     res->trace = (_PyUOpInstruction *)(res->exits + exit_count);
     res->code_size = length;
     res->exit_count = exit_count;
+    res->refs = NULL;
     return res;
 }
 
@@ -1239,11 +1242,16 @@ uop_optimize(
     assert(length < UOP_MAX_TRACE_LENGTH);
     OPT_STAT_INC(traces_created);
     char *env_var = Py_GETENV("PYTHON_UOPS_OPTIMIZE");
+    PyObject *refs = PyList_New(0);
+    if (refs == NULL) {
+        return -1;
+    }
     if (env_var == NULL || *env_var == '\0' || *env_var > '0') {
         length = _Py_uop_analyze_and_optimize(frame, buffer,
                                            length,
-                                           curr_stackentries, &dependencies);
+                                           curr_stackentries, &dependencies, refs);
         if (length <= 0) {
+            Py_DECREF(refs);
             return length;
         }
     }
@@ -1270,8 +1278,10 @@ uop_optimize(
     assert(length <= UOP_MAX_TRACE_LENGTH);
     _PyExecutorObject *executor = make_executor_from_uops(buffer, length,  &dependencies);
     if (executor == NULL) {
+        Py_DECREF(refs);
         return -1;
     }
+    executor->refs = refs;
     assert(length <= UOP_MAX_TRACE_LENGTH);
     *exec_ptr = executor;
     return 1;
@@ -1574,6 +1584,7 @@ executor_clear(_PyExecutorObject *executor)
      * free the executor unless we hold a strong reference to it
      */
     Py_INCREF(executor);
+    Py_CLEAR(executor->refs);
     for (uint32_t i = 0; i < executor->exit_count; i++) {
         executor->exits[i].temperature = initial_unreachable_backoff_counter();
         Py_CLEAR(executor->exits[i].executor);

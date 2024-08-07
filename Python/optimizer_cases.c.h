@@ -34,6 +34,12 @@
                 if (_Py_IsImmortal(val)) {
                     REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
                 }
+                else {
+                    if (PyList_Append(refs, val)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)val);
+                }
             }
             stack_pointer[0] = value;
             stack_pointer += 1;
@@ -243,10 +249,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and add tests!
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
@@ -273,10 +290,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and add tests!
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
@@ -303,10 +331,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and add tests!
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
@@ -365,10 +404,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and update tests!
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
@@ -396,10 +446,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and update tests!
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
@@ -427,10 +488,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and update tests!
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
@@ -467,10 +539,21 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and update tests!
             }
             else {
                 res = sym_new_type(ctx, &PyUnicode_Type);
@@ -493,10 +576,23 @@
                 if (temp == NULL) {
                     goto error;
                 }
+                assert(this_instr[-3].opcode == _NOP);
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-3], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                if (_Py_IsImmortal(temp)) {
+                    REPLACE_OP(&this_instr[-1], _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                }
+                else {
+                    if (PyList_Append(refs, temp)) {
+                        goto error;
+                    }
+                    REPLACE_OP(&this_instr[-1], _LOAD_CONST_INLINE, 0, (uintptr_t)temp);
+                }
                 res = sym_new_const(ctx, temp);
                 Py_DECREF(temp);
-                // TODO gh-115506:
-                // replace opcode with constant propagated one and update tests!
+                REPLACE_OP(this_instr, _STORE_FAST, this_instr->operand, 0);
             }
             else {
                 res = sym_new_type(ctx, &PyUnicode_Type);
