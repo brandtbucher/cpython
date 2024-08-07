@@ -230,7 +230,7 @@ dummy_func(
             value = PyStackRef_DUP(value_s);
         }
 
-        replicate(8) pure inst(LOAD_FAST, (-- value)) {
+        replicate(26) pure inst(LOAD_FAST, (-- value)) {
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
         }
@@ -252,7 +252,7 @@ dummy_func(
             value = PyStackRef_FromPyObjectNew(GETITEM(FRAME_CO_CONSTS, oparg));
         }
 
-        replicate(8) inst(STORE_FAST, (value --)) {
+        replicate(26) inst(STORE_FAST, (value --)) {
             SETLOCAL(oparg, value);
         }
 
@@ -4301,7 +4301,7 @@ dummy_func(
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
 
-        pure inst(COPY, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
+        replicate(4) pure inst(COPY, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
             assert(oparg > 0);
             top = PyStackRef_DUP(bottom);
         }
@@ -4333,7 +4333,7 @@ dummy_func(
 
         macro(BINARY_OP) = _SPECIALIZE_BINARY_OP + _BINARY_OP;
 
-        pure inst(SWAP, (bottom, unused[oparg-2], top --
+        replicate(5) pure inst(SWAP, (bottom, unused[oparg-2], top --
                     top, unused[oparg-2], bottom)) {
             assert(oparg >= 2);
         }

@@ -30,6 +30,24 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_LOAD_FAST_5] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
     [_LOAD_FAST_6] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
     [_LOAD_FAST_7] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_8] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_9] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_10] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_11] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_12] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_13] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_14] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_15] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_16] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_17] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_18] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_19] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_20] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_21] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_22] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_23] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_24] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
+    [_LOAD_FAST_25] = HAS_LOCAL_FLAG | HAS_PURE_FLAG,
     [_LOAD_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_PURE_FLAG,
     [_LOAD_FAST_AND_CLEAR] = HAS_ARG_FLAG | HAS_LOCAL_FLAG,
     [_LOAD_FAST_LOAD_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG,
@@ -42,6 +60,24 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_STORE_FAST_5] = HAS_LOCAL_FLAG,
     [_STORE_FAST_6] = HAS_LOCAL_FLAG,
     [_STORE_FAST_7] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_8] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_9] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_10] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_11] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_12] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_13] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_14] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_15] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_16] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_17] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_18] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_19] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_20] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_21] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_22] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_23] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_24] = HAS_LOCAL_FLAG,
+    [_STORE_FAST_25] = HAS_LOCAL_FLAG,
     [_STORE_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG,
     [_STORE_FAST_LOAD_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG,
     [_STORE_FAST_STORE_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG,
@@ -243,8 +279,17 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_CONVERT_VALUE] = HAS_ARG_FLAG | HAS_ERROR_FLAG,
     [_FORMAT_SIMPLE] = HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_FORMAT_WITH_SPEC] = HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
+    [_COPY_0] = HAS_PURE_FLAG,
+    [_COPY_1] = HAS_PURE_FLAG,
+    [_COPY_2] = HAS_PURE_FLAG,
+    [_COPY_3] = HAS_PURE_FLAG,
     [_COPY] = HAS_ARG_FLAG | HAS_PURE_FLAG,
     [_BINARY_OP] = HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
+    [_SWAP_0] = HAS_PURE_FLAG,
+    [_SWAP_1] = HAS_PURE_FLAG,
+    [_SWAP_2] = HAS_PURE_FLAG,
+    [_SWAP_3] = HAS_PURE_FLAG,
+    [_SWAP_4] = HAS_PURE_FLAG,
     [_SWAP] = HAS_ARG_FLAG | HAS_PURE_FLAG,
     [_GUARD_IS_TRUE_POP] = HAS_EXIT_FLAG,
     [_GUARD_IS_FALSE_POP] = HAS_EXIT_FLAG,
@@ -273,9 +318,11 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
 };
 
 const uint8_t _PyUop_Replication[MAX_UOP_ID+1] = {
-    [_LOAD_FAST] = 8,
-    [_STORE_FAST] = 8,
+    [_LOAD_FAST] = 26,
+    [_STORE_FAST] = 26,
     [_INIT_CALL_PY_EXACT_ARGS] = 5,
+    [_COPY] = 4,
+    [_SWAP] = 5,
 };
 
 const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
@@ -347,6 +394,10 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_CONTAINS_OP_SET] = "_CONTAINS_OP_SET",
     [_CONVERT_VALUE] = "_CONVERT_VALUE",
     [_COPY] = "_COPY",
+    [_COPY_0] = "_COPY_0",
+    [_COPY_1] = "_COPY_1",
+    [_COPY_2] = "_COPY_2",
+    [_COPY_3] = "_COPY_3",
     [_COPY_FREE_VARS] = "_COPY_FREE_VARS",
     [_DELETE_ATTR] = "_DELETE_ATTR",
     [_DELETE_DEREF] = "_DELETE_DEREF",
@@ -444,12 +495,30 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_LOAD_FAST] = "_LOAD_FAST",
     [_LOAD_FAST_0] = "_LOAD_FAST_0",
     [_LOAD_FAST_1] = "_LOAD_FAST_1",
+    [_LOAD_FAST_10] = "_LOAD_FAST_10",
+    [_LOAD_FAST_11] = "_LOAD_FAST_11",
+    [_LOAD_FAST_12] = "_LOAD_FAST_12",
+    [_LOAD_FAST_13] = "_LOAD_FAST_13",
+    [_LOAD_FAST_14] = "_LOAD_FAST_14",
+    [_LOAD_FAST_15] = "_LOAD_FAST_15",
+    [_LOAD_FAST_16] = "_LOAD_FAST_16",
+    [_LOAD_FAST_17] = "_LOAD_FAST_17",
+    [_LOAD_FAST_18] = "_LOAD_FAST_18",
+    [_LOAD_FAST_19] = "_LOAD_FAST_19",
     [_LOAD_FAST_2] = "_LOAD_FAST_2",
+    [_LOAD_FAST_20] = "_LOAD_FAST_20",
+    [_LOAD_FAST_21] = "_LOAD_FAST_21",
+    [_LOAD_FAST_22] = "_LOAD_FAST_22",
+    [_LOAD_FAST_23] = "_LOAD_FAST_23",
+    [_LOAD_FAST_24] = "_LOAD_FAST_24",
+    [_LOAD_FAST_25] = "_LOAD_FAST_25",
     [_LOAD_FAST_3] = "_LOAD_FAST_3",
     [_LOAD_FAST_4] = "_LOAD_FAST_4",
     [_LOAD_FAST_5] = "_LOAD_FAST_5",
     [_LOAD_FAST_6] = "_LOAD_FAST_6",
     [_LOAD_FAST_7] = "_LOAD_FAST_7",
+    [_LOAD_FAST_8] = "_LOAD_FAST_8",
+    [_LOAD_FAST_9] = "_LOAD_FAST_9",
     [_LOAD_FAST_AND_CLEAR] = "_LOAD_FAST_AND_CLEAR",
     [_LOAD_FAST_CHECK] = "_LOAD_FAST_CHECK",
     [_LOAD_FAST_LOAD_FAST] = "_LOAD_FAST_LOAD_FAST",
@@ -498,12 +567,30 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_STORE_FAST] = "_STORE_FAST",
     [_STORE_FAST_0] = "_STORE_FAST_0",
     [_STORE_FAST_1] = "_STORE_FAST_1",
+    [_STORE_FAST_10] = "_STORE_FAST_10",
+    [_STORE_FAST_11] = "_STORE_FAST_11",
+    [_STORE_FAST_12] = "_STORE_FAST_12",
+    [_STORE_FAST_13] = "_STORE_FAST_13",
+    [_STORE_FAST_14] = "_STORE_FAST_14",
+    [_STORE_FAST_15] = "_STORE_FAST_15",
+    [_STORE_FAST_16] = "_STORE_FAST_16",
+    [_STORE_FAST_17] = "_STORE_FAST_17",
+    [_STORE_FAST_18] = "_STORE_FAST_18",
+    [_STORE_FAST_19] = "_STORE_FAST_19",
     [_STORE_FAST_2] = "_STORE_FAST_2",
+    [_STORE_FAST_20] = "_STORE_FAST_20",
+    [_STORE_FAST_21] = "_STORE_FAST_21",
+    [_STORE_FAST_22] = "_STORE_FAST_22",
+    [_STORE_FAST_23] = "_STORE_FAST_23",
+    [_STORE_FAST_24] = "_STORE_FAST_24",
+    [_STORE_FAST_25] = "_STORE_FAST_25",
     [_STORE_FAST_3] = "_STORE_FAST_3",
     [_STORE_FAST_4] = "_STORE_FAST_4",
     [_STORE_FAST_5] = "_STORE_FAST_5",
     [_STORE_FAST_6] = "_STORE_FAST_6",
     [_STORE_FAST_7] = "_STORE_FAST_7",
+    [_STORE_FAST_8] = "_STORE_FAST_8",
+    [_STORE_FAST_9] = "_STORE_FAST_9",
     [_STORE_FAST_LOAD_FAST] = "_STORE_FAST_LOAD_FAST",
     [_STORE_FAST_STORE_FAST] = "_STORE_FAST_STORE_FAST",
     [_STORE_GLOBAL] = "_STORE_GLOBAL",
@@ -513,6 +600,11 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_STORE_SUBSCR_DICT] = "_STORE_SUBSCR_DICT",
     [_STORE_SUBSCR_LIST_INT] = "_STORE_SUBSCR_LIST_INT",
     [_SWAP] = "_SWAP",
+    [_SWAP_0] = "_SWAP_0",
+    [_SWAP_1] = "_SWAP_1",
+    [_SWAP_2] = "_SWAP_2",
+    [_SWAP_3] = "_SWAP_3",
+    [_SWAP_4] = "_SWAP_4",
     [_TIER2_RESUME_CHECK] = "_TIER2_RESUME_CHECK",
     [_TO_BOOL] = "_TO_BOOL",
     [_TO_BOOL_BOOL] = "_TO_BOOL_BOOL",
@@ -556,6 +648,42 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 0;
         case _LOAD_FAST_7:
             return 0;
+        case _LOAD_FAST_8:
+            return 0;
+        case _LOAD_FAST_9:
+            return 0;
+        case _LOAD_FAST_10:
+            return 0;
+        case _LOAD_FAST_11:
+            return 0;
+        case _LOAD_FAST_12:
+            return 0;
+        case _LOAD_FAST_13:
+            return 0;
+        case _LOAD_FAST_14:
+            return 0;
+        case _LOAD_FAST_15:
+            return 0;
+        case _LOAD_FAST_16:
+            return 0;
+        case _LOAD_FAST_17:
+            return 0;
+        case _LOAD_FAST_18:
+            return 0;
+        case _LOAD_FAST_19:
+            return 0;
+        case _LOAD_FAST_20:
+            return 0;
+        case _LOAD_FAST_21:
+            return 0;
+        case _LOAD_FAST_22:
+            return 0;
+        case _LOAD_FAST_23:
+            return 0;
+        case _LOAD_FAST_24:
+            return 0;
+        case _LOAD_FAST_25:
+            return 0;
         case _LOAD_FAST:
             return 0;
         case _LOAD_FAST_AND_CLEAR:
@@ -579,6 +707,42 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _STORE_FAST_6:
             return 1;
         case _STORE_FAST_7:
+            return 1;
+        case _STORE_FAST_8:
+            return 1;
+        case _STORE_FAST_9:
+            return 1;
+        case _STORE_FAST_10:
+            return 1;
+        case _STORE_FAST_11:
+            return 1;
+        case _STORE_FAST_12:
+            return 1;
+        case _STORE_FAST_13:
+            return 1;
+        case _STORE_FAST_14:
+            return 1;
+        case _STORE_FAST_15:
+            return 1;
+        case _STORE_FAST_16:
+            return 1;
+        case _STORE_FAST_17:
+            return 1;
+        case _STORE_FAST_18:
+            return 1;
+        case _STORE_FAST_19:
+            return 1;
+        case _STORE_FAST_20:
+            return 1;
+        case _STORE_FAST_21:
+            return 1;
+        case _STORE_FAST_22:
+            return 1;
+        case _STORE_FAST_23:
+            return 1;
+        case _STORE_FAST_24:
+            return 1;
+        case _STORE_FAST_25:
             return 1;
         case _STORE_FAST:
             return 1;
@@ -982,10 +1146,28 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _FORMAT_WITH_SPEC:
             return 2;
+        case _COPY_0:
+            return 1 + (oparg-1);
+        case _COPY_1:
+            return 1 + (oparg-1);
+        case _COPY_2:
+            return 1 + (oparg-1);
+        case _COPY_3:
+            return 1 + (oparg-1);
         case _COPY:
             return 1 + (oparg-1);
         case _BINARY_OP:
             return 2;
+        case _SWAP_0:
+            return 2 + (oparg-2);
+        case _SWAP_1:
+            return 2 + (oparg-2);
+        case _SWAP_2:
+            return 2 + (oparg-2);
+        case _SWAP_3:
+            return 2 + (oparg-2);
+        case _SWAP_4:
+            return 2 + (oparg-2);
         case _SWAP:
             return 2 + (oparg-2);
         case _GUARD_IS_TRUE_POP:

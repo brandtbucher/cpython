@@ -146,6 +146,222 @@
             break;
         }
 
+        case _LOAD_FAST_8: {
+            _PyStackRef value;
+            oparg = 8;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_9: {
+            _PyStackRef value;
+            oparg = 9;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_10: {
+            _PyStackRef value;
+            oparg = 10;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_11: {
+            _PyStackRef value;
+            oparg = 11;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_12: {
+            _PyStackRef value;
+            oparg = 12;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_13: {
+            _PyStackRef value;
+            oparg = 13;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_14: {
+            _PyStackRef value;
+            oparg = 14;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_15: {
+            _PyStackRef value;
+            oparg = 15;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_16: {
+            _PyStackRef value;
+            oparg = 16;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_17: {
+            _PyStackRef value;
+            oparg = 17;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_18: {
+            _PyStackRef value;
+            oparg = 18;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_19: {
+            _PyStackRef value;
+            oparg = 19;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_20: {
+            _PyStackRef value;
+            oparg = 20;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_21: {
+            _PyStackRef value;
+            oparg = 21;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_22: {
+            _PyStackRef value;
+            oparg = 22;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_23: {
+            _PyStackRef value;
+            oparg = 23;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_24: {
+            _PyStackRef value;
+            oparg = 24;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_25: {
+            _PyStackRef value;
+            oparg = 25;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = PyStackRef_DUP(GETLOCAL(oparg));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _LOAD_FAST: {
             _PyStackRef value;
             oparg = CURRENT_OPARG();
@@ -259,6 +475,204 @@
         case _STORE_FAST_7: {
             _PyStackRef value;
             oparg = 7;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_8: {
+            _PyStackRef value;
+            oparg = 8;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_9: {
+            _PyStackRef value;
+            oparg = 9;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_10: {
+            _PyStackRef value;
+            oparg = 10;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_11: {
+            _PyStackRef value;
+            oparg = 11;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_12: {
+            _PyStackRef value;
+            oparg = 12;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_13: {
+            _PyStackRef value;
+            oparg = 13;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_14: {
+            _PyStackRef value;
+            oparg = 14;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_15: {
+            _PyStackRef value;
+            oparg = 15;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_16: {
+            _PyStackRef value;
+            oparg = 16;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_17: {
+            _PyStackRef value;
+            oparg = 17;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_18: {
+            _PyStackRef value;
+            oparg = 18;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_19: {
+            _PyStackRef value;
+            oparg = 19;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_20: {
+            _PyStackRef value;
+            oparg = 20;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_21: {
+            _PyStackRef value;
+            oparg = 21;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_22: {
+            _PyStackRef value;
+            oparg = 22;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_23: {
+            _PyStackRef value;
+            oparg = 23;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_24: {
+            _PyStackRef value;
+            oparg = 24;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            SETLOCAL(oparg, value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_25: {
+            _PyStackRef value;
+            oparg = 25;
             assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
@@ -4838,6 +5252,62 @@
             break;
         }
 
+        case _COPY_0: {
+            _PyStackRef bottom;
+            _PyStackRef top;
+            oparg = 0;
+            assert(oparg == CURRENT_OPARG());
+            bottom = stack_pointer[-1 - (oparg-1)];
+            assert(oparg > 0);
+            top = PyStackRef_DUP(bottom);
+            stack_pointer[0] = top;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _COPY_1: {
+            _PyStackRef bottom;
+            _PyStackRef top;
+            oparg = 1;
+            assert(oparg == CURRENT_OPARG());
+            bottom = stack_pointer[-1 - (oparg-1)];
+            assert(oparg > 0);
+            top = PyStackRef_DUP(bottom);
+            stack_pointer[0] = top;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _COPY_2: {
+            _PyStackRef bottom;
+            _PyStackRef top;
+            oparg = 2;
+            assert(oparg == CURRENT_OPARG());
+            bottom = stack_pointer[-1 - (oparg-1)];
+            assert(oparg > 0);
+            top = PyStackRef_DUP(bottom);
+            stack_pointer[0] = top;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _COPY_3: {
+            _PyStackRef bottom;
+            _PyStackRef top;
+            oparg = 3;
+            assert(oparg == CURRENT_OPARG());
+            bottom = stack_pointer[-1 - (oparg-1)];
+            assert(oparg > 0);
+            top = PyStackRef_DUP(bottom);
+            stack_pointer[0] = top;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _COPY: {
             _PyStackRef bottom;
             _PyStackRef top;
@@ -4869,6 +5339,71 @@
             stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _SWAP_0: {
+            _PyStackRef top;
+            _PyStackRef bottom;
+            oparg = 0;
+            assert(oparg == CURRENT_OPARG());
+            top = stack_pointer[-1];
+            bottom = stack_pointer[-2 - (oparg-2)];
+            assert(oparg >= 2);
+            stack_pointer[-2 - (oparg-2)] = top;
+            stack_pointer[-1] = bottom;
+            break;
+        }
+
+        case _SWAP_1: {
+            _PyStackRef top;
+            _PyStackRef bottom;
+            oparg = 1;
+            assert(oparg == CURRENT_OPARG());
+            top = stack_pointer[-1];
+            bottom = stack_pointer[-2 - (oparg-2)];
+            assert(oparg >= 2);
+            stack_pointer[-2 - (oparg-2)] = top;
+            stack_pointer[-1] = bottom;
+            break;
+        }
+
+        case _SWAP_2: {
+            _PyStackRef top;
+            _PyStackRef bottom;
+            oparg = 2;
+            assert(oparg == CURRENT_OPARG());
+            top = stack_pointer[-1];
+            bottom = stack_pointer[-2 - (oparg-2)];
+            assert(oparg >= 2);
+            stack_pointer[-2 - (oparg-2)] = top;
+            stack_pointer[-1] = bottom;
+            break;
+        }
+
+        case _SWAP_3: {
+            _PyStackRef top;
+            _PyStackRef bottom;
+            oparg = 3;
+            assert(oparg == CURRENT_OPARG());
+            top = stack_pointer[-1];
+            bottom = stack_pointer[-2 - (oparg-2)];
+            assert(oparg >= 2);
+            stack_pointer[-2 - (oparg-2)] = top;
+            stack_pointer[-1] = bottom;
+            break;
+        }
+
+        case _SWAP_4: {
+            _PyStackRef top;
+            _PyStackRef bottom;
+            oparg = 4;
+            assert(oparg == CURRENT_OPARG());
+            top = stack_pointer[-1];
+            bottom = stack_pointer[-2 - (oparg-2)];
+            assert(oparg >= 2);
+            stack_pointer[-2 - (oparg-2)] = top;
+            stack_pointer[-1] = bottom;
             break;
         }
 

@@ -20,6 +20,12 @@ from typing import TextIO
 
 DEFAULT_OUTPUT = ROOT / "Include/internal/pycore_uop_ids.h"
 
+def sort_key(name_and_uop):
+    name, uop = name_and_uop
+    base, replication = name.rsplit("_", 1)
+    if replication.isdigit():
+        return base, int(replication)
+    return name, -1
 
 def generate_uop_ids(
     filenames: list[str], analysis: Analysis, outfile: TextIO, distinct_namespace: bool
@@ -37,7 +43,7 @@ def generate_uop_ids(
 
         uops = [(uop.name, uop) for uop in analysis.uops.values()]
         # Sort so that _BASE comes immediately before _BASE_0, etc.
-        for name, uop in sorted(uops):
+        for name, uop in sorted(uops, key=sort_key):
             if name in PRE_DEFINED:
                 continue
             if uop.properties.tier == 1:
