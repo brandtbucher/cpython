@@ -63,7 +63,6 @@ dummy_func(void) {
     _Py_UOpsContext *ctx;
     _PyUOpInstruction *this_instr;
     _PyBloomFilter *dependencies;
-    PyObject *refs;
     int modified;
     int curr_space;
     int max_space;
@@ -82,10 +81,9 @@ dummy_func(void) {
 
     op(_LOAD_FAST, (-- value)) {
         value = GETLOCAL(oparg);
-        if (sym_is_const(value)) {
+        if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
             PyObject *val = sym_get_const(value);
-            int opcode = _Py_IsImmortal(val) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val);
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
         }
     }
 
@@ -202,15 +200,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -230,15 +226,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -258,15 +252,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -287,15 +279,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -316,15 +306,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -345,15 +333,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -369,15 +355,13 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _POP_TOP, 0, 0);
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
         }
@@ -394,19 +378,17 @@ dummy_func(void) {
             if (temp == NULL) {
                 goto error;
             }
-            assert(this_instr[-3].opcode == _NOP);
-            assert(this_instr[-2].opcode == _NOP);
-            assert(this_instr[-1].opcode == _NOP);
-            REPLACE_OP(&this_instr[-3], _POP_TOP, 0, 0);
-            REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
-            if (merge_const(refs, &temp) < 0) {
-                goto error;
+            if (_Py_IsImmortal(temp)) {
+                assert(this_instr[-3].opcode == _NOP);
+                assert(this_instr[-2].opcode == _NOP);
+                assert(this_instr[-1].opcode == _NOP);
+                REPLACE_OP(&this_instr[-3], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-2], _POP_TOP, 0, 0);
+                REPLACE_OP(&this_instr[-1], _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)temp);
+                REPLACE_OP(this_instr, _STORE_FAST, this_instr->operand, 0);
             }
-            int opcode = _Py_IsImmortal(temp) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(&this_instr[-1], opcode, 0, (uintptr_t)temp);
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
-            REPLACE_OP(this_instr, _STORE_FAST, this_instr->operand, 0);
         }
         else {
             res = sym_new_type(ctx, &PyUnicode_Type);
@@ -522,10 +504,9 @@ dummy_func(void) {
     }
 
     op(_COPY, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
-        if (sym_is_const(bottom)) {
+        if (sym_is_const(bottom) && _Py_IsImmortal(sym_get_const(bottom))) {
             PyObject *value = sym_get_const(bottom);
-            int opcode = _Py_IsImmortal(value) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)value);
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)value);
         }
         assert(oparg > 0);
         top = bottom;
