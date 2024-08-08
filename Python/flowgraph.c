@@ -2858,6 +2858,8 @@ _PyCfg_ToInstructionSequence(cfg_builder *g, _PyInstructionSequence *seq)
         b->b_label = (jump_target_label){lbl};
         lbl += 1;
     }
+    RETURN_IF_ERROR(_PyInstructionSequence_Addop(seq, JUMP_BACKWARD, 0, NO_LOCATION));
+    seq->s_instrs[0].i_except_handler_info.h_label = -1;
     for (basicblock *b = g->g_entryblock; b != NULL; b = b->b_next) {
         RETURN_IF_ERROR(_PyInstructionSequence_UseLabel(seq, b->b_label.id));
         for (int i = 0; i < b->b_iused; i++) {
