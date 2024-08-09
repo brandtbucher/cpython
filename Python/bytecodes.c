@@ -2494,7 +2494,9 @@ dummy_func(
         }
 
         tier1 inst(JUMP_BACKWARD, (unused/1 --)) {
-            CHECK_EVAL_BREAKER();
+            if (oparg) {
+                CHECK_EVAL_BREAKER();
+            }
             assert(oparg <= INSTR_OFFSET());
             JUMPBY(-oparg);
             #ifdef _Py_TIER2

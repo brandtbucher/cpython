@@ -602,6 +602,10 @@ translate_bytecode_to_trace(
                 goto done;
             }
         }
+        if (opcode == JUMP_BACKWARD && oparg == 0) {
+            instr += 1 + _PyOpcode_Caches[JUMP_BACKWARD];
+            goto top;
+        }
         assert(opcode != ENTER_EXECUTOR && opcode != EXTENDED_ARG);
         RESERVE_RAW(2, "_CHECK_VALIDITY_AND_SET_IP");
         ADD_TO_TRACE(_CHECK_VALIDITY_AND_SET_IP, 0, (uintptr_t)instr, target);
@@ -669,6 +673,7 @@ translate_bytecode_to_trace(
             }
 
             case JUMP_BACKWARD:
+                assert(oparg);
                 ADD_TO_TRACE(_CHECK_PERIODIC, 0, 0, target);
                 _Py_FALLTHROUGH;
             case JUMP_BACKWARD_NO_INTERRUPT:
