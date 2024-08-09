@@ -5095,15 +5095,18 @@
             (void)this_instr;
             next_instr += 2;
             INSTRUCTION_STATS(JUMP_BACKWARD);
-            // _CHECK_PERIODIC
+            // _CHECK_PERIODIC_IF_OPARG
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate);
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    _PyFrame_SetStackPointer(frame, stack_pointer);
-                    int err = _Py_HandlePending(tstate);
-                    stack_pointer = _PyFrame_GetStackPointer(frame);
-                    if (err != 0) goto error;
+                (void)oparg;  // XXX: Cases generator hangs without this?
+                if (oparg) {
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        _PyFrame_SetStackPointer(frame, stack_pointer);
+                        int err = _Py_HandlePending(tstate);
+                        stack_pointer = _PyFrame_GetStackPointer(frame);
+                        if (err != 0) goto error;
+                    }
                 }
             }
             // _JUMP_BACKWARD

@@ -11,6 +11,10 @@
             break;
         }
 
+        case _CHECK_PERIODIC_IF_OPARG: {
+            break;
+        }
+
         case _CHECK_PERIODIC_IF_NOT_YIELD_FROM: {
             break;
         }
