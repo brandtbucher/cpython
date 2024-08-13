@@ -523,6 +523,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
