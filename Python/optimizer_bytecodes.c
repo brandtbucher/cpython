@@ -847,6 +847,11 @@ dummy_func(void) {
         ctx->done = true;
     }
 
+    op(_DYNAMIC_EXIT, (exit_p/4 -- )) {
+        (void)exit_p;
+        ctx->done = true;
+    }
+
 // END BYTECODES //
 
 }

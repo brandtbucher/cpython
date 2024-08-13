@@ -2380,6 +2380,9 @@
         }
 
         case _DYNAMIC_EXIT: {
+            PyObject *exit_p = (PyObject *)this_instr->operand;
+            (void)exit_p;
+            ctx->done = true;
             break;
         }
 
