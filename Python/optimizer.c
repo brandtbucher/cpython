@@ -782,6 +782,11 @@ translate_bytecode_to_trace(
                             else if (code != NULL) {
                                 operand = (uintptr_t)code | 1;
                             }
+                            else if (uop == _YIELD_VALUE) {
+                                DPRINTF(2, "Trace stack underflow\n");
+                                OPT_STAT_INC(trace_stack_underflow);
+                                goto done;
+                            }
                             else {
                                 ADD_TO_TRACE(uop, oparg, 0, target);
                                 ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
