@@ -171,6 +171,11 @@ _PyOptimizer_Optimize(
     // this is true, since a deopt won't infinitely re-enter the executor:
     chain_depth %= MAX_CHAIN_DEPTH;
     bool progress_needed = chain_depth == 0;
+    if (!PyCode_Check(frame->f_executable) ||
+        !PyFunction_Check(frame->f_funcobj))
+    {
+        return 0;
+    }
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     PyInterpreterState *interp = _PyInterpreterState_GET();
