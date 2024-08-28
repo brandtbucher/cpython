@@ -4794,11 +4794,7 @@ dummy_func(
                 if (!exit->executor->vm_data.valid) {
                     Py_CLEAR(exit->executor);
                 }
-                else if (exit->executor->vm_data.code == code &&
-                         exit->target == target - _PyCode_CODE(code))
-                {
-                    assert(target->op.code == ENTER_EXECUTOR);
-                    assert(exit->executor == code->co_executors->executors[target->op.arg]);
+                else if (exit->executor->vm_data.first_instr == target) {
                     Py_INCREF(exit->executor);
                     GOTO_TIER_TWO(exit->executor);
                 }
@@ -4813,7 +4809,11 @@ dummy_func(
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
+                int chain_depth = 0;
+                if (exit->executor == NULL) {
+                    chain_depth = current_executor->vm_data.chain_depth + 1;
+                }
+                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
                 if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(exit->temperature);
                     if (optimized < 0) {
@@ -4828,7 +4828,6 @@ dummy_func(
                     if (exit->executor == NULL) {
                         Py_INCREF(executor);
                         exit->executor = executor;
-                        exit->target = target - _PyCode_CODE(code);
                     }
                 }
             }
