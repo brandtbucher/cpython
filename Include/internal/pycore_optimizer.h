@@ -137,7 +137,7 @@ PyAPI_FUNC(void) _Py_Executors_InvalidateAll(PyInterpreterState *interp, int is_
 
 int _Py_uop_analyze_and_optimize(struct _PyInterpreterFrame *frame,
     _PyUOpInstruction *trace, int trace_len, int curr_stackentries,
-    _PyBloomFilter *dependencies, PyObject *refs);
+    _PyBloomFilter *dependencies, PyObject *new_refs);
 
 extern PyTypeObject _PyCounterExecutor_Type;
 extern PyTypeObject _PyCounterOptimizer_Type;
