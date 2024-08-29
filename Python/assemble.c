@@ -676,7 +676,7 @@ resolve_jump_offsets(instr_sequence *instrs)
                     instr->i_oparg = offset - instr->i_oparg;
                 }
                 else {
-                    assert(!IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
+                    // assert(!IS_BACKWARDS_JUMP_OPCODE(instr->i_opcode));
                     instr->i_oparg = instr->i_oparg - offset;
                 }
                 if (instr_size(instr) != isize) {

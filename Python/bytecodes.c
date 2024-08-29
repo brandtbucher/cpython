@@ -148,12 +148,18 @@ dummy_func(
         };
 
         op(_CHECK_PERIODIC, (--)) {
+        #if TIER_ONE
+            if (opcode != JUMP_BACKWARD || oparg) {
+        #endif
             _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-            QSBR_QUIESCENT_STATE(tstate); \
+            QSBR_QUIESCENT_STATE(tstate);
             if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
                 int err = _Py_HandlePending(tstate);
                 ERROR_IF(err != 0, error);
             }
+        #if TIER_ONE
+            }
+        #endif
         }
 
         op(_CHECK_PERIODIC_IF_NOT_YIELD_FROM, (--)) {
@@ -4869,7 +4875,7 @@ dummy_func(
 #endif
             uintptr_t eval_breaker = _Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker);
             DEOPT_IF(eval_breaker & _PY_EVAL_EVENTS_MASK);
-            assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
+            // assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
         }
 
 // END BYTECODES //

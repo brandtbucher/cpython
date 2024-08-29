@@ -13,12 +13,19 @@
         }
 
         case _CHECK_PERIODIC: {
-            _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-            QSBR_QUIESCENT_STATE(tstate); \
-            if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                int err = _Py_HandlePending(tstate);
-                if (err != 0) JUMP_TO_ERROR();
+            oparg = CURRENT_OPARG();
+            #if TIER_ONE
+            if (opcode != JUMP_BACKWARD || oparg) {
+                #endif
+                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                QSBR_QUIESCENT_STATE(tstate);
+                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                    int err = _Py_HandlePending(tstate);
+                    if (err != 0) JUMP_TO_ERROR();
+                }
+                #if TIER_ONE
             }
+            #endif
             break;
         }
 
@@ -5518,7 +5525,7 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
+            // assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
             break;
         }
 

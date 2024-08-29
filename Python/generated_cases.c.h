@@ -952,17 +952,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -1316,17 +1322,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -1395,17 +1407,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -1473,17 +1491,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -1537,17 +1561,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -1650,17 +1680,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-3 - (oparg & 1)] = result;
-                        stack_pointer += -2 - (oparg & 1);
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-3 - (oparg & 1)] = result;
+                            stack_pointer += -2 - (oparg & 1);
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-3 - (oparg & 1)] = result;
             stack_pointer += -2 - (oparg & 1);
@@ -2058,17 +2094,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-3 - oparg] = res;
-                        stack_pointer += -2 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-3 - oparg] = res;
+                            stack_pointer += -2 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-3 - oparg] = res;
             stack_pointer += -2 - oparg;
@@ -2304,17 +2346,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -2385,17 +2433,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -2453,17 +2507,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -2524,17 +2584,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -2607,17 +2673,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -2817,12 +2889,18 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) goto pop_2_error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) goto pop_2_error;
+                    }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-3] = res;
             stack_pointer += -2;
@@ -2858,12 +2936,18 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) goto pop_2_error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) goto pop_2_error;
+                    }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-3] = res;
             stack_pointer += -2;
@@ -4199,17 +4283,23 @@
             }
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) {
-                        stack_pointer[-2 - oparg] = res;
-                        stack_pointer += -1 - oparg;
-                        assert(WITHIN_STACK_BOUNDS());
-                        goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) {
+                            stack_pointer[-2 - oparg] = res;
+                            stack_pointer += -1 - oparg;
+                            assert(WITHIN_STACK_BOUNDS());
+                            goto error;
+                        }
                     }
+                    #if TIER_ONE
                 }
+                #endif
             }
             stack_pointer[-2 - oparg] = res;
             stack_pointer += -1 - oparg;
@@ -4353,12 +4443,18 @@
             /* Skip 1 cache entry */
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) goto error;
+                    }
+                    #if TIER_ONE
                 }
+                #endif
             }
             // _MONITOR_JUMP_BACKWARD
             {
@@ -4759,12 +4855,18 @@
             INSTRUCTION_STATS(JUMP_BACKWARD);
             // _CHECK_PERIODIC
             {
-                _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
-                QSBR_QUIESCENT_STATE(tstate); \
-                if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                    int err = _Py_HandlePending(tstate);
-                    if (err != 0) goto error;
+                #if TIER_ONE
+                if (opcode != JUMP_BACKWARD || oparg) {
+                    #endif
+                    _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
+                    QSBR_QUIESCENT_STATE(tstate);
+                    if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
+                        int err = _Py_HandlePending(tstate);
+                        if (err != 0) goto error;
+                    }
+                    #if TIER_ONE
                 }
+                #endif
             }
             // _JUMP_BACKWARD
             {
