@@ -5422,6 +5422,7 @@
             PyObject *exit_p = (PyObject *)CURRENT_OPERAND();
             tstate->previous_executor = (PyObject *)current_executor;
             _PyExitData *exit = (_PyExitData *)exit_p;
+            PyCodeObject *code = (PyCodeObject *)frame->f_executable;
             _Py_CODEUNIT *target = frame->instr_ptr;
             #if defined(Py_DEBUG) && !defined(_Py_JIT)
             OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
@@ -5430,13 +5431,21 @@
                 _PyUOpPrint(&next_uop[-1]);
                 printf(", exit %u, temp %d, target %d -> %s]\n",
                        exit - current_executor->exits, exit->temperature.as_counter,
-                       (int)(target - _PyCode_CODE(_PyFrame_GetCode(frame))),
+                       (int)(target - _PyCode_CODE(code)),
                        _PyOpcode_OpName[target->op.code]);
             }
             #endif
+            if (exit->executor) {
+                if (!exit->executor->vm_data.valid) {
+                    Py_CLEAR(exit->executor);
+                }
+                else if (exit->executor->vm_data.first_instr == target) {
+                    Py_INCREF(exit->executor);
+                    GOTO_TIER_TWO(exit->executor);
+                }
+            }
             _PyExecutorObject *executor;
             if (target->op.code == ENTER_EXECUTOR) {
-                PyCodeObject *code = (PyCodeObject *)frame->f_executable;
                 executor = code->co_executors->executors[target->op.arg];
                 Py_INCREF(executor);
             }
@@ -5445,7 +5454,11 @@
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
+                int chain_depth = 0;
+                if (exit->executor == NULL) {
+                    chain_depth = current_executor->vm_data.chain_depth + 1;
+                }
+                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
                 if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(exit->temperature);
                     if (optimized < 0) {
@@ -5457,6 +5470,10 @@
                 }
                 else {
                     exit->temperature = initial_temperature_backoff_counter();
+                    if (exit->executor == NULL) {
+                        Py_INCREF(executor);
+                        exit->executor = executor;
+                    }
                 }
             }
             GOTO_TIER_TWO(executor);

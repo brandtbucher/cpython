@@ -206,6 +206,7 @@ _PyOptimizer_Optimize(
         (*executor_ptr)->vm_data.code = NULL;
     }
     (*executor_ptr)->vm_data.chain_depth = chain_depth;
+    (*executor_ptr)->vm_data.first_instr = start;
     assert((*executor_ptr)->vm_data.valid);
     return 1;
 }

@@ -36,6 +36,7 @@ typedef struct {
     _PyBloomFilter bloom;
     _PyExecutorLinkListNode links;
     PyCodeObject *code;  // Weak (NULL if no corresponding ENTER_EXECUTOR).
+    _Py_CODEUNIT *first_instr;
 } _PyVMData;
 
 /* Depending on the format,
