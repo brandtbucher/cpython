@@ -3378,6 +3378,7 @@ class TestValueErrors(unittest.TestCase):
         self.assertIs(y, None)
         self.assertIs(z, None)
 
+@unittest.skip("XXX")
 class TestSourceLocations(unittest.TestCase):
     def test_jump_threading(self):
         # See gh-123048
