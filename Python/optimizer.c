@@ -167,6 +167,11 @@ _PyOptimizer_Optimize(
     _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr, int chain_depth,
     int frames_pushed)
 {
+    if (!PyCode_Check(frame->f_executable) ||
+        !PyFunction_Check(frame->f_funcobj))
+    {
+        return 0;
+    }
     // The first executor in a chain and the MAX_CHAIN_DEPTH'th executor *must*
     // make progress in order to avoid infinite loops or excessively-long
     // side-exit chains. We can only insert the executor into the bytecode if
@@ -513,19 +518,25 @@ add_to_trace(
         return 0; \
     } \
     assert(func == NULL || func->func_code == (PyObject *)code); \
+    assert(code != NULL); \
     trace_stack[trace_stack_depth].func = func; \
     trace_stack[trace_stack_depth].code = code; \
     trace_stack[trace_stack_depth].instr = instr; \
     trace_stack_depth++;
 #define TRACE_STACK_POP() \
     if (trace_stack_depth <= 0) { \
-        Py_FatalError("Trace stack underflow\n"); \
+        func = NULL; \
+        code = NULL; \
+        instr = NULL; \
     } \
-    trace_stack_depth--; \
-    func = trace_stack[trace_stack_depth].func; \
-    code = trace_stack[trace_stack_depth].code; \
-    assert(func == NULL || func->func_code == (PyObject *)code); \
-    instr = trace_stack[trace_stack_depth].instr;
+    else { \
+        trace_stack_depth--; \
+        func = trace_stack[trace_stack_depth].func; \
+        code = trace_stack[trace_stack_depth].code; \
+        assert(func == NULL || func->func_code == (PyObject *)code); \
+        assert(code != NULL); \
+        instr = trace_stack[trace_stack_depth].instr; \
+    }
 
 /* Returns the length of the trace on success,
  * 0 if it failed to produce a worthwhile trace,
@@ -743,17 +754,6 @@ translate_bytecode_to_trace(
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
                     int nuops = expansion->nuops;
                     RESERVE(nuops + 1); /* One extra for exit */
-                    int16_t last_op = expansion->uops[nuops-1].uop;
-                    if (last_op == _RETURN_VALUE || last_op == _RETURN_GENERATOR || last_op == _YIELD_VALUE) {
-                        // Check for trace stack underflow now:
-                        // We can't bail e.g. in the middle of
-                        // LOAD_CONST + _RETURN_VALUE.
-                        if (trace_stack_depth == 0) {
-                            DPRINTF(2, "Trace stack underflow\n");
-                            OPT_STAT_INC(trace_stack_underflow);
-                            goto done;
-                        }
-                    }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
                     for (int i = 0; i < nuops; i++) {
                         oparg = orig_oparg;
@@ -817,7 +817,9 @@ translate_bytecode_to_trace(
                                 operand = (uintptr_t)code | 1;
                             }
                             else {
-                                operand = 0;
+                                ADD_TO_TRACE(uop, oparg, 0, target);
+                                ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                goto done;
                             }
                             trace_stack_depth++;
                             ADD_TO_TRACE(uop, oparg, operand, target);
@@ -888,11 +890,9 @@ translate_bytecode_to_trace(
                                 if (new_func != NULL) {
                                     operand = (uintptr_t)new_func;
                                 }
-                                else if (new_code != NULL) {
-                                    operand = (uintptr_t)new_code | 1;
-                                }
                                 else {
-                                    operand = 0;
+                                    assert(new_code != NULL);
+                                    operand = (uintptr_t)new_code | 1;
                                 }
                                 trace_stack_depth--;
                                 ADD_TO_TRACE(uop, oparg, operand, target);

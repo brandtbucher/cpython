@@ -661,7 +661,9 @@ dummy_func(void) {
             break;
         }
         frame_pop(ctx);
-        stack_pointer = ctx->frame->stack_pointer;
+        if (ctx->frame) {
+            stack_pointer = ctx->frame->stack_pointer;
+        }
         res = retval;
 
         /* Stack space handling */
@@ -669,13 +671,14 @@ dummy_func(void) {
         assert(co != NULL);
         int framesize = co->co_framesize;
         assert(framesize > 0);
-        assert(framesize <= curr_space);
+        // assert(framesize <= curr_space);
         curr_space -= framesize;
 
         co = get_code(this_instr);
         if (co == NULL) {
             // might be impossible, but bailing is still safe
             ctx->done = true;
+            break;
         }
     }
 
@@ -687,7 +690,9 @@ dummy_func(void) {
             break;
         }
         frame_pop(ctx);
-        stack_pointer = ctx->frame->stack_pointer;
+        if (ctx->frame) {
+            stack_pointer = ctx->frame->stack_pointer;
+        }
         res = sym_new_unknown(ctx);
 
         /* Stack space handling */
@@ -695,13 +700,14 @@ dummy_func(void) {
         assert(co != NULL);
         int framesize = co->co_framesize;
         assert(framesize > 0);
-        assert(framesize <= curr_space);
+        // assert(framesize <= curr_space);
         curr_space -= framesize;
 
         co = get_code(this_instr);
         if (co == NULL) {
             // might be impossible, but bailing is still safe
             ctx->done = true;
+            break;
         }
     }
 
@@ -845,6 +851,11 @@ dummy_func(void) {
     }
 
     op(_EXIT_TRACE, (exit_p/4 --)) {
+        (void)exit_p;
+        ctx->done = true;
+    }
+
+    op(_DYNAMIC_EXIT, (exit_p/4 --)) {
         (void)exit_p;
         ctx->done = true;
     }

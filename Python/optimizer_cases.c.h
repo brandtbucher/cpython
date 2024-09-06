@@ -633,19 +633,22 @@
                 break;
             }
             frame_pop(ctx);
-            stack_pointer = ctx->frame->stack_pointer;
+            if (ctx->frame) {
+                stack_pointer = ctx->frame->stack_pointer;
+            }
             res = retval;
             /* Stack space handling */
             assert(corresponding_check_stack == NULL);
             assert(co != NULL);
             int framesize = co->co_framesize;
             assert(framesize > 0);
-            assert(framesize <= curr_space);
+            // assert(framesize <= curr_space);
             curr_space -= framesize;
             co = get_code(this_instr);
             if (co == NULL) {
                 // might be impossible, but bailing is still safe
                 ctx->done = true;
+                break;
             }
             stack_pointer[0] = res;
             stack_pointer += 1;
@@ -2101,19 +2104,22 @@
                 break;
             }
             frame_pop(ctx);
-            stack_pointer = ctx->frame->stack_pointer;
+            if (ctx->frame) {
+                stack_pointer = ctx->frame->stack_pointer;
+            }
             res = sym_new_unknown(ctx);
             /* Stack space handling */
             assert(corresponding_check_stack == NULL);
             assert(co != NULL);
             int framesize = co->co_framesize;
             assert(framesize > 0);
-            assert(framesize <= curr_space);
+            // assert(framesize <= curr_space);
             curr_space -= framesize;
             co = get_code(this_instr);
             if (co == NULL) {
                 // might be impossible, but bailing is still safe
                 ctx->done = true;
+                break;
             }
             stack_pointer[0] = res;
             stack_pointer += 1;
@@ -2376,6 +2382,9 @@
         }
 
         case _DYNAMIC_EXIT: {
+            PyObject *exit_p = (PyObject *)this_instr->operand;
+            (void)exit_p;
+            ctx->done = true;
             break;
         }
 

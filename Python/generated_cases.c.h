@@ -533,6 +533,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -1055,6 +1058,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -1158,6 +1164,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -1254,6 +1263,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -1977,6 +1989,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -2147,6 +2162,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -2694,6 +2712,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -2770,6 +2791,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -3655,7 +3679,8 @@
                     }
                     /* iterator ended normally */
                     assert(next_instr[oparg].op.code == END_FOR ||
-                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR);
+                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR ||
+                       next_instr[oparg].op.code == ENTER_EXECUTOR);
                     PyStackRef_CLOSE(iter);
                     STACK_SHRINK(1);
                     /* Jump forward oparg, then skip following END_FOR and POP_TOP instruction */
@@ -3713,6 +3738,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -4299,7 +4327,8 @@
                 }
                 /* iterator ended normally */
                 assert(next_instr[oparg].op.code == END_FOR ||
-                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR);
+                       next_instr[oparg].op.code == INSTRUMENTED_END_FOR ||
+                       next_instr[oparg].op.code == ENTER_EXECUTOR);
                 STACK_SHRINK(1);
                 PyStackRef_CLOSE(iter_stackref);
                 /* Skip END_FOR and POP_TOP */
@@ -4567,6 +4596,9 @@
                 _PyEval_FrameClearAndPop(tstate, dying);
                 LOAD_SP();
                 LOAD_IP(frame->return_offset);
+                #if TIER_TWO
+                frame->instr_ptr += frame->return_offset;
+                #endif
                 res = retval;
                 LLTRACE_RESUME_FRAME();
             }
@@ -4609,6 +4641,9 @@
                 _PyEval_FrameClearAndPop(tstate, dying);
                 LOAD_SP();
                 LOAD_IP(frame->return_offset);
+                #if TIER_TWO
+                frame->instr_ptr += frame->return_offset;
+                #endif
                 res = retval;
                 LLTRACE_RESUME_FRAME();
             }
@@ -4674,6 +4709,9 @@
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
                 #endif
                 LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+                #if TIER_TWO
+                frame->instr_ptr += 1 + INLINE_CACHE_ENTRIES_SEND;
+                #endif
                 LOAD_SP();
                 value = retval;
                 LLTRACE_RESUME_FRAME();
@@ -5372,6 +5410,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -6508,6 +6549,9 @@
                 _PyEval_FrameClearAndPop(tstate, dying);
                 LOAD_SP();
                 LOAD_IP(frame->return_offset);
+                #if TIER_TWO
+                frame->instr_ptr += frame->return_offset;
+                #endif
                 res = retval;
                 LLTRACE_RESUME_FRAME();
             }
@@ -6542,6 +6586,9 @@
             _PyThreadState_PopFrame(tstate, frame);
             frame = tstate->current_frame = prev;
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             LOAD_SP();
             LLTRACE_RESUME_FRAME();
             stack_pointer[0] = res;
@@ -6571,6 +6618,9 @@
             _PyEval_FrameClearAndPop(tstate, dying);
             LOAD_SP();
             LOAD_IP(frame->return_offset);
+            #if TIER_TWO
+            frame->instr_ptr += frame->return_offset;
+            #endif
             res = retval;
             LLTRACE_RESUME_FRAME();
             stack_pointer[0] = res;
@@ -6702,6 +6752,9 @@
                 tstate->py_recursion_remaining--;
                 LOAD_SP();
                 LOAD_IP(0);
+                #if TIER_TWO
+                frame->instr_ptr += 0;
+                #endif
                 LLTRACE_RESUME_FRAME();
             }
             DISPATCH();
@@ -7662,6 +7715,9 @@
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
             #endif
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+            #if TIER_TWO
+            frame->instr_ptr += 1 + INLINE_CACHE_ENTRIES_SEND;
+            #endif
             LOAD_SP();
             value = retval;
             LLTRACE_RESUME_FRAME();
