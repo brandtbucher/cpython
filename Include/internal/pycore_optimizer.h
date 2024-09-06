@@ -47,8 +47,9 @@ typedef struct {
  *    uint16_t error_target;
  */
 typedef struct {
-    uint16_t opcode:15;
+    uint16_t opcode:12;
     uint16_t format:1;
+    uint16_t frames_pushed:3;
     uint16_t oparg;
     union {
         uint32_t target;
@@ -63,6 +64,7 @@ typedef struct {
 typedef struct {
     uint32_t target;
     _Py_BackoffCounter temperature;
+    uint64_t frames_pushed;
     const struct _PyExecutorObject *executor;
 } _PyExitData;
 
@@ -84,7 +86,7 @@ typedef struct _PyOptimizerObject _PyOptimizerObject;
 typedef int (*_Py_optimize_func)(
     _PyOptimizerObject* self, struct _PyInterpreterFrame *frame,
     _Py_CODEUNIT *instr, _PyExecutorObject **exec_ptr,
-    int curr_stackentries, bool progress_needed);
+    int curr_stackentries, bool progress_needed, int frames_pushed);
 
 struct _PyOptimizerObject {
     PyObject_HEAD
@@ -264,7 +266,7 @@ extern int _Py_uop_frame_pop(_Py_UOpsContext *ctx);
 
 PyAPI_FUNC(PyObject *) _Py_uop_symbols_test(PyObject *self, PyObject *ignored);
 
-PyAPI_FUNC(int) _PyOptimizer_Optimize(struct _PyInterpreterFrame *frame, _Py_CODEUNIT *start, _PyStackRef *stack_pointer, _PyExecutorObject **exec_ptr, int chain_depth);
+PyAPI_FUNC(int) _PyOptimizer_Optimize(struct _PyInterpreterFrame *frame, _Py_CODEUNIT *start, _PyStackRef *stack_pointer, _PyExecutorObject **exec_ptr, int chain_depth, int frames_pushed);
 
 static inline int is_terminator(const _PyUOpInstruction *uop)
 {

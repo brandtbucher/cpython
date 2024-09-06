@@ -656,6 +656,10 @@ dummy_func(void) {
     op(_RETURN_VALUE, (retval -- res)) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;
+            break;
+        }
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
         res = retval;
@@ -678,6 +682,10 @@ dummy_func(void) {
     op(_RETURN_GENERATOR, ( -- res)) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;
+            break;
+        }
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
         res = sym_new_unknown(ctx);

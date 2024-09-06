@@ -628,6 +628,10 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;
+                break;
+            }
             frame_pop(ctx);
             stack_pointer = ctx->frame->stack_pointer;
             res = retval;
@@ -2092,6 +2096,10 @@
         case _RETURN_GENERATOR: {
             _Py_UopsSymbol *res;
             ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;
+                break;
+            }
             frame_pop(ctx);
             stack_pointer = ctx->frame->stack_pointer;
             res = sym_new_unknown(ctx);
