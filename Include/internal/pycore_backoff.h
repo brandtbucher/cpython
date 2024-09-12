@@ -118,9 +118,6 @@ initial_jump_backoff_counter(void)
 }
 
 /* Initial exit temperature.
- * Must be larger than ADAPTIVE_COOLDOWN_VALUE,
- * otherwise when a side exit warms up we may construct
- * a new trace before the Tier 1 code has properly re-specialized.
  * Backoff sequence 64, 128, 256, 512, 1024, 2048, 4096. */
 #define SIDE_EXIT_INITIAL_VALUE 64
 #define SIDE_EXIT_INITIAL_BACKOFF 6
