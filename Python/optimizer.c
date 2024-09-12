@@ -704,6 +704,10 @@ translate_bytecode_to_trace(
 
             default:
             {
+                if (_PyOpcode_Caches[opcode]) {
+                    // Make it so we re-specialize on the first failure:
+                    instr[1].counter = make_backoff_counter(0, 0);
+                }
                 const struct opcode_macro_expansion *expansion = &_PyOpcode_macro_expansion[opcode];
                 if (expansion->nuops > 0) {
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
