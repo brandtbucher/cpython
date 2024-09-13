@@ -579,8 +579,30 @@ translate_bytecode_to_trace(
 
         if (!first && instr == initial_instr) {
             // We have looped around to the start:
-            RESERVE(1);
-            ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 0);
+            int end = trace_length;
+            assert(trace[0].opcode == _START_EXECUTOR);
+            for (int i = 1; i < end; i++) {
+                _PyUOpInstruction *uop = &trace[i];
+                int stubs = 0;
+                if (OPCODE_HAS_DEOPT(opcode)) {
+                    stubs++;
+                }
+                if (OPCODE_HAS_ERROR(opcode)) {
+                    stubs++;
+                }
+                if (OPCODE_HAS_EXIT(opcode)) {
+                    stubs++;
+                }
+                // uop + stubs + _JUMP_TO_TOP all need to fit. Don't use
+                // RESERVE since we need to insert _JUMP_TO_TOP once
+                // we're out of space:
+                if (max_length < trace_length + 1 + stubs + 1) {
+                    break;
+                }
+                max_length -= stubs;
+                ADD_TO_TRACE(uop->opcode, uop->oparg, uop->operand, uop->target);
+            }
+            ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, trace_length - end + 1);
             goto done;
         }
 
@@ -990,6 +1012,14 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
     int32_t current_popped = -1;
     int32_t current_exit_op = -1;
     /* Leaving in NOPs slows down the interpreter and messes up the stats */
+    _PyUOpInstruction *jump_to_top = &buffer[length - 1];
+    if (jump_to_top->opcode == _JUMP_TO_TOP) {
+        int nops = 0;
+        for (int i = 0; i < (int)jump_to_top->target; i++) {
+            nops += (buffer[i].opcode == _NOP);
+        }
+        jump_to_top->target -= nops;
+    }
     _PyUOpInstruction *copy_to = &buffer[0];
     for (int i = 0; i < length; i++) {
         _PyUOpInstruction *inst = &buffer[i];
@@ -1048,7 +1078,7 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
         if (opcode == _JUMP_TO_TOP) {
             assert(buffer[0].opcode == _START_EXECUTOR);
             buffer[i].format = UOP_FORMAT_JUMP;
-            buffer[i].jump_target = 1;
+            buffer[i].jump_target = target;
         }
     }
     return next_spare;

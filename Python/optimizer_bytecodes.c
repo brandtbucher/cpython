@@ -619,7 +619,10 @@ dummy_func(void) {
         (void)callable;
 
         PyCodeObject *co = NULL;
-        assert((this_instr + 2)->opcode == _PUSH_FRAME);
+        if ((this_instr + 2)->opcode != _PUSH_FRAME) {
+            ctx->done = true;
+            break;
+        }
         uint64_t push_operand = (this_instr + 2)->operand;
         if (push_operand & 1) {
             co = (PyCodeObject *)(push_operand & ~1);
@@ -881,6 +884,27 @@ dummy_func(void) {
         (void)value;
         REPLACE_OP(this_instr, _POP_TOP_LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)Py_True);
         res = sym_new_const(ctx, Py_True);
+    }
+
+    op(_ITER_CHECK_LIST, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyListIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyListIter_Type);
+    }
+
+    op(_ITER_CHECK_RANGE, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyRangeIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyRangeIter_Type);
+    }
+
+    op(_ITER_CHECK_TUPLE, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyTupleIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyTupleIter_Type);
     }
 
     op(_JUMP_TO_TOP, (--)) {
