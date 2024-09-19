@@ -4739,6 +4739,9 @@ dummy_func(
                         tstate->previous_executor = (PyObject *)current_executor;
                         GOTO_TIER_ONE(target);
                     }
+                    if (current_executor->vm_data.chain_depth == 0) {
+                        current_executor->vm_data.compact = true;
+                    }
                 }
                 exit->executor = executor;
             }

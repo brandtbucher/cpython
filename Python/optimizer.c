@@ -201,6 +201,7 @@ _PyOptimizer_Optimize(
         (*executor_ptr)->vm_data.code = NULL;
     }
     (*executor_ptr)->vm_data.chain_depth = chain_depth;
+    (*executor_ptr)->vm_data.compact = false;
     assert((*executor_ptr)->vm_data.valid);
     return 1;
 }
@@ -1233,6 +1234,8 @@ static _PyExecutorObject *
 compact_executor(_PyExecutorObject *root)
 {
     assert(root->vm_data.chain_depth == 0);
+    assert(root->vm_data.compact);
+    root->vm_data.compact = false;
     _PyBloomFilter dependencies;
     _Py_BloomFilter_Init(&dependencies);
     // Perform a breadth-first search to find all of the executors we want to compact:
@@ -1294,7 +1297,12 @@ compact_executor(_PyExecutorObject *root)
     if (nexecutors == 1) {
         return (_PyExecutorObject *)Py_NewRef(root);
     }
-    return make_executor_from_uops(buffer, length, &dependencies);
+    _PyExecutorObject *new = make_executor_from_uops(buffer, length, &dependencies);
+    if (new) {
+        new->vm_data.chain_depth = 0;
+        new->vm_data.compact = false;
+    }
+    return new;
 }
 
 int
@@ -1311,7 +1319,7 @@ _Py_Executors_Compact(PyInterpreterState *interp)
     for (_PyExecutorObject *exec = interp->executor_list_head; exec != NULL;) {
         assert(exec->vm_data.valid);
         _PyExecutorObject *next = exec->vm_data.links.next;
-        if (exec->vm_data.code && PyList_Append(compact, (PyObject *)exec)) {
+        if (exec->vm_data.compact && PyList_Append(compact, (PyObject *)exec)) {
             Py_DECREF(compact);
             return -1;
         }
@@ -1332,7 +1340,6 @@ _Py_Executors_Compact(PyInterpreterState *interp)
             int index = instruction->op.arg;
             assert(code->co_executors->executors[index] == old);
             insert_executor(code, instruction, index, new);
-            new->vm_data.chain_depth = 0;
             executor_clear(old);
         }
         Py_DECREF(new);
