@@ -94,8 +94,10 @@ PyAPI_FUNC(_PyExecutorObject*) _Py_GetExecutor(PyCodeObject *code, int offset);
 
 void _Py_ExecutorInit(_PyExecutorObject *, const _PyBloomFilter *);
 void _Py_ExecutorDetach(_PyExecutorObject *);
+int _Py_Executors_Compact(PyInterpreterState *interp);
 void _Py_BloomFilter_Init(_PyBloomFilter *);
 void _Py_BloomFilter_Add(_PyBloomFilter *bloom, void *obj);
+void _Py_BloomFilter_Update(_PyBloomFilter *bloom, _PyBloomFilter *other);
 PyAPI_FUNC(void) _Py_Executor_DependsOn(_PyExecutorObject *executor, void *obj);
 
 #define _Py_MAX_ALLOWED_BUILTINS_MODIFICATIONS 3

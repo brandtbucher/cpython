@@ -1127,7 +1127,7 @@ sanity_check(_PyExecutorObject *executor)
         _PyExitData *exit = &executor->exits[i];
         CHECK(exit->target < (1 << 25));
     }
-    bool ended = false;
+    // bool ended = false;
     uint32_t i = 0;
     CHECK(executor->trace[0].opcode == _START_EXECUTOR);
     for (; i < executor->code_size; i++) {
@@ -1147,21 +1147,21 @@ sanity_check(_PyExecutorObject *executor)
             CHECK(inst->format == UOP_FORMAT_JUMP);
             CHECK(inst->error_target < executor->code_size);
         }
-        if (is_terminator(inst)) {
-            ended = true;
-            i++;
-            break;
-        }
+        // if (is_terminator(inst)) {
+        //     ended = true;
+        //     i++;
+        //     break;
+        // }
     }
-    CHECK(ended);
-    for (; i < executor->code_size; i++) {
-        const _PyUOpInstruction *inst = &executor->trace[i];
-        uint16_t opcode = inst->opcode;
-        CHECK(
-            opcode == _DEOPT ||
-            opcode == _EXIT_TRACE ||
-            opcode == _ERROR_POP_N);
-    }
+    // CHECK(ended);
+    // for (; i < executor->code_size; i++) {
+    //     const _PyUOpInstruction *inst = &executor->trace[i];
+    //     uint16_t opcode = inst->opcode;
+    //     CHECK(
+    //         opcode == _DEOPT ||
+    //         opcode == _EXIT_TRACE ||
+    //         opcode == _ERROR_POP_N);
+    // }
 }
 
 #undef CHECK
@@ -1257,6 +1257,120 @@ int effective_trace_length(_PyUOpInstruction *buffer, int length)
     Py_UNREACHABLE();
 }
 #endif
+
+#define MAX_COMPACTION (1 << 4)
+
+static _PyExecutorObject *
+compact_executor(_PyExecutorObject *root)
+{
+    assert(root->vm_data.chain_depth == 0);
+    _PyBloomFilter dependencies;
+    _Py_BloomFilter_Init(&dependencies);
+    // Perform a breadth-first search to find all of the executors we want to compact:
+    _PyExecutorObject *executors[MAX_COMPACTION] = {root};
+    int nexecutors = 1;
+    _PyUOpInstruction buffer[UOP_MAX_TRACE_LENGTH];
+    int length = 0;
+    int remaining = UOP_MAX_TRACE_LENGTH - root->code_size;
+    for (int i = 0; i < nexecutors; i++) {
+        _PyExecutorObject *executor = executors[i];
+        _Py_BloomFilter_Update(&dependencies, &executor->vm_data.bloom);
+        assert(executor->trace[0].opcode == _START_EXECUTOR);
+        // XXX: assert and skip _MAKE_WARM:
+        for (int j = !!i; j < (int)executor->code_size; j++) {
+            _PyUOpInstruction *instruction = &buffer[length + j - !!i];
+            *instruction = executor->trace[j];
+            if (instruction->format == UOP_FORMAT_JUMP) {
+                instruction->jump_target += length - !!i;
+                instruction->error_target += length - !!i;
+            }
+            if (instruction->opcode != _EXIT_TRACE) {
+                continue;
+            }
+            _PyExitData *exit = (_PyExitData *)instruction->operand;
+            _PyExecutorObject *chained = exit->executor;
+            if (chained == NULL) {
+                continue;
+            }
+            if (chained == root) {
+                instruction->format = UOP_FORMAT_JUMP;
+                instruction->opcode = _JUMP_TO_TOP;
+                instruction->jump_target = 1;
+            }
+            else if (chained->vm_data.chain_depth
+                     && (int)chained->code_size <= remaining
+                     && nexecutors < MAX_COMPACTION)
+            {
+                int offset = UOP_MAX_TRACE_LENGTH - remaining;
+                // XXX: Skip _MAKE_WARM:
+                remaining -= chained->code_size - 1;  // _START_EXECUTOR
+                executors[nexecutors++] = chained;
+                // XXX: Clean this up:
+                for (int k = length; k < length + j; k++) {
+                    _PyUOpInstruction *inst = &buffer[k];
+                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - !!i) {
+                        inst->jump_target = offset;
+                    }
+                }
+                instruction->format = UOP_FORMAT_JUMP;
+                instruction->opcode = _JUMP_TO_TOP;  // Not really...
+                instruction->jump_target = offset;
+            }
+        }
+        length += executor->code_size - !!i;
+    }
+    assert(1 <= length && length < UOP_MAX_TRACE_LENGTH + 1);
+    assert(0 <= remaining && remaining < UOP_MAX_TRACE_LENGTH);
+    assert(length + remaining == UOP_MAX_TRACE_LENGTH);
+    if (nexecutors == 1) {
+        return (_PyExecutorObject *)Py_NewRef(root);
+    }
+    return make_executor_from_uops(buffer, length, &dependencies);
+}
+
+int
+_Py_Executors_Compact(PyInterpreterState *interp)
+{
+    /* Walk the list of executors */
+    /* TO DO -- Use a tree to avoid traversing as many objects */
+    PyObject *compact = PyList_New(0);
+    if (compact == NULL) {
+        return -1;
+    }
+    /* Clearing an executor can deallocate others, so we need to make a list of
+     * executors to compact first */
+    for (_PyExecutorObject *exec = interp->executor_list_head; exec != NULL;) {
+        assert(exec->vm_data.valid);
+        _PyExecutorObject *next = exec->vm_data.links.next;
+        if (exec->vm_data.code && PyList_Append(compact, (PyObject *)exec)) {
+            Py_DECREF(compact);
+            return -1;
+        }
+        exec = next;
+    }
+    for (Py_ssize_t i = 0; i < PyList_GET_SIZE(compact); i++) {
+        _PyExecutorObject *old = (_PyExecutorObject *)PyList_GET_ITEM(compact, i);
+        _PyExecutorObject *new = compact_executor(old);
+        if (new == NULL) {
+            Py_DECREF(compact);
+            return -1;
+        }
+        if (new != old) {
+            PyCodeObject *code = old->vm_data.code;
+            assert(code);
+            _Py_CODEUNIT *instruction = &_PyCode_CODE(code)[old->vm_data.index];
+            assert(instruction->op.code == ENTER_EXECUTOR);
+            int index = instruction->op.arg;
+            assert(code->co_executors->executors[index] == old);
+            insert_executor(code, instruction, index, new);
+            new->vm_data.chain_depth = 0;
+            executor_clear(old);
+        }
+        Py_DECREF(new);
+    }
+    Py_DECREF(compact);
+    return 0;
+}
 
 static int
 uop_optimize(
@@ -1389,6 +1503,14 @@ _Py_BloomFilter_Add(_PyBloomFilter *bloom, void *ptr)
         uint8_t bits = hash & 255;
         bloom->bits[bits >> 5] |= (1 << (bits&31));
         hash >>= 8;
+    }
+}
+
+void
+_Py_BloomFilter_Update(_PyBloomFilter *bloom, _PyBloomFilter *other)
+{
+    for (int i = 0; i < _Py_BLOOM_FILTER_WORDS; i++) {
+        bloom->bits[i] |= other->bits[i];
     }
 }
 
