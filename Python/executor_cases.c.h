@@ -6997,6 +6997,9 @@
                         GOTO_TIER_ONE(optimized < 0 ? NULL : target);
                     }
                     exit->temperature = initial_temperature_backoff_counter();
+                    if (current_executor->vm_data.chain_depth == 0) {
+                        current_executor->vm_data.compact = true;
+                    }
                 }
                 exit->executor = executor;
             }
