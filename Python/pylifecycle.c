@@ -1322,28 +1322,28 @@ init_interp_main(PyThreadState *tstate)
             // PYTHON_JIT=0|1 overrides the default
             enabled = *env != '0';
         }
-        if (enabled) {
-#ifdef _Py_JIT
-            // perf profiler works fine with tier 2 interpreter, so
-            // only checking for a "real JIT".
-            if (config->perf_profiling > 0) {
-                (void)PyErr_WarnEx(
-                    PyExc_RuntimeWarning,
-                    "JIT deactivated as perf profiling support is active",
-                    0);
-            } else
-#endif
-            {
-                PyObject *opt = _PyOptimizer_NewUOpOptimizer();
-                if (opt == NULL) {
-                    return _PyStatus_ERR("can't initialize optimizer");
-                }
-                if (_Py_SetTier2Optimizer((_PyOptimizerObject *)opt)) {
-                    return _PyStatus_ERR("can't install optimizer");
-                }
-                Py_DECREF(opt);
-            }
-        }
+//         if (enabled) {
+// #ifdef _Py_JIT
+//             // perf profiler works fine with tier 2 interpreter, so
+//             // only checking for a "real JIT".
+//             if (config->perf_profiling > 0) {
+//                 (void)PyErr_WarnEx(
+//                     PyExc_RuntimeWarning,
+//                     "JIT deactivated as perf profiling support is active",
+//                     0);
+//             } else
+// #endif
+//             {
+//                 PyObject *opt = _PyOptimizer_NewUOpOptimizer();
+//                 if (opt == NULL) {
+//                     return _PyStatus_ERR("can't initialize optimizer");
+//                 }
+//                 if (_Py_SetTier2Optimizer((_PyOptimizerObject *)opt)) {
+//                     return _PyStatus_ERR("can't install optimizer");
+//                 }
+//                 Py_DECREF(opt);
+//             }
+//         }
     }
 #endif
 
