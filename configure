@@ -8358,9 +8358,9 @@ esac
 fi
 
 case $enable_experimental_jit in
-  no)              jit_flags="";          tier2_flags="" ;;
+  yes-off)         jit_flags="";          tier2_flags="" ;;  # XXX
   yes)             jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=1" ;;
-  yes-off)         jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=3" ;;
+  no)              jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=3" ;;  # XXX
   interpreter)     jit_flags="";          tier2_flags="-D_Py_TIER2=4" ;;
   interpreter-off) jit_flags="";          tier2_flags="-D_Py_TIER2=6" ;;  # Secret option
   *) as_fn_error $? "invalid argument: --enable-experimental-jit=$enable_experimental_jit; expected no|yes|yes-off|interpreter" "$LINENO" 5 ;;
