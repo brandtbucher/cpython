@@ -658,7 +658,6 @@ init_interpreter(PyInterpreterState *interp,
     interp->jit = false;
     interp->executor_list_head = NULL;
     interp->trace_run_counter = JIT_CLEANUP_THRESHOLD;
-    interp->executor_compact = false;
     if (interp != &runtime->_main_interpreter) {
         /* Fix the self-referential, statically initialized fields. */
         interp->dtoa = (struct _dtoa_state)_dtoa_state_INIT(interp);
