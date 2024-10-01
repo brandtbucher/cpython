@@ -1391,7 +1391,6 @@ _Py_HandlePending(PyThreadState *tstate)
     if ((breaker & _PY_EVAL_JIT_INVALIDATE_COLD_BIT) != 0) {
         _Py_unset_eval_breaker_bit(tstate, _PY_EVAL_JIT_INVALIDATE_COLD_BIT);
         _Py_Executors_InvalidateCold(tstate->interp);
-        _Py_Executors_Compact(tstate->interp);
         tstate->interp->trace_run_counter = JIT_CLEANUP_THRESHOLD;
     }
 

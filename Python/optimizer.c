@@ -270,6 +270,9 @@ uop_dealloc(PyObject *op) {
     _PyObject_GC_UNTRACK(self);
     assert(self->vm_data.code == NULL);
     unlink_executor(self);
+    for (uint32_t i = 0; i < self->exit_count; i++) {
+        Py_XDECREF(self->exits[i].executor);
+    }
     // Once unlinked it becomes impossible to invalidate an executor, so do it here.
     self->vm_data.valid = 0;
     add_to_pending_deletion_list(self);
@@ -1279,20 +1282,20 @@ compact_executor(_PyExecutorObject *root)
         _PyExecutorObject *executor = executors[i];
         _Py_BloomFilter_Update(&dependencies, &executor->vm_data.bloom);
         assert(executor->trace[0].opcode == _START_EXECUTOR);
-        // XXX: assert and skip _MAKE_WARM:
-        for (int j = !!i; j < (int)executor->code_size; j++) {
-            _PyUOpInstruction *instruction = &buffer[length + j - !!i];
+        assert(executor->trace[1].opcode == _MAKE_WARM);
+        for (int j = 2 * !!i; j < (int)executor->code_size; j++) {
+            _PyUOpInstruction *instruction = &buffer[length + j - 2 * !!i];
             *instruction = executor->trace[j];
             if (instruction->format == UOP_FORMAT_JUMP) {
-                instruction->jump_target += length - !!i;
-                instruction->error_target += length - !!i;
+                instruction->jump_target += length - 2 * !!i;
+                instruction->error_target += length - 2 * !!i;
             }
             if (instruction->opcode != _EXIT_TRACE) {
                 continue;
             }
             _PyExitData *exit = (_PyExitData *)instruction->operand;
             _PyExecutorObject *chained = exit->executor;
-            if (chained == NULL) {
+            if (chained == NULL || !chained->vm_data.valid) {
                 continue;
             }
             if (chained == root) {
@@ -1300,18 +1303,17 @@ compact_executor(_PyExecutorObject *root)
                 instruction->opcode = _JUMP_TO_TOP;
                 instruction->jump_target = 1;
             }
-            else if (chained->vm_data.chain_depth
+            else if (chained->vm_data.chain_depth  // Might be okay...
                      && (int)chained->code_size <= remaining
                      && nexecutors < MAX_COMPACTION)
             {
                 int offset = UOP_MAX_TRACE_LENGTH - remaining;
-                // XXX: Skip _MAKE_WARM:
-                remaining -= chained->code_size - 1;  // _START_EXECUTOR
+                remaining -= chained->code_size - 2;  // _START_EXECUTOR + _MAKE_WARM
                 executors[nexecutors++] = chained;
                 // XXX: Clean this up:
                 for (int k = length; k < length + j; k++) {
                     _PyUOpInstruction *inst = &buffer[k];
-                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - !!i) {
+                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - 2 * !!i) {
                         inst->jump_target = offset;
                     }
                 }
@@ -1320,7 +1322,7 @@ compact_executor(_PyExecutorObject *root)
                 instruction->jump_target = offset;
             }
         }
-        length += executor->code_size - !!i;
+        length += executor->code_size - 2 * !!i;
     }
     assert(1 <= length && length < UOP_MAX_TRACE_LENGTH + 1);
     assert(0 <= remaining && remaining < UOP_MAX_TRACE_LENGTH);
@@ -1334,49 +1336,6 @@ compact_executor(_PyExecutorObject *root)
         new->vm_data.compact = false;
     }
     return new;
-}
-
-int
-_Py_Executors_Compact(PyInterpreterState *interp)
-{
-    /* Walk the list of executors */
-    /* TO DO -- Use a tree to avoid traversing as many objects */
-    PyObject *compact = PyList_New(0);
-    if (compact == NULL) {
-        return -1;
-    }
-    /* Clearing an executor can deallocate others, so we need to make a list of
-     * executors to compact first */
-    for (_PyExecutorObject *exec = interp->executor_list_head; exec != NULL;) {
-        assert(exec->vm_data.valid);
-        _PyExecutorObject *next = exec->vm_data.links.next;
-        if (exec->vm_data.compact && PyList_Append(compact, (PyObject *)exec)) {
-            Py_DECREF(compact);
-            return -1;
-        }
-        exec = next;
-    }
-    for (Py_ssize_t i = 0; i < PyList_GET_SIZE(compact); i++) {
-        _PyExecutorObject *old = (_PyExecutorObject *)PyList_GET_ITEM(compact, i);
-        _PyExecutorObject *new = compact_executor(old);
-        if (new == NULL) {
-            Py_DECREF(compact);
-            return -1;
-        }
-        if (new != old) {
-            PyCodeObject *code = old->vm_data.code;
-            assert(code);
-            _Py_CODEUNIT *instruction = &_PyCode_CODE(code)[old->vm_data.index];
-            assert(instruction->op.code == ENTER_EXECUTOR);
-            int index = instruction->op.arg;
-            assert(code->co_executors->executors[index] == old);
-            insert_executor(code, instruction, index, new);
-            executor_clear(old);
-        }
-        Py_DECREF(new);
-    }
-    Py_DECREF(compact);
-    return 0;
 }
 
 static int
@@ -1627,7 +1586,6 @@ executor_clear(PyObject *op)
      */
     Py_INCREF(executor);
     for (uint32_t i = 0; i < executor->exit_count; i++) {
-        executor->exits[i].temperature = initial_unreachable_backoff_counter();
         Py_CLEAR(executor->exits[i].executor);
     }
     _Py_ExecutorDetach(executor);
@@ -1711,34 +1669,61 @@ _Py_Executors_InvalidateCold(PyInterpreterState *interp)
     /* Walk the list of executors */
     /* TO DO -- Use a tree to avoid traversing as many objects */
     PyObject *invalidate = PyList_New(0);
+    PyObject *compact = NULL;
     if (invalidate == NULL) {
         goto error;
     }
-
+    compact = PyList_New(0);
+    if (compact == NULL) {
+        goto error;
+    }
     /* Clearing an executor can deallocate others, so we need to make a list of
      * executors to invalidate first */
     for (_PyExecutorObject *exec = interp->executor_list_head; exec != NULL;) {
         assert(exec->vm_data.valid);
         _PyExecutorObject *next = exec->vm_data.links.next;
-
-        if (!exec->vm_data.warm && PyList_Append(invalidate, (PyObject *)exec) < 0) {
-            goto error;
+        if (!exec->vm_data.warm) {
+            if (PyList_Append(invalidate, (PyObject *)exec)) {
+                goto error;
+            }
         }
         else {
             exec->vm_data.warm = false;
+            if (exec->vm_data.compact && PyList_Append(compact, (PyObject *)exec)) {
+                goto error;
+            }
         }
-
         exec = next;
     }
     for (Py_ssize_t i = 0; i < PyList_GET_SIZE(invalidate); i++) {
         PyObject *exec = PyList_GET_ITEM(invalidate, i);
         executor_clear(exec);
     }
+    for (Py_ssize_t i = 0; i < PyList_GET_SIZE(compact); i++) {
+        _PyExecutorObject *old = (_PyExecutorObject *)PyList_GET_ITEM(compact, i);
+        _PyExecutorObject *new = compact_executor(old);
+        if (new == NULL) {
+            goto error;
+        }
+        if (new != old) {
+            PyCodeObject *code = old->vm_data.code;
+            assert(code);
+            _Py_CODEUNIT *instruction = &_PyCode_CODE(code)[old->vm_data.index];
+            assert(instruction->op.code == ENTER_EXECUTOR);
+            int index = instruction->op.arg;
+            assert(code->co_executors->executors[index] == old);
+            insert_executor(code, instruction, index, new);
+            executor_clear(old);
+        }
+        Py_DECREF(new);
+    }
     Py_DECREF(invalidate);
+    Py_DECREF(compact);
     return;
 error:
     PyErr_Clear();
     Py_XDECREF(invalidate);
+    Py_XDECREF(compact);
     // If we're truly out of memory, wiping out everything is a fine fallback
     _Py_Executors_InvalidateAll(interp, 0);
 }
