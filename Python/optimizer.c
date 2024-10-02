@@ -1394,7 +1394,8 @@ _PyOptimizer_NewUOpOptimizer(void)
 static void
 counter_dealloc(_PyExecutorObject *self) {
     /* The optimizer is the operand of the second uop. */
-    PyObject *opt = (PyObject *)self->trace[1].operand;
+    assert(self->trace[2].opcode == _LOAD_CONST_INLINE);
+    PyObject *opt = (PyObject *)self->trace[2].operand;
     Py_DECREF(opt);
     uop_dealloc(self);
 }
@@ -1432,13 +1433,14 @@ counter_optimize(
         return 0;
     }
     _Py_CODEUNIT *target = instr + 1 + _PyOpcode_Caches[JUMP_BACKWARD] - oparg;
-    _PyUOpInstruction buffer[4] = {
+    _PyUOpInstruction buffer[5] = {
         { .opcode = _START_EXECUTOR, .jump_target = 3, .format=UOP_FORMAT_JUMP },
+        { .opcode = _MAKE_WARM },
         { .opcode = _LOAD_CONST_INLINE, .operand = (uintptr_t)self },
         { .opcode = _INTERNAL_INCREMENT_OPT_COUNTER },
         { .opcode = _EXIT_TRACE, .target = (uint32_t)(target - _PyCode_CODE(code)), .format=UOP_FORMAT_TARGET }
     };
-    _PyExecutorObject *executor = make_executor_from_uops(buffer, 4, &EMPTY_FILTER);
+    _PyExecutorObject *executor = make_executor_from_uops(buffer, Py_ARRAY_LENGTH(buffer), &EMPTY_FILTER);
     if (executor == NULL) {
         return -1;
     }
