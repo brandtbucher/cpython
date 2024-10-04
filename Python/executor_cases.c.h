@@ -182,6 +182,122 @@
             break;
         }
 
+        case _LOAD_FAST_IMMORTAL_0: {
+            _PyStackRef value;
+            oparg = 0;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_1: {
+            _PyStackRef value;
+            oparg = 1;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_2: {
+            _PyStackRef value;
+            oparg = 2;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_3: {
+            _PyStackRef value;
+            oparg = 3;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_4: {
+            _PyStackRef value;
+            oparg = 4;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_5: {
+            _PyStackRef value;
+            oparg = 5;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_6: {
+            _PyStackRef value;
+            oparg = 6;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL_7: {
+            _PyStackRef value;
+            oparg = 7;
+            assert(oparg == CURRENT_OPARG());
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_FAST_IMMORTAL: {
+            _PyStackRef value;
+            oparg = CURRENT_OPARG();
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _LOAD_FAST_AND_CLEAR: {
             _PyStackRef value;
             oparg = CURRENT_OPARG();
@@ -302,10 +418,126 @@
             break;
         }
 
+        case _STORE_FAST_IMMORTAL_0: {
+            _PyStackRef value;
+            oparg = 0;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_1: {
+            _PyStackRef value;
+            oparg = 1;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_2: {
+            _PyStackRef value;
+            oparg = 2;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_3: {
+            _PyStackRef value;
+            oparg = 3;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_4: {
+            _PyStackRef value;
+            oparg = 4;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_5: {
+            _PyStackRef value;
+            oparg = 5;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_6: {
+            _PyStackRef value;
+            oparg = 6;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL_7: {
+            _PyStackRef value;
+            oparg = 7;
+            assert(oparg == CURRENT_OPARG());
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _STORE_FAST_IMMORTAL: {
+            _PyStackRef value;
+            oparg = CURRENT_OPARG();
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _POP_TOP: {
             _PyStackRef value;
             value = stack_pointer[-1];
             PyStackRef_CLOSE(value);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _POP_TOP_IMMORTAL: {
+            _PyStackRef value;
+            value = stack_pointer[-1];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
@@ -5098,6 +5330,20 @@
             bottom = stack_pointer[-1 - (oparg-1)];
             assert(oparg > 0);
             top = PyStackRef_DUP(bottom);
+            stack_pointer[0] = top;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _COPY_IMMORTAL: {
+            _PyStackRef bottom;
+            _PyStackRef top;
+            oparg = CURRENT_OPARG();
+            bottom = stack_pointer[-1 - (oparg-1)];
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(bottom)));
+            assert(oparg > 0);
+            top = bottom;
             stack_pointer[0] = top;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());

@@ -41,7 +41,7 @@ optimize_to_bool(
     _Py_UopsSymbol **result_ptr);
 
 extern void
-eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit);
+eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit, bool immortal);
 
 extern PyCodeObject *get_code(_PyUOpInstruction *op);
 
@@ -81,6 +81,12 @@ dummy_func(void) {
 
     op(_LOAD_FAST, (-- value)) {
         value = GETLOCAL(oparg);
+        if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(value));
+        }
+        else if (sym_has_type(value) && sym_matches_type(value, &PyBool_Type)) {
+            REPLACE_OP(this_instr, _LOAD_FAST_IMMORTAL, oparg, 0);
+        }
     }
 
     op(_LOAD_FAST_AND_CLEAR, (-- value)) {
@@ -90,6 +96,22 @@ dummy_func(void) {
     }
 
     op(_STORE_FAST, (value --)) {
+        _Py_UopsSymbol *old = GETLOCAL(oparg);
+        if (sym_is_const(value) && sym_is_const(old) &&
+            sym_get_const(value) == sym_get_const(old))
+        {
+            if (_Py_IsImmortal(sym_get_const(value))) {
+                REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+            }
+            else {
+                REPLACE_OP(this_instr, _POP_TOP, 0, 0);
+            }
+        }
+        else if ((sym_is_const(old) && _Py_IsImmortal(sym_get_const(old))) ||
+                 (sym_has_type(old) && sym_matches_type(old, &PyBool_Type)))
+        {
+            REPLACE_OP(this_instr, _STORE_FAST_IMMORTAL, oparg, 0);
+        }
         GETLOCAL(oparg) = value;
     }
 
@@ -323,10 +345,31 @@ dummy_func(void) {
             }
             res = sym_new_const(ctx, temp);
             Py_DECREF(temp);
+            // TODO gh-115506:
+            // replace opcode with constant propagated one and update tests!
         }
         else {
             res = sym_new_type(ctx, &PyUnicode_Type);
         }
+    }
+
+    op(_BINARY_OP_INPLACE_ADD_UNICODE, (left, right -- )) {
+        _Py_UopsSymbol *res;
+        if (sym_is_const(left) && sym_is_const(right) &&
+            sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
+            PyObject *temp = PyUnicode_Concat(sym_get_const(left), sym_get_const(right));
+            if (temp == NULL) {
+                goto error;
+            }
+            res = sym_new_const(ctx, temp);
+            Py_DECREF(temp);
+            // TODO gh-115506:
+            // replace opcode with constant propagated one and update tests!
+        }
+        else {
+            res = sym_new_type(ctx, &PyUnicode_Type);
+        }
+        GETLOCAL(this_instr->operand) = res;
     }
 
     op(_BINARY_SUBSCR_INIT_CALL, (container, sub -- new_frame: _Py_UOpsAbstractFrame *)) {
@@ -444,6 +487,12 @@ dummy_func(void) {
     }
 
     op(_COPY, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
+        if (sym_is_const(bottom) && _Py_IsImmortal(sym_get_const(bottom))) {
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(bottom));
+        }
+        else if (sym_has_type(bottom) && sym_matches_type(bottom, &PyBool_Type)) {
+            REPLACE_OP(this_instr, _COPY_IMMORTAL, oparg, 0);
+        }
         assert(oparg > 0);
         top = bottom;
     }
@@ -782,7 +831,7 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, value != Py_True);
+            eliminate_pop_guard(this_instr, value != Py_True, _Py_IsImmortal(value));
         }
     }
 
@@ -790,7 +839,7 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, value != Py_False);
+            eliminate_pop_guard(this_instr, value != Py_False, _Py_IsImmortal(value));
         }
     }
 
@@ -798,11 +847,11 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, !Py_IsNone(value));
+            eliminate_pop_guard(this_instr, !Py_IsNone(value), _Py_IsImmortal(value));
         }
         else if (sym_has_type(flag)) {
             assert(!sym_matches_type(flag, &_PyNone_Type));
-            eliminate_pop_guard(this_instr, true);
+            eliminate_pop_guard(this_instr, true, false);
         }
     }
 
@@ -810,11 +859,11 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, Py_IsNone(value));
+            eliminate_pop_guard(this_instr, Py_IsNone(value), _Py_IsImmortal(value));
         }
         else if (sym_has_type(flag)) {
             assert(!sym_matches_type(flag, &_PyNone_Type));
-            eliminate_pop_guard(this_instr, false);
+            eliminate_pop_guard(this_instr, false, false);
         }
     }
 
@@ -830,6 +879,20 @@ dummy_func(void) {
         (void)owner;
         attr = sym_new_not_null(ctx);
         self_or_null = sym_new_unknown(ctx);
+    }
+    
+    op(_REPLACE_WITH_TRUE, (value -- res)) {
+        (void)value;
+        REPLACE_OP(this_instr, _POP_TOP_LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)Py_True);
+        res = sym_new_const(ctx, Py_True);
+    }
+
+    op(_POP_TOP, (value --)) {
+        if ((sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) ||
+            (sym_has_type(value) && sym_matches_type(value, &PyBool_Type)))
+        {
+            REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+        }
     }
 
     op(_JUMP_TO_TOP, (--)) {

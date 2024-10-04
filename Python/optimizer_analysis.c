@@ -300,10 +300,12 @@ remove_globals(_PyInterpreterFrame *frame, _PyUOpInstruction *buffer,
 
 #define GETLOCAL(idx)          ((ctx->frame->locals[idx]))
 
-#define REPLACE_OP(INST, OP, ARG, OPERAND)    \
-    INST->opcode = OP;            \
-    INST->oparg = ARG;            \
-    INST->operand = OPERAND;
+#define REPLACE_OP(INST, OP, ARG, OPERAND)     \
+    do {                                       \
+        (INST)->opcode = (OP);                 \
+        (INST)->oparg = (ARG);                 \
+        (INST)->operand = (OPERAND);           \
+    } while (0)
 
 /* Shortened forms for convenience, used in optimizer_bytecodes.c */
 #define sym_is_not_null _Py_uop_sym_is_not_null
@@ -352,9 +354,9 @@ optimize_to_bool(
 }
 
 static void
-eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit)
+eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit, bool immortal)
 {
-    REPLACE_OP(this_instr, _POP_TOP, 0, 0);
+    REPLACE_OP(this_instr, immortal ? _POP_TOP_IMMORTAL : _POP_TOP, 0, 0);
     if (exit) {
         REPLACE_OP((this_instr+1), _EXIT_TRACE, 0, 0);
         this_instr[1].target = this_instr->target;
@@ -524,6 +526,8 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 last_set_ip = pc;
                 break;
             case _POP_TOP:
+            case _POP_TOP_IMMORTAL:
+            case _POP_TOP_LOAD_CONST_INLINE_BORROW:
             {
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {
@@ -532,12 +536,22 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 if (last->opcode == _LOAD_CONST_INLINE  ||
                     last->opcode == _LOAD_CONST_INLINE_BORROW ||
                     last->opcode == _LOAD_FAST ||
-                    last->opcode == _COPY
+                    last->opcode == _LOAD_FAST_IMMORTAL ||
+                    last->opcode == _COPY ||
+                    last->opcode == _COPY_IMMORTAL
                 ) {
                     last->opcode = _NOP;
-                    buffer[pc].opcode = _NOP;
+                    if (buffer[pc].opcode == _POP_TOP_LOAD_CONST_INLINE_BORROW) {
+                        buffer[pc].opcode = _LOAD_CONST_INLINE_BORROW;
+                    }
+                    else {
+                        buffer[pc].opcode = _NOP;
+                    }
                 }
-                if (last->opcode == _REPLACE_WITH_TRUE) {
+                if (last->opcode == _POP_TOP_LOAD_CONST_INLINE_BORROW) {
+                    if (buffer[pc].opcode == _POP_TOP_IMMORTAL) {
+                        buffer[pc].opcode = _POP_TOP;
+                    }
                     last->opcode = _NOP;
                 }
                 break;

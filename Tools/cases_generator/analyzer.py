@@ -540,7 +540,9 @@ NON_ESCAPING_FUNCTIONS = (
     "_PyList_FromStackRefSteal",
     "_PyTuple_FromArraySteal",
     "_PyTuple_FromStackRefSteal",
-    "_Py_set_eval_breaker_bit"
+    "_Py_set_eval_breaker_bit",
+    "_Py_IsImmortalLoose",
+    "PyStackRef_AsPyObjectBorrow",
 )
 
 ESCAPING_FUNCTIONS = (

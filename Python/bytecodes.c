@@ -244,6 +244,12 @@ dummy_func(
             value = PyStackRef_DUP(GETLOCAL(oparg));
         }
 
+        replicate(8) pure tier2 op(_LOAD_FAST_IMMORTAL, (-- value)) {
+            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
+        }
+
         inst(LOAD_FAST_AND_CLEAR, (-- value)) {
             value = GETLOCAL(oparg);
             // do not use SETLOCAL here, it decrefs the old value
@@ -263,6 +269,11 @@ dummy_func(
 
         replicate(8) inst(STORE_FAST, (value --)) {
             SETLOCAL(oparg, value);
+        }
+
+        replicate(8) tier2 op(_STORE_FAST_IMMORTAL, (value --)) {
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(GETLOCAL(oparg))));
+            GETLOCAL(oparg) = value;
         }
 
         pseudo(STORE_FAST_MAYBE_NULL, (unused --)) = {
@@ -285,6 +296,10 @@ dummy_func(
 
         pure inst(POP_TOP, (value --)) {
             DECREF_INPUTS();
+        }
+
+        pure tier2 op(_POP_TOP_IMMORTAL, (value --)) {
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(value)));
         }
 
         pure inst(PUSH_NULL, (-- res)) {
@@ -4482,6 +4497,12 @@ dummy_func(
         pure inst(COPY, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
             assert(oparg > 0);
             top = PyStackRef_DUP(bottom);
+        }
+
+        pure tier2 op(_COPY_IMMORTAL, (bottom, unused[oparg-1] -- bottom, unused[oparg-1], top)) {
+            assert(_Py_IsImmortalLoose(PyStackRef_AsPyObjectBorrow(bottom)));
+            assert(oparg > 0);
+            top = bottom;
         }
 
         specializing op(_SPECIALIZE_BINARY_OP, (counter/1, lhs, rhs -- lhs, rhs)) {
