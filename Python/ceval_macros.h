@@ -70,11 +70,40 @@
 #define INSTRUCTION_STATS(op) ((void)0)
 #endif
 
+#ifdef _Py_TIER2
+static inline void
+record_trace(PyThreadState *tstate, _PyInterpreterFrame *frame)
+{
+    if (tstate->trace_top == NULL) {
+        // Not tracing.
+        return;
+    }
+    // if (tstate->trace_top[-1].instruction == frame->instr_ptr) {
+    //     // Re-running an instruction (maybe we deopted).
+    //     return;
+    // }
+    if (PyCode_Check(PyStackRef_AsPyObjectBorrow(frame->f_executable))) {
+        tstate->trace_top->instruction = frame->instr_ptr;
+        tstate->trace_top->code = _PyFrame_GetCode(frame);
+        if (++tstate->trace_top - tstate->trace < (int)Py_ARRAY_LENGTH(tstate->trace)) {
+            return;
+        }
+    }
+    // End trace!
+    tstate->trace_top = NULL;
+}
+#else
+static inline void
+record_trace(PyThreadState *tstate, _PyInterpreterFrame *frame)
+{
+}
+#endif
+
 #if USE_COMPUTED_GOTOS
-#  define TARGET(op) TARGET_##op:
+#  define TARGET(op) TARGET_##op: record_trace(tstate, frame);
 #  define DISPATCH_GOTO() goto *opcode_targets[opcode]
 #else
-#  define TARGET(op) case op: TARGET_##op:
+#  define TARGET(op) case op: TARGET_##op: record_trace(tstate, frame);
 #  define DISPATCH_GOTO() goto dispatch_opcode
 #endif
 

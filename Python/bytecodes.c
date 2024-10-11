@@ -2570,23 +2570,24 @@ dummy_func(
             #if ENABLE_SPECIALIZATION
             _Py_BackoffCounter counter = this_instr[1].counter;
             if (backoff_counter_triggers(counter) && this_instr->op.code == JUMP_BACKWARD) {
-                _Py_CODEUNIT *start = this_instr;
-                /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
-                while (oparg > 255) {
-                    oparg >>= 8;
-                    start--;
-                }
-                _PyExecutorObject *executor;
-                int optimized = _PyOptimizer_Optimize(frame, start, stack_pointer, &executor, 0);
-                ERROR_IF(optimized < 0, error);
-                if (optimized) {
-                    assert(tstate->previous_executor == NULL);
-                    tstate->previous_executor = Py_None;
-                    GOTO_TIER_TWO(executor);
-                }
-                else {
-                    this_instr[1].counter = restart_backoff_counter(counter);
-                }
+                tstate->trace_top = tstate->trace;
+                // _Py_CODEUNIT *start = this_instr;
+                // /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
+                // while (oparg > 255) {
+                //     oparg >>= 8;
+                //     start--;
+                // }
+                // _PyExecutorObject *executor;
+                // int optimized = _PyOptimizer_Optimize(frame, start, stack_pointer, &executor, 0);
+                // ERROR_IF(optimized < 0, error);
+                // if (optimized) {
+                //     assert(tstate->previous_executor == NULL);
+                //     tstate->previous_executor = Py_None;
+                //     GOTO_TIER_TWO(executor);
+                // }
+                // else {
+                this_instr[1].counter = restart_backoff_counter(counter);
+                // }
             }
             else {
                 ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
@@ -4820,16 +4821,17 @@ dummy_func(
                     Py_INCREF(executor);
                 }
                 else {
-                    int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
-                    if (optimized <= 0) {
+                    tstate->trace_top = tstate->trace;
+                    // int chain_depth = current_executor->vm_data.chain_depth + 1;
+                    // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
+                    // if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
-                        if (optimized < 0) {
-                            GOTO_UNWIND();
-                        }
-                        tstate->previous_executor = (PyObject *)current_executor;
+                    //     if (optimized < 0) {
+                    //         GOTO_UNWIND();
+                    //     }
+                    //     tstate->previous_executor = (PyObject *)current_executor;
                         GOTO_TIER_ONE(target);
-                    }
+                    // }
                 }
                 exit->executor = executor;
             }

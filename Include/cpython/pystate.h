@@ -56,6 +56,11 @@ typedef struct _stack_chunk {
     PyObject * data[1]; /* Variable sized */
 } _PyStackChunk;
 
+typedef struct {
+    void *instruction;  // XXX
+    PyCodeObject *code;
+} trace_point;
+
 struct _ts {
     /* See Python/ceval.c for comments explaining most fields */
 
@@ -200,6 +205,9 @@ struct _ts {
        The PyThreadObject must hold the only reference to this value.
     */
     PyObject *threading_local_sentinel;
+
+    trace_point trace[512];
+    trace_point *trace_top;
 };
 
 #ifdef Py_DEBUG

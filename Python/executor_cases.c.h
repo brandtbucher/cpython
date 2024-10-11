@@ -5601,18 +5601,17 @@
                     Py_INCREF(executor);
                 }
                 else {
-                    int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    _PyFrame_SetStackPointer(frame, stack_pointer);
-                    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
-                    stack_pointer = _PyFrame_GetStackPointer(frame);
-                    if (optimized <= 0) {
+                    tstate->trace_top = tstate->trace;
+                    // int chain_depth = current_executor->vm_data.chain_depth + 1;
+                    // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
+                    // if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
-                        if (optimized < 0) {
-                            GOTO_UNWIND();
-                        }
-                        tstate->previous_executor = (PyObject *)current_executor;
+                        //     if (optimized < 0) {
+                            //         GOTO_UNWIND();
+                        //     }
+                        //     tstate->previous_executor = (PyObject *)current_executor;
                         GOTO_TIER_ONE(target);
-                    }
+                    // }
                 }
                 exit->executor = executor;
             }

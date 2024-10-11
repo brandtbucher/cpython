@@ -1508,6 +1508,7 @@ init_threadstate(_PyThreadStateImpl *_tstate,
     tstate->what_event = -1;
     tstate->previous_executor = NULL;
     tstate->dict_global_version = 0;
+    tstate->trace_top = NULL;
 
     _tstate->asyncio_running_loop = NULL;
 
