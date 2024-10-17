@@ -352,13 +352,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_TO_BOOL, (counter/1, value -- value)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_ToBool(value, next_instr);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(TO_BOOL);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -666,13 +671,18 @@ dummy_func(
         specializing op(_SPECIALIZE_BINARY_SUBSCR, (counter/1, container, sub -- container, sub)) {
             assert(frame->stackpointer == NULL);
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_BinarySubscr(container, sub, next_instr);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(BINARY_SUBSCR);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -871,13 +881,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_STORE_SUBSCR, (counter/1, container, sub -- container, sub)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_StoreSubscr(container, sub, next_instr);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(STORE_SUBSCR);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -972,6 +987,7 @@ dummy_func(
             tstate->current_frame = frame->previous;
             assert(!_PyErr_Occurred(tstate));
             tstate->c_recursion_remaining += PY_EVAL_C_STACK_UNITS;
+            if (tstate->trace_top) { end_trace(tstate, frame, NULL); }
             return PyStackRef_AsPyObjectSteal(retval);
         }
 
@@ -1075,13 +1091,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_SEND, (counter/1, receiver, unused -- receiver, unused)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_Send(receiver, next_instr);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(SEND);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1348,13 +1369,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_UNPACK_SEQUENCE, (counter/1, seq -- seq)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_UnpackSequence(seq, next_instr, oparg);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(UNPACK_SEQUENCE);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
             (void)seq;
             (void)counter;
@@ -1419,14 +1445,19 @@ dummy_func(
 
         specializing op(_SPECIALIZE_STORE_ATTR, (counter/1, owner -- owner)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg);
                 next_instr = this_instr;
                 _Py_Specialize_StoreAttr(owner, next_instr, name);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(STORE_ATTR);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1536,14 +1567,19 @@ dummy_func(
 
         specializing op(_SPECIALIZE_LOAD_GLOBAL, (counter/1 -- )) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
                 next_instr = this_instr;
                 _Py_Specialize_LoadGlobal(GLOBALS(), BUILTINS(), next_instr, name);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(LOAD_GLOBAL);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1873,14 +1909,19 @@ dummy_func(
 
         specializing op(_SPECIALIZE_LOAD_SUPER_ATTR, (counter/1, global_super_st, class_st, unused -- global_super_st, class_st, unused)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             int load_method = oparg & 1;
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_LoadSuperAttr(global_super_st, class_st, next_instr, load_method);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(LOAD_SUPER_ATTR);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -1996,14 +2037,19 @@ dummy_func(
 
         specializing op(_SPECIALIZE_LOAD_ATTR, (counter/1, owner -- owner)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 PyObject *name = GETITEM(FRAME_CO_NAMES, oparg>>1);
                 next_instr = this_instr;
                 _Py_Specialize_LoadAttr(owner, next_instr, name);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(LOAD_ATTR);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2336,13 +2382,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_COMPARE_OP, (counter/1, left, right -- left, right)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_CompareOp(left, right, next_instr, oparg);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(COMPARE_OP);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2463,13 +2514,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_CONTAINS_OP, (counter/1, left, right -- left, right)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_ContainsOp(right, next_instr);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(CONTAINS_OP);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -2570,7 +2626,9 @@ dummy_func(
             #if ENABLE_SPECIALIZATION
             _Py_BackoffCounter counter = this_instr[1].counter;
             if (backoff_counter_triggers(counter) && this_instr->op.code == JUMP_BACKWARD) {
-                tstate->trace_top = tstate->trace;
+                if (tstate->trace_top == NULL) {
+                    tstate->trace_top = tstate->trace;
+                }
                 // _Py_CODEUNIT *start = this_instr;
                 // /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
                 // while (oparg > 255) {
@@ -2650,9 +2708,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_Is(cond, PyStackRef_False);
             DEAD(cond);
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | flag;
-            #endif
             JUMPBY(oparg * flag);
         }
 
@@ -2660,9 +2715,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_Is(cond, PyStackRef_True);
             DEAD(cond);
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | flag;
-            #endif
             JUMPBY(oparg * flag);
         }
 
@@ -2794,13 +2846,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_FOR_ITER, (counter/1, iter -- iter)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_ForIter(iter, next_instr, oparg);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(FOR_ITER);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -3270,13 +3327,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_CALL, (counter/1, callable[1], self_or_null[1], args[oparg] -- callable[1], self_or_null[1], args[oparg])) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_Call(callable[0], next_instr, oparg + !PyStackRef_IsNull(self_or_null[0]));
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(CALL);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -4301,13 +4363,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_CALL_KW, (counter/1, callable[1], self_or_null[1], args[oparg], kwnames -- callable[1], self_or_null[1], args[oparg], kwnames)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_CallKw(callable[0], next_instr, oparg + !PyStackRef_IsNull(self_or_null[0]));
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(CALL_KW);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
         }
 
@@ -4571,13 +4638,18 @@ dummy_func(
 
         specializing op(_SPECIALIZE_BINARY_OP, (counter/1, lhs, rhs -- lhs, rhs)) {
             #if ENABLE_SPECIALIZATION
+            if (this_instr->op.code != ENTER_EXECUTOR) {
             if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
                 next_instr = this_instr;
                 _Py_Specialize_BinaryOp(lhs, rhs, next_instr, oparg, LOCALS_ARRAY);
+                if (tstate->trace_top) {
+                    tstate->trace_top = NULL;
+                }
                 DISPATCH_SAME_OPARG();
             }
             OPCODE_DEFERRED_INC(BINARY_OP);
             ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            }
             #endif  /* ENABLE_SPECIALIZATION */
             assert(NB_ADD <= oparg);
             assert(oparg <= NB_INPLACE_XOR);
@@ -4664,9 +4736,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_Is(cond, PyStackRef_True);
             int offset = flag * oparg;
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | flag;
-            #endif
             INSTRUMENTED_JUMP(this_instr, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 
@@ -4675,9 +4744,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_Is(cond, PyStackRef_False);
             int offset = flag * oparg;
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | flag;
-            #endif
             INSTRUMENTED_JUMP(this_instr, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 
@@ -4692,9 +4758,6 @@ dummy_func(
                 PyStackRef_CLOSE(value_stackref);
                 offset = 0;
             }
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | flag;
-            #endif
             INSTRUMENTED_JUMP(this_instr, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 
@@ -4709,9 +4772,6 @@ dummy_func(
                 PyStackRef_CLOSE(value_stackref);
                 offset = oparg;
             }
-            #if ENABLE_SPECIALIZATION
-            this_instr[1].cache = (this_instr[1].cache << 1) | !nflag;
-            #endif
             INSTRUMENTED_JUMP(this_instr, next_instr + offset, PY_MONITORING_EVENT_BRANCH);
         }
 
@@ -4821,9 +4881,11 @@ dummy_func(
                     Py_INCREF(executor);
                 }
                 else {
-                    tstate->trace_top = tstate->trace;
+                    if (tstate->trace_top == NULL) {
+                        tstate->trace_top = tstate->trace;
+                    }
                     // int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
+                    // int optimized = '_PyOptimizer_Optimize'(frame, target, stack_pointer, &executor, chain_depth);
                     // if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
                     //     if (optimized < 0) {
@@ -4906,17 +4968,20 @@ dummy_func(
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
-                if (optimized <= 0) {
+                if (tstate->trace_top == NULL) {
+                    tstate->trace_top = tstate->trace;
+                }
+                // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
+                // if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(exit->temperature);
-                    if (optimized < 0) {
-                        GOTO_UNWIND();
-                    }
+                    // if (optimized < 0) {
+                    //     GOTO_UNWIND();
+                    // }
                     GOTO_TIER_ONE(target);
-                }
-                else {
-                    exit->temperature = initial_temperature_backoff_counter();
-                }
+                // }
+                // else {
+                //     exit->temperature = initial_temperature_backoff_counter();
+                // }
             }
             GOTO_TIER_TWO(executor);
         }

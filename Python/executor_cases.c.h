@@ -5601,9 +5601,11 @@
                     Py_INCREF(executor);
                 }
                 else {
-                    tstate->trace_top = tstate->trace;
+                    if (tstate->trace_top == NULL) {
+                        tstate->trace_top = tstate->trace;
+                    }
                     // int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
+                    // int optimized = '_PyOptimizer_Optimize'(frame, target, stack_pointer, &executor, chain_depth);
                     // if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
                         //     if (optimized < 0) {
@@ -5736,19 +5738,20 @@
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
-                _PyFrame_SetStackPointer(frame, stack_pointer);
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
-                stack_pointer = _PyFrame_GetStackPointer(frame);
-                if (optimized <= 0) {
+                if (tstate->trace_top == NULL) {
+                    tstate->trace_top = tstate->trace;
+                }
+                // int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
+                // if (optimized <= 0) {
                     exit->temperature = restart_backoff_counter(exit->temperature);
-                    if (optimized < 0) {
-                        GOTO_UNWIND();
-                    }
+                    // if (optimized < 0) {
+                        //     GOTO_UNWIND();
+                    // }
                     GOTO_TIER_ONE(target);
-                }
-                else {
-                    exit->temperature = initial_temperature_backoff_counter();
-                }
+                // }
+                // else {
+                    //     exit->temperature = initial_temperature_backoff_counter();
+                // }
             }
             GOTO_TIER_TWO(executor);
             break;

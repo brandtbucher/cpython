@@ -57,9 +57,11 @@ typedef struct _stack_chunk {
 } _PyStackChunk;
 
 typedef struct {
-    void *instruction;  // XXX
-    PyCodeObject *code;
-} trace_point;
+    void *instruction;
+    uint32_t func;
+   //  PyCodeObject *code;
+   //  PyFunctionObject *func;
+} _trace_point;
 
 struct _ts {
     /* See Python/ceval.c for comments explaining most fields */
@@ -206,8 +208,8 @@ struct _ts {
     */
     PyObject *threading_local_sentinel;
 
-    trace_point trace[512];
-    trace_point *trace_top;
+    _trace_point trace[1 << 9];
+    _trace_point *trace_top;
 };
 
 #ifdef Py_DEBUG

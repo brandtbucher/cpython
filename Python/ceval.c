@@ -766,6 +766,7 @@ _PyEval_EvalFrameDefault(PyThreadState *tstate, _PyInterpreterFrame *frame, int 
 {
     _Py_EnsureTstateNotNULL(tstate);
     CALL_STAT_INC(pyeval_calls);
+    if (tstate->trace_top) end_trace(tstate, frame, NULL);
 
 #if USE_COMPUTED_GOTOS
 /* Import the static jump table */
@@ -901,6 +902,9 @@ pop_1_error:
     STACK_SHRINK(1);
 error:
         /* Double-check exception status. */
+        if (tstate->trace_top) {
+            end_trace(tstate, frame, NULL);
+        }
 #ifdef NDEBUG
         if (!_PyErr_Occurred(tstate)) {
             _PyErr_SetString(tstate, PyExc_SystemError,
@@ -987,6 +991,7 @@ exit_unwind:
         /* Restore previous frame and exit */
         tstate->current_frame = frame->previous;
         tstate->c_recursion_remaining += PY_EVAL_C_STACK_UNITS;
+        if (tstate->trace_top) end_trace(tstate, frame, NULL);
         return NULL;
     }
 

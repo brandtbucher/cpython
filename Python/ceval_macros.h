@@ -70,40 +70,50 @@
 #define INSTRUCTION_STATS(op) ((void)0)
 #endif
 
+static int
+end_trace(PyThreadState *tstate, _PyInterpreterFrame *frame, _PyStackRef *stack_pointer)
+{
+    _PyExecutorObject *executor = NULL;
+    int optimized = _PyOptimizer_Optimize(frame, tstate->trace[0].instruction, stack_pointer, &executor, 0);
+    tstate->trace_top = NULL;
+    Py_XDECREF(executor);
+    return optimized;
+}
+
 #ifdef _Py_TIER2
-static inline void
-record_trace(PyThreadState *tstate, _PyInterpreterFrame *frame)
+static inline int
+record_trace(void *this_instr, PyThreadState *tstate, _PyInterpreterFrame *frame, _PyStackRef *stack_pointer)
 {
     if (tstate->trace_top == NULL) {
         // Not tracing.
-        return;
+        return 0;
     }
-    // if (tstate->trace_top[-1].instruction == frame->instr_ptr) {
-    //     // Re-running an instruction (maybe we deopted).
-    //     return;
-    // }
-    if (PyCode_Check(PyStackRef_AsPyObjectBorrow(frame->f_executable))) {
-        tstate->trace_top->instruction = frame->instr_ptr;
-        tstate->trace_top->code = _PyFrame_GetCode(frame);
+    printf("YYY: %s %d\n", _PyOpcode_OpName[((_Py_CODEUNIT *)this_instr)->op.code], ((_Py_CODEUNIT *)this_instr)->op.arg);
+    PyCodeObject *code = (PyCodeObject *)PyStackRef_AsPyObjectBorrow(frame->f_executable);
+    PyFunctionObject *func = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(frame->f_funcobj);
+    if (PyCode_Check(code) && PyFunction_Check(func)) {
+        tstate->trace_top->instruction = this_instr;
+        tstate->trace_top->func = _PyFunction_GetVersionForCurrentState(func);
         if (++tstate->trace_top - tstate->trace < (int)Py_ARRAY_LENGTH(tstate->trace)) {
-            return;
+            return 0;
         }
     }
-    // End trace!
-    tstate->trace_top = NULL;
+    printf("XXXXXXXXXXXXXXXXXXXXXXXX\n");
+    return end_trace(tstate, frame, stack_pointer);
 }
 #else
-static inline void
-record_trace(PyThreadState *tstate, _PyInterpreterFrame *frame)
+static inline int
+record_trace(void *this_instr, PyThreadState *tstate, _PyInterpreterFrame *frame, _PyStackRef *stack_pointer)
 {
+    return 0;
 }
 #endif
 
 #if USE_COMPUTED_GOTOS
-#  define TARGET(op) TARGET_##op: record_trace(tstate, frame);
+#  define TARGET(op) TARGET_##op: if (record_trace(next_instr, tstate, frame, stack_pointer) < 0) { goto error; }
 #  define DISPATCH_GOTO() goto *opcode_targets[opcode]
 #else
-#  define TARGET(op) case op: TARGET_##op: record_trace(tstate, frame);
+#  define TARGET(op) case op: TARGET_##op: if (record_trace(next_instr, tstate, frame, stack_pointer) < 0) { goto error; }
 #  define DISPATCH_GOTO() goto dispatch_opcode
 #endif
 
@@ -288,7 +298,7 @@ GETITEM(PyObject *v, Py_ssize_t i) {
                                      GETLOCAL(i) = value; \
                                      PyStackRef_XCLOSE(tmp); } while (0)
 
-#define GO_TO_INSTRUCTION(op) goto PREDICT_ID(op)
+#define GO_TO_INSTRUCTION(op) if (tstate->trace_top) { end_trace(tstate, frame, NULL); } goto PREDICT_ID(op)
 
 #ifdef Py_STATS
 #define UPDATE_MISS_STATS(INSTNAME)                              \
@@ -426,10 +436,11 @@ _PyFrame_SetStackPointer(frame, stack_pointer)
 #ifdef _Py_JIT
 #define GOTO_TIER_TWO(EXECUTOR)                        \
 do {                                                   \
+    if (tstate->trace_top) end_trace(tstate, frame, NULL);                        \
     OPT_STAT_INC(traces_executed);                     \
     jit_func jitted = (EXECUTOR)->jit_code;            \
     next_instr = jitted(frame, stack_pointer, tstate); \
-    Py_DECREF(tstate->previous_executor);              \
+    /*Py_DECREF(tstate->previous_executor);*/          \
     tstate->previous_executor = NULL;                  \
     frame = tstate->current_frame;                     \
     if (next_instr == NULL) {                          \
@@ -441,6 +452,7 @@ do {                                                   \
 #else
 #define GOTO_TIER_TWO(EXECUTOR) \
 do { \
+    if (tstate->trace_top) end_trace(tstate, frame, NULL); \
     OPT_STAT_INC(traces_executed); \
     next_uop = (EXECUTOR)->trace; \
     assert(next_uop->opcode == _START_EXECUTOR); \
