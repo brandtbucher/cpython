@@ -75,17 +75,14 @@ do {                                                         \
     return ((jit_func)&ALIAS)(frame, stack_pointer, tstate); \
 } while (0)
 
-// This feels icky. To convince Clang to put the jump to _JIT_CONTINUE at the
-// end of the function, we need to pretend that it's "unlikely" (and that jumps
-// for errors and deopts are "likely")... :(
-#define PATCH_JUMP_FROM_HERE(ALIAS) [[clang::likely]] PATCH_JUMP(ALIAS)
-#define PATCH_JUMP_FROM_TAIL(ALIAS) [[clang::unlikely]] PATCH_JUMP(ALIAS)
+#define PATCH_JUMP_LIKELY(ALIAS) [[clang::likely]] PATCH_JUMP(ALIAS)
+#define PATCH_JUMP_UNLIKELY(ALIAS) [[clang::unlikely]] PATCH_JUMP(ALIAS)
 
 #undef JUMP_TO_JUMP_TARGET
-#define JUMP_TO_JUMP_TARGET() PATCH_JUMP_FROM_HERE(_JIT_JUMP_TARGET)
+#define JUMP_TO_JUMP_TARGET() PATCH_JUMP_UNLIKELY(_JIT_JUMP_TARGET)
 
 #undef JUMP_TO_ERROR
-#define JUMP_TO_ERROR() PATCH_JUMP_FROM_HERE(_JIT_ERROR_TARGET)
+#define JUMP_TO_ERROR() PATCH_JUMP_UNLIKELY(_JIT_ERROR_TARGET)
 
 #undef WITHIN_STACK_BOUNDS
 #define WITHIN_STACK_BOUNDS() 1
@@ -121,7 +118,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
         default:
             Py_UNREACHABLE();
     }
-    PATCH_JUMP_FROM_TAIL(_JIT_CONTINUE);
+    PATCH_JUMP_LIKELY(_JIT_CONTINUE);
     // Labels that the instruction implementations expect to exist:
 
 error_tier_two:
