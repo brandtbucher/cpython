@@ -100,15 +100,15 @@ dummy_func(void) {
     op(_GUARD_BOTH_INT, (left, right -- left, right)) {
         if (sym_matches_type(left, &PyLong_Type)) {
             if (sym_matches_type(right, &PyLong_Type)) {
-                REPLACE_OP(this_instr, _NOP, 0, 0);
+                REPLACE_OP(this_instr, _NOP, 0, 0, 0);
             }
             else {
-                REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0);
+                REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0, 0);
             }
         }
         else {
             if (sym_matches_type(right, &PyLong_Type)) {
-                REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0);
+                REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0, 0);
             }
         }
         sym_set_type(left, &PyLong_Type);
@@ -118,7 +118,7 @@ dummy_func(void) {
     op(_GUARD_TYPE_VERSION, (type_version/2, owner -- owner)) {
         assert(type_version);
         if (sym_matches_type_version(owner, type_version)) {
-            REPLACE_OP(this_instr, _NOP, 0, 0);
+            REPLACE_OP(this_instr, _NOP, 0, 0, 0);
         } else {
             // add watcher so that whenever the type changes we invalidate this
             PyTypeObject *type = _PyType_LookupByVersion(type_version);
@@ -141,15 +141,15 @@ dummy_func(void) {
     op(_GUARD_BOTH_FLOAT, (left, right -- left, right)) {
         if (sym_matches_type(left, &PyFloat_Type)) {
             if (sym_matches_type(right, &PyFloat_Type)) {
-                REPLACE_OP(this_instr, _NOP, 0, 0);
+                REPLACE_OP(this_instr, _NOP, 0, 0, 0);
             }
             else {
-                REPLACE_OP(this_instr, _GUARD_TOS_FLOAT, 0, 0);
+                REPLACE_OP(this_instr, _GUARD_TOS_FLOAT, 0, 0, 0);
             }
         }
         else {
             if (sym_matches_type(right, &PyFloat_Type)) {
-                REPLACE_OP(this_instr, _GUARD_NOS_FLOAT, 0, 0);
+                REPLACE_OP(this_instr, _GUARD_NOS_FLOAT, 0, 0, 0);
             }
         }
 
@@ -160,7 +160,7 @@ dummy_func(void) {
     op(_GUARD_BOTH_UNICODE, (left, right -- left, right)) {
         if (sym_matches_type(left, &PyUnicode_Type) &&
             sym_matches_type(right, &PyUnicode_Type)) {
-            REPLACE_OP(this_instr, _NOP, 0 ,0);
+            REPLACE_OP(this_instr, _NOP, 0 ,0, 0);
         }
         sym_set_type(left, &PyUnicode_Type);
         sym_set_type(left, &PyUnicode_Type);
@@ -423,7 +423,7 @@ dummy_func(void) {
     op(_LOAD_CONST, (-- value)) {
         PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
         int opcode = _Py_IsImmortal(val) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
-        REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val);
+        REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val, 0);
         value = sym_new_const(ctx, val);
     }
 
@@ -817,7 +817,7 @@ dummy_func(void) {
         /* Setting the eval frame function invalidates
         * all executors, so no need to check dynamically */
         if (_PyInterpreterState_GET()->eval_frame == NULL) {
-            REPLACE_OP(this_instr, _NOP, 0 ,0);
+            REPLACE_OP(this_instr, _NOP, 0, 0, 0);
         }
     }
 

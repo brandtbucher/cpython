@@ -28,11 +28,15 @@ class HoleValue(enum.Enum):
     GOT = enum.auto()
     # The current uop's oparg (exposed as _JIT_OPARG):
     OPARG = enum.auto()
-    # The current uop's operand on 64-bit platforms (exposed as _JIT_OPERAND):
-    OPERAND = enum.auto()
-    # The current uop's operand on 32-bit platforms (exposed as _JIT_OPERAND_HI/LO):
-    OPERAND_HI = enum.auto()
-    OPERAND_LO = enum.auto()
+    # The current uop's operand_0 on 64-bit platforms (exposed as _JIT_OPERAND_0):
+    OPERAND_0 = enum.auto()
+    # The current uop's operand_0 on 32-bit platforms (exposed as _JIT_OPERAND_0_HI/LO):
+    OPERAND_0_HI = enum.auto()
+    OPERAND_0_LO = enum.auto()
+    # Same for operand_1:
+    OPERAND_1 = enum.auto()
+    OPERAND_1_HI = enum.auto()
+    OPERAND_1_LO = enum.auto()
     # The current uop's target (exposed as _JIT_TARGET):
     TARGET = enum.auto()
     # The base address of the machine code for the jump target (exposed as _JIT_JUMP_TARGET):
@@ -98,9 +102,12 @@ _HOLE_EXPRS = {
     # These should all have been turned into DATA values by process_relocations:
     # HoleValue.GOT: "",
     HoleValue.OPARG: "instruction->oparg",
-    HoleValue.OPERAND: "instruction->operand",
-    HoleValue.OPERAND_HI: "(instruction->operand >> 32)",
-    HoleValue.OPERAND_LO: "(instruction->operand & UINT32_MAX)",
+    HoleValue.OPERAND_0: "instruction->operand_0",
+    HoleValue.OPERAND_0_HI: "(instruction->operand_0 >> 32)",
+    HoleValue.OPERAND_0_LO: "(instruction->operand_0 & UINT32_MAX)",
+    HoleValue.OPERAND_1: "instruction->operand_1",
+    HoleValue.OPERAND_1_HI: "(instruction->operand_1 >> 32)",
+    HoleValue.OPERAND_1_LO: "(instruction->operand_1 & UINT32_MAX)",
     HoleValue.TARGET: "instruction->target",
     HoleValue.JUMP_TARGET: "state->instruction_starts[instruction->jump_target]",
     HoleValue.ERROR_TARGET: "state->instruction_starts[instruction->error_target]",

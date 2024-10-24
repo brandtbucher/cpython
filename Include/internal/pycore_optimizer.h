@@ -58,7 +58,8 @@ typedef struct {
             uint16_t error_target;
         };
     };
-    uint64_t operand;  // A cache entry
+    uint64_t operand_0;  // A cache entry
+    uint64_t operand_1;  // A cache entry
 } _PyUOpInstruction;
 
 typedef struct {
