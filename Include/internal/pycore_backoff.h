@@ -113,6 +113,15 @@ initial_jump_backoff_counter(void)
                                 JUMP_BACKWARD_INITIAL_BACKOFF);
 }
 
+#define JUMP_BACKWARD_0_INITIAL_VALUE 31
+#define JUMP_BACKWARD_0_INITIAL_BACKOFF 5
+static inline _Py_BackoffCounter
+initial_jump_0_backoff_counter(void)
+{
+    return make_backoff_counter(JUMP_BACKWARD_0_INITIAL_VALUE,
+                                JUMP_BACKWARD_0_INITIAL_BACKOFF);
+}
+
 /* Initial exit temperature.
  * Must be larger than ADAPTIVE_COOLDOWN_VALUE,
  * otherwise when a side exit warms up we may construct

@@ -451,7 +451,12 @@ _PyCode_Quicken(PyCodeObject *code)
             // The initial value depends on the opcode
             switch (opcode) {
                 case JUMP_BACKWARD:
-                    instructions[i + 1].counter = initial_jump_backoff_counter();
+                    if (instructions[i].op.arg) {
+                        instructions[i + 1].counter = initial_jump_backoff_counter();
+                    }
+                    else {
+                        instructions[i + 1].counter = initial_jump_0_backoff_counter();
+                    }
                     break;
                 case POP_JUMP_IF_FALSE:
                 case POP_JUMP_IF_TRUE:
