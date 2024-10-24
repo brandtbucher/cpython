@@ -25,7 +25,7 @@ def _dump_footer(
     yield f"static const StencilGroup trampoline = {groups['trampoline'].as_c('trampoline')};"
     yield ""
     yield "static const StencilGroup stencil_groups[MAX_UOP_ID + 1] = {"
-    for opname, group in sorted(groups.items()):
+    for opname, group in groups.items():
         if opname == "trampoline":
             continue
         yield f"    [{opname}] = {group.as_c(opname)},"
@@ -77,6 +77,6 @@ def dump(
     groups: dict[str, _stencils.StencilGroup], symbols: dict[str, int]
 ) -> typing.Iterator[str]:
     """Yield a JIT compiler line-by-line as a C header file."""
-    for opname, group in sorted(groups.items()):
+    for opname, group in groups.items():
         yield from _dump_stencil(opname, group)
     yield from _dump_footer(groups, symbols)
