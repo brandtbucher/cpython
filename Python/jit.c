@@ -16,6 +16,7 @@
 #include "pycore_pyerrors.h"
 #include "pycore_setobject.h"
 #include "pycore_sliceobject.h"
+#include "pycore_uop_metadata.h"
 #include "pycore_jit.h"
 
 // Memory management stuff: ////////////////////////////////////////////////////
@@ -473,67 +474,97 @@ combine_symbol_mask(const symbol_mask src, symbol_mask dest)
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 
-#define PRELUDE_SIZE 24
+#define OPARG_SIZE 8
 
 static void
-emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+emit_oparg(unsigned char *code, const _PyUOpInstruction *instruction)
 {
     // 03 00 80 52    movz w3, #0
+    // 1F 20 03 D5    nop
+    unsigned char code_body[OPARG_SIZE] = {
+        0x03, 0x00, 0x80, 0x52, 0x1f, 0x20, 0x03, 0xd5,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_aarch64_16a(code + 0x0, instruction->oparg);
+}
+
+#define OPERAND_SIZE 16
+
+static void
+emit_operand(unsigned char *code, const _PyUOpInstruction *instruction)
+{
     // 04 00 80 D2    movz x4, #0
     // 04 00 A0 F2    movk x4, #0, lsl #16
     // 04 00 C0 F2    movk x4, #0, lsl #32
     // 04 00 E0 F2    movk x4, #0, lsl #48
-    // 1F 20 03 D5    nop
-    unsigned char code_body[PRELUDE_SIZE] = {
-        0x03, 0x00, 0x80, 0x52, 0x04, 0x00, 0x80, 0xd2,
-        0x04, 0x00, 0xa0, 0xf2, 0x04, 0x00, 0xc0, 0xf2,
-        0x04, 0x00, 0xe0, 0xf2, 0x1f, 0x20, 0x03, 0xd5,
+    unsigned char code_body[OPERAND_SIZE] = {
+        0x04, 0x00, 0x80, 0xd2, 0x04, 0x00, 0xa0, 0xf2,
+        0x04, 0x00, 0xc0, 0xf2, 0x04, 0x00, 0xe0, 0xf2,
     };
     memcpy(code, code_body, sizeof(code_body));
-    patch_aarch64_16a(code + 0x0, instruction->oparg);
-    patch_aarch64_16a(code + 0x4, instruction->operand);
-    patch_aarch64_16b(code + 0x8, instruction->operand);
-    patch_aarch64_16c(code + 0xc, instruction->operand);
-    patch_aarch64_16d(code + 0x10, instruction->operand);
+    patch_aarch64_16a(code + 0x0, instruction->operand);
+    patch_aarch64_16b(code + 0x4, instruction->operand);
+    patch_aarch64_16c(code + 0x8, instruction->operand);
+    patch_aarch64_16d(code + 0xc, instruction->operand);
 }
 
 #elif defined(__x86_64__) || defined(_M_X64)
 
-#define PRELUDE_SIZE 14
+#define OPARG_SIZE 4
 
 static void
-emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+emit_oparg(unsigned char *code, const _PyUOpInstruction *instruction)
 {
-    // 66 BB 00 00                      mov    bx, 0
-    // 49 BE 00 00 00 00 00 00 00 00    movabs r14, 0
-    unsigned char code_body[PRELUDE_SIZE] = {
-        0x66, 0xbb, 0x00, 0x00, 0x49, 0xbe, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // 66 BB 00 00    mov    bx, 0
+    unsigned char code_body[OPARG_SIZE] = {
+        0x66, 0xbb, 0x00, 0x00,
     };
     memcpy(code, code_body, sizeof(code_body));
     patch_16(code + 0x2, instruction->oparg);
-    patch_64(code + 0x6, instruction->operand);
+}
+
+#define OPERAND_SIZE 10
+
+static void
+emit_operand(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // 49 BE 00 00 00 00 00 00 00 00    movabs r14, 0
+    unsigned char code_body[OPERAND_SIZE] = {
+        0x49, 0xbe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_64(code + 0x2, instruction->operand);
 }
 
 #elif defined(_M_IX86)
 
-#define PRELUDE_SIZE 20
+#define OPARG_SIZE 4
 
 static void
-emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+emit_oparg(unsigned char *code, const _PyUOpInstruction *instruction)
 {
-    // 66 BE 00 00                mov si, 0
-    // C7 44 24 04 00 00 00 00    mov dword ptr [esp + 4], 0
-    // C7 44 24 08 00 00 00 00    mov dword ptr [esp + 8], 0
-    unsigned char code_body[PRELUDE_SIZE] = {
-        0x66, 0xbe, 0x00, 0x00, 0xc7, 0x44, 0x24, 0x04,
-        0x00, 0x00, 0x00, 0x00, 0xc7, 0x44, 0x24, 0x08,
-        0x00, 0x00, 0x00, 0x00,
+    // 66 BE 00 00    mov si, 0
+    unsigned char code_body[OPARG_SIZE] = {
+        0x66, 0xbe, 0x00, 0x00,
     };
     memcpy(code, code_body, sizeof(code_body));
     patch_16(code + 0x2, instruction->oparg);
-    patch_32(code + 0x8, instruction->operand & 0xFFFFFFFF);
-    patch_32(code + 0x10, instruction->operand >> 32);
+}
+
+#define OPERAND_SIZE 16
+
+static void
+emit_operand(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // C7 44 24 04 00 00 00 00    mov dword ptr [esp + 4], 0
+    // C7 44 24 08 00 00 00 00    mov dword ptr [esp + 8], 0
+    unsigned char code_body[OPERAND_SIZE] = {
+        0xc7, 0x44, 0x24, 0x04, 0x00, 0x00, 0x00, 0x00,
+        0xc7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_32(code + 0x4, instruction->operand & 0xFFFFFFFF);
+    patch_32(code + 0xc, instruction->operand >> 32);
 }
 
 #endif
@@ -555,7 +586,15 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
         const _PyUOpInstruction *instruction = &trace[i];
         group = &stencil_groups[instruction->opcode];
         state.instruction_starts[i] = code_size;
-        code_size += PRELUDE_SIZE + group->code_size;
+        if (_PyUop_Flags[instruction->opcode] & HAS_ARG_FLAG) {
+            code_size += OPARG_SIZE;
+        }
+        if ((_PyUop_Flags[instruction->opcode] & HAS_OPERAND_FLAG) ||
+            (instruction->opcode == _BINARY_OP_INPLACE_ADD_UNICODE))
+        {
+            code_size += OPERAND_SIZE;
+        }
+        code_size += group->code_size;
         data_size += group->data_size;
         combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
     }
@@ -596,8 +635,14 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     assert(trace[0].opcode == _START_EXECUTOR);
     for (size_t i = 0; i < length; i++) {
         const _PyUOpInstruction *instruction = &trace[i];
-        emit_prelude(code, instruction);
-        code += PRELUDE_SIZE;
+        if (_PyUop_Flags[instruction->opcode] & HAS_ARG_FLAG) {
+            emit_oparg(code, instruction); code += OPARG_SIZE;
+        }
+        if ((_PyUop_Flags[instruction->opcode] & HAS_OPERAND_FLAG) ||
+            (instruction->opcode == _BINARY_OP_INPLACE_ADD_UNICODE))
+        {
+            emit_operand(code, instruction); code += OPERAND_SIZE;
+        }
         group = &stencil_groups[instruction->opcode];
         group->emit(code, data, executor, instruction, &state);
         code += group->code_size;

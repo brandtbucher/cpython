@@ -4,6 +4,7 @@ import lexer
 import parser
 import re
 from typing import Optional
+from parsing import CacheEffect
 
 @dataclass
 class Properties:
@@ -23,6 +24,7 @@ class Properties:
     has_free: bool
     side_exit: bool
     pure: bool
+    operand: bool
     tier: int | None = None
     oparg_and_1: bool = False
     const_oparg: int = -1
@@ -60,6 +62,7 @@ class Properties:
             side_exit=any(p.side_exit for p in properties),
             pure=all(p.pure for p in properties),
             needs_prev=any(p.needs_prev for p in properties),
+            operand=any(p.operand for p in properties),
         )
 
     @property
@@ -87,6 +90,7 @@ SKIP_PROPERTIES = Properties(
     has_free=False,
     side_exit=False,
     pure=True,
+    operand=False,
 )
 
 
@@ -803,6 +807,9 @@ def compute_properties(op: parser.InstDef) -> Properties:
         )
     error_with_pop = has_error_with_pop(op)
     error_without_pop = has_error_without_pop(op)
+    operand = any(
+        isinstance(effect, CacheEffect) and effect.name != "unused" for effect in op.inputs
+    )
     return Properties(
         escaping_calls=escaping_calls,
         error_with_pop=error_with_pop,
@@ -823,6 +830,7 @@ def compute_properties(op: parser.InstDef) -> Properties:
         pure="pure" in op.annotations,
         tier=tier_variable(op),
         needs_prev=variable_used(op, "prev_instr"),
+        operand=operand,
     )
 
 

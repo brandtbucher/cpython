@@ -84,7 +84,6 @@
         case _LOAD_FAST_0: {
             _PyStackRef value;
             oparg = 0;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -96,7 +95,6 @@
         case _LOAD_FAST_1: {
             _PyStackRef value;
             oparg = 1;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -108,7 +106,6 @@
         case _LOAD_FAST_2: {
             _PyStackRef value;
             oparg = 2;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -120,7 +117,6 @@
         case _LOAD_FAST_3: {
             _PyStackRef value;
             oparg = 3;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -132,7 +128,6 @@
         case _LOAD_FAST_4: {
             _PyStackRef value;
             oparg = 4;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -144,7 +139,6 @@
         case _LOAD_FAST_5: {
             _PyStackRef value;
             oparg = 5;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -156,7 +150,6 @@
         case _LOAD_FAST_6: {
             _PyStackRef value;
             oparg = 6;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -168,7 +161,6 @@
         case _LOAD_FAST_7: {
             _PyStackRef value;
             oparg = 7;
-            assert(oparg == CURRENT_OPARG());
             assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
             stack_pointer[0] = value;
@@ -213,7 +205,6 @@
         case _STORE_FAST_0: {
             _PyStackRef value;
             oparg = 0;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -224,7 +215,6 @@
         case _STORE_FAST_1: {
             _PyStackRef value;
             oparg = 1;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -235,7 +225,6 @@
         case _STORE_FAST_2: {
             _PyStackRef value;
             oparg = 2;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -246,7 +235,6 @@
         case _STORE_FAST_3: {
             _PyStackRef value;
             oparg = 3;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -257,7 +245,6 @@
         case _STORE_FAST_4: {
             _PyStackRef value;
             oparg = 4;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -268,7 +255,6 @@
         case _STORE_FAST_5: {
             _PyStackRef value;
             oparg = 5;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -279,7 +265,6 @@
         case _STORE_FAST_6: {
             _PyStackRef value;
             oparg = 6;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -290,7 +275,6 @@
         case _STORE_FAST_7: {
             _PyStackRef value;
             oparg = 7;
-            assert(oparg == CURRENT_OPARG());
             value = stack_pointer[-1];
             SETLOCAL(oparg, value);
             stack_pointer += -1;
@@ -4091,7 +4075,6 @@
             _PyStackRef *callable;
             _PyInterpreterFrame *new_frame;
             oparg = 0;
-            assert(oparg == CURRENT_OPARG());
             args = &stack_pointer[-oparg];
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];
@@ -4115,7 +4098,6 @@
             _PyStackRef *callable;
             _PyInterpreterFrame *new_frame;
             oparg = 1;
-            assert(oparg == CURRENT_OPARG());
             args = &stack_pointer[-oparg];
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];
@@ -4139,7 +4121,6 @@
             _PyStackRef *callable;
             _PyInterpreterFrame *new_frame;
             oparg = 2;
-            assert(oparg == CURRENT_OPARG());
             args = &stack_pointer[-oparg];
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];
@@ -4163,7 +4144,6 @@
             _PyStackRef *callable;
             _PyInterpreterFrame *new_frame;
             oparg = 3;
-            assert(oparg == CURRENT_OPARG());
             args = &stack_pointer[-oparg];
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];
@@ -4187,7 +4167,6 @@
             _PyStackRef *callable;
             _PyInterpreterFrame *new_frame;
             oparg = 4;
-            assert(oparg == CURRENT_OPARG());
             args = &stack_pointer[-oparg];
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];

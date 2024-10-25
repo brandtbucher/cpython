@@ -176,7 +176,7 @@ def write_uop(uop: Uop, emitter: Emitter, stack: Stack) -> Stack:
             assert uop.properties.const_oparg < 0
         elif uop.properties.const_oparg >= 0:
             emitter.emit(f"oparg = {uop.properties.const_oparg};\n")
-            emitter.emit(f"assert(oparg == CURRENT_OPARG());\n")
+            # emitter.emit(f"assert(oparg == CURRENT_OPARG());\n")
         code_list, storage = Storage.for_uop(stack, uop)
         for code in code_list:
             emitter.emit(code)
