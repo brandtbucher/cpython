@@ -21,6 +21,39 @@
 
 #include "ceval_macros.h"
 
+#define CLOBBER_REGISTER(R, N)                      \
+    do {                                            \
+        register __typeof__((R)) _reg __asm__ (#N); \
+        __asm__ inline ("":"=r"(_reg));             \
+        (R) = _reg;                                 \
+    } while (0)
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+
+#define CLEANUP()                       \
+    do {                                \
+        CLOBBER_REGISTER(_oparg, w3);   \
+        CLOBBER_REGISTER(_operand, x4); \
+    } while (0)
+
+#elif defined(__x86_64__) || defined(_M_X64)
+
+#define CLEANUP()                        \
+    do {                                 \
+        CLOBBER_REGISTER(_oparg, bx);    \
+        CLOBBER_REGISTER(_operand, r14); \
+    } while (0)
+
+#elif defined(_M_IX86)
+
+#define CLEANUP()                     \
+    do {                              \
+        CLOBBER_REGISTER(_oparg, si); \
+        _operand = 0; \
+    } while (0)
+
+#endif
+
 #undef CURRENT_OPARG
 #define CURRENT_OPARG() (_oparg)
 
@@ -48,8 +81,9 @@
 #define GOTO_TIER_TWO(EXECUTOR) \
 do {  \
     OPT_STAT_INC(traces_executed);                \
+    CLEANUP();                                    \
     __attribute__((musttail))                     \
-    return ((jit_func)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate, 0, 0); \
+    return ((jit_func)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate, _oparg, _operand); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -71,8 +105,9 @@ do {  \
 #define PATCH_JUMP(ALIAS)                                    \
 do {                                                         \
     PyAPI_DATA(void) ALIAS;                                  \
+    CLEANUP();                                               \
     __attribute__((musttail))                                \
-    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate, 0, 0); \
+    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate, _oparg, _operand); \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
