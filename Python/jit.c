@@ -497,63 +497,43 @@ emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
     patch_aarch64_16d(code + 0x10, instruction->operand);
 }
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(_M_X64)
 
-#define PRELUDE_SIZE 15
+#define PRELUDE_SIZE 14
 
 static void
 emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
 {
-    // B9 00 00 00 00                   mov    ecx, 0
-    // 49 BF 00 00 00 00 00 00 00 00    movabs r8, 0
+    // 66 BB 00 00                      mov    bx, 0
+    // 49 BE 00 00 00 00 00 00 00 00    movabs r14, 0
     unsigned char code_body[PRELUDE_SIZE] = {
-        0xb9, 0x00, 0x00, 0x00, 0x00, 0x49, 0xbf, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x66, 0xbb, 0x00, 0x00, 0x49, 0xbe, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
     memcpy(code, code_body, sizeof(code_body));
-    patch_32(code + 0x1, instruction->oparg);
-    patch_64(code + 0x7, instruction->operand);
+    patch_16(code + 0x2, instruction->oparg);
+    patch_64(code + 0x6, instruction->operand);
 }
 
-#elif defined(_M_X64)
+#elif defined(_M_IX86)
 
 #define PRELUDE_SIZE 20
 
 static void
 emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
 {
-    // 66 41 B9 00 00                   mov    r9w, 0
-    // 48 B8 00 00 00 00 00 00 00 00    movabs rax, 0
-    // 48 89 44 24 40                   mov    qword ptr [rsp + 0x40], rax
+    // 66 BE 00 00                mov si, 0
+    // C7 44 24 04 00 00 00 00    mov dword ptr [esp + 4], 0
+    // C7 44 24 08 00 00 00 00    mov dword ptr [esp + 8], 0
     unsigned char code_body[PRELUDE_SIZE] = {
-        0x66, 0x41, 0xb9, 0x00, 0x00, 0x48, 0xb8, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48,
-        0x89, 0x44, 0x24, 0x40,
+        0x66, 0xbe, 0x00, 0x00, 0xc7, 0x44, 0x24, 0x04,
+        0x00, 0x00, 0x00, 0x00, 0xc7, 0x44, 0x24, 0x08,
+        0x00, 0x00, 0x00, 0x00,
     };
     memcpy(code, code_body, sizeof(code_body));
-    patch_16(code + 0x3, instruction->oparg);
-    patch_64(code + 0x7, instruction->operand);
-}
-
-#elif defined(_M_IX86)
-
-#define PRELUDE_SIZE 23
-
-static void
-emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
-{
-    // 66 C7 44 24 10 00 00       mov word ptr [esp + 0x16], 0
-    // C7 44 24 14 00 00 00 00    mov dword ptr [esp + 0x20], 0
-    // C7 44 24 18 00 00 00 00    mov dword ptr [esp + 0x24], 0
-    unsigned char code_body[PRELUDE_SIZE] = {
-        0x66, 0xc7, 0x44, 0x24, 0x10, 0x00, 0x00, 0xc7,
-        0x44, 0x24, 0x14, 0x00, 0x00, 0x00, 0x00, 0xc7,
-        0x44, 0x24, 0x18, 0x00, 0x00, 0x00, 0x00,
-    };
-    memcpy(code, code_body, sizeof(code_body));
-    patch_16(code + 0x5, instruction->oparg);
-    patch_32(code + 0xb, instruction->operand & 0xFFFFFFFF);
-    patch_32(code + 0x13, instruction->operand >> 32);
+    patch_16(code + 0x2, instruction->oparg);
+    patch_32(code + 0x8, instruction->operand & 0xFFFFFFFF);
+    patch_32(code + 0x10, instruction->operand >> 32);
 }
 
 #endif
