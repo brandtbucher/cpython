@@ -49,7 +49,7 @@
 do {  \
     OPT_STAT_INC(traces_executed);                \
     __attribute__((musttail))                     \
-    return ((jit_func)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate); \
+    return ((jit_func)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate, 0, 0); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -72,7 +72,7 @@ do {  \
 do {                                                         \
     PyAPI_DATA(void) ALIAS;                                  \
     __attribute__((musttail))                                \
-    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate); \
+    return ((jit_func)&ALIAS)(frame, stack_pointer, tstate, 0, 0); \
 } while (0)
 
 #undef JUMP_TO_JUMP_TARGET
@@ -87,7 +87,8 @@ do {                                                         \
 #define TIER_TWO 2
 
 _Py_CODEUNIT *
-_JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
+_JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate,
+           uint16_t _oparg, uint64_t _operand)
 {
     // Locals that the instruction implementations expect to exist:
     PATCH_VALUE(_PyExecutorObject *, current_executor, _JIT_EXECUTOR)
@@ -95,15 +96,6 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
     int uopcode = _JIT_OPCODE;
     _Py_CODEUNIT *next_instr;
     // Other stuff we need handy:
-    PATCH_VALUE(uint16_t, _oparg, _JIT_OPARG)
-#if SIZEOF_VOID_P == 8
-    PATCH_VALUE(uint64_t, _operand, _JIT_OPERAND)
-#else
-    assert(SIZEOF_VOID_P == 4);
-    PATCH_VALUE(uint32_t, _operand_hi, _JIT_OPERAND_HI)
-    PATCH_VALUE(uint32_t, _operand_lo, _JIT_OPERAND_LO)
-    uint64_t _operand = ((uint64_t)_operand_hi << 32) | _operand_lo;
-#endif
     PATCH_VALUE(uint32_t, _target, _JIT_TARGET)
 
     OPT_STAT_INC(uops_executed);

@@ -8,7 +8,7 @@
 // The actual change is patched in while the JIT compiler is being built, in
 // Tools/jit/_targets.py. On other platforms, this function compiles to nothing.
 _Py_CODEUNIT *
-_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
+_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate, uint16_t _oparg, uint64_t _operand)
 {
     // This is subtle. The actual trace will return to us once it exits, so we
     // need to make sure that we stay alive until then. If our trace side-exits
@@ -19,7 +19,7 @@ _ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *ts
     Py_INCREF(executor);
     // Note that this is *not* a tail call:
     PyAPI_DATA(void) _JIT_CONTINUE;
-    _Py_CODEUNIT *target = ((jit_func)&_JIT_CONTINUE)(frame, stack_pointer, tstate);
+    _Py_CODEUNIT *target = ((jit_func)&_JIT_CONTINUE)(frame, stack_pointer, tstate, 0, 0);
     Py_SETREF(tstate->previous_executor, executor);
     return target;
 }

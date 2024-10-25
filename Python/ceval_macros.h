@@ -379,7 +379,7 @@ _PyFrame_SetStackPointer(frame, stack_pointer)
 do {                                                   \
     OPT_STAT_INC(traces_executed);                     \
     jit_func jitted = (EXECUTOR)->jit_code;            \
-    next_instr = jitted(frame, stack_pointer, tstate); \
+    next_instr = jitted(frame, stack_pointer, tstate, 0, 0); \
     Py_DECREF(tstate->previous_executor);              \
     tstate->previous_executor = NULL;                  \
     frame = tstate->current_frame;                     \

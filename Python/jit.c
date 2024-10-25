@@ -159,7 +159,7 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 #define IS_AARCH64_ADRP(I)       (((I) & 0x9F000000) == 0x90000000)
 #define IS_AARCH64_BRANCH(I)     (((I) & 0x7C000000) == 0x14000000)
 #define IS_AARCH64_LDR_OR_STR(I) (((I) & 0x3B000000) == 0x39000000)
-#define IS_AARCH64_MOV(I)        (((I) & 0x9F800000) == 0x92800000)
+#define IS_AARCH64_MOV(I)        (((I) & 0x1F800000) == 0x12800000)
 
 // LLD is a great reference for performing relocations... just keep in
 // mind that Tools/jit/build.py does filtering and preprocessing for us!
@@ -185,6 +185,16 @@ set_bits(uint32_t *loc, uint8_t loc_start, uint64_t value, uint8_t value_start,
 // code they're patching to be more efficient (like turning a 64-bit memory
 // load into a 32-bit immediate load). These patches have an "x" in their name.
 // Relative patches have an "r" in their name.
+
+// 16-bit absolute address.
+void
+patch_16(unsigned char *location, uint64_t value)
+{
+    uint16_t *loc16 = (uint16_t *)location;
+    // Check that we're not out of range of 16 unsigned bits:
+    assert(value < (1ULL << 16));
+    *loc16 = (uint16_t)value;
+}
 
 // 32-bit absolute address.
 void
@@ -461,6 +471,94 @@ combine_symbol_mask(const symbol_mask src, symbol_mask dest)
     }
 }
 
+#if defined(__aarch64__) || defined(_M_ARM64)
+
+#define PRELUDE_SIZE 24
+
+static void
+emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // 03 00 80 52    movz w3, #0
+    // 04 00 80 D2    movz x4, #0
+    // 04 00 A0 F2    movk x4, #0, lsl #16
+    // 04 00 C0 F2    movk x4, #0, lsl #32
+    // 04 00 E0 F2    movk x4, #0, lsl #48
+    // 1F 20 03 D5    nop
+    unsigned char code_body[PRELUDE_SIZE] = {
+        0x03, 0x00, 0x80, 0x52, 0x04, 0x00, 0x80, 0xd2, 
+        0x04, 0x00, 0xa0, 0xf2, 0x04, 0x00, 0xc0, 0xf2, 
+        0x04, 0x00, 0xe0, 0xf2, 0x1f, 0x20, 0x03, 0xd5,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_aarch64_16a(code + 0x0, instruction->oparg);
+    patch_aarch64_16a(code + 0x4, instruction->operand);
+    patch_aarch64_16b(code + 0x8, instruction->operand);
+    patch_aarch64_16c(code + 0xc, instruction->operand);
+    patch_aarch64_16d(code + 0x10, instruction->operand);
+}
+
+#elif defined(__x86_64__)
+
+#define PRELUDE_SIZE 15
+
+static void
+emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // BF 00 00 00 00                   mov    edi, 0
+    // 49 BF 00 00 00 00 00 00 00 00    movabs r15, 0
+    unsigned char code_body[PRELUDE_SIZE] = {
+        0xbf, 0x00, 0x00, 0x00, 0x00, 0x49, 0xbf, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_32(code + 0x1, instruction->oparg);
+    patch_64(code + 0x7, instruction->operand);
+}
+
+#elif defined(_M_X64)
+
+#define PRELUDE_SIZE 20
+
+static void
+emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // 66 41 B9 00 00                   mov    r9w, 0
+    // 48 B8 00 00 00 00 00 00 00 00    movabs rax, 0
+    // 48 89 44 24 28                   mov    qword ptr [rsp + 0x28], rax
+    unsigned char code_body[PRELUDE_SIZE] = {
+        0x66, 0x41, 0xb9, 0x00, 0x00, 0x48, 0xb8, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 
+        0x89, 0x44, 0x24, 0x28,
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_16(code + 0x3, instruction->oparg);
+    patch_64(code + 0x7, instruction->operand);
+}
+
+#elif defined(_M_IX86)
+
+#define PRELUDE_SIZE 23
+
+static void
+emit_prelude(unsigned char *code, const _PyUOpInstruction *instruction)
+{
+    // 66 C7 44 24 10 00 00       mov word ptr [esp + 0x10], 0
+    // C7 44 24 14 00 00 00 00    mov dword ptr [esp + 0x14], 0
+    // C7 44 24 18 00 00 00 00    mov dword ptr [esp + 0x18], 0
+    unsigned char code_body[PRELUDE_SIZE] = {
+        0x66, 0xc7, 0x44, 0x24, 0x10, 0x00, 0x00, 0xc7, 
+        0x44, 0x24, 0x14, 0x00, 0x00, 0x00, 0x00, 0xc7, 
+        0x44, 0x24, 0x18, 0x00, 0x00, 0x00, 0x00, 
+    };
+    memcpy(code, code_body, sizeof(code_body));
+    patch_16(code + 0x5, instruction->oparg);
+    patch_32(code + 0xb, instruction->operand & 0xFFFFFFFF);
+    patch_32(code + 0x13, instruction->operand >> 32);
+}
+
+#endif
+
+
 // Compiles executor in-place. Don't forget to call _PyJIT_Free later!
 int
 _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], size_t length)
@@ -477,7 +575,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
         const _PyUOpInstruction *instruction = &trace[i];
         group = &stencil_groups[instruction->opcode];
         state.instruction_starts[i] = code_size;
-        code_size += group->code_size;
+        code_size += PRELUDE_SIZE + group->code_size;
         data_size += group->data_size;
         combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
     }
@@ -518,6 +616,8 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     assert(trace[0].opcode == _START_EXECUTOR);
     for (size_t i = 0; i < length; i++) {
         const _PyUOpInstruction *instruction = &trace[i];
+        emit_prelude(code, instruction);
+        code += PRELUDE_SIZE;
         group = &stencil_groups[instruction->opcode];
         group->emit(code, data, executor, instruction, &state);
         code += group->code_size;
