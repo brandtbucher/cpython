@@ -18,6 +18,8 @@
 #include "pycore_sliceobject.h"
 #include "pycore_jit.h"
 
+#include <elf.h>
+
 // Memory management stuff: ////////////////////////////////////////////////////
 
 #ifndef MS_WINDOWS
@@ -461,9 +463,440 @@ combine_symbol_mask(const symbol_mask src, symbol_mask dest)
     }
 }
 
+typedef enum
+{
+  JIT_NOACTION = 0,
+  JIT_REGISTER_FN,
+  JIT_UNREGISTER_FN
+} jit_actions_t;
+
+struct jit_code_entry
+{
+  struct jit_code_entry *next_entry;
+  struct jit_code_entry *prev_entry;
+  const char *symfile_addr;
+  uint64_t symfile_size;
+};
+
+struct jit_descriptor
+{
+  uint32_t version;
+  /* This type should be jit_actions_t, but we use uint32_t
+     to be explicit about the bitwidth.  */
+  uint32_t action_flag;
+  struct jit_code_entry *relevant_entry;
+  struct jit_code_entry *first_entry;
+};
+
+/* GDB puts a breakpoint in this function.  */
+void __attribute__((noinline)) __jit_debug_register_code(void) { };
+
+/* Make sure to specify the version statically, because the
+   debugger may check the version before we can set it.  */
+struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+
+// https://github.com/JuliaLang/julia/issues/17856:
+void (*volatile jit_debug_register_code)(void) = __jit_debug_register_code;
+
+typedef struct buffer {
+    uint8_t *bytes;
+    size_t num_bytes;
+    size_t max_bytes;
+} Buffer;
+
+Buffer buf_new(void);
+Buffer buf_new_with_capacity(size_t num_bytes);
+void buf_free(Buffer buf);
+void buf_grow_to(Buffer *buf, size_t num_bytes);
+void buf_grow_by(Buffer *buf, size_t num_bytes);
+size_t buf_append(Buffer *buf, const void *bytes, size_t len);
+size_t buf_append_byte(Buffer *buf, uint8_t value);
+size_t buf_append_half(Buffer *buf, uint16_t value);
+size_t buf_append_word(Buffer *buf, uint32_t value);
+size_t buf_append_long(Buffer *buf, uint64_t value);
+size_t buf_append_addr(Buffer *buf, uintptr_t value);
+size_t buf_append_str(Buffer *buf, const char *str);
+size_t buf_append_hex(Buffer *buf, const char *str);
+
+Buffer buf_new(void)
+{
+    static Buffer result = { NULL, 0, 0 };
+    return result;
+}
+Buffer buf_new_with_capacity(size_t num_bytes)
+{
+    Buffer result = buf_new();
+    buf_grow_to(&result, num_bytes);
+    return result;
+}
+void buf_free(Buffer buf)
+{
+    free(buf.bytes);
+}
+void buf_grow_to(Buffer *buf, size_t num_bytes)
+{
+    if (num_bytes <= buf->max_bytes) return;
+    size_t max_bytes = 8;
+    while (num_bytes > max_bytes) max_bytes *= 2;
+
+    uint8_t *new_bytes = realloc(buf->bytes, max_bytes);
+    if (!new_bytes) {
+        fprintf(stderr, "Failed to allocate %zu bytes.\n", max_bytes);
+        exit(EXIT_FAILURE);
+    }
+    buf->bytes = new_bytes;
+    buf->max_bytes = max_bytes;
+}
+void buf_grow_by(Buffer *buf, size_t num_bytes)
+{
+    buf_grow_to(buf, buf->num_bytes + num_bytes);
+}
+size_t buf_append(Buffer *buf, const void *bytes, size_t len)
+{
+    buf_grow_by(buf, len);
+    size_t off = buf->num_bytes;
+    memcpy(&buf->bytes[buf->num_bytes], bytes, len);
+    buf->num_bytes += len;
+    return off;
+}
+size_t buf_append_byte(Buffer *buf, uint8_t value)
+{
+    return buf_append(buf, &value, sizeof(value));
+}
+size_t buf_append_half(Buffer *buf, uint16_t value)
+{
+    return buf_append(buf, &value, sizeof(value));
+}
+size_t buf_append_word(Buffer *buf, uint32_t value)
+{
+    return buf_append(buf, &value, sizeof(value));
+}
+size_t buf_append_long(Buffer *buf, uint64_t value)
+{
+    return buf_append(buf, &value, sizeof(value));
+}
+size_t buf_append_addr(Buffer *buf, uintptr_t value)
+{
+    return buf_append(buf, &value, sizeof(value));
+}
+size_t buf_append_str(Buffer *buf, const char *str)
+{
+    return buf_append(buf, str, strlen(str) + 1);
+}
+size_t buf_append_hex(Buffer *buf, const char *str)
+{
+    size_t off = buf->num_bytes;
+    while (*str) {
+        int hi = *str++;
+        int lo = *str++;
+        char hexval[3] = { hi, lo, 0 };
+        if (!isxdigit(hi)) lo = hi;
+        if (!isxdigit(lo)) {
+            if (isgraph(lo)) {
+                fprintf(stderr, "'%c' is not a valid hex digit.\n", lo);
+            } else {
+                fprintf(stderr, "'\\x%02x' is not a valid hex digit.\n", lo);
+            }
+            exit(EXIT_FAILURE);
+        }
+        buf_append_byte(buf, strtoul(hexval, NULL, 16));
+    }
+    return off;
+}
+
+#define ARRAYSIZE(...) (sizeof(__VA_ARGS__) / sizeof(*(__VA_ARGS__)))
+
+static size_t buf_append_sym(Buffer *buf, Elf64_Sym sym)
+{
+    return buf_append(buf, &sym, sizeof(sym));
+}
+
+static Buffer buf_make_executable(Buffer buf)
+{
+    uint8_t *executable = mmap(
+        NULL,
+        4096,
+        PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS,
+        -1,
+        0
+    );
+    if (executable == MAP_FAILED) {
+        fprintf(stderr, "Failed to mmap %zu bytes: %s\n", buf.num_bytes, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    memcpy(executable, buf.bytes, buf.num_bytes);
+    if (mprotect(executable, 4096, PROT_READ | PROT_EXEC)) {
+        fprintf(stderr, "Failed to mprotect(%p, %zu, PROT_READ | PROT_EXEC).\n", executable, buf.num_bytes);
+        exit(EXIT_FAILURE);
+    }
+
+    buf_free(buf);
+
+    Buffer result;
+    result.bytes = executable;
+    result.num_bytes = 4096;
+    result.max_bytes = 0;
+    return result;
+}
+static void buf_free_executable(Buffer buf)
+{
+    if (munmap(buf.bytes, buf.num_bytes) < 0) {
+        fprintf(stderr, "Failed to munmap(%p, %zu)\n", buf.bytes, buf.num_bytes);
+        exit(EXIT_FAILURE);
+    }
+}
+
+enum {
+    /* You can add more sections, like `.rodata` or debug sections */
+    SECTION_NULL,
+    SECTION_TEXT,
+    SECTION_DATA,
+    SECTION_SYMTAB,
+    SECTION_STRTAB,
+    SECTION_SHSTRTAB,
+    SECTION_COUNT
+};
+typedef struct JitObject {
+    /* The elf header. */
+    Elf64_Ehdr ehdr;
+    /* We don't need a program header.
+     * A program header is used to prepare a program for execution,
+     * but because we are JIT compiling, we prepare the program ourselves.
+     */
+    Elf64_Phdr phdr[0];
+    /* The section headers that tell GDB about the memory we JIT compiled. */
+    Elf64_Shdr shdr[SECTION_COUNT];
+    /* NOTE: You could totally pre-calculate the sizes of these buffers,
+     * and allocate the entire object up front.
+     */
+    Buffer symtab;
+    Buffer strtab;
+    Buffer shstrtab;
+} JitObject;
+
+/* Prepare a `JitObject` for adding symbols to. */
+JitObject jit_begin(void)
+{
+    JitObject object;
+
+    memset(&object, 0x00, sizeof(JitObject));
+    object.ehdr.e_ident[EI_MAG0]       = ELFMAG0;
+    object.ehdr.e_ident[EI_MAG1]       = ELFMAG1;
+    object.ehdr.e_ident[EI_MAG2]       = ELFMAG2;
+    object.ehdr.e_ident[EI_MAG3]       = ELFMAG3;
+    object.ehdr.e_ident[EI_CLASS]      = ELFCLASS64;
+    object.ehdr.e_ident[EI_DATA]       = ELFDATA2LSB;
+    object.ehdr.e_ident[EI_VERSION]    = EV_CURRENT;
+    object.ehdr.e_ident[EI_OSABI]      = ELFOSABI_NONE;
+    object.ehdr.e_ident[EI_ABIVERSION] = 0;
+    /* NOTE: `ET_EXEC` will work too, that makes GDB treat `.st_value`s as VMAs. */
+    object.ehdr.e_type                 = ET_REL;
+    object.ehdr.e_machine              = EM_X86_64;
+    object.ehdr.e_version              = EV_CURRENT;
+    /* NOTE: `.e_entry` is completely unused. */
+    object.ehdr.e_entry                = 0x0;
+    /* NOTE: `readelf` gives a warning if `.e_phoff` is non-zero, but `.e_phnum` is zero.
+     * Setting this to `offsetof(...)` is otherwise harmless. */
+    object.ehdr.e_phoff                = ARRAYSIZE(object.phdr) ? offsetof(JitObject, phdr) : 0;
+    /* NOTE: `readelf` gives a warning if `.e_shoff` is non-zero, but `.e_shnum` is zero.
+     * Setting this to `offsetof(...)` is otherwise harmless. */
+    object.ehdr.e_shoff                = ARRAYSIZE(object.shdr) ? offsetof(JitObject, shdr) : 0;
+    /* EM_X86_64 doesn't have machine flags. */
+    object.ehdr.e_flags                = 0;
+    object.ehdr.e_ehsize               = sizeof(Elf64_Ehdr);
+    /* NOTE: `gcc` sets this to zero if `.e_phnum` is zero, so let's do the same. */
+    object.ehdr.e_phentsize            = ARRAYSIZE(object.phdr) ? sizeof(Elf64_Phdr) : 0;
+    object.ehdr.e_phnum                = ARRAYSIZE(object.phdr);
+    /* NOTE: `gcc` sets this to zero if `.e_shnum` is zero, so let's do the same. */
+    object.ehdr.e_shentsize            = ARRAYSIZE(object.shdr) ? sizeof(Elf64_Shdr) : 0;
+    object.ehdr.e_shnum                = ARRAYSIZE(object.shdr);
+    object.ehdr.e_shstrndx             = SECTION_SHSTRTAB;
+
+    /* The NULL symbol, MUST exist as the first symbol. */
+    buf_append_sym(&object.symtab, (Elf64_Sym){
+        /* Can be any name. Most tools set this to 0 and place the empty string there. */
+        .st_name  = buf_append_str(&object.strtab, ""),
+        .st_value = 0,
+        .st_size  = 0,
+        .st_info  = ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), /* = 0 */
+        .st_other = STV_DEFAULT, /* = 0 */
+        .st_shndx = 0,
+    });
+
+    return object;
+}
+/* Finish adding symbols to a `JitObject`, and return the object as a continuous buffer. */
+Buffer jit_complete(JitObject object, unsigned char *text, size_t text_size, unsigned char *data, size_t data_size)
+{
+    size_t header_sizes = sizeof(object.ehdr) + sizeof(object.phdr) + sizeof(object.shdr);
+    size_t symtab_offset = header_sizes;
+    size_t strtab_offset = symtab_offset + object.symtab.num_bytes;
+    size_t shstrtab_offset = strtab_offset + object.strtab.num_bytes;
+
+    /* SHT_NULL, MUST exist as the first section.
+     * Can be any name. Most tools set this to 0 and place the empty string there. */
+    object.shdr[SECTION_NULL].sh_name      = buf_append_str(&object.shstrtab, "");
+    object.shdr[SECTION_NULL].sh_type      = SHT_NULL;
+    object.shdr[SECTION_NULL].sh_flags     = 0;
+    object.shdr[SECTION_NULL].sh_addr      = 0;
+    object.shdr[SECTION_NULL].sh_offset    = 0;
+    object.shdr[SECTION_NULL].sh_size      = 0;
+    object.shdr[SECTION_NULL].sh_link      = 0;
+    object.shdr[SECTION_NULL].sh_info      = 0;
+    object.shdr[SECTION_NULL].sh_addralign = 0;
+    object.shdr[SECTION_NULL].sh_entsize   = 0;
+    /* .text */
+    object.shdr[SECTION_TEXT].sh_name      = buf_append_str(&object.shstrtab, ".text");
+    object.shdr[SECTION_TEXT].sh_type      = SHT_PROGBITS;
+    object.shdr[SECTION_TEXT].sh_flags     = SHF_ALLOC | SHF_EXECINSTR;
+    object.shdr[SECTION_TEXT].sh_addr      = (uintptr_t)text;
+    object.shdr[SECTION_TEXT].sh_offset    = 0;
+    object.shdr[SECTION_TEXT].sh_size      = text_size;
+    object.shdr[SECTION_TEXT].sh_link      = 0;
+    object.shdr[SECTION_TEXT].sh_info      = 0;
+    object.shdr[SECTION_TEXT].sh_addralign = 1 << 0;
+    object.shdr[SECTION_TEXT].sh_entsize   = 0;
+    /* .data */
+    object.shdr[SECTION_DATA].sh_name      = buf_append_str(&object.shstrtab, ".data");
+    object.shdr[SECTION_DATA].sh_type      = SHT_PROGBITS;
+    object.shdr[SECTION_DATA].sh_flags     = SHF_ALLOC | SHF_WRITE;
+    object.shdr[SECTION_DATA].sh_addr      = (uintptr_t)data;
+    object.shdr[SECTION_DATA].sh_offset    = 0;
+    object.shdr[SECTION_DATA].sh_size      = data_size;
+    object.shdr[SECTION_DATA].sh_link      = 0;
+    object.shdr[SECTION_DATA].sh_info      = 0;
+    object.shdr[SECTION_DATA].sh_addralign = 1 << 0;
+    object.shdr[SECTION_DATA].sh_entsize   = 0;
+    /* .symtab */
+    object.shdr[SECTION_SYMTAB].sh_name      = buf_append_str(&object.shstrtab, ".symtab");
+    object.shdr[SECTION_SYMTAB].sh_type      = SHT_SYMTAB;
+    object.shdr[SECTION_SYMTAB].sh_flags     = SHF_ALLOC;
+    object.shdr[SECTION_SYMTAB].sh_addr      = (uintptr_t)object.symtab.bytes;
+    object.shdr[SECTION_SYMTAB].sh_offset    = symtab_offset;
+    object.shdr[SECTION_SYMTAB].sh_size      = object.symtab.num_bytes;
+    /* NOTE: This can be any `SHT_STRTAB` section. You could re-use `.shstrtab` to save space. Most tools don't. */
+    object.shdr[SECTION_SYMTAB].sh_link      = SECTION_STRTAB;
+    object.shdr[SECTION_SYMTAB].sh_info      = (object.symtab.num_bytes / sizeof(Elf64_Sym));
+    object.shdr[SECTION_SYMTAB].sh_addralign = 1 << 0;
+    object.shdr[SECTION_SYMTAB].sh_entsize   = sizeof(Elf64_Sym);
+    /* .strtab */
+    object.shdr[SECTION_STRTAB].sh_name      = buf_append_str(&object.shstrtab, ".strtab");
+    object.shdr[SECTION_STRTAB].sh_type      = SHT_STRTAB;
+    object.shdr[SECTION_STRTAB].sh_flags     = SHF_ALLOC | SHF_STRINGS; /* NOTE: `SHF_STRINGS` is optional. */
+    object.shdr[SECTION_STRTAB].sh_addr      = (uintptr_t)object.strtab.bytes;
+    object.shdr[SECTION_STRTAB].sh_offset    = strtab_offset;
+    object.shdr[SECTION_STRTAB].sh_size      = object.strtab.num_bytes;
+    object.shdr[SECTION_STRTAB].sh_link      = 0;
+    object.shdr[SECTION_STRTAB].sh_info      = 0;
+    object.shdr[SECTION_STRTAB].sh_addralign = 1 << 0;
+    /* Because we set `SHF_STRINGS`, this is "the size of each character". */
+    object.shdr[SECTION_STRTAB].sh_entsize   = 1;
+    /* .shstrtab */
+    object.shdr[SECTION_SHSTRTAB].sh_name      = buf_append_str(&object.shstrtab, ".shstrtab");
+    object.shdr[SECTION_SHSTRTAB].sh_type      = SHT_STRTAB;
+    object.shdr[SECTION_SHSTRTAB].sh_flags     = SHF_ALLOC | SHF_STRINGS; /* NOTE: `SHF_STRINGS` is optional. */
+    object.shdr[SECTION_SHSTRTAB].sh_addr      = (uintptr_t)object.shstrtab.bytes;
+    object.shdr[SECTION_SHSTRTAB].sh_offset    = shstrtab_offset;
+    object.shdr[SECTION_SHSTRTAB].sh_size      = object.shstrtab.num_bytes;
+    object.shdr[SECTION_SHSTRTAB].sh_link      = 0;
+    object.shdr[SECTION_SHSTRTAB].sh_info      = 0;
+    object.shdr[SECTION_SHSTRTAB].sh_addralign = 1 << 0;
+    /* Because we set `SHF_STRINGS`, this is "the size of each character". */
+    object.shdr[SECTION_SHSTRTAB].sh_entsize   = 1;
+
+    Buffer result = buf_new_with_capacity(
+        header_sizes + object.symtab.num_bytes + object.strtab.num_bytes + object.shstrtab.num_bytes
+    );
+
+    buf_append(&result, &object.ehdr, sizeof(object.ehdr));
+    buf_append(&result, &object.phdr, sizeof(object.phdr));
+    buf_append(&result, &object.shdr, sizeof(object.shdr));
+    buf_append(&result, object.symtab.bytes, object.symtab.num_bytes);
+    buf_append(&result, object.strtab.bytes, object.strtab.num_bytes);
+    buf_append(&result, object.shstrtab.bytes, object.shstrtab.num_bytes);
+
+    buf_free(object.shstrtab);
+    buf_free(object.strtab);
+    buf_free(object.symtab);
+
+    return result;
+}
+
+/*
+ * You can break on this function to step into the JIT code,
+ * and then print a backtrace to see if the symbols are working.
+ */
+void jit_run(void (*func)(void))
+{
+    func();
+}
+
+void *emit(char *name, unsigned char *memory, size_t code_size, size_t data_size)
+{
+
+    JitObject object = jit_begin();
+
+    /* Add the symbols. */
+    buf_append_sym(&object.symtab, (Elf64_Sym){
+        .st_name = buf_append_str(&object.strtab, name),
+        .st_value = 0, /* Offset into `.text` */
+        .st_size = code_size, /* Size of the function. MUST be non-zero, or symbol will be unusable. */
+        .st_info = ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), /* A function. */
+        .st_other = STV_DEFAULT,
+        .st_shndx = SECTION_TEXT, /* The section index of this symbol (`.text`). */
+    });
+    buf_append_sym(&object.symtab, (Elf64_Sym){
+        .st_name = buf_append_str(&object.strtab, "data"),
+        .st_value = 0, /* Offset into `.data`` */
+        .st_size = data_size, /* Size of the object. MUST be non-zero, or symbol will be unusable. */
+        .st_info = ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), /* An object. */
+        .st_other = STV_DEFAULT,
+        .st_shndx = SECTION_DATA, /* The section index of this symbol (`.data`). */
+    });
+
+    /* Create the object file in memory for GDB. */
+    Buffer buf = jit_complete(object, memory, code_size, memory + code_size, data_size);
+
+    // {
+    //     /* Save the object file to disk.
+    //      * Useful for checking the content with `readelf -a jit.o`
+    //      * or `objdump -x jit.o` */
+    //     FILE *fp = fopen("jit.o", "wb");
+    //     if (!fp) {
+    //         fprintf(stderr, "Failed to open \"jit.o\": %s\n", strerror(errno));
+    //         exit(EXIT_FAILURE);
+    //     }
+    //     fwrite(buf.bytes, 1, buf.num_bytes, fp);
+    //     fclose(fp);
+    // }
+
+    struct jit_code_entry *entry = malloc(sizeof(struct jit_code_entry));
+
+    {
+        /* Tell GDB about the object file we created. */
+        /* https://sourceware.org/gdb/current/onlinedocs/gdb.html/Registering-Code.html */
+        entry->prev_entry = NULL;
+        entry->next_entry = __jit_debug_descriptor.first_entry;
+        if (entry->next_entry) {
+            entry->next_entry->prev_entry = entry;
+        }
+        entry->symfile_addr = (void*)buf.bytes;
+        entry->symfile_size = buf.num_bytes;
+
+        __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
+        __jit_debug_descriptor.relevant_entry = entry;
+        __jit_debug_descriptor.first_entry = entry;
+
+        jit_debug_register_code();
+    }
+
+    return 0;
+}
+
 // Compiles executor in-place. Don't forget to call _PyJIT_Free later!
 int
-_PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], size_t length)
+_PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], size_t length, PyCodeObject *co)
 {
     const StencilGroup *group;
     // Loop once to find the total compiled size:
@@ -538,6 +971,13 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     executor->jit_code = memory;
     executor->jit_side_entry = memory + trampoline.code_size;
     executor->jit_size = total_size;
+    char symbol[100];
+    PyObject *bytes = PyUnicode_AsASCIIString(co->co_qualname);
+    snprintf(symbol, sizeof(symbol), "[JIT: %s]", PyBytes_AS_STRING(bytes));
+    Py_DECREF(bytes);
+    emit("[JIT: <shim>]", memory, trampoline.code_size, 0);
+    emit(symbol, memory + trampoline.code_size, code_size, data_size);
+
     return 0;
 }
 

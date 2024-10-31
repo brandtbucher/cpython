@@ -129,7 +129,7 @@ _Py_GetOptimizer(void)
 }
 
 static _PyExecutorObject *
-make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFilter *dependencies);
+make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFilter *dependencies, PyCodeObject *co);
 
 static const _PyBloomFilter EMPTY_FILTER = { 0 };
 
@@ -1134,7 +1134,7 @@ sanity_check(_PyExecutorObject *executor)
  * and not a NOP.
  */
 static _PyExecutorObject *
-make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFilter *dependencies)
+make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFilter *dependencies, PyCodeObject *co)
 {
     int exit_count = count_exits(buffer, length);
     _PyExecutorObject *executor = allocate_executor(exit_count, length);
@@ -1196,7 +1196,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     // This is initialized to true so we can prevent the executor
     // from being immediately detected as cold and invalidated.
     executor->vm_data.warm = true;
-    if (_PyJIT_Compile(executor, executor->trace, length)) {
+    if (_PyJIT_Compile(executor, executor->trace, length, co)) {
         Py_DECREF(executor);
         return NULL;
     }
@@ -1275,7 +1275,7 @@ uop_optimize(
     OPT_HIST(effective_trace_length(buffer, length), optimized_trace_length_hist);
     length = prepare_for_execution(buffer, length);
     assert(length <= UOP_MAX_TRACE_LENGTH);
-    _PyExecutorObject *executor = make_executor_from_uops(buffer, length,  &dependencies);
+    _PyExecutorObject *executor = make_executor_from_uops(buffer, length,  &dependencies, _PyFrame_GetCode(frame));
     if (executor == NULL) {
         return -1;
     }
@@ -1356,7 +1356,7 @@ counter_optimize(
         { .opcode = _INTERNAL_INCREMENT_OPT_COUNTER },
         { .opcode = _EXIT_TRACE, .target = (uint32_t)(target - _PyCode_CODE(code)), .format=UOP_FORMAT_TARGET }
     };
-    _PyExecutorObject *executor = make_executor_from_uops(buffer, 4, &EMPTY_FILTER);
+    _PyExecutorObject *executor = make_executor_from_uops(buffer, 4, &EMPTY_FILTER, code);
     if (executor == NULL) {
         return -1;
     }

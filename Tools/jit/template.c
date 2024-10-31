@@ -88,7 +88,7 @@ do {                                                         \
 
 #define TIER_TWO 2
 
-__attribute__((preserve_none)) _Py_CODEUNIT *
+ _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
     // Locals that the instruction implementations expect to exist:

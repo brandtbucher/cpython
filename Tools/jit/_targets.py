@@ -134,6 +134,8 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-plt",
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
+            "-fno-omit-frame-pointer",  # XXX
+            "-mno-omit-leaf-frame-pointer",  # XXX
             "-std=c11",
             "-o",
             f"{o}",
