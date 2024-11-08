@@ -88,7 +88,7 @@ class TestOptimizerAPI(unittest.TestCase):
                 pass
 
             def long_loop():
-                for _ in range(20):
+                for _ in range(100):
                     nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop();
                     nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop();
                     nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop();
@@ -103,7 +103,7 @@ class TestOptimizerAPI(unittest.TestCase):
         with temporary_optimizer(opt):
             self.assertEqual(opt.get_count(), 0)
             long_loop()
-            self.assertEqual(opt.get_count(), 20 - TIER2_THRESHOLD)  # Need iterations to warm up
+            self.assertEqual(opt.get_count(), 100 - TIER2_THRESHOLD)  # Need iterations to warm up
 
     def test_code_restore_for_ENTER_EXECUTOR(self):
         def testfunc(x):
@@ -250,32 +250,32 @@ class TestUops(unittest.TestCase):
         exec(textwrap.dedent("""
             def many_vars():
                 # 260 vars, so z9 should have index 259
-                a0 = a1 = a2 = a3 = a4 = a5 = a6 = a7 = a8 = a9 = 42
-                b0 = b1 = b2 = b3 = b4 = b5 = b6 = b7 = b8 = b9 = 42
-                c0 = c1 = c2 = c3 = c4 = c5 = c6 = c7 = c8 = c9 = 42
-                d0 = d1 = d2 = d3 = d4 = d5 = d6 = d7 = d8 = d9 = 42
-                e0 = e1 = e2 = e3 = e4 = e5 = e6 = e7 = e8 = e9 = 42
-                f0 = f1 = f2 = f3 = f4 = f5 = f6 = f7 = f8 = f9 = 42
-                g0 = g1 = g2 = g3 = g4 = g5 = g6 = g7 = g8 = g9 = 42
-                h0 = h1 = h2 = h3 = h4 = h5 = h6 = h7 = h8 = h9 = 42
-                i0 = i1 = i2 = i3 = i4 = i5 = i6 = i7 = i8 = i9 = 42
-                j0 = j1 = j2 = j3 = j4 = j5 = j6 = j7 = j8 = j9 = 42
-                k0 = k1 = k2 = k3 = k4 = k5 = k6 = k7 = k8 = k9 = 42
-                l0 = l1 = l2 = l3 = l4 = l5 = l6 = l7 = l8 = l9 = 42
-                m0 = m1 = m2 = m3 = m4 = m5 = m6 = m7 = m8 = m9 = 42
-                n0 = n1 = n2 = n3 = n4 = n5 = n6 = n7 = n8 = n9 = 42
-                o0 = o1 = o2 = o3 = o4 = o5 = o6 = o7 = o8 = o9 = 42
-                p0 = p1 = p2 = p3 = p4 = p5 = p6 = p7 = p8 = p9 = 42
-                q0 = q1 = q2 = q3 = q4 = q5 = q6 = q7 = q8 = q9 = 42
-                r0 = r1 = r2 = r3 = r4 = r5 = r6 = r7 = r8 = r9 = 42
-                s0 = s1 = s2 = s3 = s4 = s5 = s6 = s7 = s8 = s9 = 42
-                t0 = t1 = t2 = t3 = t4 = t5 = t6 = t7 = t8 = t9 = 42
-                u0 = u1 = u2 = u3 = u4 = u5 = u6 = u7 = u8 = u9 = 42
-                v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = v8 = v9 = 42
-                w0 = w1 = w2 = w3 = w4 = w5 = w6 = w7 = w8 = w9 = 42
-                x0 = x1 = x2 = x3 = x4 = x5 = x6 = x7 = x8 = x9 = 42
-                y0 = y1 = y2 = y3 = y4 = y5 = y6 = y7 = y8 = y9 = 42
-                z0 = z1 = z2 = z3 = z4 = z5 = z6 = z7 = z8 = z9 = 42
+                a0 = a1 = a2 = a3 = a4 = a5 = a6 = a7 = a8 = a9 = 100
+                b0 = b1 = b2 = b3 = b4 = b5 = b6 = b7 = b8 = b9 = 100
+                c0 = c1 = c2 = c3 = c4 = c5 = c6 = c7 = c8 = c9 = 100
+                d0 = d1 = d2 = d3 = d4 = d5 = d6 = d7 = d8 = d9 = 100
+                e0 = e1 = e2 = e3 = e4 = e5 = e6 = e7 = e8 = e9 = 100
+                f0 = f1 = f2 = f3 = f4 = f5 = f6 = f7 = f8 = f9 = 100
+                g0 = g1 = g2 = g3 = g4 = g5 = g6 = g7 = g8 = g9 = 100
+                h0 = h1 = h2 = h3 = h4 = h5 = h6 = h7 = h8 = h9 = 100
+                i0 = i1 = i2 = i3 = i4 = i5 = i6 = i7 = i8 = i9 = 100
+                j0 = j1 = j2 = j3 = j4 = j5 = j6 = j7 = j8 = j9 = 100
+                k0 = k1 = k2 = k3 = k4 = k5 = k6 = k7 = k8 = k9 = 100
+                l0 = l1 = l2 = l3 = l4 = l5 = l6 = l7 = l8 = l9 = 100
+                m0 = m1 = m2 = m3 = m4 = m5 = m6 = m7 = m8 = m9 = 100
+                n0 = n1 = n2 = n3 = n4 = n5 = n6 = n7 = n8 = n9 = 100
+                o0 = o1 = o2 = o3 = o4 = o5 = o6 = o7 = o8 = o9 = 100
+                p0 = p1 = p2 = p3 = p4 = p5 = p6 = p7 = p8 = p9 = 100
+                q0 = q1 = q2 = q3 = q4 = q5 = q6 = q7 = q8 = q9 = 100
+                r0 = r1 = r2 = r3 = r4 = r5 = r6 = r7 = r8 = r9 = 100
+                s0 = s1 = s2 = s3 = s4 = s5 = s6 = s7 = s8 = s9 = 100
+                t0 = t1 = t2 = t3 = t4 = t5 = t6 = t7 = t8 = t9 = 100
+                u0 = u1 = u2 = u3 = u4 = u5 = u6 = u7 = u8 = u9 = 100
+                v0 = v1 = v2 = v3 = v4 = v5 = v6 = v7 = v8 = v9 = 100
+                w0 = w1 = w2 = w3 = w4 = w5 = w6 = w7 = w8 = w9 = 100
+                x0 = x1 = x2 = x3 = x4 = x5 = x6 = x7 = x8 = x9 = 100
+                y0 = y1 = y2 = y3 = y4 = y5 = y6 = y7 = y8 = y9 = 100
+                z0 = z1 = z2 = z3 = z4 = z5 = z6 = z7 = z8 = z9 = 100
                 while z9 > 0:
                     z9 = z9 - 1
                     +z9
@@ -308,7 +308,7 @@ class TestUops(unittest.TestCase):
         opt = _testinternalcapi.new_uop_optimizer()
 
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -323,7 +323,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -338,7 +338,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(range(20))
+            testfunc(range(100))
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -355,7 +355,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(range(20))
+            testfunc(range(100))
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -371,7 +371,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -386,7 +386,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -406,7 +406,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -424,8 +424,8 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            total = testfunc(20)
-            self.assertEqual(total, 190)
+            total = testfunc(100)
+            self.assertEqual(total, 4950)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -445,9 +445,9 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            a = list(range(20))
+            a = list(range(100))
             total = testfunc(a)
-            self.assertEqual(total, 190)
+            self.assertEqual(total, 4950)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -467,9 +467,9 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            a = tuple(range(20))
+            a = tuple(range(100))
             total = testfunc(a)
-            self.assertEqual(total, 190)
+            self.assertEqual(total, 4950)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -503,7 +503,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -521,7 +521,7 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            testfunc(20)
+            testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
@@ -578,9 +578,9 @@ class TestUops(unittest.TestCase):
 
         opt = _testinternalcapi.new_uop_optimizer()
         with temporary_optimizer(opt):
-            x = testfunc(20)
+            x = testfunc(100)
 
-        self.assertEqual(x, 40)
+        self.assertEqual(x, 280)
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
         ops = list(iter_opnames(ex))
@@ -615,9 +615,9 @@ class TestUopsOptimization(unittest.TestCase):
                 num += 1
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertIsNotNone(ex)
-        self.assertEqual(res, 63)
+        self.assertEqual(res, 199)
         binop_count = [opname for opname in iter_opnames(ex) if opname == "_BINARY_OP_ADD_INT"]
         guard_both_int_count = [opname for opname in iter_opnames(ex) if opname == "_GUARD_BOTH_INT"]
         self.assertGreaterEqual(len(binop_count), 3)
@@ -637,11 +637,11 @@ class TestUopsOptimization(unittest.TestCase):
         opt = _testinternalcapi.new_uop_optimizer()
         res = None
         with temporary_optimizer(opt):
-            res = testfunc(32)
+            res = testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
-        self.assertEqual(res, 124)
+        self.assertEqual(res, 396)
         binop_count = [opname for opname in iter_opnames(ex) if opname == "_BINARY_OP_ADD_INT"]
         guard_both_int_count = [opname for opname in iter_opnames(ex) if opname == "_GUARD_BOTH_INT"]
         self.assertGreaterEqual(len(binop_count), 3)
@@ -661,11 +661,11 @@ class TestUopsOptimization(unittest.TestCase):
         opt = _testinternalcapi.new_uop_optimizer()
         res = None
         with temporary_optimizer(opt):
-            res = testfunc(32)
+            res = testfunc(100)
 
         ex = get_first_executor(testfunc)
         self.assertIsNotNone(ex)
-        self.assertEqual(res, 124)
+        self.assertEqual(res, 396)
         binop_count = [opname for opname in iter_opnames(ex) if opname == "_BINARY_OP_ADD_INT"]
         guard_both_int_count = [opname for opname in iter_opnames(ex) if opname == "_GUARD_BOTH_INT"]
         self.assertGreaterEqual(len(binop_count), 3)
@@ -694,7 +694,7 @@ class TestUopsOptimization(unittest.TestCase):
             for i in range(n):
                 dummy(i)
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
         self.assertIn("_PUSH_FRAME", uops)
@@ -708,8 +708,8 @@ class TestUopsOptimization(unittest.TestCase):
                 x = i + i
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 62)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 198)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
         self.assertNotIn("_GUARD_BOTH_INT", uops)
@@ -726,7 +726,7 @@ class TestUopsOptimization(unittest.TestCase):
                 res = x + z + a + b
             return res
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertEqual(res, 4)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -739,8 +739,8 @@ class TestUopsOptimization(unittest.TestCase):
             for _ in range(n):
                 return [i for i in range(n)]
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, list(range(32)))
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, list(range(100)))
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
         self.assertNotIn("_BINARY_OP_ADD_INT", uops)
@@ -817,8 +817,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a = a + 0.25
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertAlmostEqual(res, 33.0)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertAlmostEqual(res, 101.0)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
         guard_both_float_count = [opname for opname in iter_opnames(ex) if opname == "_GUARD_BOTH_FLOAT"]
@@ -837,8 +837,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a = a - 0.25
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertAlmostEqual(res, -31.0)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertAlmostEqual(res, -99.0)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
         guard_both_float_count = [opname for opname in iter_opnames(ex) if opname == "_GUARD_BOTH_FLOAT"]
@@ -857,7 +857,7 @@ class TestUopsOptimization(unittest.TestCase):
                 a = a * 1.0
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertAlmostEqual(res, 1.0)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -877,7 +877,7 @@ class TestUopsOptimization(unittest.TestCase):
                 a + a
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertEqual(res, "")
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -895,7 +895,7 @@ class TestUopsOptimization(unittest.TestCase):
                 x = a == a
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertTrue(res)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -913,7 +913,7 @@ class TestUopsOptimization(unittest.TestCase):
                 x = a == a
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertTrue(res)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -931,7 +931,7 @@ class TestUopsOptimization(unittest.TestCase):
                     x = 1
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertEqual(res, 1)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -951,7 +951,7 @@ class TestUopsOptimization(unittest.TestCase):
                     x = 1
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertEqual(res, 1)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -971,7 +971,7 @@ class TestUopsOptimization(unittest.TestCase):
                 x = a == a
             return x
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
         self.assertTrue(res)
         self.assertIsNotNone(ex)
         uops = get_opnames(ex)
@@ -1023,8 +1023,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a += b + c + d
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 832)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 2600)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1050,8 +1050,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a += b + c
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 224)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 700)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1085,8 +1085,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a += b + c + d + e
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 800)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 2500)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1121,8 +1121,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a += b + c + d + e
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 800)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 2500)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1158,15 +1158,15 @@ class TestUopsOptimization(unittest.TestCase):
             return dummy4(z)
         def testfunc(n):
             a = 0;
-            for _ in range(32):
+            for _ in range(100):
                 b = dummy5(1)
                 c = dummy0(1)
                 d = dummy6(1)
                 a += b + c + d
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 96)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 300)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1225,8 +1225,8 @@ class TestUopsOptimization(unittest.TestCase):
                 b += dummy15(7)
             return b
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 32 * (repetitions + 9))
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 100 * (repetitions + 9))
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1259,8 +1259,8 @@ class TestUopsOptimization(unittest.TestCase):
                 a += dummy15(n)
             return a
 
-        res, ex = self._run_with_optimizer(testfunc, 32)
-        self.assertEqual(res, 42 * 32)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 42 * 100)
         self.assertIsNotNone(ex)
 
         uops_and_operands = [(opcode, operand) for opcode, _, _, operand in ex]
@@ -1307,8 +1307,8 @@ class TestUopsOptimization(unittest.TestCase):
             for i in range(n):
                 gen()
             return i
-        res, ex = self._run_with_optimizer(testfunc, 20)
-        self.assertEqual(res, 19)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 99)
         self.assertIsNotNone(ex)
         self.assertIn("_RETURN_GENERATOR", get_opnames(ex))
 
@@ -1322,8 +1322,8 @@ class TestUopsOptimization(unittest.TestCase):
             for i in g:
                 s += i
             return s
-        res, ex = self._run_with_optimizer(testfunc, 20)
-        self.assertEqual(res, 190)
+        res, ex = self._run_with_optimizer(testfunc, 100)
+        self.assertEqual(res, 4950)
         self.assertIsNotNone(ex)
         self.assertIn("_FOR_ITER_GEN_FRAME", get_opnames(ex))
 
