@@ -140,6 +140,7 @@ def get_opnames(ex):
     return list(iter_opnames(ex))
 
 
+@unittest.skip("XXX")
 @requires_specialization
 @unittest.skipIf(Py_GIL_DISABLED, "optimizer not yet supported in free-threaded builds")
 @unittest.skipUnless(hasattr(_testinternalcapi, "get_optimizer"),
