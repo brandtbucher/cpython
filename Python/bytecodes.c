@@ -2615,7 +2615,7 @@ dummy_func(
             #ifdef _Py_TIER2
             #if ENABLE_SPECIALIZATION
             _Py_BackoffCounter counter = this_instr[1].counter;
-            if (backoff_counter_triggers(counter) && this_instr->op.code == JUMP_BACKWARD) {
+            if (counter.value_and_backoff == 0 && this_instr->op.code == JUMP_BACKWARD) {
                 _Py_CODEUNIT *start = this_instr;
                 /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
                 while (oparg > 255) {
@@ -2631,11 +2631,11 @@ dummy_func(
                     GOTO_TIER_TWO(executor);
                 }
                 else {
-                    this_instr[1].counter = restart_backoff_counter(counter);
+                    this_instr[1].counter = initial_jump_backoff_counter();
                 }
             }
             else {
-                ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+                this_instr[1].counter.value_and_backoff--;
             }
             #endif  /* ENABLE_SPECIALIZATION */
             #endif /* _Py_TIER2 */
