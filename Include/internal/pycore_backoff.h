@@ -103,9 +103,9 @@ backoff_counter_triggers(_Py_BackoffCounter counter)
 
 /* Initial JUMP_BACKWARD counter.
  * This determines when we create a trace for a loop.
-* Backoff sequence 32768. */
-#define JUMP_BACKWARD_INITIAL_VALUE 32767
-#define JUMP_BACKWARD_INITIAL_BACKOFF 15
+* Backoff sequence 65536. */
+#define JUMP_BACKWARD_INITIAL_VALUE 65535
+#define JUMP_BACKWARD_INITIAL_BACKOFF 16
 static inline _Py_BackoffCounter
 initial_jump_backoff_counter(void)
 {
