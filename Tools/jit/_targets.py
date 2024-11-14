@@ -139,18 +139,12 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-plt",
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
-            # XXX: Probably don't want these on by default:
-            "-fno-omit-frame-pointer",
-            "-mno-omit-leaf-frame-pointer",
             "-std=c11",
             "-o",
             f"{o}",
             f"{c}",
             *self.args,
         ]
-        # XXX: Set this to True to enable frame pointers:
-        if True:
-            args.extend(["-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer"])
         await _llvm.run("clang", args, echo=self.verbose)
         return await self._parse(o)
 
