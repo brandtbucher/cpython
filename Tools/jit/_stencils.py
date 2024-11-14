@@ -22,7 +22,7 @@ class HoleValue(enum.Enum):
     # The base address of the read-only data for this uop:
     DATA = enum.auto()
     # XXX
-    DEBUG = enum.auto()
+    INFO = enum.auto()
     # The address of the current executor (exposed as _JIT_EXECUTOR):
     EXECUTOR = enum.auto()
     # The base address of the "global" offset table located in the read-only data.
@@ -97,7 +97,7 @@ _HOLE_EXPRS = {
     HoleValue.CODE: "(uintptr_t)code",
     HoleValue.CONTINUE: "(uintptr_t)code + sizeof(code_body)",
     HoleValue.DATA: "(uintptr_t)data",
-    # HoleValue.DEBUG: "",
+    # HoleValue.INFO: "",
     HoleValue.EXECUTOR: "(uintptr_t)executor",
     # These should all have been turned into DATA values by process_relocations:
     # HoleValue.GOT: "",
@@ -261,7 +261,7 @@ class StencilGroup:
 
     code: Stencil = dataclasses.field(default_factory=Stencil, init=False)
     data: Stencil = dataclasses.field(default_factory=Stencil, init=False)
-    debug: Stencil = dataclasses.field(default_factory=Stencil, init=False)
+    info: Stencil = dataclasses.field(default_factory=Stencil, init=False)
     symbols: dict[int | str, tuple[HoleValue, int]] = dataclasses.field(
         default_factory=dict, init=False
     )
@@ -295,7 +295,7 @@ class StencilGroup:
         self.code.remove_jump(alignment=alignment)
         self.code.pad(alignment)
         self.data.pad(8)
-        for stencil in [self.code, self.data, self.debug]:
+        for stencil in [self.code, self.data, self.info]:
             for hole in stencil.holes:
                 if hole.value is HoleValue.GOT:
                     assert hole.symbol is not None
@@ -316,7 +316,7 @@ class StencilGroup:
         self._emit_global_offset_table()
         self.code.holes.sort(key=lambda hole: hole.offset)
         self.data.holes.sort(key=lambda hole: hole.offset)
-        self.debug.holes.sort(key=lambda hole: hole.offset)
+        self.info.holes.sort(key=lambda hole: hole.offset)
 
     def _global_offset_table_lookup(self, symbol: str) -> int:
         return len(self.data.body) + self._got.setdefault(symbol, 8 * len(self._got))
@@ -360,7 +360,7 @@ class StencilGroup:
 
     def as_c(self, opname: str) -> str:
         """Dump this hole as a StencilGroup initializer."""
-        return f"{{emit_{opname}, {len(self.code.body)}, {len(self.data.body)}, {len(self.debug.body)}, {self._get_trampoline_mask()}}}"
+        return f"{{emit_{opname}, {len(self.code.body)}, {len(self.data.body)}, {len(self.info.body)}, {self._get_trampoline_mask()}}}"
 
 
 def symbol_to_value(symbol: str) -> tuple[HoleValue, str | None]:

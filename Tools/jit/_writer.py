@@ -15,12 +15,12 @@ def _dump_footer(
     yield ""
     yield "typedef struct {"
     yield "    void (*emit)("
-    yield "        unsigned char *code, unsigned char *data, unsigned char *debug,"
+    yield "        unsigned char *code, unsigned char *data, unsigned char *info,"
     yield "        _PyExecutorObject *executor, const _PyUOpInstruction *instruction,"
     yield "         jit_state *state);"
     yield "    size_t code_size;"
     yield "    size_t data_size;"
-    yield "    size_t debug_size;"
+    yield "    size_t info_size;"
     yield "    symbol_mask trampoline_mask;"
     yield "} StencilGroup;"
     yield ""
@@ -45,14 +45,14 @@ def _dump_footer(
 def _dump_stencil(opname: str, group: _stencils.StencilGroup) -> typing.Iterator[str]:
     yield "void"
     yield f"emit_{opname}("
-    yield "    unsigned char *code, unsigned char *data, unsigned char *debug,"
+    yield "    unsigned char *code, unsigned char *data, unsigned char *info,"
     yield "    _PyExecutorObject *executor, const _PyUOpInstruction *instruction,"
     yield "    jit_state *state)"
     yield "{"
     for part, stencil in [
         ("code", group.code),
         ("data", group.data),
-        ("debug", group.debug),
+        ("info", group.info),
     ]:
         for line in stencil.disassembly:
             yield f"    // {line}"
@@ -66,7 +66,7 @@ def _dump_stencil(opname: str, group: _stencils.StencilGroup) -> typing.Iterator
     for part, stencil in [
         ("data", group.data),
         ("code", group.code),
-        ("debug", group.debug),
+        ("info", group.info),
     ]:
         if stencil.body:
             yield f"    memcpy({part}, {part}_body, sizeof({part}_body));"

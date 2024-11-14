@@ -112,7 +112,7 @@ mark_executable(unsigned char *memory, size_t size)
     return 0;
 }
 
-// JIT compiler stuff: /////////////////////////////////////////////////////////
+// Relocation assistance: //////////////////////////////////////////////////////
 
 #define SYMBOL_MASK_WORDS 4
 
@@ -461,37 +461,61 @@ combine_symbol_mask(const symbol_mask src, symbol_mask dest)
     }
 }
 
+// Pablo's dark unwinding magic: ///////////////////////////////////////////////
+
+// (Relaxing, unwinding... gosh, writing a linker sounds so *nice*!)
+
 extern void __register_frame(const void *);
 extern void __deregister_frame(const void *);
 
+// Currently, these are called per-uop. It might be better if we can find a way
+// to concatenate the debug info and call it once *per trace* instead... not
+// sure what the overhead looks like yet:
+
+static void
+register_info(const void *info)
+{
+    uint32_t cie_size = *(uint32_t *)info;
+    __register_frame(info + sizeof(cie_size) + cie_size);
+}
+
+static void
+deregister_info(const void *info)
+{
+    uint32_t cie_size = *(uint32_t *)info;
+    __deregister_frame(info + sizeof(cie_size) + cie_size);
+}
+
+// The actual compiler loop: ///////////////////////////////////////////////////
+
 // Compiles executor in-place. Don't forget to call _PyJIT_Free later!
 int
-_PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], size_t length)
+_PyJIT_Compile(_PyExecutorObject *executor)
 {
     const StencilGroup *group;
     // Loop once to find the total compiled size:
     size_t code_size = 0;
     size_t data_size = 0;
-    size_t debug_size = 0;
+    size_t info_size = 0;
     jit_state state = {0};
     group = &shim;
     code_size += group->code_size;
     data_size += group->data_size;
-    debug_size += group->debug_size;
+    info_size += group->info_size;
     combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
-    for (size_t i = 0; i < length; i++) {
-        const _PyUOpInstruction *instruction = &trace[i];
+    for (size_t i = 0; i < executor->code_size; i++) {
+        const _PyUOpInstruction *instruction = &executor->trace[i];
         group = &stencil_groups[instruction->opcode];
         state.instruction_starts[i] = code_size;
         code_size += group->code_size;
         data_size += group->data_size;
-        debug_size += group->debug_size;
+        info_size += group->info_size;
         combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
     }
     group = &stencil_groups[_FATAL_ERROR];
     code_size += group->code_size;
     data_size += group->data_size;
-    debug_size += group->debug_size;
+    info_size += group->info_size;
     combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
     // Calculate the size of the trampolines required by the whole trace
     for (size_t i = 0; i < Py_ARRAY_LENGTH(state.trampolines.mask); i++) {
@@ -500,53 +524,52 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     // Round up to the nearest page:
     size_t page_size = get_page_size();
     assert((page_size & (page_size - 1)) == 0);
-    size_t padding = page_size - ((code_size + data_size + debug_size + state.trampolines.size) & (page_size - 1));
-    size_t total_size = code_size + data_size + debug_size + state.trampolines.size + padding;
+    // XXX: We currently do: code, data, info, trampolines, padding
+    // XXX: We *want* to do: code, trampolines, (padding)?, data, info, padding
+    size_t padding = page_size - ((code_size + data_size + info_size + state.trampolines.size) & (page_size - 1));
+    size_t total_size = code_size + data_size + info_size + state.trampolines.size + padding;
     unsigned char *memory = jit_alloc(total_size);
     if (memory == NULL) {
         return -1;
     }
     // Update the offsets of each instruction:
-    for (size_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < executor->code_size; i++) {
         state.instruction_starts[i] += (uintptr_t)memory;
     }
     // Loop again to emit the code:
     unsigned char *code = memory;
     unsigned char *data = memory + code_size;
-    unsigned char *debug = memory + code_size + data_size;
-    state.trampolines.mem = memory + code_size + data_size + debug_size;
+    unsigned char *info = memory + code_size + data_size;
+    state.trampolines.mem = memory + code_size + data_size + info_size;
     // Compile the shim, which handles converting between the native
     // calling convention and the calling convention used by jitted code
     // (which may be different for efficiency reasons).
     group = &shim;
-    group->emit(code, data, debug, executor, NULL, &state);
-    // XXX: This is probably wrong:
-    __register_frame(debug + sizeof(uint32_t) + *(uint32_t *)debug);
+    group->emit(code, data, info, executor, NULL, &state);
+    register_info(info);
     code += group->code_size;
     data += group->data_size;
-    debug += group->debug_size;
-    assert(trace[0].opcode == _START_EXECUTOR);
-    for (size_t i = 0; i < length; i++) {
-        const _PyUOpInstruction *instruction = &trace[i];
+    info += group->info_size;
+    assert(executor->trace[0].opcode == _START_EXECUTOR);
+    for (size_t i = 0; i < executor->code_size; i++) {
+        const _PyUOpInstruction *instruction = &executor->trace[i];
         group = &stencil_groups[instruction->opcode];
-        group->emit(code, data, debug, executor, instruction, &state);
-        // XXX: This is probably wrong:
-        __register_frame(debug + sizeof(uint32_t) + *(uint32_t *)debug);
+        group->emit(code, data, info, executor, instruction, &state);
+        register_info(info);
         code += group->code_size;
         data += group->data_size;
-        debug += group->debug_size;
+        info += group->info_size;
     }
     // Protect against accidental buffer overrun into data:
     group = &stencil_groups[_FATAL_ERROR];
-    group->emit(code, data, debug, executor, NULL, &state);
-    // XXX: This is probably wrong:
-    __register_frame(debug + sizeof(uint32_t) + *(uint32_t *)debug);
+    group->emit(code, data, info, executor, NULL, &state);
+    register_info(info);
     code += group->code_size;
     data += group->data_size;
-    debug += group->debug_size;
+    info += group->info_size;
     assert(code == memory + code_size);
     assert(data == memory + code_size + data_size);
-    assert(debug == memory + code_size + data_size + debug_size);
+    assert(info == memory + code_size + data_size + info_size);
     if (mark_executable(memory, total_size)) {
         jit_free(memory, total_size);
         return -1;
@@ -566,6 +589,33 @@ _PyJIT_Free(_PyExecutorObject *executor)
         executor->jit_code = NULL;
         executor->jit_side_entry = NULL;
         executor->jit_size = 0;
+        // XXX: We can probably keep a pointer to the info on the executor and
+        // get rid of this first loop:
+        const StencilGroup *group;
+        size_t noninfo_size = 0;
+        group = &shim;
+        noninfo_size += group->code_size + group->data_size;
+        for (size_t i = 0; i < executor->code_size; i++) {
+            const _PyUOpInstruction *instruction = &executor->trace[i];
+            group = &stencil_groups[instruction->opcode];
+            noninfo_size += group->code_size + group->data_size;
+        }
+        group = &stencil_groups[_FATAL_ERROR];
+        noninfo_size += group->code_size + group->data_size;
+        // Deregister the registered debug info:
+        unsigned char *info = memory + noninfo_size;
+        group = &shim;
+        deregister_info(info);
+        info += group->info_size;
+        for (size_t i = 0; i < executor->code_size; i++) {
+            const _PyUOpInstruction *instruction = &executor->trace[i];
+            group = &stencil_groups[instruction->opcode];
+            deregister_info(info);
+            info += group->info_size;
+        }
+        group = &stencil_groups[_FATAL_ERROR];
+        deregister_info(info);
+        info += group->info_size;
         if (jit_free(memory, size)) {
             PyErr_WriteUnraisable(NULL);
         }

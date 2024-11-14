@@ -70,7 +70,7 @@ class _Target(typing.Generic[_S, _R]):
         args = ["--dwarf=frames", f"{path}"]
         output = await _llvm.maybe_run("llvm-objdump", args, echo=self.verbose)
         if output is not None:
-            group.debug.disassembly.extend(
+            group.info.disassembly.extend(
                 line.expandtabs().strip()
                 for line in output.splitlines()
                 if not line.isspace()
@@ -139,12 +139,18 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-plt",
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
+            # XXX: Probably don't want these on by default:
+            "-fno-omit-frame-pointer",
+            "-mno-omit-leaf-frame-pointer",
             "-std=c11",
             "-o",
             f"{o}",
             f"{c}",
             *self.args,
         ]
+        # XXX: Set this to True to enable frame pointers:
+        if True:
+            args.extend(["-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer"])
         await _llvm.run("clang", args, echo=self.verbose)
         return await self._parse(o)
 
@@ -313,8 +319,8 @@ class _ELF(
             elif value is _stencils.HoleValue.DATA:
                 stencil = group.data
             else:
-                assert value is _stencils.HoleValue.DEBUG
-                stencil = group.debug
+                assert value is _stencils.HoleValue.INFO
+                stencil = group.info
             for wrapped_relocation in section["Relocations"]:
                 relocation = wrapped_relocation["Relocation"]
                 hole = self._handle_relocation(base, relocation, stencil.body)
@@ -340,8 +346,8 @@ class _ELF(
         elif section_type == "SHT_X86_64_UNWIND":
             assert "SHF_ALLOC" in flags
             assert not section["Symbols"]
-            group.symbols[section["Index"]] = _stencils.HoleValue.DEBUG, 0
-            group.debug.body.extend(section["SectionData"]["Bytes"])
+            group.symbols[section["Index"]] = _stencils.HoleValue.INFO, 0
+            group.info.body.extend(section["SectionData"]["Bytes"])
             assert not section["Relocations"]
         else:
             assert section_type in {
