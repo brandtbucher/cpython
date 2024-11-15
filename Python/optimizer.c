@@ -1193,6 +1193,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     executor->jit_code = NULL;
     executor->jit_side_entry = NULL;
     executor->jit_size = 0;
+    executor->jit_info = NULL;
     // This is initialized to true so we can prevent the executor
     // from being immediately detected as cold and invalidated.
     executor->vm_data.warm = true;
