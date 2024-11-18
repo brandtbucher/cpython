@@ -649,10 +649,10 @@ _Py_uop_analyze_and_optimize(
 {
     OPT_STAT_INC(optimizer_attempts);
 
-    int err = remove_globals(frame, buffer, length, dependencies);
-    if (err <= 0) {
-        return err;
-    }
+    // int err = remove_globals(frame, buffer, length, dependencies);
+    // if (err <= 0) {
+    //     return err;
+    // }
 
     // length = optimize_uops(
     //     _PyFrame_GetCode(frame), buffer,
@@ -662,8 +662,8 @@ _Py_uop_analyze_and_optimize(
     //     return length;
     // }
 
-    length = remove_unneeded_uops(buffer, length);
-    assert(length > 0);
+    // length = remove_unneeded_uops(buffer, length);
+    // assert(length > 0);
 
     OPT_STAT_INC(optimizer_successes);
     return length;

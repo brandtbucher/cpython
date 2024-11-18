@@ -1238,7 +1238,7 @@ uop_optimize(
     _Py_BloomFilter_Init(&dependencies);
     _PyUOpInstruction buffer[UOP_MAX_TRACE_LENGTH];
     OPT_STAT_INC(attempts);
-    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH, &dependencies, progress_needed);
+    int length = translate_bytecode_to_trace(frame, instr, buffer, UOP_MAX_TRACE_LENGTH / 2, &dependencies, progress_needed);
     if (length <= 0) {
         // Error or nothing translated
         return length;
