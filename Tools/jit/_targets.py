@@ -121,6 +121,8 @@ class _Target(typing.Generic[_S, _R]):
             f"-I{CPYTHON / 'Python'}",
             f"-I{CPYTHON / 'Tools' / 'jit'}",
             "-O3",
+            # "-Xclang",
+            # f"-mframe-pointer={'all' if opname == 'shim' else 'reserved'}",
             "-c",
             # This debug info isn't necessary, and bloats out the JIT'ed code.
             # We *may* be able to re-enable this, process it, and JIT it for a
@@ -135,8 +137,6 @@ class _Target(typing.Generic[_S, _R]):
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
             "-std=c11",
-            "-fno-omit-frame-pointer",
-            "-mno-omit-leaf-frame-pointer",
             "-o",
             f"{o}",
             f"{c}",
