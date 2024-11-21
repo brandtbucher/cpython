@@ -116,14 +116,13 @@ initial_jump_backoff_counter(void)
  * Must be larger than ADAPTIVE_COOLDOWN_VALUE,
  * otherwise when a side exit warms up we may construct
  * a new trace before the Tier 1 code has properly re-specialized. */
-#define SIDE_EXIT_INITIAL_VALUE 4095
-#define SIDE_EXIT_INITIAL_BACKOFF 12
+#define SIDE_EXIT_INITIAL_VALUE 16383
+#define SIDE_EXIT_INITIAL_BACKOFF 14
 
 static inline _Py_BackoffCounter
 initial_temperature_backoff_counter(void)
 {
-    return make_backoff_counter(SIDE_EXIT_INITIAL_VALUE,
-                                SIDE_EXIT_INITIAL_BACKOFF);
+    return forge_backoff_counter(SIDE_EXIT_INITIAL_VALUE);
 }
 
 /* Unreachable backoff counter. */

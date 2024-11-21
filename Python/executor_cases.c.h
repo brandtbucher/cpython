@@ -5722,9 +5722,8 @@
                 Py_CLEAR(exit->executor);
             }
             if (exit->executor == NULL) {
-                _Py_BackoffCounter temperature = exit->temperature;
-                if (!backoff_counter_triggers(temperature)) {
-                    exit->temperature = advance_backoff_counter(temperature);
+                if (exit->temperature.value_and_backoff) {
+                    exit->temperature.value_and_backoff--;
                     tstate->previous_executor = (PyObject *)current_executor;
                     GOTO_TIER_ONE(target);
                 }
@@ -5739,7 +5738,7 @@
                     int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
                     stack_pointer = _PyFrame_GetStackPointer(frame);
                     if (optimized <= 0) {
-                        exit->temperature = restart_backoff_counter(temperature);
+                        exit->temperature = initial_temperature_backoff_counter();
                         if (optimized < 0) {
                             GOTO_UNWIND();
                         }
@@ -5913,15 +5912,15 @@
                 Py_INCREF(executor);
             }
             else {
-                if (!backoff_counter_triggers(exit->temperature)) {
-                    exit->temperature = advance_backoff_counter(exit->temperature);
+                if (exit->temperature.value_and_backoff) {
+                    exit->temperature.value_and_backoff--;
                     GOTO_TIER_ONE(target);
                 }
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
                 stack_pointer = _PyFrame_GetStackPointer(frame);
                 if (optimized <= 0) {
-                    exit->temperature = restart_backoff_counter(exit->temperature);
+                    exit->temperature = initial_temperature_backoff_counter();
                     if (optimized < 0) {
                         GOTO_UNWIND();
                     }
