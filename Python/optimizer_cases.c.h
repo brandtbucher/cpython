@@ -231,6 +231,19 @@
             break;
         }
 
+        case _SWAP_2: {
+            _Py_UopsSymbol *top_out;
+            _Py_UopsSymbol *skip_out;
+            _Py_UopsSymbol *bottom_out;
+            top_out = sym_new_not_null(ctx);
+            skip_out = sym_new_not_null(ctx);
+            bottom_out = sym_new_not_null(ctx);
+            stack_pointer[-3] = top_out;
+            stack_pointer[-2] = skip_out;
+            stack_pointer[-1] = bottom_out;
+            break;
+        }
+
         case _GUARD_BOTH_INT: {
             _Py_UopsSymbol *right;
             _Py_UopsSymbol *left;
@@ -279,8 +292,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -288,7 +301,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -312,8 +325,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -321,7 +334,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -345,8 +358,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -354,7 +367,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyLong_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -410,8 +423,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -419,7 +432,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -444,8 +457,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -453,7 +466,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -478,8 +491,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -487,7 +500,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -521,14 +534,14 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[-2] = res;
-                stack_pointer += -1;
+                stack_pointer[0] = res;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
             }
             else {
                 res = sym_new_type(ctx, &PyUnicode_Type);
-                stack_pointer += -1;
+                stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -2406,8 +2419,8 @@
                     }
                 }
             }
-            stack_pointer[-2] = res;
-            stack_pointer += -1;
+            stack_pointer[0] = res;
+            stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }

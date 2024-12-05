@@ -166,7 +166,7 @@ dummy_func(void) {
         sym_set_type(left, &PyUnicode_Type);
     }
 
-    op(_BINARY_OP, (left, right -- res)) {
+    op(_BINARY_OP, (left, right -- left, right, res)) {
         bool lhs_int = sym_matches_type(left, &PyLong_Type);
         bool rhs_int = sym_matches_type(right, &PyLong_Type);
         bool lhs_float = sym_matches_type(left, &PyFloat_Type);
@@ -220,7 +220,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_ADD_INT, (left, right -- res)) {
+    op(_BINARY_OP_ADD_INT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
         {
@@ -241,7 +241,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_SUBTRACT_INT, (left, right -- res)) {
+    op(_BINARY_OP_SUBTRACT_INT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
         {
@@ -262,7 +262,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_MULTIPLY_INT, (left, right -- res)) {
+    op(_BINARY_OP_MULTIPLY_INT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
         {
@@ -283,7 +283,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_ADD_FLOAT, (left, right -- res)) {
+    op(_BINARY_OP_ADD_FLOAT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {
@@ -305,7 +305,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- res)) {
+    op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {
@@ -327,7 +327,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- res)) {
+    op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {
@@ -349,7 +349,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_ADD_UNICODE, (left, right -- res)) {
+    op(_BINARY_OP_ADD_UNICODE, (left, right -- left, right, res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
             PyObject *temp = PyUnicode_Concat(sym_get_const(left), sym_get_const(right));

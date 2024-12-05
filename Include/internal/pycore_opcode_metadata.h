@@ -974,19 +974,19 @@ extern int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect);
 int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
     switch(opcode) {
         case BINARY_OP: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_ADD_FLOAT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_ADD_INT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_ADD_UNICODE: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_INPLACE_ADD_UNICODE: {
@@ -994,19 +994,19 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case BINARY_OP_MULTIPLY_FLOAT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_MULTIPLY_INT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_SUBTRACT_FLOAT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_OP_SUBTRACT_INT: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case BINARY_SLICE: {
@@ -2223,15 +2223,15 @@ extern const struct opcode_macro_expansion _PyOpcode_macro_expansion[256];
 #ifdef NEED_OPCODE_METADATA
 const struct opcode_macro_expansion
 _PyOpcode_macro_expansion[256] = {
-    [BINARY_OP] = { .nuops = 1, .uops = { { _BINARY_OP, 0, 0 } } },
-    [BINARY_OP_ADD_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_ADD_FLOAT, 0, 0 } } },
-    [BINARY_OP_ADD_INT] = { .nuops = 2, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_ADD_INT, 0, 0 } } },
-    [BINARY_OP_ADD_UNICODE] = { .nuops = 2, .uops = { { _GUARD_BOTH_UNICODE, 0, 0 }, { _BINARY_OP_ADD_UNICODE, 0, 0 } } },
+    [BINARY_OP] = { .nuops = 4, .uops = { { _BINARY_OP, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_ADD_FLOAT] = { .nuops = 5, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_ADD_FLOAT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_ADD_INT] = { .nuops = 5, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_ADD_INT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_ADD_UNICODE] = { .nuops = 5, .uops = { { _GUARD_BOTH_UNICODE, 0, 0 }, { _BINARY_OP_ADD_UNICODE, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
     [BINARY_OP_INPLACE_ADD_UNICODE] = { .nuops = 2, .uops = { { _GUARD_BOTH_UNICODE, 0, 0 }, { _BINARY_OP_INPLACE_ADD_UNICODE, 0, 0 } } },
-    [BINARY_OP_MULTIPLY_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_MULTIPLY_FLOAT, 0, 0 } } },
-    [BINARY_OP_MULTIPLY_INT] = { .nuops = 2, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_MULTIPLY_INT, 0, 0 } } },
-    [BINARY_OP_SUBTRACT_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_SUBTRACT_FLOAT, 0, 0 } } },
-    [BINARY_OP_SUBTRACT_INT] = { .nuops = 2, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_SUBTRACT_INT, 0, 0 } } },
+    [BINARY_OP_MULTIPLY_FLOAT] = { .nuops = 5, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_MULTIPLY_FLOAT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_MULTIPLY_INT] = { .nuops = 5, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_MULTIPLY_INT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_SUBTRACT_FLOAT] = { .nuops = 5, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_SUBTRACT_FLOAT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
+    [BINARY_OP_SUBTRACT_INT] = { .nuops = 5, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_SUBTRACT_INT, 0, 0 }, { _SWAP_2, 0, 0 }, { _POP_TOP, 0, 0 }, { _POP_TOP, 0, 0 } } },
     [BINARY_SLICE] = { .nuops = 1, .uops = { { _BINARY_SLICE, 0, 0 } } },
     [BINARY_SUBSCR] = { .nuops = 1, .uops = { { _BINARY_SUBSCR, 0, 0 } } },
     [BINARY_SUBSCR_DICT] = { .nuops = 1, .uops = { { _BINARY_SUBSCR_DICT, 0, 0 } } },
