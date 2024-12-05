@@ -66,6 +66,7 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_TO_BOOL_STR] = HAS_EXIT_FLAG,
     [_REPLACE_WITH_TRUE] = 0,
     [_UNARY_INVERT] = HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
+    [_SWAP_2] = 0,
     [_GUARD_BOTH_INT] = HAS_EXIT_FLAG,
     [_GUARD_NOS_INT] = HAS_EXIT_FLAG,
     [_GUARD_TOS_INT] = HAS_EXIT_FLAG,
@@ -558,6 +559,7 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_STORE_SUBSCR_DICT] = "_STORE_SUBSCR_DICT",
     [_STORE_SUBSCR_LIST_INT] = "_STORE_SUBSCR_LIST_INT",
     [_SWAP] = "_SWAP",
+    [_SWAP_2] = "_SWAP_2",
     [_TIER2_RESUME_CHECK] = "_TIER2_RESUME_CHECK",
     [_TO_BOOL] = "_TO_BOOL",
     [_TO_BOOL_BOOL] = "_TO_BOOL_BOOL",
@@ -673,6 +675,8 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _UNARY_INVERT:
             return 1;
+        case _SWAP_2:
+            return 3;
         case _GUARD_BOTH_INT:
             return 0;
         case _GUARD_NOS_INT:
@@ -680,11 +684,11 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _GUARD_TOS_INT:
             return 0;
         case _BINARY_OP_MULTIPLY_INT:
-            return 2;
+            return 0;
         case _BINARY_OP_ADD_INT:
-            return 2;
+            return 0;
         case _BINARY_OP_SUBTRACT_INT:
-            return 2;
+            return 0;
         case _GUARD_BOTH_FLOAT:
             return 0;
         case _GUARD_NOS_FLOAT:
@@ -692,15 +696,15 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _GUARD_TOS_FLOAT:
             return 0;
         case _BINARY_OP_MULTIPLY_FLOAT:
-            return 2;
+            return 0;
         case _BINARY_OP_ADD_FLOAT:
-            return 2;
+            return 0;
         case _BINARY_OP_SUBTRACT_FLOAT:
-            return 2;
+            return 0;
         case _GUARD_BOTH_UNICODE:
             return 0;
         case _BINARY_OP_ADD_UNICODE:
-            return 2;
+            return 0;
         case _BINARY_OP_INPLACE_ADD_UNICODE:
             return 2;
         case _BINARY_SUBSCR:
@@ -1068,7 +1072,7 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _COPY:
             return 0;
         case _BINARY_OP:
-            return 2;
+            return 0;
         case _SWAP:
             return 2 + (oparg-2);
         case _GUARD_IS_TRUE_POP:
