@@ -54,6 +54,10 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_STORE_FAST_LOAD_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG,
     [_STORE_FAST_STORE_FAST] = HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG,
     [_POP_TOP] = HAS_PURE_FLAG,
+    [_POP_TOP_IMMORTAL] = HAS_PURE_FLAG,
+    [_POP_TOP_INT] = HAS_PURE_FLAG,
+    [_POP_TOP_FLOAT] = HAS_PURE_FLAG,
+    [_POP_TOP_UNICODE] = HAS_PURE_FLAG,
     [_PUSH_NULL] = HAS_PURE_FLAG,
     [_END_FOR] = HAS_ESCAPES_FLAG | HAS_NO_SAVE_IP_FLAG,
     [_END_SEND] = HAS_PURE_FLAG,
@@ -524,7 +528,11 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_NOP] = "_NOP",
     [_POP_EXCEPT] = "_POP_EXCEPT",
     [_POP_TOP] = "_POP_TOP",
+    [_POP_TOP_FLOAT] = "_POP_TOP_FLOAT",
+    [_POP_TOP_IMMORTAL] = "_POP_TOP_IMMORTAL",
+    [_POP_TOP_INT] = "_POP_TOP_INT",
     [_POP_TOP_LOAD_CONST_INLINE_BORROW] = "_POP_TOP_LOAD_CONST_INLINE_BORROW",
+    [_POP_TOP_UNICODE] = "_POP_TOP_UNICODE",
     [_PUSH_EXC_INFO] = "_PUSH_EXC_INFO",
     [_PUSH_FRAME] = "_PUSH_FRAME",
     [_PUSH_NULL] = "_PUSH_NULL",
@@ -656,6 +664,14 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _STORE_FAST_STORE_FAST:
             return 2;
         case _POP_TOP:
+            return 1;
+        case _POP_TOP_IMMORTAL:
+            return 1;
+        case _POP_TOP_INT:
+            return 1;
+        case _POP_TOP_FLOAT:
+            return 1;
+        case _POP_TOP_UNICODE:
             return 1;
         case _PUSH_NULL:
             return 0;

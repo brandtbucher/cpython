@@ -348,6 +348,30 @@ dummy_func(
             DECREF_INPUTS();
         }
 
+        pure op(_POP_TOP_IMMORTAL, (pop --)) {
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(_Py_IsImmortal(pop_o));
+            INPUTS_DEAD();
+        }
+
+        pure op(_POP_TOP_INT, (pop --)) {
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyLong_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, (destructor)PyObject_Free);
+        }
+
+        pure op(_POP_TOP_FLOAT, (pop --)) {
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyFloat_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyFloat_ExactDealloc);
+        }
+
+        pure op(_POP_TOP_UNICODE, (pop --)) {
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyUnicode_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
+        }
+
         pure inst(PUSH_NULL, (-- res)) {
             res = PyStackRef_NULL;
         }

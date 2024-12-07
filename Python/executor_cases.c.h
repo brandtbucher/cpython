@@ -405,6 +405,49 @@
             break;
         }
 
+        case _POP_TOP_IMMORTAL: {
+            _PyStackRef pop;
+            pop = stack_pointer[-1];
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(_Py_IsImmortal(pop_o));
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _POP_TOP_INT: {
+            _PyStackRef pop;
+            pop = stack_pointer[-1];
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyLong_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, (destructor)PyObject_Free);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _POP_TOP_FLOAT: {
+            _PyStackRef pop;
+            pop = stack_pointer[-1];
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyFloat_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyFloat_ExactDealloc);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _POP_TOP_UNICODE: {
+            _PyStackRef pop;
+            pop = stack_pointer[-1];
+            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
+            assert(PyUnicode_CheckExact(pop_o));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _PUSH_NULL: {
             _PyStackRef res;
             res = PyStackRef_NULL;
