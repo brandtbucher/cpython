@@ -392,9 +392,9 @@ optimize_to_bool(
 }
 
 static void
-eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit)
+eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit, bool immortal)
 {
-    REPLACE_OP(this_instr, _POP_TOP, 0, 0);
+    REPLACE_OP(this_instr, immortal ? _POP_TOP_IMMORTAL : _POP_TOP, 0, 0);
     if (exit) {
         REPLACE_OP((this_instr+1), _EXIT_TRACE, 0, 0);
         this_instr[1].target = this_instr->target;
@@ -588,6 +588,10 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 last_set_ip = pc;
                 break;
             case _POP_TOP:
+            case _POP_TOP_FLOAT:
+            case _POP_TOP_IMMORTAL:
+            case _POP_TOP_INT:
+            case _POP_TOP_UNICODE:
             {
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {

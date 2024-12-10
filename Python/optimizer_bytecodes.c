@@ -882,7 +882,7 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, value != Py_True);
+            eliminate_pop_guard(this_instr, value != Py_True, true);
         }
     }
 
@@ -890,7 +890,7 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, value != Py_False);
+            eliminate_pop_guard(this_instr, value != Py_False, true);
         }
     }
 
@@ -898,11 +898,11 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, !Py_IsNone(value));
+            eliminate_pop_guard(this_instr, !Py_IsNone(value), _Py_IsImmortal(value));
         }
         else if (sym_has_type(flag)) {
             assert(!sym_matches_type(flag, &_PyNone_Type));
-            eliminate_pop_guard(this_instr, true);
+            eliminate_pop_guard(this_instr, true, sym_matches_type(flag, &PyBool_Type));
         }
     }
 
@@ -910,11 +910,11 @@ dummy_func(void) {
         if (sym_is_const(flag)) {
             PyObject *value = sym_get_const(flag);
             assert(value != NULL);
-            eliminate_pop_guard(this_instr, Py_IsNone(value));
+            eliminate_pop_guard(this_instr, Py_IsNone(value), _Py_IsImmortal(value));
         }
         else if (sym_has_type(flag)) {
             assert(!sym_matches_type(flag, &_PyNone_Type));
-            eliminate_pop_guard(this_instr, false);
+            eliminate_pop_guard(this_instr, false, sym_matches_type(flag, &PyBool_Type));
         }
     }
 
@@ -933,7 +933,10 @@ dummy_func(void) {
     }
 
     op(_POP_TOP, (pop --)) {
-        if (sym_is_const(pop) && _Py_IsImmortal(pop)) {
+        if (sym_is_const(pop) && _Py_IsImmortal(sym_get_const(pop))) {
+            REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+        }
+        else if (sym_matches_type(pop, &PyBool_Type)) {
             REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
         }
         else if (sym_matches_type(pop, &PyLong_Type)) {

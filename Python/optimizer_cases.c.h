@@ -105,20 +105,25 @@
         case _POP_TOP: {
             _Py_UopsSymbol *pop;
             pop = stack_pointer[-1];
-            if (sym_is_const(pop) && _Py_IsImmortal(pop)) {
+            if (sym_is_const(pop) && _Py_IsImmortal(sym_get_const(pop))) {
                 REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
             }
             else {
-                if (sym_matches_type(pop, &PyLong_Type)) {
-                    REPLACE_OP(this_instr, _POP_TOP_INT, 0, 0);
+                if (sym_matches_type(pop, &PyBool_Type)) {
+                    REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
                 }
                 else {
-                    if (sym_matches_type(pop, &PyFloat_Type)) {
-                        REPLACE_OP(this_instr, _POP_TOP_FLOAT, 0, 0);
+                    if (sym_matches_type(pop, &PyLong_Type)) {
+                        REPLACE_OP(this_instr, _POP_TOP_INT, 0, 0);
                     }
                     else {
-                        if (sym_matches_type(pop, &PyUnicode_Type)) {
-                            REPLACE_OP(this_instr, _POP_TOP_UNICODE, 0, 0);
+                        if (sym_matches_type(pop, &PyFloat_Type)) {
+                            REPLACE_OP(this_instr, _POP_TOP_FLOAT, 0, 0);
+                        }
+                        else {
+                            if (sym_matches_type(pop, &PyUnicode_Type)) {
+                                REPLACE_OP(this_instr, _POP_TOP_UNICODE, 0, 0);
+                            }
                         }
                     }
                 }
@@ -2515,7 +2520,7 @@
                 assert(value != NULL);
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
-                eliminate_pop_guard(this_instr, value != Py_True);
+                eliminate_pop_guard(this_instr, value != Py_True, true);
                 stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
@@ -2532,7 +2537,7 @@
                 assert(value != NULL);
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
-                eliminate_pop_guard(this_instr, value != Py_False);
+                eliminate_pop_guard(this_instr, value != Py_False, true);
                 stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
             }
@@ -2549,14 +2554,14 @@
                 assert(value != NULL);
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
-                eliminate_pop_guard(this_instr, !Py_IsNone(value));
+                eliminate_pop_guard(this_instr, !Py_IsNone(value), _Py_IsImmortal(value));
             }
             else {
                 if (sym_has_type(flag)) {
                     assert(!sym_matches_type(flag, &_PyNone_Type));
                     stack_pointer += -1;
                     assert(WITHIN_STACK_BOUNDS());
-                    eliminate_pop_guard(this_instr, true);
+                    eliminate_pop_guard(this_instr, true, sym_matches_type(flag, &PyBool_Type));
                     stack_pointer += 1;
                     assert(WITHIN_STACK_BOUNDS());
                 }
@@ -2574,14 +2579,14 @@
                 assert(value != NULL);
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
-                eliminate_pop_guard(this_instr, Py_IsNone(value));
+                eliminate_pop_guard(this_instr, Py_IsNone(value), _Py_IsImmortal(value));
             }
             else {
                 if (sym_has_type(flag)) {
                     assert(!sym_matches_type(flag, &_PyNone_Type));
                     stack_pointer += -1;
                     assert(WITHIN_STACK_BOUNDS());
-                    eliminate_pop_guard(this_instr, false);
+                    eliminate_pop_guard(this_instr, false, sym_matches_type(flag, &PyBool_Type));
                     stack_pointer += 1;
                     assert(WITHIN_STACK_BOUNDS());
                 }
