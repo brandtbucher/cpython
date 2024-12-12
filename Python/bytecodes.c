@@ -644,7 +644,7 @@ dummy_func(
             double dres =
                 ((PyFloatObject *)left_o)->ob_fval *
                 ((PyFloatObject *)right_o)->ob_fval;
-            PyObject *res_o = PyFloat_FromDouble(dres);
+            PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
@@ -659,7 +659,7 @@ dummy_func(
             double dres =
                 ((PyFloatObject *)left_o)->ob_fval +
                 ((PyFloatObject *)right_o)->ob_fval;
-            PyObject *res_o = PyFloat_FromDouble(dres);
+            PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
@@ -674,7 +674,7 @@ dummy_func(
             double dres =
                 ((PyFloatObject *)left_o)->ob_fval -
                 ((PyFloatObject *)right_o)->ob_fval;
-            PyObject *res_o = PyFloat_FromDouble(dres);
+            PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
