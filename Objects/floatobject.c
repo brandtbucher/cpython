@@ -136,35 +136,26 @@ PyFloat_FromDouble(double fval)
 
 #ifdef Py_GIL_DISABLED
 
-PyObject *_PyFloat_FromDouble_ConsumeInputs(_PyStackRef left, _PyStackRef right, double value)
+PyObject *_PyFloat_FromDouble_ReuseInputs(_PyStackRef left, _PyStackRef right, double value)
 {
-    PyStackRef_CLOSE(left);
-    PyStackRef_CLOSE(right);
     return PyFloat_FromDouble(value);
 }
 
 #else // Py_GIL_DISABLED
 
-PyObject *_PyFloat_FromDouble_ConsumeInputs(_PyStackRef left, _PyStackRef right, double value)
+PyObject *_PyFloat_FromDouble_ReuseInputs(_PyStackRef left, _PyStackRef right, double value)
 {
-    PyObject *left_o = PyStackRef_AsPyObjectSteal(left);
-    PyObject *right_o = PyStackRef_AsPyObjectSteal(right);
+    PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
     if (Py_REFCNT(left_o) == 1) {
         ((PyFloatObject *)left_o)->ob_fval = value;
-        _Py_DECREF_SPECIALIZED(right_o, _PyFloat_ExactDealloc);
-        return left_o;
+        return Py_NewRef(left_o);
     }
-    else if (Py_REFCNT(right_o) == 1)  {
+    PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
+    if (Py_REFCNT(right_o) == 1)  {
         ((PyFloatObject *)right_o)->ob_fval = value;
-        _Py_DECREF_NO_DEALLOC(left_o);
-        return right_o;
+        return Py_NewRef(right_o);
     }
-    else {
-        PyObject *result = PyFloat_FromDouble(value);
-        _Py_DECREF_NO_DEALLOC(left_o);
-        _Py_DECREF_NO_DEALLOC(right_o);
-        return result;
-    }
+    return PyFloat_FromDouble(value);
 }
 
 #endif // Py_GIL_DISABLED
