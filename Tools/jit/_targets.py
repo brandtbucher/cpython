@@ -104,6 +104,7 @@ class _Target(typing.Generic[_S, _R]):
     async def _compile(
         self, opname: str, c: pathlib.Path, tempdir: pathlib.Path
     ) -> _stencils.StencilGroup:
+        lto = tempdir / f"{opname}-lto.o"
         o = tempdir / f"{opname}.o"
         args = [
             f"--target={self.triple}",
@@ -119,11 +120,12 @@ class _Target(typing.Generic[_S, _R]):
             f"-I{CPYTHON / 'Python'}",
             f"-I{CPYTHON / 'Tools' / 'jit'}",
             "-O3",
-            "-c",
+            "--compile",
             # Shorten full absolute file paths in the generated code (like the
             # __FILE__ macro and assert failure messages) for reproducibility:
             f"-ffile-prefix-map={CPYTHON}=.",
             f"-ffile-prefix-map={tempdir}=.",
+            "-flto",
             # This debug info isn't necessary, and bloats out the JIT'ed code.
             # We *may* be able to re-enable this, process it, and JIT it for a
             # nicer debugging experience... but that needs a lot more research:
@@ -138,11 +140,13 @@ class _Target(typing.Generic[_S, _R]):
             "-fno-stack-protector",
             "-std=c11",
             "-o",
-            f"{o}",
+            f"{lto}",
             f"{c}",
             *self.args,
         ]
         await _llvm.run("clang", args, echo=self.verbose)
+        lto_args = ["-flto", "-r", "-o", f"{o}", f"{lto}"]
+        await _llvm.run("clang", lto_args, echo=self.verbose)
         return await self._parse(o)
 
     async def _build_stencils(self) -> dict[str, _stencils.StencilGroup]:
@@ -359,9 +363,7 @@ class _ELF(
                 "Type": {
                     "Name": "R_AARCH64_ADR_GOT_PAGE"
                     | "R_AARCH64_LD64_GOT_LO12_NC"
-                    | "R_X86_64_GOTPCREL"
-                    | "R_X86_64_GOTPCRELX"
-                    | "R_X86_64_REX_GOTPCRELX" as kind
+                    | "R_X86_64_GOTPCREL" as kind
                 },
             }:
                 offset += base

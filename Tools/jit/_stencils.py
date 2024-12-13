@@ -85,9 +85,7 @@ _PATCH_FUNCS = {
     # x86_64-unknown-linux-gnu:
     "R_X86_64_64": "patch_64",
     "R_X86_64_GOTPCREL": "patch_32r",
-    "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
     "R_X86_64_PC32": "patch_32r",
-    "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
     "X86_64_RELOC_BRANCH": "patch_32r",
     "X86_64_RELOC_GOT": "patch_x86_64_32rx",
@@ -241,7 +239,7 @@ class Stencil:
                 jump = b"\x00\x00\x00\x14"
             case Hole(
                 offset=offset,
-                kind="R_X86_64_GOTPCRELX",
+                kind="R_X86_64_GOTPCREL",
                 value=HoleValue.GOT,
                 symbol="_JIT_CONTINUE",
                 addend=addend,
