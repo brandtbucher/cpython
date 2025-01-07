@@ -1797,9 +1797,9 @@ AC_ARG_ENABLE([experimental-jit],
               [],
               [enable_experimental_jit=no])
 case $enable_experimental_jit in
-  yes-off)         jit_flags="";          tier2_flags="" ;;  # XXX
-  yes)             jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=1" ;;
   no)              jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=3" ;;  # XXX
+  yes)             jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=1" ;;
+  yes-off)         jit_flags="-D_Py_JIT"; tier2_flags="-D_Py_TIER2=3" ;;
   interpreter)     jit_flags="";          tier2_flags="-D_Py_TIER2=4" ;;
   interpreter-off) jit_flags="";          tier2_flags="-D_Py_TIER2=6" ;;  # Secret option
   *) AC_MSG_ERROR(
