@@ -446,7 +446,10 @@ _PyCode_Quicken(_Py_CODEUNIT *instructions, Py_ssize_t size, PyObject *consts,
     #if ENABLE_SPECIALIZATION_FT
     _Py_BackoffCounter jump_counter, adaptive_counter;
     if (enable_counters) {
-        jump_counter = initial_jump_backoff_counter();
+        _PyOptimizerObject *optimizer = _Py_GetOptimizer();
+        Py_XDECREF(optimizer);
+        jump_counter = optimizer ? initial_jump_backoff_counter()
+                                 : initial_unreachable_backoff_counter();
         adaptive_counter = adaptive_counter_warmup();
     }
     else {
