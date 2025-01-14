@@ -41,7 +41,7 @@ optimize_to_bool(
     _Py_UopsSymbol **result_ptr);
 
 extern void
-eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit);
+eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit, bool immortal);
 
 extern PyCodeObject *get_code(_PyUOpInstruction *op);
 

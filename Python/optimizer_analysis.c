@@ -607,6 +607,9 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 }
                 if (last->opcode == _REPLACE_WITH_TRUE) {
                     last->opcode = _NOP;
+                    if (opcode == _POP_TOP_IMMORTAL) {
+                        buffer[pc].opcode = _POP_TOP;
+                    }
                 }
                 break;
             }
