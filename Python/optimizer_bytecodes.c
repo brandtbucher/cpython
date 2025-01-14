@@ -526,12 +526,6 @@ dummy_func(void) {
         top_out = top_in;
     }
 
-    op(_SWAP_2, (bottom_in, skip_in, top_in -- top_out, skip_out, bottom_out)) {
-        bottom_out = bottom_in;
-        skip_out = skip_in;
-        top_out = top_in;
-    }
-
     op(_LOAD_ATTR_INSTANCE_VALUE, (offset/1, owner -- attr, null if (oparg & 1))) {
         attr = sym_new_not_null(ctx);
         null = sym_new_null(ctx);
@@ -948,6 +942,25 @@ dummy_func(void) {
         else if (sym_matches_type(pop, &PyUnicode_Type)) {
             REPLACE_OP(this_instr, _POP_TOP_UNICODE, 0, 0);
         }
+    }
+
+    op(_POP_UNDER, (pop, top -- under)) {
+        if (sym_is_const(pop) && _Py_IsImmortal(sym_get_const(pop))) {
+            REPLACE_OP(this_instr, _POP_UNDER_IMMORTAL, 0, 0);
+        }
+        else if (sym_matches_type(pop, &PyBool_Type)) {
+            REPLACE_OP(this_instr, _POP_UNDER_IMMORTAL, 0, 0);
+        }
+        else if (sym_matches_type(pop, &PyLong_Type)) {
+            REPLACE_OP(this_instr, _POP_UNDER_INT, 0, 0);
+        }
+        else if (sym_matches_type(pop, &PyFloat_Type)) {
+            REPLACE_OP(this_instr, _POP_UNDER_FLOAT, 0, 0);
+        }
+        else if (sym_matches_type(pop, &PyUnicode_Type)) {
+            REPLACE_OP(this_instr, _POP_UNDER_UNICODE, 0, 0);
+        }
+        under = top;
     }
 
     op(_JUMP_TO_TOP, (--)) {

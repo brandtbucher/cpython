@@ -58,6 +58,11 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_POP_TOP_INT] = HAS_PURE_FLAG,
     [_POP_TOP_FLOAT] = HAS_PURE_FLAG,
     [_POP_TOP_UNICODE] = HAS_PURE_FLAG,
+    [_POP_UNDER] = HAS_ESCAPES_FLAG | HAS_PURE_FLAG,
+    [_POP_UNDER_IMMORTAL] = HAS_PURE_FLAG,
+    [_POP_UNDER_INT] = HAS_PURE_FLAG,
+    [_POP_UNDER_FLOAT] = HAS_PURE_FLAG,
+    [_POP_UNDER_UNICODE] = HAS_PURE_FLAG,
     [_PUSH_NULL] = HAS_PURE_FLAG,
     [_END_FOR] = HAS_ESCAPES_FLAG | HAS_NO_SAVE_IP_FLAG,
     [_END_SEND] = HAS_PURE_FLAG,
@@ -71,7 +76,6 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_TO_BOOL_STR] = HAS_EXIT_FLAG,
     [_REPLACE_WITH_TRUE] = 0,
     [_UNARY_INVERT] = HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
-    [_SWAP_2] = 0,
     [_GUARD_BOTH_INT] = HAS_EXIT_FLAG,
     [_GUARD_NOS_INT] = HAS_EXIT_FLAG,
     [_GUARD_TOS_INT] = HAS_EXIT_FLAG,
@@ -533,6 +537,11 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_POP_TOP_INT] = "_POP_TOP_INT",
     [_POP_TOP_LOAD_CONST_INLINE_BORROW] = "_POP_TOP_LOAD_CONST_INLINE_BORROW",
     [_POP_TOP_UNICODE] = "_POP_TOP_UNICODE",
+    [_POP_UNDER] = "_POP_UNDER",
+    [_POP_UNDER_FLOAT] = "_POP_UNDER_FLOAT",
+    [_POP_UNDER_IMMORTAL] = "_POP_UNDER_IMMORTAL",
+    [_POP_UNDER_INT] = "_POP_UNDER_INT",
+    [_POP_UNDER_UNICODE] = "_POP_UNDER_UNICODE",
     [_PUSH_EXC_INFO] = "_PUSH_EXC_INFO",
     [_PUSH_FRAME] = "_PUSH_FRAME",
     [_PUSH_NULL] = "_PUSH_NULL",
@@ -573,7 +582,6 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_STORE_SUBSCR_DICT] = "_STORE_SUBSCR_DICT",
     [_STORE_SUBSCR_LIST_INT] = "_STORE_SUBSCR_LIST_INT",
     [_SWAP] = "_SWAP",
-    [_SWAP_2] = "_SWAP_2",
     [_TIER2_RESUME_CHECK] = "_TIER2_RESUME_CHECK",
     [_TO_BOOL] = "_TO_BOOL",
     [_TO_BOOL_BOOL] = "_TO_BOOL_BOOL",
@@ -673,6 +681,16 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _POP_TOP_UNICODE:
             return 1;
+        case _POP_UNDER:
+            return 2;
+        case _POP_UNDER_IMMORTAL:
+            return 2;
+        case _POP_UNDER_INT:
+            return 2;
+        case _POP_UNDER_FLOAT:
+            return 2;
+        case _POP_UNDER_UNICODE:
+            return 2;
         case _PUSH_NULL:
             return 0;
         case _END_FOR:
@@ -699,8 +717,6 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _UNARY_INVERT:
             return 1;
-        case _SWAP_2:
-            return 3;
         case _GUARD_BOTH_INT:
             return 0;
         case _GUARD_NOS_INT:

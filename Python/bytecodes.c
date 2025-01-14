@@ -349,26 +349,55 @@ dummy_func(
         }
 
         pure op(_POP_TOP_IMMORTAL, (pop --)) {
-            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
-            assert(_Py_IsImmortal(pop_o));
+            assert(_Py_IsImmortal(PyStackRef_AsPyObjectBorrow(pop)));
             INPUTS_DEAD();
         }
 
         pure op(_POP_TOP_INT, (pop --)) {
-            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
-            assert(PyLong_CheckExact(pop_o));
+            assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
             PyStackRef_CLOSE_SPECIALIZED(pop, (destructor)PyObject_Free);
         }
 
         pure op(_POP_TOP_FLOAT, (pop --)) {
-            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
-            assert(PyFloat_CheckExact(pop_o));
+            assert(PyFloat_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
             PyStackRef_CLOSE_SPECIALIZED(pop, _PyFloat_ExactDealloc);
         }
 
         pure op(_POP_TOP_UNICODE, (pop --)) {
-            PyObject *pop_o = PyStackRef_AsPyObjectBorrow(pop);
-            assert(PyUnicode_CheckExact(pop_o));
+            assert(PyUnicode_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
+        }
+
+        pure op(_POP_UNDER, (pop, top -- under)) {
+            under = top;
+            DEAD(top);
+            PyStackRef_CLOSE(pop);
+        }
+
+        pure op(_POP_UNDER_IMMORTAL, (pop, top -- under)) {
+            under = top;
+            assert(_Py_IsImmortal(PyStackRef_AsPyObjectBorrow(pop)));
+            INPUTS_DEAD();
+        }
+
+        pure op(_POP_UNDER_INT, (pop, top -- under)) {
+            under = top;
+            DEAD(top);
+            assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+            PyStackRef_CLOSE_SPECIALIZED(pop, (destructor)PyObject_Free);
+        }
+
+        pure op(_POP_UNDER_FLOAT, (pop, top -- under)) {
+            under = top;
+            DEAD(top);
+            assert(PyFloat_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+            PyStackRef_CLOSE_SPECIALIZED(pop, _PyFloat_ExactDealloc);
+        }
+
+        pure op(_POP_UNDER_UNICODE, (pop, top -- under)) {
+            under = top;
+            DEAD(top);
+            assert(PyUnicode_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
             PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
         }
 
@@ -537,15 +566,6 @@ dummy_func(
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
 
-        op(_SWAP_2, (bottom_in, skip_in, top_in -- top_out, skip_out, bottom_out)) {
-            bottom_out = bottom_in;
-            DEAD(bottom_in);
-            skip_out = skip_in;
-            DEAD(skip_in);
-            top_out = top_in;
-            DEAD(top_in);
-        }
-
         family(BINARY_OP, INLINE_CACHE_ENTRIES_BINARY_OP) = {
             BINARY_OP_MULTIPLY_INT,
             BINARY_OP_ADD_INT,
@@ -611,11 +631,11 @@ dummy_func(
         }
 
         macro(BINARY_OP_MULTIPLY_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_MULTIPLY_INT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_MULTIPLY_INT + _POP_UNDER + _POP_UNDER;
         macro(BINARY_OP_ADD_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_ADD_INT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_ADD_INT + _POP_UNDER + _POP_UNDER;
         macro(BINARY_OP_SUBTRACT_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_SUBTRACT_INT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_SUBTRACT_INT + _POP_UNDER + _POP_UNDER;
 
         op(_GUARD_BOTH_FLOAT, (left, right -- left, right)) {
             PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
@@ -680,11 +700,11 @@ dummy_func(
         }
 
         macro(BINARY_OP_MULTIPLY_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_MULTIPLY_FLOAT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_MULTIPLY_FLOAT + _POP_UNDER + _POP_UNDER;
         macro(BINARY_OP_ADD_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_ADD_FLOAT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_ADD_FLOAT + _POP_UNDER + _POP_UNDER;
         macro(BINARY_OP_SUBTRACT_FLOAT) =
-            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_SUBTRACT_FLOAT + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_FLOAT + unused/1 + _BINARY_OP_SUBTRACT_FLOAT + _POP_UNDER + _POP_UNDER;
 
         op(_GUARD_BOTH_UNICODE, (left, right -- left, right)) {
             PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
@@ -707,7 +727,7 @@ dummy_func(
         }
 
         macro(BINARY_OP_ADD_UNICODE) =
-            _GUARD_BOTH_UNICODE + unused/1 + _BINARY_OP_ADD_UNICODE + _SWAP_2 + POP_TOP + POP_TOP;
+            _GUARD_BOTH_UNICODE + unused/1 + _BINARY_OP_ADD_UNICODE + _POP_UNDER + _POP_UNDER;
 
         // This is a subtle one. It's a super-instruction for
         // BINARY_OP_ADD_UNICODE followed by STORE_FAST
@@ -4759,7 +4779,7 @@ dummy_func(
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
 
-        macro(BINARY_OP) = _SPECIALIZE_BINARY_OP + _BINARY_OP + _SWAP_2 + POP_TOP + POP_TOP;
+        macro(BINARY_OP) = _SPECIALIZE_BINARY_OP + _BINARY_OP + _POP_UNDER + _POP_UNDER;
 
         pure inst(SWAP, (bottom_in, unused[oparg-2], top_in --
                     top_out, unused[oparg-2], bottom_out)) {

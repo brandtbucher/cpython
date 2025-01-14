@@ -19,13 +19,9 @@
             _PyStackRef lhs;
             _PyStackRef rhs;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _SPECIALIZE_BINARY_OP
             {
                 rhs = stack_pointer[-1];
@@ -57,26 +53,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = rhs;
-                bottom_in = lhs;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = rhs;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = lhs;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -90,13 +81,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -121,26 +108,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -154,13 +136,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_INT
             {
                 right = stack_pointer[-1];
@@ -182,26 +160,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -215,13 +188,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_UNICODE
             {
                 right = stack_pointer[-1];
@@ -243,26 +212,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -339,13 +303,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -370,26 +330,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -403,13 +358,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_INT
             {
                 right = stack_pointer[-1];
@@ -431,26 +382,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -464,13 +410,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -495,26 +437,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -528,13 +465,9 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef bottom_in;
-            _PyStackRef skip_in;
-            _PyStackRef top_in;
-            _PyStackRef top_out;
-            _PyStackRef skip_out;
-            _PyStackRef bottom_out;
-            _PyStackRef value;
+            _PyStackRef pop;
+            _PyStackRef top;
+            _PyStackRef under;
             // _GUARD_BOTH_INT
             {
                 right = stack_pointer[-1];
@@ -556,26 +489,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _SWAP_2
+            // _POP_UNDER
             {
-                top_in = res;
-                skip_in = right;
-                bottom_in = left;
-                bottom_out = bottom_in;
-                skip_out = skip_in;
-                top_out = top_in;
+                top = res;
+                pop = right;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
+            // _POP_UNDER
             {
-                value = bottom_out;
-                PyStackRef_CLOSE(value);
+                top = under;
+                pop = left;
+                under = top;
+                PyStackRef_CLOSE(pop);
             }
-            // _POP_TOP
-            {
-                value = skip_out;
-                PyStackRef_CLOSE(value);
-            }
-            stack_pointer[-2] = top_out;
+            stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
