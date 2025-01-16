@@ -531,8 +531,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[0] = res;
-                stack_pointer += 1;
+                stack_pointer[-2] = res;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -540,7 +540,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += 1;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -565,8 +565,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[0] = res;
-                stack_pointer += 1;
+                stack_pointer[-2] = res;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -574,7 +574,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += 1;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;
@@ -599,8 +599,8 @@
                     goto error;
                 }
                 res = sym_new_const(ctx, temp);
-                stack_pointer[0] = res;
-                stack_pointer += 1;
+                stack_pointer[-2] = res;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
                 Py_DECREF(temp);
                 // TODO gh-115506:
@@ -608,7 +608,7 @@
             }
             else {
                 res = sym_new_type(ctx, &PyFloat_Type);
-                stack_pointer += 1;
+                stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
             stack_pointer[-1] = res;

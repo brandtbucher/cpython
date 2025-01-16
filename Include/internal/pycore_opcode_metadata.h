@@ -978,7 +978,7 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case BINARY_OP_ADD_FLOAT: {
-            *effect = 1;
+            *effect = 0;
             return 0;
         }
         case BINARY_OP_ADD_INT: {
@@ -994,7 +994,7 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case BINARY_OP_MULTIPLY_FLOAT: {
-            *effect = 1;
+            *effect = 0;
             return 0;
         }
         case BINARY_OP_MULTIPLY_INT: {
@@ -1002,7 +1002,7 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case BINARY_OP_SUBTRACT_FLOAT: {
-            *effect = 1;
+            *effect = 0;
             return 0;
         }
         case BINARY_OP_SUBTRACT_INT: {
@@ -1982,13 +1982,13 @@ extern const struct opcode_metadata _PyOpcode_opcode_metadata[266];
 #ifdef NEED_OPCODE_METADATA
 const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [BINARY_OP] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
-    [BINARY_OP_ADD_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [BINARY_OP_ADD_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG },
     [BINARY_OP_ADD_INT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [BINARY_OP_ADD_UNICODE] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [BINARY_OP_INPLACE_ADD_UNICODE] = { true, INSTR_FMT_IXC, HAS_LOCAL_FLAG | HAS_DEOPT_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG },
-    [BINARY_OP_MULTIPLY_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [BINARY_OP_MULTIPLY_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG },
     [BINARY_OP_MULTIPLY_INT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
-    [BINARY_OP_SUBTRACT_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [BINARY_OP_SUBTRACT_FLOAT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG },
     [BINARY_OP_SUBTRACT_INT] = { true, INSTR_FMT_IXC, HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [BINARY_SLICE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [BINARY_SUBSCR] = { true, INSTR_FMT_IXC, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2224,13 +2224,13 @@ extern const struct opcode_macro_expansion _PyOpcode_macro_expansion[256];
 const struct opcode_macro_expansion
 _PyOpcode_macro_expansion[256] = {
     [BINARY_OP] = { .nuops = 3, .uops = { { _BINARY_OP, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
-    [BINARY_OP_ADD_FLOAT] = { .nuops = 4, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_ADD_FLOAT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
+    [BINARY_OP_ADD_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_ADD_FLOAT, 0, 0 } } },
     [BINARY_OP_ADD_INT] = { .nuops = 4, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_ADD_INT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
     [BINARY_OP_ADD_UNICODE] = { .nuops = 4, .uops = { { _GUARD_BOTH_UNICODE, 0, 0 }, { _BINARY_OP_ADD_UNICODE, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
     [BINARY_OP_INPLACE_ADD_UNICODE] = { .nuops = 2, .uops = { { _GUARD_BOTH_UNICODE, 0, 0 }, { _BINARY_OP_INPLACE_ADD_UNICODE, 0, 0 } } },
-    [BINARY_OP_MULTIPLY_FLOAT] = { .nuops = 4, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_MULTIPLY_FLOAT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
+    [BINARY_OP_MULTIPLY_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_MULTIPLY_FLOAT, 0, 0 } } },
     [BINARY_OP_MULTIPLY_INT] = { .nuops = 4, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_MULTIPLY_INT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
-    [BINARY_OP_SUBTRACT_FLOAT] = { .nuops = 4, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_SUBTRACT_FLOAT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
+    [BINARY_OP_SUBTRACT_FLOAT] = { .nuops = 2, .uops = { { _GUARD_BOTH_FLOAT, 0, 0 }, { _BINARY_OP_SUBTRACT_FLOAT, 0, 0 } } },
     [BINARY_OP_SUBTRACT_INT] = { .nuops = 4, .uops = { { _GUARD_BOTH_INT, 0, 0 }, { _BINARY_OP_SUBTRACT_INT, 0, 0 }, { _POP_UNDER, 0, 0 }, { _POP_UNDER, 0, 0 } } },
     [BINARY_SLICE] = { .nuops = 1, .uops = { { _BINARY_SLICE, 0, 0 } } },
     [BINARY_SUBSCR] = { .nuops = 1, .uops = { { _BINARY_SUBSCR, 0, 0 } } },

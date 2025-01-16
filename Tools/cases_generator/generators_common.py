@@ -359,11 +359,6 @@ class Emitter:
             raise analysis_error("Expected comma", comma)
         self.out.emit(comma)
         dealloc = next(tkn_iter)
-        if dealloc.kind == "LPAREN":
-            self.out.emit(dealloc)
-            rparen = emit_to(self.out, tkn_iter, "RPAREN")
-            self.emit(rparen)
-            dealloc = next(tkn_iter)
         if dealloc.kind != "IDENTIFIER":
              raise analysis_error("Expected identifier", dealloc)
         self.out.emit(dealloc)

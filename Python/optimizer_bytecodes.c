@@ -283,7 +283,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_ADD_FLOAT, (left, right -- left, right, res)) {
+    op(_BINARY_OP_ADD_FLOAT, (left, right -- res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {
@@ -305,7 +305,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- left, right, res)) {
+    op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {
@@ -327,7 +327,7 @@ dummy_func(void) {
         }
     }
 
-    op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- left, right, res)) {
+    op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- res)) {
         if (sym_is_const(left) && sym_is_const(right) &&
             sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
         {

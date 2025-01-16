@@ -328,7 +328,7 @@ class GeneralFloatCases(unittest.TestCase):
 
         for i in range(10000):
             f = random.random()
-            f *= 10.0 ** random.randint(-100, 100)  # XXX: GH-127809
+            f *= 10 ** random.randint(-100, 100)
             n, d = f.as_integer_ratio()
             self.assertEqual(float(n).__truediv__(d), f)
 

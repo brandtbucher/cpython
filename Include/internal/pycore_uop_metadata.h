@@ -736,11 +736,11 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _GUARD_TOS_FLOAT:
             return 0;
         case _BINARY_OP_MULTIPLY_FLOAT:
-            return 0;
+            return 2;
         case _BINARY_OP_ADD_FLOAT:
-            return 0;
+            return 2;
         case _BINARY_OP_SUBTRACT_FLOAT:
-            return 0;
+            return 2;
         case _GUARD_BOTH_UNICODE:
             return 0;
         case _BINARY_OP_ADD_UNICODE:

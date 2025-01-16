@@ -81,9 +81,6 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef pop;
-            _PyStackRef top;
-            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -104,25 +101,11 @@
                 double dres =
                 ((PyFloatObject *)left_o)->ob_fval +
                 ((PyFloatObject *)right_o)->ob_fval;
-                PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
-                if (res_o == NULL) goto error;
+                PyObject *res_o = _PyFloat_FromDouble_ConsumeInputs(left, right, dres);
+                if (res_o == NULL) goto pop_2_error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
-            {
-                top = res;
-                pop = right;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            // _POP_UNDER
-            {
-                top = under;
-                pop = left;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            stack_pointer[-2] = under;
+            stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -303,9 +286,6 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef pop;
-            _PyStackRef top;
-            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -326,25 +306,11 @@
                 double dres =
                 ((PyFloatObject *)left_o)->ob_fval *
                 ((PyFloatObject *)right_o)->ob_fval;
-                PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
-                if (res_o == NULL) goto error;
+                PyObject *res_o = _PyFloat_FromDouble_ConsumeInputs(left, right, dres);
+                if (res_o == NULL) goto pop_2_error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
-            {
-                top = res;
-                pop = right;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            // _POP_UNDER
-            {
-                top = under;
-                pop = left;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            stack_pointer[-2] = under;
+            stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
@@ -410,9 +376,6 @@
             _PyStackRef left;
             _PyStackRef right;
             _PyStackRef res;
-            _PyStackRef pop;
-            _PyStackRef top;
-            _PyStackRef under;
             // _GUARD_BOTH_FLOAT
             {
                 right = stack_pointer[-1];
@@ -433,25 +396,11 @@
                 double dres =
                 ((PyFloatObject *)left_o)->ob_fval -
                 ((PyFloatObject *)right_o)->ob_fval;
-                PyObject *res_o = _PyFloat_FromDouble_ReuseInputs(left, right, dres);
-                if (res_o == NULL) goto error;
+                PyObject *res_o = _PyFloat_FromDouble_ConsumeInputs(left, right, dres);
+                if (res_o == NULL) goto pop_2_error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
-            {
-                top = res;
-                pop = right;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            // _POP_UNDER
-            {
-                top = under;
-                pop = left;
-                under = top;
-                PyStackRef_CLOSE(pop);
-            }
-            stack_pointer[-2] = under;
+            stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
