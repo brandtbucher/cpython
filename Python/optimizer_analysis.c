@@ -588,6 +588,8 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 last_set_ip = pc;
                 break;
             case _POP_TOP:
+            case _POP_TOP_IMMORTAL:
+            case _POP_TOP_MAYBE_NULL:
             {
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {
@@ -596,6 +598,9 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 if (last->opcode == _LOAD_CONST_INLINE  ||
                     last->opcode == _LOAD_CONST_INLINE_BORROW ||
                     last->opcode == _LOAD_FAST ||
+                    last->opcode == _LOAD_FAST_IMMORTAL ||
+                    last->opcode == _LOAD_FAST_MAYBE_NULL ||
+                    last->opcode == _PUSH_NULL ||
                     last->opcode == _COPY
                 ) {
                     last->opcode = _NOP;
@@ -603,6 +608,12 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 }
                 if (last->opcode == _REPLACE_WITH_TRUE) {
                     last->opcode = _NOP;
+                    buffer[pc].opcode = _POP_TOP;
+                }
+                if (buffer[pc].opcode == _POP_TOP ||
+                    buffer[pc].opcode == _POP_TOP_MAYBE_NULL)
+                {
+                    goto check;
                 }
                 break;
             }
@@ -612,6 +623,7 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 return pc + 1;
             default:
             {
+            check:
                 /* _PUSH_FRAME doesn't escape or error, but it
                  * does need the IP for the return address */
                 bool needs_ip = opcode == _PUSH_FRAME;

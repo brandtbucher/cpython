@@ -25,12 +25,36 @@
 
         /* _MONITOR_RESUME is not a viable micro-op for tier 2 */
 
-        case _LOAD_FAST_CHECK: {
+        case _CHECK_FAST: {
             _Py_UopsSymbol *value;
-            value = GETLOCAL(oparg);
+            value = stack_pointer[-1];
             // We guarantee this will error - just bail and don't optimize it.
             if (sym_is_null(value)) {
                 ctx->done = true;
+            }
+            break;
+        }
+
+        case _SWAP_FAST: {
+            _Py_UopsSymbol *new;
+            _Py_UopsSymbol *old;
+            new = stack_pointer[-1];
+            old = GETLOCAL(oparg);
+            GETLOCAL(oparg) = new;
+            stack_pointer[-1] = old;
+            break;
+        }
+
+        case _LOAD_FAST: {
+            _Py_UopsSymbol *value;
+            value = GETLOCAL(oparg);
+            if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
+                REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(value));
+            }
+            else {
+                if (sym_matches_type(value, &PyBool_Type)) {
+                    REPLACE_OP(this_instr, _LOAD_FAST_IMMORTAL, oparg, 0);
+                }
             }
             stack_pointer[0] = value;
             stack_pointer += 1;
@@ -38,20 +62,36 @@
             break;
         }
 
-        case _LOAD_FAST: {
+        case _LOAD_FAST_MAYBE_NULL: {
             _Py_UopsSymbol *value;
             value = GETLOCAL(oparg);
+            if (sym_is_null(value)) {
+                REPLACE_OP(this_instr, _PUSH_NULL, 0, 0);
+            }
+            else {
+                if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
+                    REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(value));
+                }
+                else {
+                    if (sym_matches_type(value, &PyBool_Type)) {
+                        REPLACE_OP(this_instr, _LOAD_FAST_IMMORTAL, oparg, 0);
+                    }
+                    else {
+                        if (sym_is_not_null(value)) {
+                            REPLACE_OP(this_instr, _LOAD_FAST, oparg, 0);
+                        }
+                    }
+                }
+            }
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
-        case _LOAD_FAST_AND_CLEAR: {
+        case _LOAD_FAST_IMMORTAL: {
             _Py_UopsSymbol *value;
-            value = GETLOCAL(oparg);
-            _Py_UopsSymbol *temp = sym_new_null(ctx);
-            GETLOCAL(oparg) = temp;
+            value = sym_new_not_null(ctx);
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
@@ -93,16 +133,39 @@
             break;
         }
 
-        case _STORE_FAST: {
+        case _POP_TOP: {
             _Py_UopsSymbol *value;
             value = stack_pointer[-1];
-            GETLOCAL(oparg) = value;
+            if ((sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) ||
+                sym_matches_type(value, &PyBool_Type))
+            {
+                REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+            }
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
-        case _POP_TOP: {
+        case _POP_TOP_MAYBE_NULL: {
+            _Py_UopsSymbol *value;
+            value = stack_pointer[-1];
+            if (sym_is_null(value) ||
+                (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) ||
+                sym_matches_type(value, &PyBool_Type))
+            {
+                REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+            }
+            else {
+                if (sym_is_not_null(value)) {
+                    REPLACE_OP(this_instr, _POP_TOP, 0, 0);
+                }
+            }
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _POP_TOP_IMMORTAL: {
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
@@ -968,10 +1031,6 @@
             if (oparg & 1) stack_pointer[0] = null;
             stack_pointer += (oparg & 1);
             assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
-
-        case _DELETE_FAST: {
             break;
         }
 

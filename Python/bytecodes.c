@@ -254,30 +254,42 @@ dummy_func(
             LOAD_FAST,
         };
 
-        inst(LOAD_FAST_CHECK, (-- value)) {
-            _PyStackRef value_s = GETLOCAL(oparg);
-            if (PyStackRef_IsNull(value_s)) {
+        op(_CHECK_FAST, (value -- value)) {
+            if (PyStackRef_IsNull(value)) {
                 _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError,
                     UNBOUNDLOCAL_ERROR_MSG,
                     PyTuple_GetItem(_PyFrame_GetCode(frame)->co_localsplusnames, oparg)
                 );
                 ERROR_IF(1, error);
             }
-            value = PyStackRef_DUP(value_s);
+        }
+
+        macro(LOAD_FAST_CHECK) = _LOAD_FAST_MAYBE_NULL + _CHECK_FAST;
+
+        replicate(8) pure op(_SWAP_FAST, (new -- old)) {
+            old = GETLOCAL(oparg);
+            GETLOCAL(oparg) = new;
+            DEAD(new);
         }
 
         replicate(8) pure inst(LOAD_FAST, (-- value)) {
-            assert(!PyStackRef_IsNull(GETLOCAL(oparg)));
             value = PyStackRef_DUP(GETLOCAL(oparg));
+            assert(!PyStackRef_IsNull(value));
         }
 
-        inst(LOAD_FAST_AND_CLEAR, (-- value)) {
+        pure op(_LOAD_FAST_MAYBE_NULL, (-- value)) {
             value = GETLOCAL(oparg);
-            // do not use SETLOCAL here, it decrefs the old value
-            GETLOCAL(oparg) = PyStackRef_NULL;
+            value = PyStackRef_IsNull(value) ? value : PyStackRef_DUP(value);
         }
 
-        inst(LOAD_FAST_LOAD_FAST, ( -- value1, value2)) {
+        replicate(8) pure op(_LOAD_FAST_IMMORTAL, (-- value)) {
+            value = GETLOCAL(oparg);
+            assert(_Py_IsImmortal(PyStackRef_AsPyObjectBorrow(value)));
+        }
+
+        macro(LOAD_FAST_AND_CLEAR) = PUSH_NULL + _SWAP_FAST;
+
+        inst(LOAD_FAST_LOAD_FAST, ( -- value1, value2)) {  // XXX
             uint32_t oparg1 = oparg >> 4;
             uint32_t oparg2 = oparg & 15;
             value1 = PyStackRef_DUP(GETLOCAL(oparg1));
@@ -318,16 +330,13 @@ dummy_func(
             value = PyStackRef_FromPyObjectImmortal(obj);
         }
 
-        replicate(8) inst(STORE_FAST, (value --)) {
-            SETLOCAL(oparg, value);
-            DEAD(value);
-        }
+        macro(STORE_FAST) = _SWAP_FAST + _POP_TOP_MAYBE_NULL;  // XXX
 
-        pseudo(STORE_FAST_MAYBE_NULL, (unused --)) = {
+        pseudo(STORE_FAST_MAYBE_NULL, (unused --)) = {  // XXX
             STORE_FAST,
         };
 
-        inst(STORE_FAST_LOAD_FAST, (value1 -- value2)) {
+        inst(STORE_FAST_LOAD_FAST, (value1 -- value2)) {  // XXX
             uint32_t oparg1 = oparg >> 4;
             uint32_t oparg2 = oparg & 15;
             SETLOCAL(oparg1, value1);
@@ -335,7 +344,7 @@ dummy_func(
             value2 = PyStackRef_DUP(GETLOCAL(oparg2));
         }
 
-        inst(STORE_FAST_STORE_FAST, (value2, value1 --)) {
+        inst(STORE_FAST_STORE_FAST, (value2, value1 --)) {  // XXX
             uint32_t oparg1 = oparg >> 4;
             uint32_t oparg2 = oparg & 15;
             SETLOCAL(oparg1, value1);
@@ -345,7 +354,16 @@ dummy_func(
         }
 
         pure inst(POP_TOP, (value --)) {
-            DECREF_INPUTS();
+            PyStackRef_CLOSE(value);
+        }
+
+        pure op(_POP_TOP_MAYBE_NULL, (value --)) {
+            PyStackRef_XCLOSE(value);
+        }
+
+        pure op(_POP_TOP_IMMORTAL, (value --)) {
+            assert(PyStackRef_IsNull(value) || _Py_IsImmortal(PyStackRef_AsPyObjectBorrow(value)));
+            DEAD(value);
         }
 
         pure inst(PUSH_NULL, (-- res)) {
@@ -1730,17 +1748,7 @@ dummy_func(
             _GUARD_BUILTINS_VERSION_PUSH_KEYS +
             _LOAD_GLOBAL_BUILTINS_FROM_KEYS;
 
-        inst(DELETE_FAST, (--)) {
-            _PyStackRef v = GETLOCAL(oparg);
-            if (PyStackRef_IsNull(v)) {
-                _PyEval_FormatExcCheckArg(tstate, PyExc_UnboundLocalError,
-                    UNBOUNDLOCAL_ERROR_MSG,
-                    PyTuple_GetItem(_PyFrame_GetCode(frame)->co_localsplusnames, oparg)
-                );
-                ERROR_IF(1, error);
-            }
-            SETLOCAL(oparg, PyStackRef_NULL);
-        }
+        macro(DELETE_FAST) = PUSH_NULL + _SWAP_FAST + _CHECK_FAST + POP_TOP;
 
         inst(MAKE_CELL, (--)) {
             // "initial" is probably NULL but not if it's an arg (or set

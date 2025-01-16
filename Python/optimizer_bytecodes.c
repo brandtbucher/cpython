@@ -71,8 +71,7 @@ dummy_func(void) {
 
 // BEGIN BYTECODES //
 
-    op(_LOAD_FAST_CHECK, (-- value)) {
-        value = GETLOCAL(oparg);
+    op(_CHECK_FAST, (value -- value)) {
         // We guarantee this will error - just bail and don't optimize it.
         if (sym_is_null(value)) {
             ctx->done = true;
@@ -81,16 +80,33 @@ dummy_func(void) {
 
     op(_LOAD_FAST, (-- value)) {
         value = GETLOCAL(oparg);
+        if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(value));
+        }
+        else if (sym_matches_type(value, &PyBool_Type)) {
+            REPLACE_OP(this_instr, _LOAD_FAST_IMMORTAL, oparg, 0);
+        }
     }
 
-    op(_LOAD_FAST_AND_CLEAR, (-- value)) {
+    op(_LOAD_FAST_MAYBE_NULL, (-- value)) {
         value = GETLOCAL(oparg);
-        _Py_UopsSymbol *temp = sym_new_null(ctx);
-        GETLOCAL(oparg) = temp;
+        if (sym_is_null(value)) {
+            REPLACE_OP(this_instr, _PUSH_NULL, 0, 0);
+        }
+        else if (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) {
+            REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)sym_get_const(value));
+        }
+        else if (sym_matches_type(value, &PyBool_Type)) {
+            REPLACE_OP(this_instr, _LOAD_FAST_IMMORTAL, oparg, 0);
+        }
+        else if (sym_is_not_null(value)) {
+            REPLACE_OP(this_instr, _LOAD_FAST, oparg, 0);
+        }
     }
 
-    op(_STORE_FAST, (value --)) {
-        GETLOCAL(oparg) = value;
+    op(_SWAP_FAST, (new -- old)) {
+        old = GETLOCAL(oparg);
+        GETLOCAL(oparg) = new;
     }
 
     op(_PUSH_NULL, (-- res)) {
@@ -947,6 +963,26 @@ dummy_func(void) {
 
     op(_REPLACE_WITH_TRUE, (value -- res)) {
         res = sym_new_const(ctx, Py_True);
+    }
+
+    op(_POP_TOP, (value --)) {
+        if ((sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) ||
+            sym_matches_type(value, &PyBool_Type))
+        {
+            REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+        }
+    }
+
+    op(_POP_TOP_MAYBE_NULL, (value --)) {
+        if (sym_is_null(value) ||
+            (sym_is_const(value) && _Py_IsImmortal(sym_get_const(value))) ||
+            sym_matches_type(value, &PyBool_Type))
+        {
+            REPLACE_OP(this_instr, _POP_TOP_IMMORTAL, 0, 0);
+        }
+        else if (sym_is_not_null(value)) {
+            REPLACE_OP(this_instr, _POP_TOP, 0, 0);
+        }
     }
 
 // END BYTECODES //

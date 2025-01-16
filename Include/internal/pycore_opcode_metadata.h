@@ -1256,7 +1256,7 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case DELETE_FAST: {
-            *effect = 0;
+            *effect = 1;
             return 0;
         }
         case DELETE_GLOBAL: {
@@ -1796,7 +1796,7 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case STORE_FAST: {
-            *effect = -1;
+            *effect = 0;
             return 0;
         }
         case STORE_FAST_LOAD_FAST: {
@@ -2122,7 +2122,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [LOAD_CONST_MORTAL] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_CONST_FLAG },
     [LOAD_DEREF] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_FREE_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [LOAD_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_PURE_FLAG },
-    [LOAD_FAST_AND_CLEAR] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG },
+    [LOAD_FAST_AND_CLEAR] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_PURE_FLAG },
     [LOAD_FAST_CHECK] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [LOAD_FAST_LOAD_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG },
     [LOAD_FROM_DICT_OR_DEREF] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_FREE_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
@@ -2147,12 +2147,12 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [NOP] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
     [NOT_TAKEN] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
     [POP_EXCEPT] = { true, INSTR_FMT_IX, HAS_ESCAPES_FLAG },
-    [POP_ITER] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
+    [POP_ITER] = { true, INSTR_FMT_IX, HAS_ESCAPES_FLAG | HAS_PURE_FLAG },
     [POP_JUMP_IF_FALSE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG },
     [POP_JUMP_IF_NONE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG },
     [POP_JUMP_IF_NOT_NONE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG },
     [POP_JUMP_IF_TRUE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG },
-    [POP_TOP] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
+    [POP_TOP] = { true, INSTR_FMT_IX, HAS_ESCAPES_FLAG | HAS_PURE_FLAG },
     [PUSH_EXC_INFO] = { true, INSTR_FMT_IX, 0 },
     [PUSH_NULL] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
     [RAISE_VARARGS] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
@@ -2173,7 +2173,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [STORE_ATTR_SLOT] = { true, INSTR_FMT_IXC000, HAS_DEOPT_FLAG | HAS_EXIT_FLAG | HAS_ESCAPES_FLAG },
     [STORE_ATTR_WITH_HINT] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_DEOPT_FLAG | HAS_EXIT_FLAG | HAS_ESCAPES_FLAG },
     [STORE_DEREF] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_FREE_FLAG | HAS_ESCAPES_FLAG },
-    [STORE_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG },
+    [STORE_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG | HAS_PURE_FLAG },
     [STORE_FAST_LOAD_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG },
     [STORE_FAST_STORE_FAST] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG },
     [STORE_GLOBAL] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_NAME_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2209,7 +2209,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [SETUP_CLEANUP] = { true, -1, HAS_PURE_FLAG | HAS_ARG_FLAG },
     [SETUP_FINALLY] = { true, -1, HAS_PURE_FLAG | HAS_ARG_FLAG },
     [SETUP_WITH] = { true, -1, HAS_PURE_FLAG | HAS_ARG_FLAG },
-    [STORE_FAST_MAYBE_NULL] = { true, -1, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG },
+    [STORE_FAST_MAYBE_NULL] = { true, -1, HAS_ARG_FLAG | HAS_LOCAL_FLAG | HAS_ESCAPES_FLAG | HAS_PURE_FLAG },
 };
 #endif
 
@@ -2284,7 +2284,7 @@ _PyOpcode_macro_expansion[256] = {
     [COPY_FREE_VARS] = { .nuops = 1, .uops = { { _COPY_FREE_VARS, 0, 0 } } },
     [DELETE_ATTR] = { .nuops = 1, .uops = { { _DELETE_ATTR, 0, 0 } } },
     [DELETE_DEREF] = { .nuops = 1, .uops = { { _DELETE_DEREF, 0, 0 } } },
-    [DELETE_FAST] = { .nuops = 1, .uops = { { _DELETE_FAST, 0, 0 } } },
+    [DELETE_FAST] = { .nuops = 4, .uops = { { _PUSH_NULL, 0, 0 }, { _SWAP_FAST, 0, 0 }, { _CHECK_FAST, 0, 0 }, { _POP_TOP, 0, 0 } } },
     [DELETE_GLOBAL] = { .nuops = 1, .uops = { { _DELETE_GLOBAL, 0, 0 } } },
     [DELETE_NAME] = { .nuops = 1, .uops = { { _DELETE_NAME, 0, 0 } } },
     [DELETE_SUBSCR] = { .nuops = 1, .uops = { { _DELETE_SUBSCR, 0, 0 } } },
@@ -2330,8 +2330,8 @@ _PyOpcode_macro_expansion[256] = {
     [LOAD_CONST_MORTAL] = { .nuops = 1, .uops = { { _LOAD_CONST_MORTAL, 0, 0 } } },
     [LOAD_DEREF] = { .nuops = 1, .uops = { { _LOAD_DEREF, 0, 0 } } },
     [LOAD_FAST] = { .nuops = 1, .uops = { { _LOAD_FAST, 0, 0 } } },
-    [LOAD_FAST_AND_CLEAR] = { .nuops = 1, .uops = { { _LOAD_FAST_AND_CLEAR, 0, 0 } } },
-    [LOAD_FAST_CHECK] = { .nuops = 1, .uops = { { _LOAD_FAST_CHECK, 0, 0 } } },
+    [LOAD_FAST_AND_CLEAR] = { .nuops = 2, .uops = { { _PUSH_NULL, 0, 0 }, { _SWAP_FAST, 0, 0 } } },
+    [LOAD_FAST_CHECK] = { .nuops = 2, .uops = { { _LOAD_FAST_MAYBE_NULL, 0, 0 }, { _CHECK_FAST, 0, 0 } } },
     [LOAD_FAST_LOAD_FAST] = { .nuops = 2, .uops = { { _LOAD_FAST, 5, 0 }, { _LOAD_FAST, 6, 0 } } },
     [LOAD_FROM_DICT_OR_DEREF] = { .nuops = 1, .uops = { { _LOAD_FROM_DICT_OR_DEREF, 0, 0 } } },
     [LOAD_GLOBAL] = { .nuops = 1, .uops = { { _LOAD_GLOBAL, 0, 0 } } },
@@ -2374,9 +2374,9 @@ _PyOpcode_macro_expansion[256] = {
     [STORE_ATTR_SLOT] = { .nuops = 2, .uops = { { _GUARD_TYPE_VERSION, 2, 1 }, { _STORE_ATTR_SLOT, 1, 3 } } },
     [STORE_ATTR_WITH_HINT] = { .nuops = 2, .uops = { { _GUARD_TYPE_VERSION, 2, 1 }, { _STORE_ATTR_WITH_HINT, 1, 3 } } },
     [STORE_DEREF] = { .nuops = 1, .uops = { { _STORE_DEREF, 0, 0 } } },
-    [STORE_FAST] = { .nuops = 1, .uops = { { _STORE_FAST, 0, 0 } } },
-    [STORE_FAST_LOAD_FAST] = { .nuops = 2, .uops = { { _STORE_FAST, 5, 0 }, { _LOAD_FAST, 6, 0 } } },
-    [STORE_FAST_STORE_FAST] = { .nuops = 2, .uops = { { _STORE_FAST, 5, 0 }, { _STORE_FAST, 6, 0 } } },
+    [STORE_FAST] = { .nuops = 2, .uops = { { _SWAP_FAST, 0, 0 }, { _POP_TOP_MAYBE_NULL, 0, 0 } } },
+    [STORE_FAST_LOAD_FAST] = { .nuops = 3, .uops = { { _SWAP_FAST, 5, 0 }, { _POP_TOP_MAYBE_NULL, 5, 0 }, { _LOAD_FAST, 6, 0 } } },
+    [STORE_FAST_STORE_FAST] = { .nuops = 4, .uops = { { _SWAP_FAST, 5, 0 }, { _POP_TOP_MAYBE_NULL, 5, 0 }, { _SWAP_FAST, 6, 0 }, { _POP_TOP_MAYBE_NULL, 6, 0 } } },
     [STORE_GLOBAL] = { .nuops = 1, .uops = { { _STORE_GLOBAL, 0, 0 } } },
     [STORE_NAME] = { .nuops = 1, .uops = { { _STORE_NAME, 0, 0 } } },
     [STORE_SLICE] = { .nuops = 1, .uops = { { _STORE_SLICE, 0, 0 } } },
