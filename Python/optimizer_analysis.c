@@ -623,7 +623,7 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 return pc + 1;
             default:
             {
-            check:
+            check:;
                 /* _PUSH_FRAME doesn't escape or error, but it
                  * does need the IP for the return address */
                 bool needs_ip = opcode == _PUSH_FRAME;
