@@ -74,7 +74,7 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_TO_BOOL_LIST] = HAS_EXIT_FLAG,
     [_TO_BOOL_NONE] = HAS_EXIT_FLAG,
     [_TO_BOOL_STR] = HAS_EXIT_FLAG,
-    [_REPLACE_WITH_TRUE] = 0,
+    [_PUSH_TRUE] = 0,
     [_UNARY_INVERT] = HAS_ERROR_FLAG | HAS_ESCAPES_FLAG,
     [_GUARD_BOTH_INT] = HAS_EXIT_FLAG,
     [_GUARD_NOS_INT] = HAS_EXIT_FLAG,
@@ -545,9 +545,9 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_PUSH_EXC_INFO] = "_PUSH_EXC_INFO",
     [_PUSH_FRAME] = "_PUSH_FRAME",
     [_PUSH_NULL] = "_PUSH_NULL",
+    [_PUSH_TRUE] = "_PUSH_TRUE",
     [_PY_FRAME_GENERAL] = "_PY_FRAME_GENERAL",
     [_PY_FRAME_KW] = "_PY_FRAME_KW",
-    [_REPLACE_WITH_TRUE] = "_REPLACE_WITH_TRUE",
     [_RESUME_CHECK] = "_RESUME_CHECK",
     [_RETURN_GENERATOR] = "_RETURN_GENERATOR",
     [_RETURN_VALUE] = "_RETURN_VALUE",
@@ -713,8 +713,8 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 1;
         case _TO_BOOL_STR:
             return 1;
-        case _REPLACE_WITH_TRUE:
-            return 1;
+        case _PUSH_TRUE:
+            return 0;
         case _UNARY_INVERT:
             return 1;
         case _GUARD_BOTH_INT:

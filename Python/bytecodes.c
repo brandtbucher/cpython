@@ -549,15 +549,15 @@ dummy_func(
             }
         }
 
-        op(_REPLACE_WITH_TRUE, (value -- res)) {
-            DECREF_INPUTS();
+        op(_PUSH_TRUE, (-- res)) {
             res = PyStackRef_True;
         }
 
         macro(TO_BOOL_ALWAYS_TRUE) =
             unused/1 +
             _GUARD_TYPE_VERSION +
-            _REPLACE_WITH_TRUE;
+            POP_TOP +
+            _PUSH_TRUE;
 
         inst(UNARY_INVERT, (value -- res)) {
             PyObject *res_o = PyNumber_Invert(PyStackRef_AsPyObjectBorrow(value));
@@ -631,11 +631,11 @@ dummy_func(
         }
 
         macro(BINARY_OP_MULTIPLY_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_MULTIPLY_INT + _POP_UNDER + _POP_UNDER;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_MULTIPLY_INT + _POP_UNDER_INT + _POP_UNDER_INT;
         macro(BINARY_OP_ADD_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_ADD_INT + _POP_UNDER + _POP_UNDER;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_ADD_INT + _POP_UNDER_INT + _POP_UNDER_INT;
         macro(BINARY_OP_SUBTRACT_INT) =
-            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_SUBTRACT_INT + _POP_UNDER + _POP_UNDER;
+            _GUARD_BOTH_INT + unused/1 + _BINARY_OP_SUBTRACT_INT + _POP_UNDER_INT + _POP_UNDER_INT;
 
         op(_GUARD_BOTH_FLOAT, (left, right -- left, right)) {
             PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
@@ -730,7 +730,7 @@ dummy_func(
         }
 
         macro(BINARY_OP_ADD_UNICODE) =
-            _GUARD_BOTH_UNICODE + unused/1 + _BINARY_OP_ADD_UNICODE + _POP_UNDER + _POP_UNDER;
+            _GUARD_BOTH_UNICODE + unused/1 + _BINARY_OP_ADD_UNICODE + _POP_UNDER_UNICODE + _POP_UNDER_UNICODE;
 
         // This is a subtle one. It's a super-instruction for
         // BINARY_OP_ADD_UNICODE followed by STORE_FAST

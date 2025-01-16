@@ -143,19 +143,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = res;
                 pop = right;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = under;
                 pop = left;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
             stack_pointer[-2] = under;
             stack_pointer += -1;
@@ -195,19 +197,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
+            // _POP_UNDER_UNICODE
             {
                 top = res;
                 pop = right;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyUnicode_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
             }
-            // _POP_UNDER
+            // _POP_UNDER_UNICODE
             {
                 top = under;
                 pop = left;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyUnicode_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyUnicode_ExactDealloc);
             }
             stack_pointer[-2] = under;
             stack_pointer += -1;
@@ -348,19 +352,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = res;
                 pop = right;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = under;
                 pop = left;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
             stack_pointer[-2] = under;
             stack_pointer += -1;
@@ -438,19 +444,21 @@
                 if (res_o == NULL) goto error;
                 res = PyStackRef_FromPyObjectSteal(res_o);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = res;
                 pop = right;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
-            // _POP_UNDER
+            // _POP_UNDER_INT
             {
                 top = under;
                 pop = left;
                 under = top;
-                PyStackRef_CLOSE(pop);
+                assert(PyLong_CheckExact(PyStackRef_AsPyObjectBorrow(pop)));
+                PyStackRef_CLOSE_SPECIALIZED(pop, _PyLong_ExactDealloc);
             }
             stack_pointer[-2] = under;
             stack_pointer += -1;
@@ -8060,10 +8068,13 @@
                 assert(type_version != 0);
                 DEOPT_IF(FT_ATOMIC_LOAD_UINT_RELAXED(tp->tp_version_tag) != type_version, TO_BOOL);
             }
-            // _REPLACE_WITH_TRUE
+            // _POP_TOP
             {
                 value = owner;
                 PyStackRef_CLOSE(value);
+            }
+            // _PUSH_TRUE
+            {
                 res = PyStackRef_True;
             }
             stack_pointer[-1] = res;

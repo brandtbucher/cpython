@@ -963,6 +963,22 @@ dummy_func(void) {
         under = top;
     }
 
+    op(_POP_UNDER_IMMORTAL, (pop, top -- under)) {
+        under = top;
+    }
+
+    op(_POP_UNDER_INT, (pop, top -- under)) {
+        under = top;
+    }
+
+    op(_POP_UNDER_FLOAT, (pop, top -- under)) {
+        under = top;
+    }
+
+    op(_POP_UNDER_UNICODE, (pop, top -- under)) {
+        under = top;
+    }
+
     op(_JUMP_TO_TOP, (--)) {
         ctx->done = true;
     }
@@ -982,7 +998,7 @@ dummy_func(void) {
         (void)version;
     }
 
-    op(_REPLACE_WITH_TRUE, (value -- res)) {
+    op(_PUSH_TRUE, (-- res)) {
         res = sym_new_const(ctx, Py_True);
     }
 

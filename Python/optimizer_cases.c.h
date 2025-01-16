@@ -194,8 +194,10 @@
         }
 
         case _POP_UNDER_IMMORTAL: {
+            _Py_UopsSymbol *top;
             _Py_UopsSymbol *under;
-            under = sym_new_not_null(ctx);
+            top = stack_pointer[-1];
+            under = top;
             stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -203,8 +205,10 @@
         }
 
         case _POP_UNDER_INT: {
+            _Py_UopsSymbol *top;
             _Py_UopsSymbol *under;
-            under = sym_new_not_null(ctx);
+            top = stack_pointer[-1];
+            under = top;
             stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -212,8 +216,10 @@
         }
 
         case _POP_UNDER_FLOAT: {
+            _Py_UopsSymbol *top;
             _Py_UopsSymbol *under;
-            under = sym_new_not_null(ctx);
+            top = stack_pointer[-1];
+            under = top;
             stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -221,8 +227,10 @@
         }
 
         case _POP_UNDER_UNICODE: {
+            _Py_UopsSymbol *top;
             _Py_UopsSymbol *under;
-            under = sym_new_not_null(ctx);
+            top = stack_pointer[-1];
+            under = top;
             stack_pointer[-2] = under;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -338,10 +346,12 @@
             break;
         }
 
-        case _REPLACE_WITH_TRUE: {
+        case _PUSH_TRUE: {
             _Py_UopsSymbol *res;
             res = sym_new_const(ctx, Py_True);
-            stack_pointer[-1] = res;
+            stack_pointer[0] = res;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 

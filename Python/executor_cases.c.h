@@ -681,13 +681,12 @@
             break;
         }
 
-        case _REPLACE_WITH_TRUE: {
-            _PyStackRef value;
+        case _PUSH_TRUE: {
             _PyStackRef res;
-            value = stack_pointer[-1];
-            PyStackRef_CLOSE(value);
             res = PyStackRef_True;
-            stack_pointer[-1] = res;
+            stack_pointer[0] = res;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
