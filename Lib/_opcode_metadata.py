@@ -213,7 +213,6 @@ opmap = {
     'RESERVED': 17,
     'RESUME': 149,
     'INSTRUMENTED_LINE': 254,
-    'ENTER_EXECUTOR': 255,
     'BINARY_SLICE': 1,
     'BINARY_SUBSCR': 2,
     'CALL_FUNCTION_EX': 4,

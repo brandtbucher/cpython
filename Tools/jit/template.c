@@ -50,11 +50,11 @@
     } while (0)
 
 #undef GOTO_TIER_TWO
-#define GOTO_TIER_TWO(EXECUTOR) \
+#define GOTO_TIER_TWO() \
 do {  \
     OPT_STAT_INC(traces_executed);                \
     __attribute__((musttail))                     \
-    return ((jit_func_preserve_none)((EXECUTOR)->jit_side_entry))(frame, stack_pointer, tstate); \
+    return ((jit_func_preserve_none)(_PyFrame_GetCode(frame)->_jit_code))(frame, stack_pointer, tstate); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -95,7 +95,6 @@ __attribute__((preserve_none)) _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
     // Locals that the instruction implementations expect to exist:
-    PATCH_VALUE(_PyExecutorObject *, current_executor, _JIT_EXECUTOR)
     int oparg;
     int uopcode = _JIT_OPCODE;
     _Py_CODEUNIT *next_instr;
@@ -129,12 +128,9 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
     // Labels that the instruction implementations expect to exist:
 
 error_tier_two:
-    tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(NULL);
 exit_to_tier1:
-    tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(_PyCode_CODE(_PyFrame_GetCode(frame)) + _target);
 exit_to_tier1_dynamic:
-    tstate->previous_executor = (PyObject *)current_executor;
     GOTO_TIER_ONE(frame->instr_ptr);
 }

@@ -3885,39 +3885,6 @@
             DISPATCH();
         }
 
-        TARGET(ENTER_EXECUTOR) {
-            _Py_CODEUNIT* const this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
-            next_instr += 1;
-            INSTRUCTION_STATS(ENTER_EXECUTOR);
-            #ifdef _Py_TIER2
-            PyCodeObject *code = _PyFrame_GetCode(frame);
-            _PyExecutorObject *executor = code->co_executors->executors[oparg & 255];
-            assert(executor->vm_data.index == INSTR_OFFSET() - 1);
-            assert(executor->vm_data.code == code);
-            assert(executor->vm_data.valid);
-            assert(tstate->previous_executor == NULL);
-            /* If the eval breaker is set then stay in tier 1.
-             * This avoids any potentially infinite loops
-             * involving _RESUME_CHECK */
-            if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                opcode = executor->vm_data.opcode;
-                oparg = (oparg & ~255) | executor->vm_data.oparg;
-                next_instr = this_instr;
-                if (_PyOpcode_Caches[_PyOpcode_Deopt[opcode]]) {
-                    PAUSE_ADAPTIVE_COUNTER(this_instr[1].counter);
-                }
-                DISPATCH_GOTO();
-            }
-            tstate->previous_executor = Py_None;
-            Py_INCREF(executor);
-            GOTO_TIER_TWO(executor);
-            #else
-            Py_FatalError("ENTER_EXECUTOR is not supported in this build");
-            #endif /* _Py_TIER2 */
-            DISPATCH();
-        }
-
         TARGET(EXIT_INIT_CHECK) {
             frame->instr_ptr = next_instr;
             next_instr += 1;
@@ -5000,6 +4967,9 @@
             }
             // _CHECK_PERIODIC_IF_NOT_YIELD_FROM
             {
+                if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
+                    GOTO_TIER_TWO();
+                }
                 if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                     _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                     QSBR_QUIESCENT_STATE(tstate); \
@@ -5048,6 +5018,20 @@
             {
                 retval = val;
                 assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+                #if TIER_ONE
+                PyCodeObject *code = _PyFrame_GetCode(frame);
+                if (code->_jit_code == NULL &&
+                    code->_jit_size &&
+                    --code->_jit_size == 0)
+                {
+                    _PyFrame_SetStackPointer(frame, stack_pointer);
+                    int err = _PyOptimizer_Optimize(code);
+                    stack_pointer = _PyFrame_GetStackPointer(frame);
+                    if (err < 0) {
+                        goto error;
+                    }
+                }
+                #endif
                 _PyStackRef temp = retval;
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
@@ -5122,8 +5106,7 @@
                   frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
                 #endif
                 stack_pointer = _PyFrame_GetStackPointer(frame);
                 LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
@@ -7200,6 +7183,9 @@
             }
             // _CHECK_PERIODIC_IF_NOT_YIELD_FROM
             {
+                if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
+                    GOTO_TIER_TWO();
+                }
                 if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                     _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                     QSBR_QUIESCENT_STATE(tstate); \
@@ -7219,6 +7205,7 @@
             next_instr += 1;
             INSTRUCTION_STATS(RESUME_CHECK);
             static_assert(0 == 0, "incorrect cache size");
+            DEOPT_IF(((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code), RESUME);
             #if defined(__EMSCRIPTEN__)
             DEOPT_IF(_Py_emscripten_signal_clock == 0, RESUME);
             _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
@@ -7275,6 +7262,20 @@
             _PyStackRef res;
             retval = stack_pointer[-1];
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+            #if TIER_ONE
+            PyCodeObject *code = _PyFrame_GetCode(frame);
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0)
+            {
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                int err = _PyOptimizer_Optimize(code);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                if (err < 0) {
+                    goto error;
+                }
+            }
+            #endif
             _PyStackRef temp = retval;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -8472,8 +8473,7 @@
                   frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
             #endif
             stack_pointer = _PyFrame_GetStackPointer(frame);
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);

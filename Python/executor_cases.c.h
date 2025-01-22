@@ -26,6 +26,9 @@
 
         case _CHECK_PERIODIC_IF_NOT_YIELD_FROM: {
             oparg = CURRENT_OPARG();
+            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
+                GOTO_TIER_TWO();
+            }
             if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                 _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                 QSBR_QUIESCENT_STATE(tstate); \
@@ -44,6 +47,11 @@
         /* _LOAD_BYTECODE is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         case _RESUME_CHECK: {
+            oparg = CURRENT_OPARG();
+            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
             #if defined(__EMSCRIPTEN__)
             if (_Py_emscripten_signal_clock == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -1442,6 +1450,20 @@
             _PyStackRef res;
             retval = stack_pointer[-1];
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+            #if TIER_ONE
+            PyCodeObject *code = _PyFrame_GetCode(frame);
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0)
+            {
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                int err = _PyOptimizer_Optimize(code);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                if (err < 0) {
+                    JUMP_TO_ERROR();
+                }
+            }
+            #endif
             _PyStackRef temp = retval;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -1600,8 +1622,7 @@
                   frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
             #endif
             stack_pointer = _PyFrame_GetStackPointer(frame);
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
@@ -5871,7 +5892,6 @@
 
         case _EXIT_TRACE: {
             PyObject *exit_p = (PyObject *)CURRENT_OPERAND0();
-            tstate->previous_executor = (PyObject *)current_executor;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
             stack_pointer = _PyFrame_GetStackPointer(frame);
@@ -5879,10 +5899,6 @@
         }
 
         case _CHECK_VALIDITY: {
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             break;
         }
 
@@ -6015,32 +6031,9 @@
 
         case _DYNAMIC_EXIT: {
             PyObject *exit_p = (PyObject *)CURRENT_OPERAND0();
-            tstate->previous_executor = (PyObject *)current_executor;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
             stack_pointer = _PyFrame_GetStackPointer(frame);
-            break;
-        }
-
-        case _START_EXECUTOR: {
-            PyObject *executor = (PyObject *)CURRENT_OPERAND0();
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            Py_DECREF(tstate->previous_executor);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
-            tstate->previous_executor = NULL;
-            #ifndef _Py_JIT
-            current_executor = (_PyExecutorObject*)executor;
-            #endif
-            assert(((_PyExecutorObject *)executor)->vm_data.valid);
-            break;
-        }
-
-        case _MAKE_WARM: {
-            current_executor->vm_data.warm = true;
-            // It's okay if this ends up going negative.
-            if (--tstate->interp->trace_run_counter == 0) {
-                _Py_set_eval_breaker_bit(tstate, _PY_EVAL_JIT_INVALIDATE_COLD_BIT);
-            }
             break;
         }
 
@@ -6052,10 +6045,6 @@
 
         case _CHECK_VALIDITY_AND_SET_IP: {
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND0();
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             break;
         }

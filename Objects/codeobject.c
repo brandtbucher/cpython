@@ -542,6 +542,8 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
         entry_point++;
     }
     co->_co_firsttraceable = entry_point;
+    co->_jit_size = 1 << 4;  // XXX
+    co->_jit_code = NULL;
 #ifdef Py_GIL_DISABLED
     _PyCode_Quicken(_PyCode_CODE(co), Py_SIZE(co), co->co_consts,
                     interp->config.tlbc_enabled);

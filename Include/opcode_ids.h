@@ -232,7 +232,6 @@ extern "C" {
 #define INSTRUMENTED_CALL                      252
 #define INSTRUMENTED_JUMP_BACKWARD             253
 #define INSTRUMENTED_LINE                      254
-#define ENTER_EXECUTOR                         255
 #define JUMP                                   256
 #define JUMP_IF_FALSE                          257
 #define JUMP_IF_TRUE                           258

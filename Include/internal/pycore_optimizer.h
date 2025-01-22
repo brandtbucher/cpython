@@ -27,13 +27,9 @@ typedef struct {
 } _PyBloomFilter;
 
 typedef struct {
-    uint8_t opcode;
-    uint8_t oparg;
     uint8_t valid:1;
     uint8_t linked:1;
-    uint8_t chain_depth:6;  // Must be big enough for MAX_CHAIN_DEPTH - 1.
     bool warm;
-    int index;           // Index of ENTER_EXECUTOR (if code isn't NULL, below).
     _PyBloomFilter bloom;
     _PyExecutorLinkListNode links;
     PyCodeObject *code;  // Weak (NULL if no corresponding ENTER_EXECUTOR).
@@ -178,12 +174,6 @@ static inline uint16_t uop_get_error_target(const _PyUOpInstruction *inst)
 // Need extras for root frame and for overflow frame (see TRACE_STACK_PUSH())
 #define MAX_ABSTRACT_FRAME_DEPTH (TRACE_STACK_SIZE + 2)
 
-// The maximum number of side exits that we can take before requiring forward
-// progress (and inserting a new ENTER_EXECUTOR instruction). In practice, this
-// is the "maximum amount of polymorphism" that an isolated trace tree can
-// handle before rejoining the rest of the program.
-#define MAX_CHAIN_DEPTH 4
-
 /* Symbols */
 /* See explanation in optimizer_symbols.c */
 
@@ -307,7 +297,7 @@ extern int _Py_uop_frame_pop(JitOptContext *ctx);
 
 PyAPI_FUNC(PyObject *) _Py_uop_symbols_test(PyObject *self, PyObject *ignored);
 
-PyAPI_FUNC(int) _PyOptimizer_Optimize(struct _PyInterpreterFrame *frame, _Py_CODEUNIT *start, _PyStackRef *stack_pointer, _PyExecutorObject **exec_ptr, int chain_depth);
+PyAPI_FUNC(int) _PyOptimizer_Optimize(PyCodeObject *code);
 
 static inline int is_terminator(const _PyUOpInstruction *uop)
 {

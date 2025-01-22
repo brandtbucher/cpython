@@ -372,13 +372,11 @@ _PyFrame_SetStackPointer(frame, stack_pointer)
 /* Tier-switching macros. */
 
 #ifdef _Py_JIT
-#define GOTO_TIER_TWO(EXECUTOR)                        \
+#define GOTO_TIER_TWO()                        \
 do {                                                   \
     OPT_STAT_INC(traces_executed);                     \
-    jit_func jitted = (EXECUTOR)->jit_code;            \
+    jit_func jitted = _PyFrame_GetCode(frame)->_jit_code;            \
     next_instr = jitted(frame, stack_pointer, tstate); \
-    Py_DECREF(tstate->previous_executor);              \
-    tstate->previous_executor = NULL;                  \
     frame = tstate->current_frame;                     \
     if (next_instr == NULL) {                          \
         goto resume_with_error;                        \
@@ -386,23 +384,7 @@ do {                                                   \
     stack_pointer = _PyFrame_GetStackPointer(frame);   \
     DISPATCH();                                        \
 } while (0)
-#else
-#define GOTO_TIER_TWO(EXECUTOR) \
-do { \
-    OPT_STAT_INC(traces_executed); \
-    next_uop = (EXECUTOR)->trace; \
-    assert(next_uop->opcode == _START_EXECUTOR); \
-    goto enter_tier_two; \
-} while (0)
 #endif
-
-#define GOTO_TIER_ONE(TARGET) \
-do { \
-    Py_DECREF(tstate->previous_executor); \
-    tstate->previous_executor = NULL;  \
-    next_instr = target; \
-    DISPATCH(); \
-} while (0)
 
 #define CURRENT_OPARG() (next_uop[-1].oparg)
 

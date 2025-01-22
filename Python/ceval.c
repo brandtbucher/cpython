@@ -1143,7 +1143,6 @@ error_tier_two:
     frame->return_offset = 0;  // Don't leave this random
     _PyFrame_SetStackPointer(frame, stack_pointer);
     Py_DECREF(current_executor);
-    tstate->previous_executor = NULL;
     goto resume_with_error;
 
 jump_to_jump_target:
@@ -1169,7 +1168,6 @@ goto_to_tier1:
 #endif
     OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
     Py_DECREF(current_executor);
-    tstate->previous_executor = NULL;
     DISPATCH();
 
 #endif  // _Py_JIT

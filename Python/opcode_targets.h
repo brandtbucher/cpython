@@ -254,5 +254,5 @@ static void *opcode_targets[256] = {
     &&TARGET_INSTRUMENTED_CALL,
     &&TARGET_INSTRUMENTED_JUMP_BACKWARD,
     &&TARGET_INSTRUMENTED_LINE,
-    &&TARGET_ENTER_EXECUTOR,
+    &&_unknown_opcode,
 };

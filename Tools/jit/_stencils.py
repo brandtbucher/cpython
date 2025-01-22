@@ -21,8 +21,6 @@ class HoleValue(enum.Enum):
     CONTINUE = enum.auto()
     # The base address of the read-only data for this uop:
     DATA = enum.auto()
-    # The address of the current executor (exposed as _JIT_EXECUTOR):
-    EXECUTOR = enum.auto()
     # The base address of the "global" offset table located in the read-only data.
     # Shouldn't be present in the final stencils, since these are all replaced with
     # equivalent DATA values:
@@ -100,7 +98,6 @@ _HOLE_EXPRS = {
     HoleValue.CODE: "(uintptr_t)code",
     HoleValue.CONTINUE: "(uintptr_t)code + sizeof(code_body)",
     HoleValue.DATA: "(uintptr_t)data",
-    HoleValue.EXECUTOR: "(uintptr_t)executor",
     # These should all have been turned into DATA values by process_relocations:
     # HoleValue.GOT: "",
     HoleValue.OPARG: "instruction->oparg",

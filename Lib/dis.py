@@ -34,7 +34,6 @@ CONVERT_VALUE = opmap['CONVERT_VALUE']
 SET_FUNCTION_ATTRIBUTE = opmap['SET_FUNCTION_ATTRIBUTE']
 FUNCTION_ATTR_FLAGS = ('defaults', 'kwdefaults', 'annotations', 'closure', 'annotate')
 
-ENTER_EXECUTOR = opmap['ENTER_EXECUTOR']
 LOAD_GLOBAL = opmap['LOAD_GLOBAL']
 LOAD_SMALL_INT = opmap['LOAD_SMALL_INT']
 BINARY_OP = opmap['BINARY_OP']
@@ -222,15 +221,6 @@ def _get_code_array(co, adaptive):
         found = False
         for i in range(0, len(code), 2):
             op, arg = code[i], code[i+1]
-            if op == ENTER_EXECUTOR:
-                try:
-                    ex = get_executor(co, i)
-                except (ValueError, RuntimeError):
-                    ex = None
-
-                if ex:
-                    op, arg = ex.get_opcode(), ex.get_oparg()
-                    found = True
 
             res.append(op.to_bytes())
             res.append(arg.to_bytes())

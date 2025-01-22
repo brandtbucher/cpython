@@ -187,8 +187,6 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
             return 1;
         case END_SEND:
             return 2;
-        case ENTER_EXECUTOR:
-            return 0;
         case EXIT_INIT_CHECK:
             return 1;
         case EXTENDED_ARG:
@@ -664,8 +662,6 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
             return 0;
         case END_SEND:
             return 1;
-        case ENTER_EXECUTOR:
-            return 0;
         case EXIT_INIT_CHECK:
             return 0;
         case EXTENDED_ARG:
@@ -1309,10 +1305,6 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
         }
         case END_SEND: {
             *effect = -1;
-            return 0;
-        }
-        case ENTER_EXECUTOR: {
-            *effect = 0;
             return 0;
         }
         case EXIT_INIT_CHECK: {
@@ -2090,7 +2082,6 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [END_ASYNC_FOR] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [END_FOR] = { true, INSTR_FMT_IX, HAS_ESCAPES_FLAG | HAS_NO_SAVE_IP_FLAG },
     [END_SEND] = { true, INSTR_FMT_IX, HAS_PURE_FLAG },
-    [ENTER_EXECUTOR] = { true, INSTR_FMT_IB, HAS_ARG_FLAG },
     [EXIT_INIT_CHECK] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [EXTENDED_ARG] = { true, INSTR_FMT_IB, HAS_ARG_FLAG },
     [FORMAT_SIMPLE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2127,7 +2118,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [INSTRUMENTED_POP_JUMP_IF_NOT_NONE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_ESCAPES_FLAG },
     [INSTRUMENTED_POP_JUMP_IF_TRUE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG },
     [INSTRUMENTED_RESUME] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
-    [INSTRUMENTED_RETURN_VALUE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [INSTRUMENTED_RETURN_VALUE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [INSTRUMENTED_YIELD_VALUE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [INTERPRETER_EXIT] = { true, INSTR_FMT_IX, 0 },
     [IS_OP] = { true, INSTR_FMT_IB, HAS_ARG_FLAG },
@@ -2196,9 +2187,9 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [RERAISE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [RESERVED] = { true, INSTR_FMT_IX, 0 },
     [RESUME] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
-    [RESUME_CHECK] = { true, INSTR_FMT_IX, HAS_DEOPT_FLAG },
+    [RESUME_CHECK] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
     [RETURN_GENERATOR] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
-    [RETURN_VALUE] = { true, INSTR_FMT_IX, 0 },
+    [RETURN_VALUE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [SEND] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [SEND_GEN] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
     [SETUP_ANNOTATIONS] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2522,7 +2513,6 @@ const char *_PyOpcode_OpName[266] = {
     [END_ASYNC_FOR] = "END_ASYNC_FOR",
     [END_FOR] = "END_FOR",
     [END_SEND] = "END_SEND",
-    [ENTER_EXECUTOR] = "ENTER_EXECUTOR",
     [EXIT_INIT_CHECK] = "EXIT_INIT_CHECK",
     [EXTENDED_ARG] = "EXTENDED_ARG",
     [FORMAT_SIMPLE] = "FORMAT_SIMPLE",
@@ -2789,7 +2779,6 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [END_ASYNC_FOR] = END_ASYNC_FOR,
     [END_FOR] = END_FOR,
     [END_SEND] = END_SEND,
-    [ENTER_EXECUTOR] = ENTER_EXECUTOR,
     [EXIT_INIT_CHECK] = EXIT_INIT_CHECK,
     [EXTENDED_ARG] = EXTENDED_ARG,
     [FORMAT_SIMPLE] = FORMAT_SIMPLE,
@@ -2974,6 +2963,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
     case 231: \
     case 232: \
     case 233: \
+    case 255: \
         ;
 struct pseudo_targets {
     uint8_t as_sequence;

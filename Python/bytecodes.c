@@ -76,7 +76,6 @@ static size_t jump;
 static uint16_t invert, counter, index, hint;
 #define unused 0  // Used in a macro def, can't be static
 static uint32_t type_version;
-static _PyExecutorObject *current_executor;
 
 static PyObject *
 dummy_func(
@@ -162,6 +161,9 @@ dummy_func(
         }
 
         op(_CHECK_PERIODIC_IF_NOT_YIELD_FROM, (--)) {
+            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
+                GOTO_TIER_TWO();
+            }
             if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                 _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                 QSBR_QUIESCENT_STATE(tstate); \
@@ -220,6 +222,7 @@ dummy_func(
             _CHECK_PERIODIC_IF_NOT_YIELD_FROM;
 
         inst(RESUME_CHECK, (--)) {
+            DEOPT_IF(((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code));
 #if defined(__EMSCRIPTEN__)
             DEOPT_IF(_Py_emscripten_signal_clock == 0);
             _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
@@ -1106,6 +1109,18 @@ dummy_func(
         // is pushed to a different frame, the callers' frame.
         inst(RETURN_VALUE, (retval -- res)) {
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+        #if TIER_ONE
+            PyCodeObject *code = _PyFrame_GetCode(frame);
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0)
+            {
+                int err = _PyOptimizer_Optimize(code);
+                if (err < 0) {
+                    ERROR_NO_POP();
+                }
+            }
+        #endif
             _PyStackRef temp = retval;
             DEAD(retval);
             SAVE_STACK();
@@ -1298,8 +1313,7 @@ dummy_func(
                    frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                    _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
-                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT);
             #endif
             RELOAD_STACK();
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
@@ -2823,34 +2837,6 @@ dummy_func(
         pseudo(JUMP_IF_TRUE, (cond -- cond)) = [
             COPY, TO_BOOL, POP_JUMP_IF_TRUE,
         ];
-
-        tier1 inst(ENTER_EXECUTOR, (--)) {
-            #ifdef _Py_TIER2
-            PyCodeObject *code = _PyFrame_GetCode(frame);
-            _PyExecutorObject *executor = code->co_executors->executors[oparg & 255];
-            assert(executor->vm_data.index == INSTR_OFFSET() - 1);
-            assert(executor->vm_data.code == code);
-            assert(executor->vm_data.valid);
-            assert(tstate->previous_executor == NULL);
-            /* If the eval breaker is set then stay in tier 1.
-             * This avoids any potentially infinite loops
-             * involving _RESUME_CHECK */
-            if (_Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker) & _PY_EVAL_EVENTS_MASK) {
-                opcode = executor->vm_data.opcode;
-                oparg = (oparg & ~255) | executor->vm_data.oparg;
-                next_instr = this_instr;
-                if (_PyOpcode_Caches[_PyOpcode_Deopt[opcode]]) {
-                    PAUSE_ADAPTIVE_COUNTER(this_instr[1].counter);
-                }
-                DISPATCH_GOTO();
-            }
-            tstate->previous_executor = Py_None;
-            Py_INCREF(executor);
-            GOTO_TIER_TWO(executor);
-            #else
-            Py_FatalError("ENTER_EXECUTOR is not supported in this build");
-            #endif /* _Py_TIER2 */
-        }
 
         replaced op(_POP_JUMP_IF_FALSE, (cond -- )) {
             assert(PyStackRef_BoolCheck(cond));
@@ -4957,12 +4943,10 @@ dummy_func(
         }
 
         tier2 op(_EXIT_TRACE, (exit_p/4 --)) {
-            tstate->previous_executor = (PyObject *)current_executor;
             GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
         }
 
         tier2 op(_CHECK_VALIDITY, (--)) {
-            DEOPT_IF(!current_executor->vm_data.valid);
         }
 
         tier2 pure op(_LOAD_CONST_INLINE, (ptr/4 -- value)) {
@@ -5027,25 +5011,7 @@ dummy_func(
         }
 
         tier2 op(_DYNAMIC_EXIT, (exit_p/4 --)) {
-            tstate->previous_executor = (PyObject *)current_executor;
             GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
-        }
-
-        tier2 op(_START_EXECUTOR, (executor/4 --)) {
-            Py_DECREF(tstate->previous_executor);
-            tstate->previous_executor = NULL;
-#ifndef _Py_JIT
-            current_executor = (_PyExecutorObject*)executor;
-#endif
-            assert(((_PyExecutorObject *)executor)->vm_data.valid);
-        }
-
-        tier2 op(_MAKE_WARM, (--)) {
-            current_executor->vm_data.warm = true;
-            // It's okay if this ends up going negative.
-            if (--tstate->interp->trace_run_counter == 0) {
-                _Py_set_eval_breaker_bit(tstate, _PY_EVAL_JIT_INVALIDATE_COLD_BIT);
-            }
         }
 
         tier2 op(_FATAL_ERROR, (--)) {
@@ -5054,7 +5020,6 @@ dummy_func(
         }
 
         tier2 op(_CHECK_VALIDITY_AND_SET_IP, (instr_ptr/4 --)) {
-            DEOPT_IF(!current_executor->vm_data.valid);
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
         }
 

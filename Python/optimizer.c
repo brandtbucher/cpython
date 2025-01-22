@@ -92,27 +92,14 @@ _Py_SetTier2Optimizer(_PyOptimizerObject *optimizer)
  * If optimized, *executor_ptr contains a new reference to the executor
  */
 int
-_PyOptimizer_Optimize(
-    _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
-    _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr, int chain_depth)
+_PyOptimizer_Optimize(PyCodeObject *code)
 {
-    // TODO
     return 0;
 }
 
 static _PyExecutorObject *
 get_executor_lock_held(PyCodeObject *code, int offset)
 {
-    int code_len = (int)Py_SIZE(code);
-    for (int i = 0 ; i < code_len;) {
-        if (_PyCode_CODE(code)[i].op.code == ENTER_EXECUTOR && i*2 == offset) {
-            int oparg = _PyCode_CODE(code)[i].op.arg;
-            _PyExecutorObject *res = code->co_executors->executors[oparg];
-            Py_INCREF(res);
-            return res;
-        }
-        i += _PyInstruction_GetLength(code, i);
-    }
     PyErr_SetString(PyExc_ValueError, "no executor at given byte offset");
     return NULL;
 }
@@ -136,13 +123,13 @@ is_valid(PyObject *self, PyObject *Py_UNUSED(ignored))
 static PyObject *
 get_opcode(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
-    return PyLong_FromUnsignedLong(((_PyExecutorObject *)self)->vm_data.opcode);
+    Py_RETURN_NONE;
 }
 
 static PyObject *
 get_oparg(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
-    return PyLong_FromUnsignedLong(((_PyExecutorObject *)self)->vm_data.oparg);
+    Py_RETURN_NONE;
 }
 
 ///////////////////// Experimental UOp Optimizer /////////////////////
@@ -465,8 +452,6 @@ translate_bytecode_to_trace(
             PyUnicode_AsUTF8(code->co_filename),
             code->co_firstlineno,
             2 * INSTR_IP(initial_instr, code));
-    ADD_TO_TRACE(_START_EXECUTOR, 0, (uintptr_t)instr, INSTR_IP(instr, code));
-    ADD_TO_TRACE(_MAKE_WARM, 0, 0, 0);
     uint32_t target = 0;
 
     for (;;) {
@@ -495,20 +480,6 @@ translate_bytecode_to_trace(
                 goto done;
             }
         }
-        if (opcode == ENTER_EXECUTOR) {
-            // We have a couple of options here. We *could* peek "underneath"
-            // this executor and continue tracing, which could give us a longer,
-            // more optimizeable trace (at the expense of lots of duplicated
-            // tier two code). Instead, we choose to just end here and stitch to
-            // the other trace, which allows a side-exit traces to rejoin the
-            // "main" trace periodically (and also helps protect us against
-            // pathological behavior where the amount of tier two code explodes
-            // for a medium-length, branchy code path). This seems to work
-            // better in practice, but in the future we could be smarter about
-            // what we do here:
-            goto done;
-        }
-        assert(opcode != ENTER_EXECUTOR && opcode != EXTENDED_ARG);
         if (OPCODE_HAS_NO_SAVE_IP(opcode)) {
             RESERVE_RAW(2, "_CHECK_VALIDITY");
             ADD_TO_TRACE(_CHECK_VALIDITY, 0, 0, target);
@@ -953,9 +924,8 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
             }
         }
         if (opcode == _JUMP_TO_TOP) {
-            assert(buffer[0].opcode == _START_EXECUTOR);
             buffer[i].format = UOP_FORMAT_JUMP;
-            buffer[i].jump_target = 1;
+            buffer[i].jump_target = 0;
         }
     }
     return next_spare;
@@ -1000,7 +970,6 @@ sanity_check(_PyExecutorObject *executor)
     }
     bool ended = false;
     uint32_t i = 0;
-    CHECK(executor->trace[0].opcode == _START_EXECUTOR);
     for (; i < executor->code_size; i++) {
         const _PyUOpInstruction *inst = &executor->trace[i];
         uint16_t opcode = inst->opcode;
@@ -1059,8 +1028,6 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     }
     int next_exit = exit_count-1;
     _PyUOpInstruction *dest = (_PyUOpInstruction *)&executor->trace[length];
-    assert(buffer[0].opcode == _START_EXECUTOR);
-    buffer[0].operand0 = (uint64_t)executor;
     for (int i = length-1; i >= 0; i--) {
         int opcode = buffer[i].opcode;
         dest--;
@@ -1081,7 +1048,6 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     }
     assert(next_exit == -1);
     assert(dest == executor->trace);
-    assert(dest->opcode == _START_EXECUTOR);
     _Py_ExecutorInit(executor, dependencies);
 #ifdef Py_DEBUG
     char *python_lltrace = Py_GETENV("PYTHON_LLTRACE");
@@ -1370,49 +1336,17 @@ _Py_ExecutorInit(_PyExecutorObject *executor, const _PyBloomFilter *dependency_s
 void
 _Py_ExecutorDetach(_PyExecutorObject *executor)
 {
-    PyCodeObject *code = executor->vm_data.code;
-    if (code == NULL) {
-        return;
-    }
-    _Py_CODEUNIT *instruction = &_PyCode_CODE(code)[executor->vm_data.index];
-    assert(instruction->op.code == ENTER_EXECUTOR);
-    int index = instruction->op.arg;
-    assert(code->co_executors->executors[index] == executor);
-    instruction->op.code = executor->vm_data.opcode;
-    instruction->op.arg = executor->vm_data.oparg;
-    executor->vm_data.code = NULL;
-    code->co_executors->executors[index] = NULL;
-    Py_DECREF(executor);
 }
 
 static int
 executor_clear(_PyExecutorObject *executor)
 {
-    if (!executor->vm_data.valid) {
-        return 0;
-    }
-    assert(executor->vm_data.valid == 1);
-    unlink_executor(executor);
-    executor->vm_data.valid = 0;
-    /* It is possible for an executor to form a reference
-     * cycle with itself, so decref'ing a side exit could
-     * free the executor unless we hold a strong reference to it
-     */
-    Py_INCREF(executor);
-    for (uint32_t i = 0; i < executor->exit_count; i++) {
-        executor->exits[i].temperature = initial_unreachable_backoff_counter();
-        Py_CLEAR(executor->exits[i].executor);
-    }
-    _Py_ExecutorDetach(executor);
-    Py_DECREF(executor);
     return 0;
 }
 
 void
 _Py_Executor_DependsOn(_PyExecutorObject *executor, void *obj)
 {
-    assert(executor->vm_data.valid);
-    _Py_BloomFilter_Add(&executor->vm_data.bloom, obj);
 }
 
 /* Invalidate all executors that depend on `obj`
@@ -1536,14 +1470,6 @@ find_line_number(PyCodeObject *code, _PyExecutorObject *executor)
 {
     int code_len = (int)Py_SIZE(code);
     for (int i = 0; i < code_len; i++) {
-        _Py_CODEUNIT *instr = &_PyCode_CODE(code)[i];
-        int opcode = instr->op.code;
-        if (opcode == ENTER_EXECUTOR) {
-            _PyExecutorObject *exec = code->co_executors->executors[instr->op.arg];
-            if (exec == executor) {
-                return PyCode_Addr2Line(code, i*2);
-            }
-        }
         i += _PyOpcode_Caches[_Py_GetBaseCodeUnit(code, i).op.code];
     }
     return -1;

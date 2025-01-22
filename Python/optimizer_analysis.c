@@ -562,13 +562,10 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
      * could error. _CHECK_VALIDITY is needed if the previous
      * instruction could have escaped. */
     int last_set_ip = -1;
-    bool may_have_escaped = true;
+    bool may_have_escaped = false;
     for (int pc = 0; pc < buffer_size; pc++) {
         int opcode = buffer[pc].opcode;
         switch (opcode) {
-            case _START_EXECUTOR:
-                may_have_escaped = false;
-                break;
             case _SET_IP:
                 buffer[pc].opcode = _NOP;
                 last_set_ip = pc;

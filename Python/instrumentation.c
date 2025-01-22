@@ -189,8 +189,7 @@ static inline bool
 is_instrumented(int opcode)
 {
     assert(opcode != 0);
-    assert(opcode != RESERVED);
-    assert(opcode != ENTER_EXECUTOR);
+    assert(opcode != RESERVED);;
     return opcode >= MIN_INSTRUMENTED_OPCODE;
 }
 
@@ -646,14 +645,6 @@ _Py_GetBaseCodeUnit(PyCodeObject *code, int i)
         assert(inst.op.code < MIN_SPECIALIZED_OPCODE);
         return inst;
     }
-    if (opcode == ENTER_EXECUTOR) {
-        _PyExecutorObject *exec = code->co_executors->executors[inst.op.arg];
-        opcode = _PyOpcode_Deopt[exec->vm_data.opcode];
-        inst.op.code = opcode;
-        inst.op.arg = exec->vm_data.oparg;
-        assert(inst.op.code < MIN_SPECIALIZED_OPCODE);
-        return inst;
-    }
     if (opcode == INSTRUMENTED_LINE) {
         opcode = get_original_opcode(code->_co_monitoring->lines, i);
     }
@@ -683,7 +674,6 @@ de_instrument(PyCodeObject *code, _Py_CODEUNIT *bytecode, _PyCoMonitoringData *m
     _Py_CODEUNIT *instr = &bytecode[i];
     uint8_t *opcode_ptr = &instr->op.code;
     int opcode = *opcode_ptr;
-    assert(opcode != ENTER_EXECUTOR);
     if (opcode == INSTRUMENTED_LINE) {
         opcode_ptr = get_original_opcode_ptr(monitoring->lines, i);
         opcode = *opcode_ptr;
@@ -1459,7 +1449,6 @@ initialize_tools(PyCodeObject *code)
     for (int i = 0; i < code_len; i++) {
         _Py_CODEUNIT *instr = &_PyCode_CODE(code)[i];
         int opcode = instr->op.code;
-        assert(opcode != ENTER_EXECUTOR);
         if (opcode == INSTRUMENTED_LINE) {
             opcode = get_original_opcode(code->_co_monitoring->lines, i);
         }
@@ -1814,7 +1803,6 @@ force_instrument_lock_held(PyCodeObject *code, PyInterpreterState *interp)
     }
     /* Insert instrumentation */
     for (int i = code->_co_firsttraceable; i < code_len; i+= _PyInstruction_GetLength(code, i)) {
-        assert(_PyCode_CODE(code)[i].op.code != ENTER_EXECUTOR);
         _Py_CODEUNIT instr = _Py_GetBaseCodeUnit(code, i);
         CHECK(instr.op.code != 0);
         int base_opcode = instr.op.code;
