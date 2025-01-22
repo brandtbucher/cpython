@@ -23,74 +23,6 @@
 
 #define MAX_EXECUTORS_SIZE 256
 
-static bool
-has_space_for_executor(PyCodeObject *code, _Py_CODEUNIT *instr)
-{
-    if (instr->op.code == ENTER_EXECUTOR) {
-        return true;
-    }
-    if (code->co_executors == NULL) {
-        return true;
-    }
-    return code->co_executors->size < MAX_EXECUTORS_SIZE;
-}
-
-static int32_t
-get_index_for_executor(PyCodeObject *code, _Py_CODEUNIT *instr)
-{
-    if (instr->op.code == ENTER_EXECUTOR) {
-        return instr->op.arg;
-    }
-    _PyExecutorArray *old = code->co_executors;
-    int size = 0;
-    int capacity = 0;
-    if (old != NULL) {
-        size = old->size;
-        capacity = old->capacity;
-        assert(size < MAX_EXECUTORS_SIZE);
-    }
-    assert(size <= capacity);
-    if (size == capacity) {
-        /* Array is full. Grow array */
-        int new_capacity = capacity ? capacity * 2 : 4;
-        _PyExecutorArray *new = PyMem_Realloc(
-            old,
-            offsetof(_PyExecutorArray, executors) +
-            new_capacity * sizeof(_PyExecutorObject *));
-        if (new == NULL) {
-            return -1;
-        }
-        new->capacity = new_capacity;
-        new->size = size;
-        code->co_executors = new;
-    }
-    assert(size < code->co_executors->capacity);
-    return size;
-}
-
-static void
-insert_executor(PyCodeObject *code, _Py_CODEUNIT *instr, int index, _PyExecutorObject *executor)
-{
-    Py_INCREF(executor);
-    if (instr->op.code == ENTER_EXECUTOR) {
-        assert(index == instr->op.arg);
-        _Py_ExecutorDetach(code->co_executors->executors[index]);
-    }
-    else {
-        assert(code->co_executors->size == index);
-        assert(code->co_executors->capacity > index);
-        code->co_executors->size++;
-    }
-    executor->vm_data.opcode = instr->op.code;
-    executor->vm_data.oparg = instr->op.arg;
-    executor->vm_data.code = code;
-    executor->vm_data.index = (int)(instr - _PyCode_CODE(code));
-    code->co_executors->executors[index] = executor;
-    assert(index < MAX_EXECUTORS_SIZE);
-    instr->op.code = ENTER_EXECUTOR;
-    instr->op.arg = index;
-}
-
 
 static int
 never_optimize(
@@ -164,44 +96,8 @@ _PyOptimizer_Optimize(
     _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
     _PyStackRef *stack_pointer, _PyExecutorObject **executor_ptr, int chain_depth)
 {
-    // The first executor in a chain and the MAX_CHAIN_DEPTH'th executor *must*
-    // make progress in order to avoid infinite loops or excessively-long
-    // side-exit chains. We can only insert the executor into the bytecode if
-    // this is true, since a deopt won't infinitely re-enter the executor:
-    chain_depth %= MAX_CHAIN_DEPTH;
-    bool progress_needed = chain_depth == 0;
-    PyCodeObject *code = _PyFrame_GetCode(frame);
-    assert(PyCode_Check(code));
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    if (progress_needed && !has_space_for_executor(code, start)) {
-        return 0;
-    }
-    _PyOptimizerObject *opt = interp->optimizer;
-    int err = opt->optimize(opt, frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)), progress_needed);
-    if (err <= 0) {
-        return err;
-    }
-    assert(*executor_ptr != NULL);
-    if (progress_needed) {
-        int index = get_index_for_executor(code, start);
-        if (index < 0) {
-            /* Out of memory. Don't raise and assume that the
-             * error will show up elsewhere.
-             *
-             * If an optimizer has already produced an executor,
-             * it might get confused by the executor disappearing,
-             * but there is not much we can do about that here. */
-            Py_DECREF(*executor_ptr);
-            return 0;
-        }
-        insert_executor(code, start, index, *executor_ptr);
-    }
-    else {
-        (*executor_ptr)->vm_data.code = NULL;
-    }
-    (*executor_ptr)->vm_data.chain_depth = chain_depth;
-    assert((*executor_ptr)->vm_data.valid);
-    return 1;
+    // TODO
+    return 0;
 }
 
 static _PyExecutorObject *

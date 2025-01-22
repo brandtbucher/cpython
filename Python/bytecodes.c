@@ -2800,34 +2800,6 @@ dummy_func(
         tier1 op(_JUMP_BACKWARD, (the_counter/1 --)) {
             assert(oparg <= INSTR_OFFSET());
             JUMPBY(-oparg);
-            #ifdef _Py_TIER2
-            #if ENABLE_SPECIALIZATION
-            _Py_BackoffCounter counter = this_instr[1].counter;
-            if (backoff_counter_triggers(counter) && this_instr->op.code == JUMP_BACKWARD) {
-                _Py_CODEUNIT *start = this_instr;
-                /* Back up over EXTENDED_ARGs so optimizer sees the whole instruction */
-                while (oparg > 255) {
-                    oparg >>= 8;
-                    start--;
-                }
-                _PyExecutorObject *executor;
-                int optimized = _PyOptimizer_Optimize(frame, start, stack_pointer, &executor, 0);
-                if (optimized <= 0) {
-                    this_instr[1].counter = restart_backoff_counter(counter);
-                    ERROR_IF(optimized < 0, error);
-                }
-                else {
-                    this_instr[1].counter = initial_jump_backoff_counter();
-                    assert(tstate->previous_executor == NULL);
-                    tstate->previous_executor = Py_None;
-                    GOTO_TIER_TWO(executor);
-                }
-            }
-            else {
-                ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
-            }
-            #endif  /* ENABLE_SPECIALIZATION */
-            #endif /* _Py_TIER2 */
         }
 
         macro(JUMP_BACKWARD) =
@@ -4985,56 +4957,8 @@ dummy_func(
         }
 
         tier2 op(_EXIT_TRACE, (exit_p/4 --)) {
-            _PyExitData *exit = (_PyExitData *)exit_p;
-            PyCodeObject *code = _PyFrame_GetCode(frame);
-            _Py_CODEUNIT *target = _PyFrame_GetBytecode(frame) + exit->target;
-        #if defined(Py_DEBUG) && !defined(_Py_JIT)
-            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
-            if (frame->lltrace >= 2) {
-                printf("SIDE EXIT: [UOp ");
-                _PyUOpPrint(&next_uop[-1]);
-                printf(", exit %u, temp %d, target %d -> %s]\n",
-                    exit - current_executor->exits, exit->temperature.value_and_backoff,
-                    (int)(target - _PyFrame_GetBytecode(frame)),
-                    _PyOpcode_OpName[target->op.code]);
-            }
-        #endif
-            if (exit->executor && !exit->executor->vm_data.valid) {
-                exit->temperature = initial_temperature_backoff_counter();
-                Py_CLEAR(exit->executor);
-            }
-            if (exit->executor == NULL) {
-                _Py_BackoffCounter temperature = exit->temperature;
-                if (!backoff_counter_triggers(temperature)) {
-                    exit->temperature = advance_backoff_counter(temperature);
-                    tstate->previous_executor = (PyObject *)current_executor;
-                    GOTO_TIER_ONE(target);
-                }
-                _PyExecutorObject *executor;
-                if (target->op.code == ENTER_EXECUTOR) {
-                    executor = code->co_executors->executors[target->op.arg];
-                    Py_INCREF(executor);
-                }
-                else {
-                    int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, chain_depth);
-                    if (optimized <= 0) {
-                        exit->temperature = restart_backoff_counter(temperature);
-                        if (optimized < 0) {
-                            GOTO_UNWIND();
-                        }
-                        tstate->previous_executor = (PyObject *)current_executor;
-                        GOTO_TIER_ONE(target);
-                    }
-                    else {
-                        exit->temperature = initial_temperature_backoff_counter();
-                    }
-                }
-                exit->executor = executor;
-            }
-            Py_INCREF(exit->executor);
             tstate->previous_executor = (PyObject *)current_executor;
-            GOTO_TIER_TWO(exit->executor);
+            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
         }
 
         tier2 op(_CHECK_VALIDITY, (--)) {
@@ -5104,43 +5028,7 @@ dummy_func(
 
         tier2 op(_DYNAMIC_EXIT, (exit_p/4 --)) {
             tstate->previous_executor = (PyObject *)current_executor;
-            _PyExitData *exit = (_PyExitData *)exit_p;
-            _Py_CODEUNIT *target = frame->instr_ptr;
-        #if defined(Py_DEBUG) && !defined(_Py_JIT)
-            OPT_HIST(trace_uop_execution_counter, trace_run_length_hist);
-            if (frame->lltrace >= 2) {
-                printf("DYNAMIC EXIT: [UOp ");
-                _PyUOpPrint(&next_uop[-1]);
-                printf(", exit %u, temp %d, target %d -> %s]\n",
-                    exit - current_executor->exits, exit->temperature.value_and_backoff,
-                    (int)(target - _PyFrame_GetBytecode(frame)),
-                    _PyOpcode_OpName[target->op.code]);
-            }
-        #endif
-            _PyExecutorObject *executor;
-            if (target->op.code == ENTER_EXECUTOR) {
-                PyCodeObject *code = _PyFrame_GetCode(frame);
-                executor = code->co_executors->executors[target->op.arg];
-                Py_INCREF(executor);
-            }
-            else {
-                if (!backoff_counter_triggers(exit->temperature)) {
-                    exit->temperature = advance_backoff_counter(exit->temperature);
-                    GOTO_TIER_ONE(target);
-                }
-                int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
-                if (optimized <= 0) {
-                    exit->temperature = restart_backoff_counter(exit->temperature);
-                    if (optimized < 0) {
-                        GOTO_UNWIND();
-                    }
-                    GOTO_TIER_ONE(target);
-                }
-                else {
-                    exit->temperature = initial_temperature_backoff_counter();
-                }
-            }
-            GOTO_TIER_TWO(executor);
+            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
         }
 
         tier2 op(_START_EXECUTOR, (executor/4 --)) {
