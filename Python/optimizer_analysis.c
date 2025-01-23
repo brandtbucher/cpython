@@ -607,7 +607,7 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 }
                 break;
             }
-            case _JUMP_TO_TOP:
+            case _JUMP:
             case _EXIT_TRACE:
             case _DYNAMIC_EXIT:
                 return pc + 1;

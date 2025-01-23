@@ -2524,8 +2524,7 @@
             break;
         }
 
-        case _JUMP_TO_TOP: {
-            ctx->done = true;
+        case _JUMP: {
             break;
         }
 

@@ -3031,7 +3031,7 @@ dummy_func(
                 }
                 /* iterator ended normally */
                 /* The translator sets the deopt target just past the matching END_FOR */
-                EXIT_IF(true);
+                JUMP_TO_JUMP_TARGET();
             }
             next = PyStackRef_FromPyObjectSteal(next_o);
             // Common case: no jump, leave it to the code generator
@@ -3096,10 +3096,12 @@ dummy_func(
             _PyListIterObject *it = (_PyListIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
             PyListObject *seq = it->it_seq;
-            EXIT_IF(seq == NULL);
+            if (seq == NULL) {
+                JUMP_TO_JUMP_TARGET();
+            }
             if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
                 it->it_index = -1;
-                EXIT_IF(1);
+                JUMP_TO_JUMP_TARGET();
             }
         }
 
@@ -3146,8 +3148,12 @@ dummy_func(
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
             PyTupleObject *seq = it->it_seq;
-            EXIT_IF(seq == NULL);
-            EXIT_IF(it->it_index >= PyTuple_GET_SIZE(seq));
+            if (seq == NULL) {
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (it->it_index >= PyTuple_GET_SIZE(seq)) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op(_ITER_NEXT_TUPLE, (iter -- iter, next)) {
@@ -3186,7 +3192,9 @@ dummy_func(
         op(_GUARD_NOT_EXHAUSTED_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
-            EXIT_IF(r->len <= 0);
+            if (r->len <= 0) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op(_ITER_NEXT_RANGE, (iter -- iter, next)) {
@@ -4892,14 +4900,18 @@ dummy_func(
             int is_true = PyStackRef_IsTrue(flag);
             DEAD(flag);
             SYNC_SP();
-            EXIT_IF(!is_true);
+            if (!is_true) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op (_GUARD_IS_FALSE_POP, (flag -- )) {
             int is_false = PyStackRef_IsFalse(flag);
             DEAD(flag);
             SYNC_SP();
-            EXIT_IF(!is_false);
+            if (!is_false) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op (_GUARD_IS_NONE_POP, (val -- )) {
@@ -4907,19 +4919,23 @@ dummy_func(
             if (!is_none) {
                 PyStackRef_CLOSE(val);
                 SYNC_SP();
-                EXIT_IF(1);
+                JUMP_TO_JUMP_TARGET();
             }
-            DEAD(val);
+            else {
+                DEAD(val);
+            }
         }
 
         op (_GUARD_IS_NOT_NONE_POP, (val -- )) {
             int is_none = PyStackRef_IsNone(val);
             PyStackRef_CLOSE(val);
             SYNC_SP();
-            EXIT_IF(is_none);
+            if (is_none) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
-        op(_JUMP_TO_TOP, (--)) {
+        op(_JUMP, (--)) {
             JUMP_TO_JUMP_TARGET();
         }
 

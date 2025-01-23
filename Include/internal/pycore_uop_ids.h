@@ -176,7 +176,7 @@ extern "C" {
 #define _ITER_NEXT_LIST 406
 #define _ITER_NEXT_RANGE 407
 #define _ITER_NEXT_TUPLE 408
-#define _JUMP_TO_TOP 409
+#define _JUMP 409
 #define _LIST_APPEND LIST_APPEND
 #define _LIST_EXTEND LIST_EXTEND
 #define _LOAD_ATTR 410

@@ -3638,10 +3638,7 @@
                 }
                 /* iterator ended normally */
                 /* The translator sets the deopt target just past the matching END_FOR */
-                if (true) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
             next = PyStackRef_FromPyObjectSteal(next_o);
             // Common case: no jump, leave it to the code generator
@@ -3673,15 +3670,11 @@
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
             PyListObject *seq = it->it_seq;
             if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
                 it->it_index = -1;
-                if (1) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
             break;
         }
@@ -3723,11 +3716,9 @@
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
             PyTupleObject *seq = it->it_seq;
             if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             if (it->it_index >= PyTuple_GET_SIZE(seq)) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -3769,7 +3760,6 @@
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
             if (r->len <= 0) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -5803,7 +5793,6 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             if (!is_true) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -5816,7 +5805,6 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             if (!is_false) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -5830,13 +5818,12 @@
                 PyStackRef_CLOSE(val);
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
-                if (1) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
+            else {
+                stack_pointer += -1;
+                assert(WITHIN_STACK_BOUNDS());
+            }
             break;
         }
 
@@ -5848,13 +5835,12 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             if (is_none) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
         }
 
-        case _JUMP_TO_TOP: {
+        case _JUMP: {
             JUMP_TO_JUMP_TARGET();
             break;
         }

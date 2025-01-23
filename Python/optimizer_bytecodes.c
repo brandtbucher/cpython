@@ -928,10 +928,6 @@ dummy_func(void) {
         self_or_null = sym_new_unknown(ctx);
     }
 
-    op(_JUMP_TO_TOP, (--)) {
-        ctx->done = true;
-    }
-
     op(_EXIT_TRACE, (exit_p/4 --)) {
         (void)exit_p;
         ctx->done = true;
