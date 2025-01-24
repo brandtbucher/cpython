@@ -2546,9 +2546,6 @@
         }
 
         case _EXIT_TRACE: {
-            PyObject *exit_p = (PyObject *)this_instr->operand0;
-            (void)exit_p;
-            ctx->done = true;
             break;
         }
 

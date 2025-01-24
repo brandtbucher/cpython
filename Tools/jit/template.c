@@ -53,8 +53,10 @@
 #define GOTO_TIER_TWO() \
 do {  \
     OPT_STAT_INC(traces_executed);                \
+    PyCodeObject *code = _PyFrame_GetCode(frame); \
+    jit_func_preserve_none jump = (jit_func_preserve_none)code->_jit_offsets[frame->instr_ptr - _PyCode_CODE(code)]; \
     __attribute__((musttail))                     \
-    return ((jit_func_preserve_none)(_PyFrame_GetCode(frame)->_jit_code))(frame, stack_pointer, tstate); \
+    return jump(frame, stack_pointer, tstate); \
 } while (0)
 
 #undef GOTO_TIER_ONE
@@ -65,8 +67,9 @@ do {  \
 } while (0)
 
 #undef LOAD_IP
-#define LOAD_IP(UNUSED) \
+#define LOAD_IP(OFFSET) \
     do {                \
+        frame->instr_ptr += OFFSET; \
     } while (0)
 
 #define PATCH_VALUE(TYPE, NAME, ALIAS)  \
@@ -91,9 +94,12 @@ do {                                                         \
 
 #define TIER_TWO 2
 
+extern const char *_PyUOpName(int index);
+
 __attribute__((preserve_none)) _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
+    assert(!frame->lltrace);
     // Locals that the instruction implementations expect to exist:
     int oparg;
     int uopcode = _JIT_OPCODE;
@@ -114,6 +120,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
     uint64_t _operand1 = ((uint64_t)_operand1_hi << 32) | _operand1_lo;
 #endif
     PATCH_VALUE(uint32_t, _target, _JIT_TARGET)
+    // printf("XXX: %s\n", _PyUOpName(uopcode));
 
     OPT_STAT_INC(uops_executed);
     UOP_STAT_INC(uopcode, execution_count);
@@ -128,6 +135,7 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
     // Labels that the instruction implementations expect to exist:
 
 error_tier_two:
+    frame->instr_ptr = _PyCode_CODE(_PyFrame_GetCode(frame)) + _target;
     GOTO_TIER_ONE(NULL);
 exit_to_tier1:
     GOTO_TIER_ONE(_PyCode_CODE(_PyFrame_GetCode(frame)) + _target);

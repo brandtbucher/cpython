@@ -26,9 +26,6 @@
 
         case _CHECK_PERIODIC_IF_NOT_YIELD_FROM: {
             oparg = CURRENT_OPARG();
-            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
-                GOTO_TIER_TWO();
-            }
             if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                 _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                 QSBR_QUIESCENT_STATE(tstate); \
@@ -1452,10 +1449,8 @@
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
             #if TIER_ONE
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            if (code->_jit_code == NULL &&
-                code->_jit_size &&
-                --code->_jit_size == 0)
-            {
+            if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
+                assert(code->_jit_code == NULL);
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 int err = _PyOptimizer_Optimize(code);
                 stack_pointer = _PyFrame_GetStackPointer(frame);
@@ -1481,6 +1476,9 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
             break;
         }
 
@@ -1631,6 +1629,9 @@
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
             break;
         }
 
@@ -4493,6 +4494,9 @@
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
             break;
         }
 
@@ -5628,6 +5632,9 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
             break;
         }
 
@@ -5877,10 +5884,7 @@
         }
 
         case _EXIT_TRACE: {
-            PyObject *exit_p = (PyObject *)CURRENT_OPERAND0();
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            EXIT_TO_TIER1();
             break;
         }
 
@@ -6016,10 +6020,7 @@
         }
 
         case _DYNAMIC_EXIT: {
-            PyObject *exit_p = (PyObject *)CURRENT_OPERAND0();
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            EXIT_TO_TIER1_DYNAMIC();
             break;
         }
 
@@ -6042,12 +6043,8 @@
 
         case _ERROR_POP_N: {
             oparg = CURRENT_OPARG();
-            uint32_t target = (uint32_t)CURRENT_OPERAND0();
             stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            frame->instr_ptr = _PyFrame_GetBytecode(frame) + target;
-            stack_pointer = _PyFrame_GetStackPointer(frame);
             GOTO_UNWIND();
             break;
         }

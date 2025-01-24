@@ -3104,6 +3104,7 @@ const struct _PyCode8 _Py_InitCleanup = {
     ._co_firsttraceable = 4,
     ._jit_size = 0,  // XXX
     ._jit_code = NULL,
+    ._jit_offsets = NULL,
     .co_stacksize = 2,
     .co_framesize = 2 + FRAME_SPECIALS_SIZE,
 #ifdef Py_GIL_DISABLED

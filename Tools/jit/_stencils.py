@@ -205,6 +205,8 @@ class Stencil:
 
     def remove_jump(self, *, alignment: int = 1) -> None:
         """Remove a zero-length continuation jump, if it exists."""
+        if not self.holes:
+            return
         hole = max(self.holes, key=lambda hole: hole.offset)
         match hole:
             case Hole(

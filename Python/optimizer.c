@@ -142,12 +142,16 @@ do {                                                \
 
 #define SIZE(OPCODE) (1 + _PyOpcode_Caches[_PyOpcode_Deopt[(OPCODE)]])
 
-size_t min = SIZE_MAX;
-size_t max = 0;
+// size_t min = SIZE_MAX;
+// size_t max = 0;
 
 int
 _PyOptimizer_Optimize(PyCodeObject *code)
 {
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    if (interp->optimizer == NULL || interp->optimizer == &_PyOptimizer_Default) {
+        return 0;
+    }
     _Py_CODEUNIT *instructions = _PyCode_CODE(code);
     size_t j1 = Py_SIZE(code);
     ssize_t *offsets = PyMem_Malloc(sizeof(ssize_t) * j1);
@@ -155,14 +159,15 @@ _PyOptimizer_Optimize(PyCodeObject *code)
         return -1;
     }
     memset(offsets, -1, sizeof(ssize_t) * j1);
-    size_t j2 = 1 << 0;  // XXX
+    size_t j2 = 1 << 8;  // XXX
     _PyUOpInstruction *trace = PyMem_Malloc(sizeof(_PyUOpInstruction) * j2);
     if (trace == NULL) {
         goto error;
     }
-    size_t i1 = code->_co_firsttraceable;
+    size_t i1 = 0;
     size_t i2 = 0;
     while (i1 < j1) {
+        size_t start = i1;
         offsets[i1] = i2;
         uint8_t opcode = instructions[i1].op.code;
         uint16_t oparg = instructions[i1].op.arg;
@@ -170,7 +175,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
             opcode = instructions[++i1].op.code;
             oparg = (oparg << 8) | instructions[i1].op.arg;
             if (opcode == EXTENDED_ARG) {
-                ADD_UOP_TARGET(_EXIT_TRACE, 0, 0, i1);
+                ADD_UOP_TARGET(_EXIT_TRACE, 0, 0, start);
                 while (opcode == EXTENDED_ARG) {
                     opcode = instructions[++i1].op.code;
                 }
@@ -178,11 +183,11 @@ _PyOptimizer_Optimize(PyCodeObject *code)
             }
         }
         if (!OPCODE_HAS_NO_SAVE_IP(opcode)) {
-            ADD_UOP_TARGET(_SET_IP, 0, (uintptr_t)&instructions[i1], i1);
+            ADD_UOP_TARGET(_SET_IP, 0, (uintptr_t)&instructions[i1], start);
         }
         switch (opcode) {
             case JUMP_BACKWARD:
-                ADD_UOP_TARGET(_CHECK_PERIODIC, 0, 0, i1);
+                ADD_UOP_TARGET(_CHECK_PERIODIC, 0, 0, start);
                 ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) - oparg);
                 break;
             case JUMP_BACKWARD_NO_INTERRUPT:
@@ -192,7 +197,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                 ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) + oparg);
                 break;
             case RESUME:
-                ADD_UOP_TARGET(_TIER2_RESUME_CHECK, 0, 0, i1);
+                ADD_UOP_TARGET(_TIER2_RESUME_CHECK, 0, 0, start);
                 break;
             default:
                 ;
@@ -228,7 +233,18 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                                 oparg = offset;
                                 break;
                             case OPARG_REPLACED:
-                                ADD_UOP_JUMP(_PyUOp_Replacements[uop], oparg, operand, i1 + SIZE(opcode) + oparg);
+                                uop = _PyUOp_Replacements[uop];
+                                uint32_t target = i1 + SIZE(opcode) + oparg;
+                                if (uop == _FOR_ITER_TIER_TWO ||
+                                    uop == _GUARD_NOT_EXHAUSTED_LIST ||
+                                    uop == _GUARD_NOT_EXHAUSTED_RANGE ||
+                                    uop == _GUARD_NOT_EXHAUSTED_TUPLE)
+                                {
+                                    assert(instructions[target].op.code == END_FOR);
+                                    target++;
+                                    assert(instructions[target].op.code == POP_ITER);
+                                }
+                                ADD_UOP_JUMP(uop, oparg, operand, target);
                                 goto skip;
                             default:
                                 Py_FatalError("garbled expansion");
@@ -239,7 +255,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                             assert(next_instr.op.code == STORE_FAST);
                             operand = next_instr.op.arg;
                         }
-                        ADD_UOP_TARGET(uop, oparg, operand, i1);
+                        ADD_UOP_TARGET(uop, oparg, operand, start);
                     skip:
                     }
                     int16_t last_op = expansion->uops[expansion->nuops - 1].uop;
@@ -252,7 +268,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                     }
                 }
                 else {
-                    ADD_UOP_TARGET(_EXIT_TRACE, 0, 0, i1);
+                    ADD_UOP_TARGET(_EXIT_TRACE, 0, 0, start);
                 }
                 break;
         }
@@ -278,23 +294,25 @@ _PyOptimizer_Optimize(PyCodeObject *code)
     int32_t current_error_target = -1;
     int32_t current_popped = -1;
     int32_t current_exit_op = -1;
+    // Can't do this because it messes up offsets:
     /* Leaving in NOPs slows down the interpreter and messes up the stats */
-    _PyUOpInstruction *new = &trace[0];
-    for (size_t i = 0; i < i2; i++) {
-        _PyUOpInstruction *uop = &trace[i];
-        if (uop->opcode != _NOP) {
-            if (new != uop) {
-                *new = *uop;
-            }
-            new++;
-        }
-    }
-    i2 = new - trace;
+    // _PyUOpInstruction *new = &trace[0];
+    // for (size_t i = 0; i < i2; i++) {
+    //     _PyUOpInstruction *uop = &trace[i];
+    //     if (uop->opcode != _NOP) {
+    //         if (new != uop) {
+    //             *new = *uop;
+    //         }
+    //         new++;
+    //     }
+    // }
+    // i2 = new - trace;
     for (size_t i = 0; i < i2; i++) {
         int opcode = trace[i].opcode;
         if (trace[i].format == UOP_FORMAT_JUMP) {
+            assert(0 <= offsets[trace[i].jump_target]);
             trace[i].jump_target = offsets[trace[i].jump_target];
-            continue;
+            continue;  // XXX: In theory these could have deopts and errors
         }
         int32_t target = (int32_t)uop_get_target(&trace[i]);
         if (_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)) {
@@ -320,12 +338,14 @@ _PyOptimizer_Optimize(PyCodeObject *code)
             trace[i].error_target = current_error;
         }
     }
-    min = Py_MIN(min, i2);
-    max = Py_MAX(max, i2);
+    // min = Py_MIN(min, i2);
+    // max = Py_MAX(max, i2);
     // if (i2 == min || i2 == max) {
     //     printf("XXX: %zu-%zu\n", min, max);
     // }
     // printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+    // PyObject_Print((PyObject *)code, stdout, 0);
+    // printf("\n");
     // for (size_t i = 0; i < i2; i++) {
     //     printf("%ld: ", i);
     //     _PyUOpPrint(&trace[i]);
@@ -335,7 +355,13 @@ _PyOptimizer_Optimize(PyCodeObject *code)
     if (_PyJIT_Compile(code, trace, i2)) {
         goto error;
     }
-    PyMem_Free(offsets);
+    // XXX: The JIT should manage this:
+    void *uop_offsets = code->_jit_offsets;
+    for (size_t i = 0; i < i1; i++) {
+        offsets[i] = (uintptr_t)code->_jit_offsets[offsets[i]];
+    }
+    code->_jit_offsets = (void **)offsets;
+    PyMem_Free(uop_offsets);
     PyMem_Free(trace);
     return 0;
 error:
@@ -390,7 +416,7 @@ uop_dealloc(_PyExecutorObject *self) {
     assert(self->vm_data.code == NULL);
     unlink_executor(self);
 #ifdef _Py_JIT
-    _PyJIT_Free(self);
+    // _PyJIT_Free(self);
 #endif
     PyObject_GC_Del(self);
 }
@@ -1279,10 +1305,10 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
     // This is initialized to true so we can prevent the executor
     // from being immediately detected as cold and invalidated.
     executor->vm_data.warm = true;
-    if (_PyJIT_Compile(executor, executor->trace, length)) {
-        Py_DECREF(executor);
-        return NULL;
-    }
+    // if (_PyJIT_Compile(executor, executor->trace, length)) {
+    //     Py_DECREF(executor);
+    //     return NULL;
+    // }
 #endif
     _PyObject_GC_TRACK(executor);
     return executor;

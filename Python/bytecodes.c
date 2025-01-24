@@ -161,9 +161,6 @@ dummy_func(
         }
 
         op(_CHECK_PERIODIC_IF_NOT_YIELD_FROM, (--)) {
-            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
-                GOTO_TIER_TWO();
-            }
             if ((oparg & RESUME_OPARG_LOCATION_MASK) < RESUME_AFTER_YIELD_FROM) {
                 _Py_CHECK_EMSCRIPTEN_SIGNALS_PERIODICALLY();
                 QSBR_QUIESCENT_STATE(tstate); \
@@ -1111,10 +1108,8 @@ dummy_func(
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
         #if TIER_ONE
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            if (code->_jit_code == NULL &&
-                code->_jit_size &&
-                --code->_jit_size == 0)
-            {
+            if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
+                assert(code->_jit_code == NULL);
                 int err = _PyOptimizer_Optimize(code);
                 if (err < 0) {
                     ERROR_NO_POP();
@@ -1134,6 +1129,10 @@ dummy_func(
             LOAD_IP(frame->return_offset);
             res = temp;
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
         }
 
         tier1 op(_RETURN_VALUE_EVENT, (val -- val)) {
@@ -1319,6 +1318,10 @@ dummy_func(
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
             value = temp;
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
         }
 
         tier1 op(_YIELD_VALUE_EVENT, (val -- val)) {
@@ -2842,7 +2845,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_IsFalse(cond);
             DEAD(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
             JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
         }
 
@@ -2850,7 +2852,6 @@ dummy_func(
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_IsTrue(cond);
             DEAD(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
             JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
         }
 
@@ -3747,6 +3748,9 @@ dummy_func(
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
         }
 
         macro(CALL_BOUND_METHOD_EXACT_ARGS) =
@@ -4682,6 +4686,10 @@ dummy_func(
             RELOAD_STACK();
             res = PyStackRef_FromPyObjectSteal((PyObject *)gen);
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                GOTO_TIER_TWO();
+            }
         }
 
         inst(BUILD_SLICE, (args[oparg] -- slice)) {
@@ -4838,7 +4846,6 @@ dummy_func(
             _PyStackRef cond = POP();
             assert(PyStackRef_BoolCheck(cond));
             int jump = PyStackRef_IsTrue(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -4848,7 +4855,6 @@ dummy_func(
             _PyStackRef cond = POP();
             assert(PyStackRef_BoolCheck(cond));
             int jump = PyStackRef_IsFalse(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -4857,7 +4863,6 @@ dummy_func(
         inst(INSTRUMENTED_POP_JUMP_IF_NONE, (unused/1 -- )) {
             _PyStackRef value_stackref = POP();
             int jump = PyStackRef_IsNone(value_stackref);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -4869,7 +4874,6 @@ dummy_func(
         inst(INSTRUMENTED_POP_JUMP_IF_NOT_NONE, (unused/1 -- )) {
             _PyStackRef value_stackref = POP();
             int jump = !PyStackRef_IsNone(value_stackref);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 PyStackRef_CLOSE(value_stackref);
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
@@ -4958,8 +4962,8 @@ dummy_func(
             #endif
         }
 
-        tier2 op(_EXIT_TRACE, (exit_p/4 --)) {
-            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
+        tier2 op(_EXIT_TRACE, (--)) {
+            EXIT_TO_TIER1();
         }
 
         tier2 op(_CHECK_VALIDITY, (--)) {
@@ -5026,8 +5030,8 @@ dummy_func(
             DECREF_INPUTS();
         }
 
-        tier2 op(_DYNAMIC_EXIT, (exit_p/4 --)) {
-            GOTO_TIER_ONE(_PyFrame_GetBytecode(frame) + ((_PyExitData *)exit_p)->target);
+        tier2 op(_DYNAMIC_EXIT, (--)) {
+            EXIT_TO_TIER1_DYNAMIC();
         }
 
         tier2 op(_FATAL_ERROR, (--)) {
@@ -5043,8 +5047,7 @@ dummy_func(
             EXIT_TO_TIER1();
         }
 
-        tier2 op(_ERROR_POP_N, (target/2, unused[oparg] --)) {
-            frame->instr_ptr = _PyFrame_GetBytecode(frame) + target;
+        tier2 op(_ERROR_POP_N, (unused[oparg] --)) {
             SYNC_SP();
             GOTO_UNWIND();
         }

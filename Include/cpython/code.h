@@ -156,6 +156,7 @@ typedef struct {
     int _co_firsttraceable;       /* index of first traceable instruction */   \
     size_t _jit_size;  \
     void *_jit_code;  \
+    void **_jit_offsets;  \
     /* Scratch space for extra data relating to the code object.               \
        Type is a void* to keep the format private in codeobject.c to force     \
        people to go through the proper APIs. */                                \

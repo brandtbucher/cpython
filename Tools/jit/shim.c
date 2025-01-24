@@ -10,7 +10,8 @@ _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
     // Note that this is *not* a tail call:
-    PyAPI_DATA(void) _JIT_CONTINUE;
-    _Py_CODEUNIT *target = ((jit_func_preserve_none)&_JIT_CONTINUE)(frame, stack_pointer, tstate);
-    return target;
+    PyCodeObject *code = _PyFrame_GetCode(frame);
+    Py_INCREF(code);  // XXX: LEAK
+    jit_func_preserve_none jump = (jit_func_preserve_none)code->_jit_offsets[frame->instr_ptr - _PyCode_CODE(code)];
+    return jump(frame, stack_pointer, tstate);
 }

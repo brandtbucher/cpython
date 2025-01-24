@@ -928,9 +928,7 @@ dummy_func(void) {
         self_or_null = sym_new_unknown(ctx);
     }
 
-    op(_EXIT_TRACE, (exit_p/4 --)) {
-        (void)exit_p;
-        ctx->done = true;
+    op(_EXIT_TRACE, (--)) {
     }
 
     op(_GUARD_GLOBALS_VERSION_PUSH_KEYS, (version/1 -- globals_keys)) {

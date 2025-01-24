@@ -9,6 +9,7 @@
 #include "pycore_index_pool.h"     // _PyIndexPool
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #include "pycore_interp.h"        // PyInterpreterState.co_extra_freefuncs
+#include "pycore_jit.h"           // _PyJIT_Free
 #include "pycore_object.h"        // _PyObject_SetDeferredRefcount
 #include "pycore_object_stack.h"
 #include "pycore_opcode_metadata.h" // _PyOpcode_Deopt, _PyOpcode_Caches
@@ -544,6 +545,7 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     co->_co_firsttraceable = entry_point;
     co->_jit_size = 1 << 4;  // XXX
     co->_jit_code = NULL;
+    co->_jit_offsets = NULL;
 #ifdef Py_GIL_DISABLED
     _PyCode_Quicken(_PyCode_CODE(co), Py_SIZE(co), co->co_consts,
                     interp->config.tlbc_enabled);
@@ -1939,6 +1941,11 @@ code_dealloc(PyObject *self)
         }
     }
     PyMem_Free(co->co_tlbc);
+#endif
+#ifdef _Py_JIT
+    if (co->_jit_code) {
+        _PyJIT_Free(co);
+    }
 #endif
     PyObject_Free(co);
 }

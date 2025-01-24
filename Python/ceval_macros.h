@@ -375,6 +375,7 @@ _PyFrame_SetStackPointer(frame, stack_pointer)
 #define GOTO_TIER_TWO()                        \
 do {                                                   \
     OPT_STAT_INC(traces_executed);                     \
+    frame->instr_ptr = next_instr;                     \
     jit_func jitted = _PyFrame_GetCode(frame)->_jit_code;            \
     next_instr = jitted(frame, stack_pointer, tstate); \
     frame = tstate->current_frame;                     \

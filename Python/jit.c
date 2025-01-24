@@ -18,6 +18,8 @@
 #include "pycore_sliceobject.h"
 #include "pycore_jit.h"
 
+extern const char *_PyUOpName(int index);
+
 // Memory management stuff: ////////////////////////////////////////////////////
 
 #ifndef MS_WINDOWS
@@ -134,7 +136,7 @@ typedef struct {
 
 typedef struct {
     trampoline_state trampolines;
-    uintptr_t instruction_starts[UOP_MAX_TRACE_LENGTH];
+    uintptr_t *instruction_starts;
 } jit_state;
 
 // Warning! AArch64 requires you to get your hands dirty. These are your gloves:
@@ -479,6 +481,10 @@ _PyJIT_Compile(PyCodeObject *co, const _PyUOpInstruction trace[], size_t length)
     size_t code_size = 0;
     size_t data_size = 0;
     jit_state state = {0};
+    state.instruction_starts = PyMem_Malloc(sizeof(uintptr_t) * length);
+    if (state.instruction_starts == NULL) {
+        return -1;
+    }
     group = &shim;
     code_size += group->code_size;
     data_size += group->data_size;
@@ -549,6 +555,7 @@ _PyJIT_Compile(PyCodeObject *co, const _PyUOpInstruction trace[], size_t length)
     }
     co->_jit_code = memory;
     co->_jit_size = total_size;
+    co->_jit_offsets = (void **)state.instruction_starts;
     return 0;
 }
 
@@ -560,6 +567,8 @@ _PyJIT_Free(PyCodeObject *co)
     if (memory) {
         co->_jit_code = NULL;
         co->_jit_size = 0;
+        PyMem_Free(co->_jit_offsets);
+        co->_jit_offsets = NULL;
         if (jit_free(memory, size)) {
             PyErr_WriteUnraisable(NULL);
         }
