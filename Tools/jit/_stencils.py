@@ -84,9 +84,8 @@ _PATCH_FUNCS = {
     "R_AARCH64_MOVW_UABS_G3": "patch_aarch64_16d",
     # x86_64-unknown-linux-gnu:
     "R_X86_64_64": "patch_64",
-    "R_X86_64_GOTPCREL": "patch_32r",
     "R_X86_64_GOTPCRELX": "patch_x86_64_32rx",
-    "R_X86_64_PC32": "patch_32r",
+    "R_X86_64_PLT32": "patch_x86_64_32rx",
     "R_X86_64_REX_GOTPCRELX": "patch_x86_64_32rx",
     # x86_64-apple-darwin:
     "X86_64_RELOC_BRANCH": "patch_32r",
@@ -241,15 +240,15 @@ class Stencil:
                 jump = b"\x00\x00\x00\x14"
             case Hole(
                 offset=offset,
-                kind="R_X86_64_GOTPCRELX",
-                value=HoleValue.GOT,
-                symbol="_JIT_CONTINUE",
+                kind="R_X86_64_PLT32",
+                value=HoleValue.CONTINUE,
+                symbol=None,
                 addend=addend,
             ) as hole:
                 assert _signed(addend) == -4
-                # jmp qword ptr [rip]
-                jump = b"\xFF\x25\x00\x00\x00\x00"
-                offset -= 2
+                # jmp 5
+                jump = b"\xE9\x00\x00\x00\x00"
+                offset -= 1
             case _:
                 return
         if self.body[offset:] == jump and offset % alignment == 0:

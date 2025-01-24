@@ -133,7 +133,7 @@ class _Target(typing.Generic[_S, _R]):
             # Emit relaxable 64-bit calls/jumps, so we don't have to worry about
             # about emitting in-range trampolines for out-of-range targets.
             # We can probably remove this and emit trampolines in the future:
-            "-fno-plt",
+            "-fno-plt",  # XXX
             # Don't call stack-smashing canaries that we can't find or patch:
             "-fno-stack-protector",
             "-std=c11",
@@ -513,7 +513,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-fms-runtime-lib=dll"]
         target = _COFF(host, args=args)
     elif re.fullmatch(r"x86_64-.*-linux-gnu", host):
-        args = ["-fpic"]
+        args = ["-fno-pic", "-mcmodel=medium", "-mlarge-data-threshold=0"]
         target = _ELF(host, args=args)
     else:
         raise ValueError(host)
