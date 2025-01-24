@@ -117,27 +117,27 @@ do {                                                                       \
     assert(i2 < j2);                                                       \
 } while (0)
 
-#define ADD_UOP_TARGET(OPCODE, OPARG, OPERAND, TARGET)  \
-do {                                                    \
-    MAYBE_RESIZE();                                     \
-    _PyUOpInstruction *_uop = &trace[i2++];             \
-    _uop->opcode = (OPCODE);                            \
-    _uop->oparg = (OPARG);                              \
-    _uop->operand0 = (OPERAND);                         \
-    _uop->format = UOP_FORMAT_TARGET;                   \
-    _uop->target = (TARGET);                            \
+#define ADD_UOP_TARGET(OPCODE, OPARG, OPERAND, TARGET) \
+do {                                                   \
+    MAYBE_RESIZE();                                    \
+    _PyUOpInstruction *_uop = &trace[i2++];            \
+    _uop->opcode = (OPCODE);                           \
+    _uop->oparg = (OPARG);                             \
+    _uop->operand0 = (OPERAND);                        \
+    _uop->format = UOP_FORMAT_TARGET;                  \
+    _uop->target = (TARGET);                           \
 } while (0)
 
-#define ADD_UOP_JUMP(OPCODE, OPARG, OPERAND, JUMP)  \
-do {                                                \
-    MAYBE_RESIZE();                                 \
-    _PyUOpInstruction *_uop = &trace[i2++];         \
-    _uop->opcode = (OPCODE);                        \
-    _uop->oparg = (OPARG);                          \
-    _uop->operand0 = (OPERAND);                     \
-    _uop->format = UOP_FORMAT_JUMP;                 \
-    _uop->jump_target = (JUMP);                     \
-    _uop->error_target = 0;                         \
+#define ADD_UOP_JUMP(OPCODE, OPARG, OPERAND, JUMP, ERROR) \
+do {                                                      \
+    MAYBE_RESIZE();                                       \
+    _PyUOpInstruction *_uop = &trace[i2++];               \
+    _uop->opcode = (OPCODE);                              \
+    _uop->oparg = (OPARG);                                \
+    _uop->operand0 = (OPERAND);                           \
+    _uop->format = UOP_FORMAT_JUMP;                       \
+    _uop->jump_target = (JUMP);                           \
+    _uop->error_target = (ERROR);                         \
 } while (0)
 
 #define SIZE(OPCODE) (1 + _PyOpcode_Caches[_PyOpcode_Deopt[(OPCODE)]])
@@ -183,21 +183,18 @@ _PyOptimizer_Optimize(PyCodeObject *code)
             }
         }
         if (!OPCODE_HAS_NO_SAVE_IP(opcode)) {
-            ADD_UOP_TARGET(_SET_IP, 0, (uintptr_t)&instructions[i1], start);
+            ADD_UOP_TARGET(_CHECK_VALIDITY_AND_SET_IP, 0, (uintptr_t)&instructions[i1], start);
         }
         switch (opcode) {
             case JUMP_BACKWARD:
                 ADD_UOP_TARGET(_CHECK_PERIODIC, 0, 0, start);
-                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) - oparg);
+                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) - oparg, start);
                 break;
             case JUMP_BACKWARD_NO_INTERRUPT:
-                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) - oparg);
+                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) - oparg, start);
                 break;
             case JUMP_FORWARD:
-                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) + oparg);
-                break;
-            case RESUME:
-                ADD_UOP_TARGET(_TIER2_RESUME_CHECK, 0, 0, start);
+                ADD_UOP_JUMP(_JUMP, 0, 0, i1 + SIZE(opcode) + oparg, start);
                 break;
             default:
                 ;
@@ -244,7 +241,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                                     target++;
                                     assert(instructions[target].op.code == POP_ITER);
                                 }
-                                ADD_UOP_JUMP(uop, oparg, operand, target);
+                                ADD_UOP_JUMP(uop, oparg, operand, target, start);
                                 goto skip;
                             default:
                                 Py_FatalError("garbled expansion");
@@ -273,16 +270,17 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                 break;
         }
     loop:
+        if (MIN_INSTRUMENTED_OPCODE <= opcode) {
+            goto done;
+        }
         i1 += SIZE(opcode);
         if (opcode == BINARY_OP_INPLACE_ADD_UNICODE) {
             assert(instructions[i1].op.code == STORE_FAST);
-            assert(_PyOpcode_Caches[_PyOpcode_Deopt[STORE_FAST]] == 0);
-            i1++;
+            i1 += SIZE(STORE_FAST);
         }
         if (opcode == CALL_LIST_APPEND) {
             assert(instructions[i1].op.code == POP_TOP);
-            assert(_PyOpcode_Caches[_PyOpcode_Deopt[POP_TOP]] == 0);
-            i1++;
+            i1 += SIZE(POP_TOP);
         }
     }
     assert(i1 == j1);
@@ -309,22 +307,26 @@ _PyOptimizer_Optimize(PyCodeObject *code)
     // i2 = new - trace;
     for (size_t i = 0; i < i2; i++) {
         int opcode = trace[i].opcode;
+        int32_t target;
         if (trace[i].format == UOP_FORMAT_JUMP) {
+            target = (int32_t)uop_get_error_target(&trace[i]);
+            assert(!(_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)));
             assert(0 <= offsets[trace[i].jump_target]);
             trace[i].jump_target = offsets[trace[i].jump_target];
-            continue;  // XXX: In theory these could have deopts and errors
         }
-        int32_t target = (int32_t)uop_get_target(&trace[i]);
-        if (_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)) {
-            uint16_t exit_op = (_PyUop_Flags[opcode] & HAS_EXIT_FLAG) ? _EXIT_TRACE : _DEOPT;
-            if (target != current_jump_target || current_exit_op != exit_op) {
-                current_exit_op = exit_op;
-                current_jump_target = target;
-                current_jump = i2;
-                ADD_UOP_TARGET(exit_op, 0, 0, target);
+        else {
+            target = (int32_t)uop_get_target(&trace[i]);
+            if (_PyUop_Flags[opcode] & (HAS_EXIT_FLAG | HAS_DEOPT_FLAG)) {
+                uint16_t exit_op = (_PyUop_Flags[opcode] & HAS_EXIT_FLAG) ? _EXIT_TRACE : _DEOPT;
+                if (target != current_jump_target || current_exit_op != exit_op) {
+                    current_exit_op = exit_op;
+                    current_jump_target = target;
+                    current_jump = i2;
+                    ADD_UOP_TARGET(exit_op, 0, 0, target);
+                }
+                trace[i].format = UOP_FORMAT_JUMP;
+                trace[i].jump_target = current_jump;
             }
-            trace[i].format = UOP_FORMAT_JUMP;
-            trace[i].jump_target = current_jump;
         }
         if (_PyUop_Flags[opcode] & HAS_ERROR_FLAG) {
             int popped = (_PyUop_Flags[opcode] & HAS_ERROR_NO_POP_FLAG) ? 0 : _PyUop_num_popped(opcode, trace[i].oparg);
@@ -361,7 +363,9 @@ _PyOptimizer_Optimize(PyCodeObject *code)
         offsets[i] = (uintptr_t)code->_jit_offsets[offsets[i]];
     }
     code->_jit_offsets = (void **)offsets;
-    PyMem_Free(uop_offsets);
+    offsets = uop_offsets;
+done:
+    PyMem_Free(offsets);
     PyMem_Free(trace);
     return 0;
 error:
@@ -1494,16 +1498,16 @@ _Py_BloomFilter_Add(_PyBloomFilter *bloom, void *ptr)
     }
 }
 
-static bool
-bloom_filter_may_contain(_PyBloomFilter *bloom, _PyBloomFilter *hashes)
-{
-    for (int i = 0; i < _Py_BLOOM_FILTER_WORDS; i++) {
-        if ((bloom->bits[i] & hashes->bits[i]) != hashes->bits[i]) {
-            return false;
-        }
-    }
-    return true;
-}
+// static bool
+// bloom_filter_may_contain(_PyBloomFilter *bloom, _PyBloomFilter *hashes)
+// {
+//     for (int i = 0; i < _Py_BLOOM_FILTER_WORDS; i++) {
+//         if ((bloom->bits[i] & hashes->bits[i]) != hashes->bits[i]) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
 static void
 link_executor(_PyExecutorObject *executor)
@@ -1586,62 +1590,19 @@ _Py_Executor_DependsOn(_PyExecutorObject *executor, void *obj)
  * May cause other executors to be invalidated as well
  */
 void
-_Py_Executors_InvalidateDependency(PyInterpreterState *interp, void *obj, int is_invalidation)
+_Py_Executors_InvalidateDependency(PyInterpreterState *interp, PyObject *obj, int is_invalidation)
 {
-    _PyBloomFilter obj_filter;
-    _Py_BloomFilter_Init(&obj_filter);
-    _Py_BloomFilter_Add(&obj_filter, obj);
-    /* Walk the list of executors */
-    /* TO DO -- Use a tree to avoid traversing as many objects */
-    PyObject *invalidate = PyList_New(0);
-    if (invalidate == NULL) {
-        goto error;
+    if (PyCode_Check(obj) && ((PyCodeObject *)obj)->_jit_valid) {
+        ((PyCodeObject *)obj)->_jit_valid = false;
     }
-    /* Clearing an executor can deallocate others, so we need to make a list of
-     * executors to invalidate first */
-    for (_PyExecutorObject *exec = interp->executor_list_head; exec != NULL;) {
-        assert(exec->vm_data.valid);
-        _PyExecutorObject *next = exec->vm_data.links.next;
-        if (bloom_filter_may_contain(&exec->vm_data.bloom, &obj_filter) &&
-            PyList_Append(invalidate, (PyObject *)exec))
-        {
-            goto error;
-        }
-        exec = next;
-    }
-    for (Py_ssize_t i = 0; i < PyList_GET_SIZE(invalidate); i++) {
-        _PyExecutorObject *exec = (_PyExecutorObject *)PyList_GET_ITEM(invalidate, i);
-        executor_clear(exec);
-        if (is_invalidation) {
-            OPT_STAT_INC(executors_invalidated);
-        }
-    }
-    Py_DECREF(invalidate);
-    return;
-error:
-    PyErr_Clear();
-    Py_XDECREF(invalidate);
-    // If we're truly out of memory, wiping out everything is a fine fallback:
-    _Py_Executors_InvalidateAll(interp, is_invalidation);
 }
 
 /* Invalidate all executors */
 void
 _Py_Executors_InvalidateAll(PyInterpreterState *interp, int is_invalidation)
 {
-    while (interp->executor_list_head) {
-        _PyExecutorObject *executor = interp->executor_list_head;
-        assert(executor->vm_data.valid == 1 && executor->vm_data.linked == 1);
-        if (executor->vm_data.code) {
-            // Clear the entire code object so its co_executors array be freed:
-            _PyCode_Clear_Executors(executor->vm_data.code);
-        }
-        else {
-            executor_clear(executor);
-        }
-        if (is_invalidation) {
-            OPT_STAT_INC(executors_invalidated);
-        }
+    for (PyCodeObject *code = interp->jit_link; code; code = code->_jit_link_next) {
+        code->_jit_valid = false;
     }
 }
 

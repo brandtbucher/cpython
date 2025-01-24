@@ -556,6 +556,13 @@ _PyJIT_Compile(PyCodeObject *co, const _PyUOpInstruction trace[], size_t length)
     co->_jit_code = memory;
     co->_jit_size = total_size;
     co->_jit_offsets = (void **)state.instruction_starts;
+    co->_jit_valid = true;
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    co->_jit_link_next = interp->jit_link;
+    if (co->_jit_link_next) {
+        co->_jit_link_next->_jit_link_back = co;
+    }
+    interp->jit_link = co;
     return 0;
 }
 
@@ -569,6 +576,16 @@ _PyJIT_Free(PyCodeObject *co)
         co->_jit_size = 0;
         PyMem_Free(co->_jit_offsets);
         co->_jit_offsets = NULL;
+        co->_jit_valid = false;
+        if (co->_jit_link_next) {
+            co->_jit_link_next->_jit_link_back = co->_jit_link_back;
+        }
+        if (co->_jit_link_back) {
+            co->_jit_link_back->_jit_link_next = co->_jit_link_next;
+        }
+        else {
+            _PyInterpreterState_GET()->jit_link = co->_jit_link_next;
+        }
         if (jit_free(memory, size)) {
             PyErr_WriteUnraisable(NULL);
         }

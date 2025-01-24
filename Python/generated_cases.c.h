@@ -617,7 +617,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -1185,7 +1185,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -1291,7 +1291,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -1393,7 +1393,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -2228,7 +2228,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -2410,7 +2410,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -2986,7 +2986,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -3067,7 +3067,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -4093,7 +4093,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -4891,7 +4891,6 @@
             _PyStackRef cond = POP();
             assert(PyStackRef_BoolCheck(cond));
             int jump = PyStackRef_IsFalse(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -4906,7 +4905,6 @@
             /* Skip 1 cache entry */
             _PyStackRef value_stackref = POP();
             int jump = PyStackRef_IsNone(value_stackref);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -4924,7 +4922,6 @@
             /* Skip 1 cache entry */
             _PyStackRef value_stackref = POP();
             int jump = !PyStackRef_IsNone(value_stackref);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 PyStackRef_CLOSE(value_stackref);
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
@@ -4941,7 +4938,6 @@
             _PyStackRef cond = POP();
             assert(PyStackRef_BoolCheck(cond));
             int jump = PyStackRef_IsTrue(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, jump);
             if (jump) {
                 INSTRUMENTED_JUMP(this_instr, next_instr + oparg, PY_MONITORING_EVENT_BRANCH_RIGHT);
             }
@@ -5044,14 +5040,12 @@
                 assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
                 #if TIER_ONE
                 PyCodeObject *code = _PyFrame_GetCode(frame);
-                if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
-                    assert(code->_jit_code == NULL);
-                    _PyFrame_SetStackPointer(frame, stack_pointer);
-                    int err = _PyOptimizer_Optimize(code);
-                    stack_pointer = _PyFrame_GetStackPointer(frame);
-                    if (err < 0) {
-                        goto error;
-                    }
+                if (code->_jit_code == NULL &&
+                    code->_jit_size &&
+                    --code->_jit_size == 0 &&
+                    _PyOptimizer_Optimize(code))
+                {
+                    goto error;
                 }
                 #endif
                 _PyStackRef temp = retval;
@@ -5071,7 +5065,7 @@
                 stack_pointer[0] = res;
                 stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -5140,7 +5134,7 @@
                 stack_pointer[0] = value;
                 stack_pointer += 1;
                 assert(WITHIN_STACK_BOUNDS());
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -5653,7 +5647,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -6933,8 +6927,7 @@
         }
 
         TARGET(POP_JUMP_IF_FALSE) {
-            _Py_CODEUNIT* const this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
+            frame->instr_ptr = next_instr;
             next_instr += 2;
             INSTRUCTION_STATS(POP_JUMP_IF_FALSE);
             _PyStackRef cond;
@@ -6942,7 +6935,6 @@
             cond = stack_pointer[-1];
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_IsFalse(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
             JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -6950,8 +6942,7 @@
         }
 
         TARGET(POP_JUMP_IF_NONE) {
-            _Py_CODEUNIT* const this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
+            frame->instr_ptr = next_instr;
             next_instr += 2;
             INSTRUCTION_STATS(POP_JUMP_IF_NONE);
             _PyStackRef value;
@@ -6974,7 +6965,6 @@
                 cond = b;
                 assert(PyStackRef_BoolCheck(cond));
                 int flag = PyStackRef_IsTrue(cond);
-                RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
                 JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
             }
             stack_pointer += -1;
@@ -6983,8 +6973,7 @@
         }
 
         TARGET(POP_JUMP_IF_NOT_NONE) {
-            _Py_CODEUNIT* const this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
+            frame->instr_ptr = next_instr;
             next_instr += 2;
             INSTRUCTION_STATS(POP_JUMP_IF_NOT_NONE);
             _PyStackRef value;
@@ -7007,7 +6996,6 @@
                 cond = b;
                 assert(PyStackRef_BoolCheck(cond));
                 int flag = PyStackRef_IsFalse(cond);
-                RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
                 JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
             }
             stack_pointer += -1;
@@ -7016,8 +7004,7 @@
         }
 
         TARGET(POP_JUMP_IF_TRUE) {
-            _Py_CODEUNIT* const this_instr = frame->instr_ptr = next_instr;
-            (void)this_instr;
+            frame->instr_ptr = next_instr;
             next_instr += 2;
             INSTRUCTION_STATS(POP_JUMP_IF_TRUE);
             _PyStackRef cond;
@@ -7025,7 +7012,6 @@
             cond = stack_pointer[-1];
             assert(PyStackRef_BoolCheck(cond));
             int flag = PyStackRef_IsTrue(cond);
-            RECORD_BRANCH_TAKEN(this_instr[1].cache, flag);
             JUMPBY(flag ? oparg : next_instr->op.code == NOT_TAKEN);
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -7233,7 +7219,6 @@
             next_instr += 1;
             INSTRUCTION_STATS(RESUME_CHECK);
             static_assert(0 == 0, "incorrect cache size");
-            DEOPT_IF(((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code), RESUME);
             #if defined(__EMSCRIPTEN__)
             DEOPT_IF(_Py_emscripten_signal_clock == 0, RESUME);
             _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
@@ -7279,7 +7264,7 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             DISPATCH();
@@ -7295,14 +7280,12 @@
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
             #if TIER_ONE
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
-                assert(code->_jit_code == NULL);
-                _PyFrame_SetStackPointer(frame, stack_pointer);
-                int err = _PyOptimizer_Optimize(code);
-                stack_pointer = _PyFrame_GetStackPointer(frame);
-                if (err < 0) {
-                    goto error;
-                }
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0 &&
+                _PyOptimizer_Optimize(code))
+            {
+                goto error;
             }
             #endif
             _PyStackRef temp = retval;
@@ -7322,7 +7305,7 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             DISPATCH();
@@ -7466,7 +7449,7 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
-                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+                if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                     GOTO_TIER_TWO();
                 }
             }
@@ -8517,7 +8500,7 @@
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             DISPATCH();

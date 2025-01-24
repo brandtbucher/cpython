@@ -1765,10 +1765,7 @@ force_instrument_lock_held(PyCodeObject *code, PyInterpreterState *interp)
     ASSERT_WORLD_STOPPED_OR_LOCKED(code);
 
 #ifdef _Py_TIER2
-    if (code->co_executors != NULL) {
-        _PyCode_Clear_Executors(code);
-    }
-    _Py_Executors_InvalidateDependency(interp, code, 1);
+    _Py_Executors_InvalidateDependency(interp, (PyObject *)code, 1);
 #endif
     int code_len = (int)Py_SIZE(code);
     /* Exit early to avoid creating instrumentation

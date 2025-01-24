@@ -44,11 +44,6 @@
         /* _LOAD_BYTECODE is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
         case _RESUME_CHECK: {
-            oparg = CURRENT_OPARG();
-            if (((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             #if defined(__EMSCRIPTEN__)
             if (_Py_emscripten_signal_clock == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -1449,14 +1444,12 @@
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
             #if TIER_ONE
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
-                assert(code->_jit_code == NULL);
-                _PyFrame_SetStackPointer(frame, stack_pointer);
-                int err = _PyOptimizer_Optimize(code);
-                stack_pointer = _PyFrame_GetStackPointer(frame);
-                if (err < 0) {
-                    JUMP_TO_ERROR();
-                }
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0 &&
+                _PyOptimizer_Optimize(code))
+            {
+                JUMP_TO_ERROR();
             }
             #endif
             _PyStackRef temp = retval;
@@ -1476,7 +1469,7 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             break;
@@ -1629,7 +1622,7 @@
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             break;
@@ -4494,7 +4487,7 @@
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             break;
@@ -5632,7 +5625,7 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
             break;
@@ -5889,6 +5882,10 @@
         }
 
         case _CHECK_VALIDITY: {
+            if (!_PyFrame_GetCode(frame)->_jit_valid) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
             break;
         }
 
@@ -6032,6 +6029,10 @@
 
         case _CHECK_VALIDITY_AND_SET_IP: {
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND0();
+            if (!_PyFrame_GetCode(frame)->_jit_valid) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             break;
         }
@@ -6046,23 +6047,6 @@
             stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             GOTO_UNWIND();
-            break;
-        }
-
-        case _TIER2_RESUME_CHECK: {
-            #if defined(__EMSCRIPTEN__)
-            if (_Py_emscripten_signal_clock == 0) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
-            #endif
-            uintptr_t eval_breaker = _Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker);
-            if (eval_breaker & _PY_EVAL_EVENTS_MASK) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
             break;
         }
 

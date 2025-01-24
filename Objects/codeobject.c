@@ -546,6 +546,9 @@ init_code(PyCodeObject *co, struct _PyCodeConstructor *con)
     co->_jit_size = 1 << 4;  // XXX
     co->_jit_code = NULL;
     co->_jit_offsets = NULL;
+    co->_jit_valid = false;
+    co->_jit_link_next = NULL;
+    co->_jit_link_back = NULL;
 #ifdef Py_GIL_DISABLED
     _PyCode_Quicken(_PyCode_CODE(co), Py_SIZE(co), co->co_consts,
                     interp->config.tlbc_enabled);

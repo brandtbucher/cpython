@@ -600,6 +600,7 @@ NON_ESCAPING_FUNCTIONS = (
     "_PyObject_GetManagedDict",
     "_PyObject_InlineValues",
     "_PyObject_ManagedDictPointer",
+    "_PyOptimizer_Optimize",
     "_PyThreadState_HasStackSpace",
     "_PyTuple_FromArraySteal",
     "_PyTuple_FromStackRefSteal",

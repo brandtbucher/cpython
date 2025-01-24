@@ -116,7 +116,7 @@ PyAPI_FUNC(PyObject *) _PyOptimizer_NewUOpOptimizer(void);
 #define _Py_MAX_ALLOWED_GLOBALS_MODIFICATIONS 6
 
 #ifdef _Py_TIER2
-PyAPI_FUNC(void) _Py_Executors_InvalidateDependency(PyInterpreterState *interp, void *obj, int is_invalidation);
+PyAPI_FUNC(void) _Py_Executors_InvalidateDependency(PyInterpreterState *interp, PyObject *obj, int is_invalidation);
 PyAPI_FUNC(void) _Py_Executors_InvalidateAll(PyInterpreterState *interp, int is_invalidation);
 PyAPI_FUNC(void) _Py_Executors_InvalidateCold(PyInterpreterState *interp);
 

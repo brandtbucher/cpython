@@ -171,7 +171,7 @@ framelocalsproxy_setitem(PyObject *self, PyObject *key, PyObject *value)
             return -1;
         }
 
-        _Py_Executors_InvalidateDependency(PyInterpreterState_Get(), co, 1);
+        _Py_Executors_InvalidateDependency(PyInterpreterState_Get(), (PyObject *)co, 1);
 
         _PyLocals_Kind kind = _PyLocals_GetKind(co->co_localspluskinds, i);
         _PyStackRef oldvalue = fast[i];

@@ -2657,7 +2657,3 @@
             break;
         }
 
-        case _TIER2_RESUME_CHECK: {
-            break;
-        }
-

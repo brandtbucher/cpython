@@ -154,9 +154,12 @@ typedef struct {
     _PyCoMonitoringData *_co_monitoring; /* Monitoring data */                 \
     Py_ssize_t _co_unique_id;     /* ID used for per-thread refcounting */   \
     int _co_firsttraceable;       /* index of first traceable instruction */   \
+    int _jit_valid;  \
     size_t _jit_size;  \
     void *_jit_code;  \
     void **_jit_offsets;  \
+    PyCodeObject *_jit_link_next; \
+    PyCodeObject *_jit_link_back; \
     /* Scratch space for extra data relating to the code object.               \
        Type is a void* to keep the format private in codeobject.c to force     \
        people to go through the proper APIs. */                                \

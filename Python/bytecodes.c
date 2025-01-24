@@ -219,7 +219,6 @@ dummy_func(
             _CHECK_PERIODIC_IF_NOT_YIELD_FROM;
 
         inst(RESUME_CHECK, (--)) {
-            DEOPT_IF(((oparg & RESUME_OPARG_LOCATION_MASK) == RESUME_AT_FUNC_START && _PyFrame_GetCode(frame)->_jit_code));
 #if defined(__EMSCRIPTEN__)
             DEOPT_IF(_Py_emscripten_signal_clock == 0);
             _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
@@ -1108,12 +1107,12 @@ dummy_func(
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
         #if TIER_ONE
             PyCodeObject *code = _PyFrame_GetCode(frame);
-            if (code->_jit_code == NULL && code->_jit_size && --code->_jit_size == 0) {
-                assert(code->_jit_code == NULL);
-                int err = _PyOptimizer_Optimize(code);
-                if (err < 0) {
-                    ERROR_NO_POP();
-                }
+            if (code->_jit_code == NULL &&
+                code->_jit_size &&
+                --code->_jit_size == 0 &&
+                _PyOptimizer_Optimize(code))
+            {
+                ERROR_NO_POP();
             }
         #endif
             _PyStackRef temp = retval;
@@ -1130,7 +1129,7 @@ dummy_func(
             res = temp;
             LLTRACE_RESUME_FRAME();
             SYNC_SP();
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
         }
@@ -1319,7 +1318,7 @@ dummy_func(
             value = temp;
             LLTRACE_RESUME_FRAME();
             SYNC_SP();
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
         }
@@ -3748,7 +3747,7 @@ dummy_func(
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
         }
@@ -4687,7 +4686,7 @@ dummy_func(
             res = PyStackRef_FromPyObjectSteal((PyObject *)gen);
             LLTRACE_RESUME_FRAME();
             SYNC_SP();
-            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_offsets) {
+            if (PyStackRef_CodeCheck(frame->f_executable) && _PyFrame_GetCode(frame)->_jit_valid) {
                 GOTO_TIER_TWO();
             }
         }
@@ -4967,6 +4966,7 @@ dummy_func(
         }
 
         tier2 op(_CHECK_VALIDITY, (--)) {
+            DEOPT_IF(!_PyFrame_GetCode(frame)->_jit_valid);
         }
 
         tier2 pure op(_LOAD_CONST_INLINE, (ptr/4 -- value)) {
@@ -5040,6 +5040,7 @@ dummy_func(
         }
 
         tier2 op(_CHECK_VALIDITY_AND_SET_IP, (instr_ptr/4 --)) {
+            DEOPT_IF(!_PyFrame_GetCode(frame)->_jit_valid);
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
         }
 
@@ -5050,18 +5051,6 @@ dummy_func(
         tier2 op(_ERROR_POP_N, (unused[oparg] --)) {
             SYNC_SP();
             GOTO_UNWIND();
-        }
-
-        /* Progress is guaranteed if we DEOPT on the eval breaker, because
-         * ENTER_EXECUTOR will not re-enter tier 2 with the eval breaker set. */
-        tier2 op(_TIER2_RESUME_CHECK, (--)) {
-#if defined(__EMSCRIPTEN__)
-            DEOPT_IF(_Py_emscripten_signal_clock == 0);
-            _Py_emscripten_signal_clock -= Py_EMSCRIPTEN_SIGNAL_HANDLING;
-#endif
-            uintptr_t eval_breaker = _Py_atomic_load_uintptr_relaxed(&tstate->eval_breaker);
-            DEOPT_IF(eval_breaker & _PY_EVAL_EVENTS_MASK);
-            assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
         }
 
 // END BYTECODES //
