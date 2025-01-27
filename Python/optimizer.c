@@ -254,6 +254,7 @@ _PyOptimizer_Optimize(PyCodeObject *code)
                         }
                         ADD_UOP_TARGET(uop, oparg, operand, start);
                     skip:
+                        ;
                     }
                     int16_t last_op = expansion->uops[expansion->nuops - 1].uop;
                     if (last_op == _PUSH_FRAME ||
