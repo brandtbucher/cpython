@@ -87,7 +87,7 @@ globals_watcher_callback(PyDict_WatchEvent event, PyObject* dict,
 static int
 type_watcher_callback(PyTypeObject* type)
 {
-    _Py_Executors_InvalidateDependency(_PyInterpreterState_GET(), type, 1);
+    _Py_Executors_InvalidateDependency(_PyInterpreterState_GET(), (PyObject *)type, 1);
     PyType_Unwatch(TYPE_WATCHER_ID, (PyObject *)type);
     return 0;
 }
