@@ -285,6 +285,98 @@ _PyOptimizer_Optimize(PyCodeObject *code)
     }
     assert(i1 == j1);
     // XXX: Optimize
+    bool *info = PyMem_Calloc(i2, sizeof(bool));
+    if (info == NULL) {
+        goto error;
+    }
+    for (size_t i = 0; i < i2; i++) {
+        _PyUOpInstruction *uop = &trace[i];
+        if (uop->format == UOP_FORMAT_JUMP) {
+            ssize_t target = offsets[uop->jump_target];
+            assert(0 <= target);
+            info[target] = true;
+        }
+    }
+    bool may_have_escaped = false;
+    ssize_t last_set_ip = -1;
+    for (size_t i = 0; i < i2; i++) {
+        int opcode = trace[i].opcode;
+        if (info[i]) {
+            may_have_escaped = true;
+            last_set_ip = -1;
+        }
+        switch (opcode) {
+            case _SET_IP:
+                trace[i].opcode = _NOP;
+                last_set_ip = i;
+                break;
+            case _CHECK_VALIDITY:
+                if (may_have_escaped) {
+                    may_have_escaped = false;
+                }
+                else {
+                    trace[i].opcode = _NOP;
+                }
+                break;
+            case _CHECK_VALIDITY_AND_SET_IP:
+                if (may_have_escaped) {
+                    may_have_escaped = false;
+                    trace[i].opcode = _CHECK_VALIDITY;
+                }
+                else {
+                    trace[i].opcode = _NOP;
+                }
+                last_set_ip = i;
+                break;
+            // case _POP_TOP:
+            // {
+            //     _PyUOpInstruction *last = &trace[i-1];
+            //     while (last->opcode == _NOP) {
+            //         last--;
+            //     }
+            //     if (last->opcode == _LOAD_CONST_INLINE  ||
+            //         last->opcode == _LOAD_CONST_INLINE_BORROW ||
+            //         last->opcode == _LOAD_FAST ||
+            //         last->opcode == _COPY
+            //     ) {
+            //         last->opcode = _NOP;
+            //         trace[i].opcode = _NOP;
+            //     }
+            //     if (last->opcode == _REPLACE_WITH_TRUE) {
+            //         last->opcode = _NOP;
+            //     }
+            //     break;
+            // }
+            case _DEOPT:
+            case _ERROR_POP_N:
+            case _EXIT_TRACE:
+            case _JUMP:
+                may_have_escaped = false;
+                last_set_ip = -1;
+                break;
+            default:
+            {
+                /* _PUSH_FRAME doesn't escape or error, but it
+                * does need the IP for the return address */
+                bool needs_ip = (opcode == _PUSH_FRAME || opcode == _DYNAMIC_EXIT || opcode == _RETURN_VALUE || opcode == _RETURN_GENERATOR || opcode == _YIELD_VALUE);
+                if (needs_ip || (_PyUop_Flags[opcode] & HAS_ESCAPES_FLAG)) {
+                    needs_ip = true;
+                    may_have_escaped = true;
+                }
+                if (needs_ip && 0 <= last_set_ip) {
+                    if (trace[last_set_ip].opcode == _CHECK_VALIDITY) {
+                        trace[last_set_ip].opcode = _CHECK_VALIDITY_AND_SET_IP;
+                    }
+                    else {
+                        assert(trace[last_set_ip].opcode == _NOP);
+                        trace[last_set_ip].opcode = _SET_IP;
+                    }
+                    last_set_ip = -1;
+                }
+            }
+        }
+    }
+    PyMem_Free(info);
     ////////////////////////////////////////////////////////////////////////////
     int32_t current_jump = -1;
     int32_t current_jump_target = -1;
@@ -292,8 +384,8 @@ _PyOptimizer_Optimize(PyCodeObject *code)
     int32_t current_error_target = -1;
     int32_t current_popped = -1;
     int32_t current_exit_op = -1;
-    // Can't do this because it messes up offsets:
-    /* Leaving in NOPs slows down the interpreter and messes up the stats */
+    // // Can't do this because it messes up offsets:
+    // /* Leaving in NOPs slows down the interpreter and messes up the stats */
     // _PyUOpInstruction *new = &trace[0];
     // for (size_t i = 0; i < i2; i++) {
     //     _PyUOpInstruction *uop = &trace[i];
