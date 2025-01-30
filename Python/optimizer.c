@@ -1282,18 +1282,17 @@ compact_executor(_PyExecutorObject *root)
         _PyExecutorObject *executor = executors[i];
         _Py_BloomFilter_Update(&dependencies, &executor->vm_data.bloom);
         assert(executor->trace[0].opcode == _START_EXECUTOR);
-        assert(executor->trace[1].opcode == _MAKE_WARM);
-        for (int j = 2 * !!i; j < (int)executor->code_size; j++) {
-            _PyUOpInstruction *instruction = &buffer[length + j - 2 * !!i];
+        for (int j = !!i; j < (int)executor->code_size; j++) {
+            _PyUOpInstruction *instruction = &buffer[length + j - !!i];
             *instruction = executor->trace[j];
             if (instruction->format == UOP_FORMAT_JUMP) {
-                instruction->jump_target += length - 2 * !!i;
-                instruction->error_target += length - 2 * !!i;
+                instruction->jump_target += length - !!i;
+                instruction->error_target += length - !!i;
             }
             if (instruction->opcode != _EXIT_TRACE) {
                 continue;
             }
-            _PyExitData *exit = (_PyExitData *)instruction->operand;
+            _PyExitData *exit = (_PyExitData *)instruction->operand0;
             _PyExecutorObject *chained = exit->executor;
             if (chained == NULL || !chained->vm_data.valid) {
                 continue;
@@ -1303,17 +1302,14 @@ compact_executor(_PyExecutorObject *root)
                 instruction->opcode = _JUMP_TO_TOP;
                 instruction->jump_target = 1;
             }
-            else if (chained->vm_data.chain_depth  // Might be okay...
-                     && (int)chained->code_size <= remaining
-                     && nexecutors < MAX_COMPACTION)
-            {
+            else if (nexecutors < MAX_COMPACTION && (int)chained->code_size - 1 <= remaining) {
                 int offset = UOP_MAX_TRACE_LENGTH - remaining;
-                remaining -= chained->code_size - 2;  // _START_EXECUTOR + _MAKE_WARM
+                remaining -= chained->code_size - 1;  // _START_EXECUTOR
                 executors[nexecutors++] = chained;
                 // XXX: Clean this up:
                 for (int k = length; k < length + j; k++) {
                     _PyUOpInstruction *inst = &buffer[k];
-                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - 2 * !!i) {
+                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - !!i) {
                         inst->jump_target = offset;
                     }
                 }
@@ -1322,7 +1318,7 @@ compact_executor(_PyExecutorObject *root)
                 instruction->jump_target = offset;
             }
         }
-        length += executor->code_size - 2 * !!i;
+        length += executor->code_size - !!i;
     }
     assert(1 <= length && length < UOP_MAX_TRACE_LENGTH + 1);
     assert(0 <= remaining && remaining < UOP_MAX_TRACE_LENGTH);
