@@ -5790,7 +5790,14 @@
             {
                 #if ENABLE_SPECIALIZATION
                 if (this_instr->op.code == JUMP_BACKWARD) {
-                    this_instr->op.code = tstate->interp->jit ? JUMP_BACKWARD_JIT : JUMP_BACKWARD_NO_JIT;
+                    // We don't handle these well yet. For now, don't JIT them:
+                    const int mask = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR;
+                    if (tstate->interp->jit && (_PyFrame_GetCode(frame)->co_flags & mask) == 0) {
+                        this_instr->op.code = JUMP_BACKWARD_JIT;
+                    }
+                    else {
+                        this_instr->op.code = JUMP_BACKWARD_NO_JIT;
+                    }
                     // Need to re-dispatch so the warmup counter isn't off by one:
                     next_instr = this_instr;
                     DISPATCH_SAME_OPARG();
