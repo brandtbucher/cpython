@@ -658,8 +658,8 @@ translate_bytecode_to_trace(
             case FOR_ITER_GEN:
             case SEND_GEN:
             {
-                opcode = _PyOpcode_Deopt[opcode];
-                _Py_FALLTHROUGH;
+                OPT_STAT_INC(low_confidence);  // (in our ability to JIT generators)
+                return 0;
             }
 
             default:
