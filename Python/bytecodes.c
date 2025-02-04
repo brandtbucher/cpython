@@ -2789,14 +2789,7 @@ dummy_func(
         tier1 op(_SPECIALIZE_JUMP_BACKWARD, (--)) {
         #if ENABLE_SPECIALIZATION
             if (this_instr->op.code == JUMP_BACKWARD) {
-                // We don't handle these well yet. For now, don't JIT them:
-                const int mask = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR;
-                if (tstate->interp->jit && (_PyFrame_GetCode(frame)->co_flags & mask) == 0) {
-                    this_instr->op.code = JUMP_BACKWARD_JIT;
-                }
-                else {
-                    this_instr->op.code = JUMP_BACKWARD_NO_JIT;
-                }
+                this_instr->op.code = tstate->interp->jit ? JUMP_BACKWARD_JIT : JUMP_BACKWARD_NO_JIT;
                 // Need to re-dispatch so the warmup counter isn't off by one:
                 next_instr = this_instr;
                 DISPATCH_SAME_OPARG();
@@ -5139,6 +5132,12 @@ dummy_func(
             else {
                 if (!backoff_counter_triggers(exit->temperature)) {
                     exit->temperature = advance_backoff_counter(exit->temperature);
+                    GOTO_TIER_ONE(target);
+                }
+                // We don't handle these well yet. For now, don't JIT them:
+                const int mask = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR;
+                if (_PyFrame_GetCode(frame)->co_flags & mask) {
+                    exit->temperature = restart_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
                 int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);

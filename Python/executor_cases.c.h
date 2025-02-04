@@ -6497,6 +6497,12 @@
                     exit->temperature = advance_backoff_counter(exit->temperature);
                     GOTO_TIER_ONE(target);
                 }
+                // We don't handle these well yet. For now, don't JIT them:
+                const int mask = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR;
+                if (_PyFrame_GetCode(frame)->co_flags & mask) {
+                    exit->temperature = restart_backoff_counter(exit->temperature);
+                    GOTO_TIER_ONE(target);
+                }
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 int optimized = _PyOptimizer_Optimize(frame, target, stack_pointer, &executor, 0);
                 stack_pointer = _PyFrame_GetStackPointer(frame);
