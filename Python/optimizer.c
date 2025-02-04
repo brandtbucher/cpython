@@ -655,6 +655,13 @@ translate_bytecode_to_trace(
                 ADD_TO_TRACE(_TIER2_RESUME_CHECK, 0, 0, target);
                 break;
 
+            case FOR_ITER_GEN:
+            case SEND_GEN:
+            {
+                opcode = _PyOpcode_Deopt[opcode];
+                _Py_FALLTHROUGH;
+            }
+
             default:
             {
                 const struct opcode_macro_expansion *expansion = &_PyOpcode_macro_expansion[opcode];
@@ -750,11 +757,7 @@ translate_bytecode_to_trace(
 
                         if (uop == _PUSH_FRAME) {
                             assert(i + 1 == nuops);
-                            if (opcode == FOR_ITER_GEN ||
-                                opcode == LOAD_ATTR_PROPERTY ||
-                                opcode == BINARY_SUBSCR_GETITEM ||
-                                opcode == SEND_GEN)
-                            {
+                            if (opcode == LOAD_ATTR_PROPERTY || opcode == BINARY_SUBSCR_GETITEM) {
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 ADD_TO_TRACE(uop, oparg, 0, target);
                                 ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
