@@ -657,6 +657,7 @@ translate_bytecode_to_trace(
 
             case FOR_ITER_GEN:
             case SEND_GEN:
+            case YIELD_VALUE:
             {
                 OPT_STAT_INC(low_confidence);  // (in our ability to JIT generators)
                 return 0;
