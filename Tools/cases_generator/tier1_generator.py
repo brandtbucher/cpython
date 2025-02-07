@@ -76,15 +76,15 @@ def write_uop(
 ) -> tuple[int, Stack]:
     # out.emit(stack.as_comment() + "\n")
     if isinstance(uop, Skip):
-        entries = "entries" if uop.size > 1 else "entry"
-        emitter.emit(f"/* Skip {uop.size} cache {entries} */\n")
+        skip = "Rewind" if uop.size < 0 else "Skip"
+        entries = "entries" if abs(uop.size) != 1 else "entry"
+        emitter.emit(f"/* {skip} {abs(uop.size)} cache {entries} */\n")
         return (offset + uop.size), stack
     if isinstance(uop, Flush):
         emitter.emit(f"// flush\n")
         stack.flush(emitter.out)
         return offset, stack
     try:
-        locals: dict[str, Local] = {}
         emitter.out.start_line()
         if braces:
             emitter.out.emit(f"// {uop.name}\n")

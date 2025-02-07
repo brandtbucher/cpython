@@ -2418,9 +2418,9 @@ dummy_func(
             assert(Py_IS_TYPE(fget, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)fget;
             PyCodeObject *code = (PyCodeObject *)f->func_code;
-            DEOPT_IF((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) != CO_OPTIMIZED);
-            DEOPT_IF(code->co_kwonlyargcount);
-            DEOPT_IF(code->co_argcount != 1);
+            assert((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) == CO_OPTIMIZED);
+            assert(code->co_kwonlyargcount == 0);
+            assert(code->co_argcount == 1);
             DEOPT_IF(!_PyThreadState_HasStackSpace(tstate, code->co_framesize));
             STAT_INC(LOAD_ATTR, hit);
             new_frame = _PyFrame_PushUnchecked(tstate, PyStackRef_FromPyObjectNew(fget), 1, frame);
@@ -2432,7 +2432,8 @@ dummy_func(
             unused/1 +
             _CHECK_PEP_523 +
             _GUARD_TYPE_VERSION +
-            unused/2 +
+            _CHECK_FUNCTION_VERSION_INLINE +
+            rewind/-4 +
             _LOAD_ATTR_PROPERTY_FRAME +
             _SAVE_RETURN_OFFSET +
             _PUSH_FRAME;

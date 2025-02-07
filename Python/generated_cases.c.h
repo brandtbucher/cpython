@@ -268,7 +268,7 @@
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
             }
-            /* Skip -4 cache entry */
+            /* Rewind 4 cache entries */
             // _BINARY_OP_EXTEND
             {
                 PyObject *descr = read_obj(&this_instr[2].cache);
@@ -7878,7 +7878,19 @@
                     JUMP_TO_PREDICTED(LOAD_ATTR);
                 }
             }
-            /* Skip 2 cache entries */
+            // _CHECK_FUNCTION_VERSION_INLINE
+            {
+                uint32_t func_version = read_u32(&this_instr[4].cache);
+                PyObject *callable_o = read_obj(&this_instr[6].cache);
+                assert(PyFunction_Check(callable_o));
+                PyFunctionObject *func = (PyFunctionObject *)callable_o;
+                if (func->func_version != func_version) {
+                    UPDATE_MISS_STATS(LOAD_ATTR);
+                    assert(_PyOpcode_Deopt[opcode] == (LOAD_ATTR));
+                    JUMP_TO_PREDICTED(LOAD_ATTR);
+                }
+            }
+            /* Rewind 4 cache entries */
             // _LOAD_ATTR_PROPERTY_FRAME
             {
                 PyObject *fget = read_obj(&this_instr[6].cache);
@@ -7886,21 +7898,9 @@
                 assert(Py_IS_TYPE(fget, &PyFunction_Type));
                 PyFunctionObject *f = (PyFunctionObject *)fget;
                 PyCodeObject *code = (PyCodeObject *)f->func_code;
-                if ((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) != CO_OPTIMIZED) {
-                    UPDATE_MISS_STATS(LOAD_ATTR);
-                    assert(_PyOpcode_Deopt[opcode] == (LOAD_ATTR));
-                    JUMP_TO_PREDICTED(LOAD_ATTR);
-                }
-                if (code->co_kwonlyargcount) {
-                    UPDATE_MISS_STATS(LOAD_ATTR);
-                    assert(_PyOpcode_Deopt[opcode] == (LOAD_ATTR));
-                    JUMP_TO_PREDICTED(LOAD_ATTR);
-                }
-                if (code->co_argcount != 1) {
-                    UPDATE_MISS_STATS(LOAD_ATTR);
-                    assert(_PyOpcode_Deopt[opcode] == (LOAD_ATTR));
-                    JUMP_TO_PREDICTED(LOAD_ATTR);
-                }
+                assert((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) == CO_OPTIMIZED);
+                assert(code->co_kwonlyargcount == 0);
+                assert(code->co_argcount == 1);
                 if (!_PyThreadState_HasStackSpace(tstate, code->co_framesize)) {
                     UPDATE_MISS_STATS(LOAD_ATTR);
                     assert(_PyOpcode_Deopt[opcode] == (LOAD_ATTR));

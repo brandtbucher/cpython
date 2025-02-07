@@ -679,6 +679,7 @@ translate_bytecode_to_trace(
                         oparg = orig_oparg;
                         uint32_t uop = expansion->uops[i].uop;
                         uint64_t operand = 0;
+                        uint64_t operand1 = 0;
                         // Add one to account for the actual opcode/oparg pair:
                         int offset = expansion->uops[i].offset + 1;
                         switch (expansion->uops[i].size) {
@@ -693,6 +694,10 @@ translate_bytecode_to_trace(
                                 break;
                             case OPARG_CACHE_4:
                                 operand = read_u64(&instr[offset].cache);
+                                break;
+                            case OPARG_CACHE_2_4:
+                                operand = read_u32(&instr[offset].cache);
+                                operand1 = read_u64(&instr[offset+2].cache);
                                 break;
                             case OPARG_TOP:  // First half of super-instr
                                 oparg = orig_oparg >> 4;
@@ -752,7 +757,6 @@ translate_bytecode_to_trace(
                         if (uop == _PUSH_FRAME) {
                             assert(i + 1 == nuops);
                             if (opcode == FOR_ITER_GEN ||
-                                opcode == LOAD_ATTR_PROPERTY ||
                                 opcode == BINARY_SUBSCR_GETITEM ||
                                 opcode == SEND_GEN)
                             {
@@ -760,15 +764,25 @@ translate_bytecode_to_trace(
                                 OPT_STAT_INC(unknown_callee);
                                 return 0;
                             }
-                            assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
-                            int func_version_offset =
-                                offsetof(_PyCallCache, func_version)/sizeof(_Py_CODEUNIT)
+                            uint32_t func_version;
+                            PyCodeObject *new_code;
+                            PyFunctionObject *new_func;
+                            if (opcode == LOAD_ATTR_PROPERTY) {
                                 // Add one to account for the actual opcode/oparg pair:
-                                + 1;
-                            uint32_t func_version = read_u32(&instr[func_version_offset].cache);
-                            PyCodeObject *new_code = NULL;
-                            PyFunctionObject *new_func =
-                                _PyFunction_LookupByVersion(func_version, (PyObject **) &new_code);
+                                int offset = offsetof(_PyLoadMethodCache, keys_version) / sizeof(_Py_CODEUNIT) + 1;
+                                func_version = read_u32(&instr[offset].cache);
+                                offset = offsetof(_PyLoadMethodCache, descr) / sizeof(_Py_CODEUNIT) + 1;
+                                new_func = (PyFunctionObject *)read_obj(&instr[offset].cache);
+                                new_code = (PyCodeObject *)PyFunction_GET_CODE(new_func);
+                            }
+                            else {
+                                assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
+                                // Add one to account for the actual opcode/oparg pair:
+                                int offset = offsetof(_PyCallCache, func_version) / sizeof(_Py_CODEUNIT) + 1;
+                                func_version = read_u32(&instr[offset].cache);
+                                new_code = NULL;
+                                new_func = _PyFunction_LookupByVersion(func_version, (PyObject **)&new_code);
+                            }
                             DPRINTF(2, "Function: version=%#x; new_func=%p, new_code=%p\n",
                                     (int)func_version, new_func, new_code);
                             if (new_code != NULL) {
@@ -839,6 +853,7 @@ translate_bytecode_to_trace(
 
                         // All other instructions
                         ADD_TO_TRACE(uop, oparg, operand, target);
+                        trace[trace_length - 1].operand1 = operand1;
                     }
                     break;
                 }

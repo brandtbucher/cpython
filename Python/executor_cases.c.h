@@ -3194,18 +3194,9 @@
             assert(Py_IS_TYPE(fget, &PyFunction_Type));
             PyFunctionObject *f = (PyFunctionObject *)fget;
             PyCodeObject *code = (PyCodeObject *)f->func_code;
-            if ((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) != CO_OPTIMIZED) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (code->co_kwonlyargcount) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            if (code->co_argcount != 1) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
+            assert((code->co_flags & (CO_VARKEYWORDS | CO_VARARGS | CO_OPTIMIZED)) == CO_OPTIMIZED);
+            assert(code->co_kwonlyargcount == 0);
+            assert(code->co_argcount == 1);
             if (!_PyThreadState_HasStackSpace(tstate, code->co_framesize)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();

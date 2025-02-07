@@ -35,6 +35,7 @@ OPARG_KINDS = {
     "OPARG_SAVE_RETURN_OFFSET": 7,
     # Skip 8 as the other powers of 2 are sizes
     "OPARG_REPLACED": 9,
+    "OPARG_CACHE_2_4": 24,
 }
 
 FLAGS = [
@@ -338,16 +339,20 @@ def generate_expansion_table(analysis: Analysis, out: CWriter) -> None:
             continue
         else:
             for part in inst.parts:
-                size = part.size
-                if part.name == "_SAVE_RETURN_OFFSET":
-                    size = OPARG_KINDS["OPARG_SAVE_RETURN_OFFSET"]
                 if isinstance(part, Uop):
                     # Skip specializations
                     if "specializing" in part.annotations:
                         continue
-                    if "replaced" in part.annotations:
-                        size = OPARG_KINDS["OPARG_REPLACED"]
-                    expansions.append((part.name, size, offset if size else 0))
+                    if part.name == "_SAVE_RETURN_OFFSET":
+                        kind = "OPARG_SAVE_RETURN_OFFSET"
+                    elif "replaced" in part.annotations:
+                        kind = "OPARG_REPLACED"
+                    elif part.caches:
+                        sizes = (cache.size for cache in part.caches)
+                        kind = f"OPARG_CACHE_{'_'.join(map(str, sizes))}"
+                    else:
+                        kind = "OPARG_FULL"
+                    expansions.append((part.name, OPARG_KINDS[kind], offset))
                 offset += part.size
         expansions_table[inst.name] = expansions
     max_uops = max(len(ex) for ex in expansions_table.values())
