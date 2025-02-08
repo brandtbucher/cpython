@@ -1320,6 +1320,7 @@
             _PyStackRef container;
             _PyStackRef getitem;
             container = stack_pointer[-2];
+            uint32_t version = (uint32_t)CURRENT_OPERAND0();
             PyTypeObject *tp = Py_TYPE(PyStackRef_AsPyObjectBorrow(container));
             if (!PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE)) {
                 UOP_STAT_INC(uopcode, miss);
@@ -1332,8 +1333,7 @@
                 JUMP_TO_JUMP_TARGET();
             }
             assert(PyFunction_Check(getitem_o));
-            uint32_t cached_version = FT_ATOMIC_LOAD_UINT32_RELAXED(ht->_spec_cache.getitem_version);
-            if (((PyFunctionObject *)getitem_o)->func_version != cached_version) {
+            if (((PyFunctionObject *)getitem_o)->func_version != version) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
@@ -1362,7 +1362,7 @@
             new_frame = _PyFrame_PushUnchecked(tstate, getitem, 2, frame);
             new_frame->localsplus[0] = container;
             new_frame->localsplus[1] = sub;
-            frame->return_offset = 2 ;
+            frame->return_offset = 4 ;
             stack_pointer[-3].bits = (uintptr_t)new_frame;
             stack_pointer += -2;
             assert(WITHIN_STACK_BOUNDS());

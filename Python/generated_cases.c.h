@@ -653,10 +653,10 @@
             (void)(opcode);
             #endif
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR);
             PREDICTED_BINARY_SUBSCR:;
-            _Py_CODEUNIT* const this_instr = next_instr - 2;
+            _Py_CODEUNIT* const this_instr = next_instr - 4;
             (void)this_instr;
             _PyStackRef container;
             _PyStackRef sub;
@@ -680,6 +680,7 @@
                 ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
                 #endif  /* ENABLE_SPECIALIZATION_FT */
             }
+            /* Skip 2 cache entries */
             // _BINARY_SUBSCR
             {
                 PyObject *container_o = PyStackRef_AsPyObjectBorrow(container);
@@ -708,13 +709,14 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR_DICT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 3, "incorrect cache size");
             _PyStackRef dict_st;
             _PyStackRef sub_st;
             _PyStackRef res;
             /* Skip 1 cache entry */
+            /* Skip 2 cache entries */
             sub_st = stack_pointer[-1];
             dict_st = stack_pointer[-2];
             PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
@@ -755,9 +757,9 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR_GETITEM);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 3, "incorrect cache size");
             _PyStackRef container;
             _PyStackRef getitem;
             _PyStackRef sub;
@@ -774,6 +776,7 @@
             // _BINARY_SUBSCR_CHECK_FUNC
             {
                 container = stack_pointer[-2];
+                uint32_t version = read_u32(&this_instr[2].cache);
                 PyTypeObject *tp = Py_TYPE(PyStackRef_AsPyObjectBorrow(container));
                 if (!PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE)) {
                     UPDATE_MISS_STATS(BINARY_SUBSCR);
@@ -788,8 +791,7 @@
                     JUMP_TO_PREDICTED(BINARY_SUBSCR);
                 }
                 assert(PyFunction_Check(getitem_o));
-                uint32_t cached_version = FT_ATOMIC_LOAD_UINT32_RELAXED(ht->_spec_cache.getitem_version);
-                if (((PyFunctionObject *)getitem_o)->func_version != cached_version) {
+                if (((PyFunctionObject *)getitem_o)->func_version != version) {
                     UPDATE_MISS_STATS(BINARY_SUBSCR);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_SUBSCR));
                     JUMP_TO_PREDICTED(BINARY_SUBSCR);
@@ -810,7 +812,7 @@
                 new_frame = _PyFrame_PushUnchecked(tstate, getitem, 2, frame);
                 new_frame->localsplus[0] = container;
                 new_frame->localsplus[1] = sub;
-                frame->return_offset = 2 ;
+                frame->return_offset = 4 ;
             }
             // _PUSH_FRAME
             {
@@ -840,13 +842,14 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR_LIST_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 3, "incorrect cache size");
             _PyStackRef list_st;
             _PyStackRef sub_st;
             _PyStackRef res;
             /* Skip 1 cache entry */
+            /* Skip 2 cache entries */
             sub_st = stack_pointer[-1];
             list_st = stack_pointer[-2];
             PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
@@ -910,13 +913,14 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR_STR_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 3, "incorrect cache size");
             _PyStackRef str_st;
             _PyStackRef sub_st;
             _PyStackRef res;
             /* Skip 1 cache entry */
+            /* Skip 2 cache entries */
             sub_st = stack_pointer[-1];
             str_st = stack_pointer[-2];
             PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
@@ -972,13 +976,14 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 2;
+            next_instr += 4;
             INSTRUCTION_STATS(BINARY_SUBSCR_TUPLE_INT);
-            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 1, "incorrect cache size");
+            static_assert(INLINE_CACHE_ENTRIES_BINARY_SUBSCR == 3, "incorrect cache size");
             _PyStackRef tuple_st;
             _PyStackRef sub_st;
             _PyStackRef res;
             /* Skip 1 cache entry */
+            /* Skip 2 cache entries */
             sub_st = stack_pointer[-1];
             tuple_st = stack_pointer[-2];
             PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);

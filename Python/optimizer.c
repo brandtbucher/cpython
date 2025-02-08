@@ -753,22 +753,28 @@ translate_bytecode_to_trace(
                             assert(i + 1 == nuops);
                             if (opcode == FOR_ITER_GEN ||
                                 opcode == LOAD_ATTR_PROPERTY ||
-                                opcode == BINARY_SUBSCR_GETITEM ||
                                 opcode == SEND_GEN)
                             {
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 OPT_STAT_INC(unknown_callee);
                                 return 0;
                             }
-                            assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
-                            int func_version_offset =
-                                offsetof(_PyCallCache, func_version)/sizeof(_Py_CODEUNIT)
-                                // Add one to account for the actual opcode/oparg pair:
-                                + 1;
-                            uint32_t func_version = read_u32(&instr[func_version_offset].cache);
+                            uint32_t func_version;
                             PyCodeObject *new_code = NULL;
-                            PyFunctionObject *new_func =
-                                _PyFunction_LookupByVersion(func_version, (PyObject **) &new_code);
+                            PyFunctionObject *new_func;
+                            if (opcode == BINARY_SUBSCR_GETITEM) {
+                                // Add one to account for the actual opcode/oparg pair:
+                                int offset = offsetof(_PyBinarySubscrCache, version) / sizeof(_Py_CODEUNIT) + 1;
+                                func_version = read_u32(&instr[offset].cache);
+                                new_func = _PyFunction_LookupByVersion(func_version, (PyObject **)&new_code);
+                            }
+                            else {
+                                assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
+                                // Add one to account for the actual opcode/oparg pair:
+                                int offset = offsetof(_PyCallCache, func_version) / sizeof(_Py_CODEUNIT) + 1;
+                                func_version = read_u32(&instr[offset].cache);
+                                new_func = _PyFunction_LookupByVersion(func_version, (PyObject **)&new_code);
+                            }
                             DPRINTF(2, "Function: version=%#x; new_func=%p, new_code=%p\n",
                                     (int)func_version, new_func, new_code);
                             if (new_code != NULL) {

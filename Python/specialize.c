@@ -1841,6 +1841,7 @@ void
 _Py_Specialize_BinarySubscr(
      _PyStackRef container_st, _PyStackRef sub_st, _Py_CODEUNIT *instr)
 {
+    _PyBinarySubscrCache *cache = (_PyBinarySubscrCache *)(instr + 1);
     PyObject *container = PyStackRef_AsPyObjectBorrow(container_st);
     PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
 
@@ -1922,8 +1923,13 @@ _Py_Specialize_BinarySubscr(
             goto fail;
         }
         if (_PyType_CacheGetItemForSpecialization(ht, descriptor, (uint32_t)tp_version)) {
-            specialized_op = BINARY_SUBSCR_GETITEM;
+            int version = function_get_version(descriptor, BINARY_SUBSCR);
             Py_DECREF(descriptor);
+            if (version == 0) {
+                goto fail;
+            }
+            write_u32(cache->version, version);
+            specialized_op = BINARY_SUBSCR_GETITEM;
             goto success;
         }
     }
