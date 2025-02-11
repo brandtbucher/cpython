@@ -4015,6 +4015,212 @@
             break;
         }
 
+        case _ITER_CHECK_DICT_ITEMS: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (Py_TYPE(di) != &PyDictIterItem_Type) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (di->di_dict == NULL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (di->di_used != di->di_dict->ma_used) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (di->len == 0) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_SPLIT: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_SPLIT) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_UNICODE: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_UNICODE) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (di->di_dict->ma_keys->dk_usable <= di->di_pos) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[di->di_pos].me_value == NULL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_GENERAL: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_GENERAL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (di->di_dict->ma_keys->dk_usable <= di->di_pos) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (DK_ENTRIES(di->di_dict->ma_keys)[di->di_pos].me_value == NULL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        /* _ITER_JUMP_DICT_ITEMS_SPLIT is not a viable micro-op for tier 2 because it is replaced */
+
+        /* _ITER_JUMP_DICT_ITEMS_UNICODE is not a viable micro-op for tier 2 because it is replaced */
+
+        /* _ITER_JUMP_DICT_ITEMS_GENERAL is not a viable micro-op for tier 2 because it is replaced */
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_SPLIT: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_SPLIT);
+            if (di->di_dict->ma_used <= di->di_pos) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_UNICODE: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
+            if (di->di_dict->ma_keys->dk_nentries <= di->di_pos) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_GENERAL: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_GENERAL);
+            if (di->di_dict->ma_keys->dk_nentries <= di->di_pos) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_SPLIT: {
+            _PyStackRef iter;
+            _PyStackRef next;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_SPLIT);
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            int index = get_index_from_order(di->di_dict, di->di_pos);
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            PyObject *key = DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[index].me_key;
+            PyObject *value = di->di_dict->ma_values->values[index];
+            assert(key);
+            assert(value);
+            di->di_pos++;
+            di->len--;
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyObject *pair = PyTuple_New(2);
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            if (pair == NULL) {
+                JUMP_TO_ERROR();
+            }
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+            PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            next = PyStackRef_FromPyObjectSteal(pair);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_UNICODE: {
+            _PyStackRef iter;
+            _PyStackRef next;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
+            PyDictUnicodeEntry *entry_ptr = &DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[di->di_pos];
+            PyObject *key = entry_ptr->me_key;
+            PyObject *value = entry_ptr->me_value;
+            assert(key);
+            assert(value);
+            di->di_pos++;
+            di->len--;
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyObject *pair = PyTuple_New(2);
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            if (pair == NULL) {
+                JUMP_TO_ERROR();
+            }
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+            PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            next = PyStackRef_FromPyObjectSteal(pair);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_GENERAL: {
+            _PyStackRef iter;
+            _PyStackRef next;
+            iter = stack_pointer[-1];
+            dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+            assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_GENERAL);
+            PyDictKeyEntry *entry_ptr = &DK_ENTRIES(di->di_dict->ma_keys)[di->di_pos];
+            PyObject *key = entry_ptr->me_key;
+            PyObject *value = entry_ptr->me_value;
+            assert(key);
+            assert(value);
+            di->di_pos++;
+            di->len--;
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyObject *pair = PyTuple_New(2);
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            if (pair == NULL) {
+                JUMP_TO_ERROR();
+            }
+            _PyFrame_SetStackPointer(frame, stack_pointer);
+            PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+            PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+            stack_pointer = _PyFrame_GetStackPointer(frame);
+            next = PyStackRef_FromPyObjectSteal(pair);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _ITER_CHECK_RANGE: {
             _PyStackRef iter;
             iter = stack_pointer[-1];

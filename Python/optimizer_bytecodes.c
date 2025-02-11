@@ -917,6 +917,27 @@ dummy_func(void) {
         }
     }
 
+    op(_ITER_NEXT_DICT_ITEMS_SPLIT, (iter -- iter, next)) {
+        JitOptSymbol *items[2];
+        items[0] = sym_new_type(ctx, &PyUnicode_Type);
+        items[1] = sym_new_not_null(ctx);
+        next = sym_new_tuple(ctx, 2, items);
+    }
+
+    op(_ITER_NEXT_DICT_ITEMS_UNICODE, (iter -- iter, next)) {
+        JitOptSymbol *items[2];
+        items[0] = sym_new_type(ctx, &PyUnicode_Type);
+        items[1] = sym_new_not_null(ctx);
+        next = sym_new_tuple(ctx, 2, items);
+    }
+
+    op(_ITER_NEXT_DICT_ITEMS_GENERAL, (iter -- iter, next)) {
+        JitOptSymbol *items[2];
+        items[0] = sym_new_not_null(ctx);
+        items[1] = sym_new_not_null(ctx);
+        next = sym_new_tuple(ctx, 2, items);
+    }
+
 
 // END BYTECODES //
 

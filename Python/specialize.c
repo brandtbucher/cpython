@@ -2779,9 +2779,6 @@ int
     if (t == &PyDictIterValue_Type) {
         return SPEC_FAIL_ITER_DICT_VALUES;
     }
-    if (t == &PyDictIterItem_Type) {
-        return SPEC_FAIL_ITER_DICT_ITEMS;
-    }
     if (t == &PySetIter_Type) {
         return SPEC_FAIL_ITER_SET;
     }
@@ -2843,6 +2840,22 @@ _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int oparg)
         instr->op.code = FOR_ITER_RANGE;
         goto success;
     }
+    else if (tp == &PyDictIterItem_Type) {
+        switch (((dictiterobject *)iter_o)->di_dict->ma_keys->dk_kind) {
+            case DICT_KEYS_SPLIT:
+                instr->op.code = FOR_ITER_DICT_ITEMS_SPLIT;
+                break;
+            case DICT_KEYS_UNICODE:
+                instr->op.code = FOR_ITER_DICT_ITEMS_UNICODE;
+                break;
+            case DICT_KEYS_GENERAL:
+                instr->op.code = FOR_ITER_DICT_ITEMS_GENERAL;
+                break;
+            default:
+                Py_UNREACHABLE();
+        }
+        goto success;
+    }
     else if (tp == &PyGen_Type && oparg <= SHRT_MAX) {
         assert(instr[oparg + INLINE_CACHE_ENTRIES_FOR_ITER + 1].op.code == END_FOR  ||
             instr[oparg + INLINE_CACHE_ENTRIES_FOR_ITER + 1].op.code == INSTRUMENTED_END_FOR
@@ -2855,7 +2868,7 @@ _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int oparg)
         instr->op.code = FOR_ITER_GEN;
         goto success;
     }
-    SPECIALIZATION_FAIL(FOR_ITER,
+    SPECIALIZATION_FAIL(FOR_ITER,min_instrumented
                         _PySpecialization_ClassifyIterator(iter_o));
 failure:
     STAT_INC(FOR_ITER, failure);

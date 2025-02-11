@@ -1543,6 +1543,76 @@
             break;
         }
 
+        case _ITER_CHECK_DICT_ITEMS: {
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_SPLIT: {
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_UNICODE: {
+            break;
+        }
+
+        case _ITER_CHECK_DICT_ITEMS_GENERAL: {
+            break;
+        }
+
+        /* _ITER_JUMP_DICT_ITEMS_SPLIT is not a viable micro-op for tier 2 */
+
+        /* _ITER_JUMP_DICT_ITEMS_UNICODE is not a viable micro-op for tier 2 */
+
+        /* _ITER_JUMP_DICT_ITEMS_GENERAL is not a viable micro-op for tier 2 */
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_SPLIT: {
+            break;
+        }
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_UNICODE: {
+            break;
+        }
+
+        case _GUARD_NOT_EXHAUSTED_DICT_ITEMS_GENERAL: {
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_SPLIT: {
+            JitOptSymbol *next;
+            JitOptSymbol *items[2];
+            items[0] = sym_new_type(ctx, &PyUnicode_Type);
+            items[1] = sym_new_not_null(ctx);
+            next = sym_new_tuple(ctx, 2, items);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_UNICODE: {
+            JitOptSymbol *next;
+            JitOptSymbol *items[2];
+            items[0] = sym_new_type(ctx, &PyUnicode_Type);
+            items[1] = sym_new_not_null(ctx);
+            next = sym_new_tuple(ctx, 2, items);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _ITER_NEXT_DICT_ITEMS_GENERAL: {
+            JitOptSymbol *next;
+            JitOptSymbol *items[2];
+            items[0] = sym_new_not_null(ctx);
+            items[1] = sym_new_not_null(ctx);
+            next = sym_new_tuple(ctx, 2, items);
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
         case _ITER_CHECK_RANGE: {
             break;
         }

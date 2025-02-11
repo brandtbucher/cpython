@@ -5111,6 +5111,298 @@
             DISPATCH();
         }
 
+        TARGET(FOR_ITER_DICT_ITEMS_GENERAL) {
+            #if defined(Py_TAIL_CALL_INTERP)
+            int opcode = FOR_ITER_DICT_ITEMS_GENERAL;
+            (void)(opcode);
+            #endif
+            _Py_CODEUNIT* const this_instr = next_instr;
+            (void)this_instr;
+            frame->instr_ptr = next_instr;
+            next_instr += 2;
+            INSTRUCTION_STATS(FOR_ITER_DICT_ITEMS_GENERAL);
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            _PyStackRef iter;
+            _PyStackRef next;
+            /* Skip 1 cache entry */
+            // _ITER_CHECK_DICT_ITEMS
+            {
+                iter = stack_pointer[-1];
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (Py_TYPE(di) != &PyDictIterItem_Type) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_dict == NULL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_used != di->di_dict->ma_used) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->len == 0) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_CHECK_DICT_ITEMS_GENERAL
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_GENERAL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_dict->ma_keys->dk_usable <= di->di_pos) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (DK_ENTRIES(di->di_dict->ma_keys)[di->di_pos].me_value == NULL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_JUMP_DICT_ITEMS_GENERAL
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_GENERAL);
+                if (di->di_dict->ma_keys->dk_nentries <= di->di_pos) {
+                    _PyFrame_SetStackPointer(frame, stack_pointer);
+                    Py_CLEAR(di->di_dict);
+                    stack_pointer = _PyFrame_GetStackPointer(frame);
+                    JUMPBY(oparg + 1);
+                    DISPATCH();
+                }
+                STAT_INC(FOR_ITER, hit);
+            }
+            // _ITER_NEXT_DICT_ITEMS_GENERAL
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_GENERAL);
+                PyDictKeyEntry *entry_ptr = &DK_ENTRIES(di->di_dict->ma_keys)[di->di_pos];
+                PyObject *key = entry_ptr->me_key;
+                PyObject *value = entry_ptr->me_value;
+                assert(key);
+                assert(value);
+                di->di_pos++;
+                di->len--;
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyObject *pair = PyTuple_New(2);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                if (pair == NULL) {
+                    JUMP_TO_LABEL(error);
+                }
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+                PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                next = PyStackRef_FromPyObjectSteal(pair);
+            }
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            DISPATCH();
+        }
+
+        TARGET(FOR_ITER_DICT_ITEMS_SPLIT) {
+            #if defined(Py_TAIL_CALL_INTERP)
+            int opcode = FOR_ITER_DICT_ITEMS_SPLIT;
+            (void)(opcode);
+            #endif
+            _Py_CODEUNIT* const this_instr = next_instr;
+            (void)this_instr;
+            frame->instr_ptr = next_instr;
+            next_instr += 2;
+            INSTRUCTION_STATS(FOR_ITER_DICT_ITEMS_SPLIT);
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            _PyStackRef iter;
+            _PyStackRef next;
+            /* Skip 1 cache entry */
+            // _ITER_CHECK_DICT_ITEMS
+            {
+                iter = stack_pointer[-1];
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (Py_TYPE(di) != &PyDictIterItem_Type) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_dict == NULL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_used != di->di_dict->ma_used) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->len == 0) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_CHECK_DICT_ITEMS_SPLIT
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_SPLIT) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_JUMP_DICT_ITEMS_SPLIT
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_SPLIT);
+                if (di->di_dict->ma_used <= di->di_pos) {
+                    _PyFrame_SetStackPointer(frame, stack_pointer);
+                    Py_CLEAR(di->di_dict);
+                    stack_pointer = _PyFrame_GetStackPointer(frame);
+                    JUMPBY(oparg + 1);
+                    DISPATCH();
+                }
+                STAT_INC(FOR_ITER, hit);
+            }
+            // _ITER_NEXT_DICT_ITEMS_SPLIT
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_SPLIT);
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                int index = get_index_from_order(di->di_dict, di->di_pos);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                PyObject *key = DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[index].me_key;
+                PyObject *value = di->di_dict->ma_values->values[index];
+                assert(key);
+                assert(value);
+                di->di_pos++;
+                di->len--;
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyObject *pair = PyTuple_New(2);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                if (pair == NULL) {
+                    JUMP_TO_LABEL(error);
+                }
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+                PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                next = PyStackRef_FromPyObjectSteal(pair);
+            }
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            DISPATCH();
+        }
+
+        TARGET(FOR_ITER_DICT_ITEMS_UNICODE) {
+            #if defined(Py_TAIL_CALL_INTERP)
+            int opcode = FOR_ITER_DICT_ITEMS_UNICODE;
+            (void)(opcode);
+            #endif
+            _Py_CODEUNIT* const this_instr = next_instr;
+            (void)this_instr;
+            frame->instr_ptr = next_instr;
+            next_instr += 2;
+            INSTRUCTION_STATS(FOR_ITER_DICT_ITEMS_UNICODE);
+            static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1, "incorrect cache size");
+            _PyStackRef iter;
+            _PyStackRef next;
+            /* Skip 1 cache entry */
+            // _ITER_CHECK_DICT_ITEMS
+            {
+                iter = stack_pointer[-1];
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (Py_TYPE(di) != &PyDictIterItem_Type) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_dict == NULL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_used != di->di_dict->ma_used) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->len == 0) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_CHECK_DICT_ITEMS_UNICODE
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                if (di->di_dict->ma_keys->dk_kind != DICT_KEYS_UNICODE) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (di->di_dict->ma_keys->dk_usable <= di->di_pos) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+                if (DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[di->di_pos].me_value == NULL) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
+            }
+            // _ITER_JUMP_DICT_ITEMS_UNICODE
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
+                if (di->di_dict->ma_keys->dk_nentries <= di->di_pos) {
+                    _PyFrame_SetStackPointer(frame, stack_pointer);
+                    Py_CLEAR(di->di_dict);
+                    stack_pointer = _PyFrame_GetStackPointer(frame);
+                    JUMPBY(oparg + 1);
+                    DISPATCH();
+                }
+                STAT_INC(FOR_ITER, hit);
+            }
+            // _ITER_NEXT_DICT_ITEMS_UNICODE
+            {
+                dictiterobject *di = (dictiterobject *)PyStackRef_AsPyObjectBorrow(iter);
+                assert(di->di_dict->ma_keys->dk_kind == DICT_KEYS_UNICODE);
+                PyDictUnicodeEntry *entry_ptr = &DK_UNICODE_ENTRIES(di->di_dict->ma_keys)[di->di_pos];
+                PyObject *key = entry_ptr->me_key;
+                PyObject *value = entry_ptr->me_value;
+                assert(key);
+                assert(value);
+                di->di_pos++;
+                di->len--;
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyObject *pair = PyTuple_New(2);
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                if (pair == NULL) {
+                    JUMP_TO_LABEL(error);
+                }
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                PyTuple_SET_ITEM(pair, 0, Py_NewRef(key));
+                PyTuple_SET_ITEM(pair, 1, Py_NewRef(value));
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                next = PyStackRef_FromPyObjectSteal(pair);
+            }
+            stack_pointer[0] = next;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            DISPATCH();
+        }
+
         TARGET(FOR_ITER_GEN) {
             #if defined(Py_TAIL_CALL_INTERP)
             int opcode = FOR_ITER_GEN;

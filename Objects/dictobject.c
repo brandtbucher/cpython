@@ -618,15 +618,6 @@ static PyDictKeysObject empty_keys_struct = {
 #  define ASSERT_CONSISTENT(op) assert(_PyDict_CheckConsistency((PyObject *)(op), 0))
 #endif
 
-static inline int
-get_index_from_order(PyDictObject *mp, Py_ssize_t i)
-{
-    assert(mp->ma_used <= SHARED_KEYS_MAX_SIZE);
-    assert(i < mp->ma_values->size);
-    uint8_t *array = get_insertion_order_array(mp->ma_values);
-    return array[i];
-}
-
 #ifdef DEBUG_PYDICT
 static void
 dump_entries(PyDictKeysObject *dk)
@@ -5007,15 +4998,6 @@ PyDict_DelItemString(PyObject *v, const char *key)
 }
 
 /* Dictionary iterator types */
-
-typedef struct {
-    PyObject_HEAD
-    PyDictObject *di_dict; /* Set to NULL when iterator is exhausted */
-    Py_ssize_t di_used;
-    Py_ssize_t di_pos;
-    PyObject* di_result; /* reusable result tuple for iteritems */
-    Py_ssize_t len;
-} dictiterobject;
 
 static PyObject *
 dictiter_new(PyDictObject *dict, PyTypeObject *itertype)

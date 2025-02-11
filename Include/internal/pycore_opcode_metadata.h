@@ -197,6 +197,12 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
             return 2;
         case FOR_ITER:
             return 1;
+        case FOR_ITER_DICT_ITEMS_GENERAL:
+            return 1;
+        case FOR_ITER_DICT_ITEMS_SPLIT:
+            return 1;
+        case FOR_ITER_DICT_ITEMS_UNICODE:
+            return 1;
         case FOR_ITER_GEN:
             return 1;
         case FOR_ITER_LIST:
@@ -669,6 +675,12 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
         case FORMAT_WITH_SPEC:
             return 1;
         case FOR_ITER:
+            return 2;
+        case FOR_ITER_DICT_ITEMS_GENERAL:
+            return 2;
+        case FOR_ITER_DICT_ITEMS_SPLIT:
+            return 2;
+        case FOR_ITER_DICT_ITEMS_UNICODE:
             return 2;
         case FOR_ITER_GEN:
             return 1;
@@ -1320,6 +1332,18 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             return 0;
         }
         case FOR_ITER: {
+            *effect = 1;
+            return 0;
+        }
+        case FOR_ITER_DICT_ITEMS_GENERAL: {
+            *effect = 1;
+            return 0;
+        }
+        case FOR_ITER_DICT_ITEMS_SPLIT: {
+            *effect = 1;
+            return 0;
+        }
+        case FOR_ITER_DICT_ITEMS_UNICODE: {
             *effect = 1;
             return 0;
         }
@@ -2082,6 +2106,9 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [FORMAT_SIMPLE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [FORMAT_WITH_SPEC] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [FOR_ITER] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
+    [FOR_ITER_DICT_ITEMS_GENERAL] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [FOR_ITER_DICT_ITEMS_SPLIT] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
+    [FOR_ITER_DICT_ITEMS_UNICODE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [FOR_ITER_GEN] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
     [FOR_ITER_LIST] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EXIT_FLAG | HAS_ESCAPES_FLAG },
     [FOR_ITER_RANGE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EXIT_FLAG | HAS_ERROR_FLAG },
@@ -2318,6 +2345,9 @@ _PyOpcode_macro_expansion[256] = {
     [FORMAT_SIMPLE] = { .nuops = 1, .uops = { { _FORMAT_SIMPLE, 0, 0 } } },
     [FORMAT_WITH_SPEC] = { .nuops = 1, .uops = { { _FORMAT_WITH_SPEC, 0, 0 } } },
     [FOR_ITER] = { .nuops = 1, .uops = { { _FOR_ITER, 9, 0 } } },
+    [FOR_ITER_DICT_ITEMS_GENERAL] = { .nuops = 4, .uops = { { _ITER_CHECK_DICT_ITEMS, 0, 0 }, { _ITER_CHECK_DICT_ITEMS_GENERAL, 0, 0 }, { _ITER_JUMP_DICT_ITEMS_GENERAL, 9, 1 }, { _ITER_NEXT_DICT_ITEMS_GENERAL, 0, 0 } } },
+    [FOR_ITER_DICT_ITEMS_SPLIT] = { .nuops = 4, .uops = { { _ITER_CHECK_DICT_ITEMS, 0, 0 }, { _ITER_CHECK_DICT_ITEMS_SPLIT, 0, 0 }, { _ITER_JUMP_DICT_ITEMS_SPLIT, 9, 1 }, { _ITER_NEXT_DICT_ITEMS_SPLIT, 0, 0 } } },
+    [FOR_ITER_DICT_ITEMS_UNICODE] = { .nuops = 4, .uops = { { _ITER_CHECK_DICT_ITEMS, 0, 0 }, { _ITER_CHECK_DICT_ITEMS_UNICODE, 0, 0 }, { _ITER_JUMP_DICT_ITEMS_UNICODE, 9, 1 }, { _ITER_NEXT_DICT_ITEMS_UNICODE, 0, 0 } } },
     [FOR_ITER_GEN] = { .nuops = 3, .uops = { { _CHECK_PEP_523, 0, 0 }, { _FOR_ITER_GEN_FRAME, 0, 0 }, { _PUSH_FRAME, 0, 0 } } },
     [FOR_ITER_LIST] = { .nuops = 3, .uops = { { _ITER_CHECK_LIST, 0, 0 }, { _ITER_JUMP_LIST, 9, 1 }, { _ITER_NEXT_LIST, 0, 0 } } },
     [FOR_ITER_RANGE] = { .nuops = 3, .uops = { { _ITER_CHECK_RANGE, 0, 0 }, { _ITER_JUMP_RANGE, 9, 1 }, { _ITER_NEXT_RANGE, 0, 0 } } },
@@ -2510,6 +2540,9 @@ const char *_PyOpcode_OpName[266] = {
     [FORMAT_SIMPLE] = "FORMAT_SIMPLE",
     [FORMAT_WITH_SPEC] = "FORMAT_WITH_SPEC",
     [FOR_ITER] = "FOR_ITER",
+    [FOR_ITER_DICT_ITEMS_GENERAL] = "FOR_ITER_DICT_ITEMS_GENERAL",
+    [FOR_ITER_DICT_ITEMS_SPLIT] = "FOR_ITER_DICT_ITEMS_SPLIT",
+    [FOR_ITER_DICT_ITEMS_UNICODE] = "FOR_ITER_DICT_ITEMS_UNICODE",
     [FOR_ITER_GEN] = "FOR_ITER_GEN",
     [FOR_ITER_LIST] = "FOR_ITER_LIST",
     [FOR_ITER_RANGE] = "FOR_ITER_RANGE",
@@ -2772,6 +2805,9 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [FORMAT_SIMPLE] = FORMAT_SIMPLE,
     [FORMAT_WITH_SPEC] = FORMAT_WITH_SPEC,
     [FOR_ITER] = FOR_ITER,
+    [FOR_ITER_DICT_ITEMS_GENERAL] = FOR_ITER,
+    [FOR_ITER_DICT_ITEMS_SPLIT] = FOR_ITER,
+    [FOR_ITER_DICT_ITEMS_UNICODE] = FOR_ITER,
     [FOR_ITER_GEN] = FOR_ITER,
     [FOR_ITER_LIST] = FOR_ITER,
     [FOR_ITER_RANGE] = FOR_ITER,
@@ -2940,15 +2976,12 @@ const uint8_t _PyOpcode_Deopt[256] = {
     case 137: \
     case 138: \
     case 139: \
-    case 140: \
-    case 141: \
-    case 142: \
-    case 143: \
-    case 144: \
-    case 145: \
-    case 146: \
-    case 147: \
-    case 148: \
+    case 226: \
+    case 227: \
+    case 228: \
+    case 229: \
+    case 230: \
+    case 231: \
     case 232: \
     case 233: \
     case 234: \
