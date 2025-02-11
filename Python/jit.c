@@ -135,7 +135,7 @@ typedef struct {
 
 typedef struct {
     trampoline_state trampolines;
-    uintptr_t instruction_starts[UOP_MAX_TRACE_LENGTH];
+    ssize_t *instruction_starts;
 } jit_state;
 
 // Warning! AArch64 requires you to get your hands dirty. These are your gloves:
@@ -479,6 +479,10 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     size_t code_size = 0;
     size_t data_size = 0;
     jit_state state = {0};
+    state.instruction_starts = PyMem_Malloc(sizeof(uintptr_t) * length);
+    if (state.instruction_starts == NULL) {
+        return -1;
+    }
     group = &shim;
     code_size += group->code_size;
     data_size += group->data_size;
@@ -506,6 +510,7 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     size_t total_size = code_size + state.trampolines.size + data_size  + padding;
     unsigned char *memory = jit_alloc(total_size);
     if (memory == NULL) {
+        PyMem_Free(state.instruction_starts);
         return -1;
     }
 #ifdef MAP_JIT
@@ -551,13 +556,17 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
 #ifdef MAP_JIT
     pthread_jit_write_protect_np(1);
 #endif
+    executor->jit_code = memory;
+    executor->jit_side_entry = memory + shim.code_size;
+    executor->jit_size = total_size;
+    for (int i = 0; i < Py_SIZE(executor->vm_data.code); i++) {
+        executor->jit_offsets[i] = state.instruction_starts[executor->jit_offsets[i]];
+    }
+    PyMem_Free(state.instruction_starts);
     if (mark_executable(memory, total_size)) {
         jit_free(memory, total_size);
         return -1;
     }
-    executor->jit_code = memory;
-    executor->jit_side_entry = memory + shim.code_size;
-    executor->jit_size = total_size;
     return 0;
 }
 

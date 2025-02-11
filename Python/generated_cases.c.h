@@ -608,6 +608,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -1479,6 +1492,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -1618,6 +1644,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -1740,6 +1779,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -2737,6 +2789,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -2957,6 +3022,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -3720,6 +3798,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -3816,6 +3907,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -5173,6 +5277,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -6729,10 +6846,23 @@
                 LOAD_IP(frame->return_offset);
                 res = temp;
                 LLTRACE_RESUME_FRAME();
+                stack_pointer[0] = res;
+                stack_pointer += 1;
+                assert(WITHIN_STACK_BOUNDS());
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
-            stack_pointer[0] = res;
-            stack_pointer += 1;
-            assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
         }
 
@@ -6801,10 +6931,23 @@
                 LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
                 value = temp;
                 LLTRACE_RESUME_FRAME();
+                stack_pointer[0] = value;
+                stack_pointer += 1;
+                assert(WITHIN_STACK_BOUNDS());
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
-            stack_pointer[0] = value;
-            stack_pointer += 1;
-            assert(WITHIN_STACK_BOUNDS());
             DISPATCH();
         }
 
@@ -7882,6 +8025,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -9632,6 +9788,19 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             DISPATCH();
         }
 
@@ -9664,6 +9833,19 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             DISPATCH();
         }
 
@@ -9833,6 +10015,19 @@
                 LOAD_SP();
                 LOAD_IP(0);
                 LLTRACE_RESUME_FRAME();
+                // XXX:
+                #ifdef TIER_TWO
+                tstate->previous_executor = (PyObject *)current_executor;
+                STITCH();
+                GOTO_TIER_ONE(frame->instr_ptr);
+                #else
+                tstate->previous_executor = Py_None;
+                _Py_CODEUNIT *old = frame->instr_ptr;
+                frame->instr_ptr = next_instr;
+                STITCH();
+                tstate->previous_executor = NULL;
+                frame->instr_ptr = old;
+                #endif
             }
             DISPATCH();
         }
@@ -11229,6 +11424,19 @@
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             DISPATCH();
         }
 

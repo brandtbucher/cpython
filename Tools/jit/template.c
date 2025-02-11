@@ -51,8 +51,9 @@ do {                                                \
 } while (0)
 
 #undef LOAD_IP
-#define LOAD_IP(UNUSED) \
+#define LOAD_IP(OFFSET) \
     do {                \
+        frame->instr_ptr += OFFSET; \
     } while (0)
 
 #undef LLTRACE_RESUME_FRAME

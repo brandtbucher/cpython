@@ -560,6 +560,7 @@ def has_error_without_pop(op: parser.CodeDef) -> bool:
 
 
 NON_ESCAPING_FUNCTIONS = (
+    "JUMP_TO_LABEL",
     "PyCFunction_GET_FLAGS",
     "PyCFunction_GET_FUNCTION",
     "PyCFunction_GET_SELF",
@@ -672,11 +673,12 @@ NON_ESCAPING_FUNCTIONS = (
     "_Py_atomic_load_ptr_acquire",
     "_Py_atomic_load_uintptr_relaxed",
     "_Py_set_eval_breaker_bit",
+    "__attribute__",
     "advance_backoff_counter",
     "assert",
     "backoff_counter_triggers",
     "initial_temperature_backoff_counter",
-    "JUMP_TO_LABEL",
+    "jump",
     "restart_backoff_counter",
 )
 

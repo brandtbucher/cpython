@@ -878,7 +878,10 @@ enter_tier_two:
 #else
 
 #undef LOAD_IP
-#define LOAD_IP(UNUSED) (void)0
+#define LOAD_IP(OFFSET)\
+    do { \
+        frame->instr_ptr += (OFFSET); \
+    } while (0)
 
 #ifdef Py_STATS
 // Disable these macros that apply to Tier 1 stats when we are in Tier 2

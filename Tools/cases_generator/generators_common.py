@@ -619,7 +619,7 @@ class Emitter:
                                     out.defined = True
                                     out.in_memory = False
                                     break
-                        if tkn.text.startswith("DISPATCH"):
+                        if tkn.text.startswith("DISPATCH") or tkn.text.startswith("JUMP_TO_"):
                             self._print_storage(storage)
                             reachable = False
                         self.out.emit(tkn)

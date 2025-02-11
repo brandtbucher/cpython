@@ -1107,6 +1107,20 @@ dummy_func(
             LOAD_IP(frame->return_offset);
             res = temp;
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            // XXX:
+        #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+        #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+        #endif
         }
 
         tier1 op(_RETURN_VALUE_EVENT, (val -- val)) {
@@ -1293,6 +1307,20 @@ dummy_func(
             LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
             value = temp;
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            // XXX:
+        #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+        #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+        #endif
         }
 
         tier1 op(_YIELD_VALUE_EVENT, (val -- val)) {
@@ -3068,7 +3096,7 @@ dummy_func(
                 }
                 /* iterator ended normally */
                 /* The translator sets the deopt target just past the matching END_FOR */
-                EXIT_IF(true);
+                JUMP_TO_JUMP_TARGET();
             }
             next = PyStackRef_FromPyObjectSteal(next_o);
             // Common case: no jump, leave it to the code generator
@@ -3133,10 +3161,12 @@ dummy_func(
             _PyListIterObject *it = (_PyListIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
             PyListObject *seq = it->it_seq;
-            EXIT_IF(seq == NULL);
+            if (seq == NULL) {
+                JUMP_TO_JUMP_TARGET();
+            }
             if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
                 it->it_index = -1;
-                EXIT_IF(1);
+                JUMP_TO_JUMP_TARGET();
             }
         }
 
@@ -3183,8 +3213,12 @@ dummy_func(
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
             PyTupleObject *seq = it->it_seq;
-            EXIT_IF(seq == NULL);
-            EXIT_IF(it->it_index >= PyTuple_GET_SIZE(seq));
+            if (seq == NULL) {
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (it->it_index >= PyTuple_GET_SIZE(seq)) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op(_ITER_NEXT_TUPLE, (iter -- iter, next)) {
@@ -3223,7 +3257,9 @@ dummy_func(
         op(_GUARD_NOT_EXHAUSTED_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
-            EXIT_IF(r->len <= 0);
+            if (r->len <= 0) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op(_ITER_NEXT_RANGE, (iter -- iter, next)) {
@@ -3781,6 +3817,19 @@ dummy_func(
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
+            // XXX:
+        #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+        #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+        #endif
         }
 
         macro(CALL_BOUND_METHOD_EXACT_ARGS) =
@@ -4727,6 +4776,20 @@ dummy_func(
             RELOAD_STACK();
             res = PyStackRef_FromPyObjectSteal((PyObject *)gen);
             LLTRACE_RESUME_FRAME();
+            SYNC_SP();
+            // XXX:
+        #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+        #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+        #endif
         }
 
         inst(BUILD_SLICE, (args[oparg] -- slice)) {
@@ -4938,14 +5001,18 @@ dummy_func(
             int is_true = PyStackRef_IsTrue(flag);
             DEAD(flag);
             SYNC_SP();
-            EXIT_IF(!is_true);
+            if (!is_true) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op (_GUARD_IS_FALSE_POP, (flag -- )) {
             int is_false = PyStackRef_IsFalse(flag);
             DEAD(flag);
             SYNC_SP();
-            EXIT_IF(!is_false);
+            if (!is_false) {
+                JUMP_TO_JUMP_TARGET();
+            }
         }
 
         op (_GUARD_IS_NONE_POP, (val -- )) {
@@ -4953,16 +5020,19 @@ dummy_func(
             if (!is_none) {
                 PyStackRef_CLOSE(val);
                 SYNC_SP();
-                EXIT_IF(1);
+                JUMP_TO_JUMP_TARGET();
             }
             DEAD(val);
         }
 
         op (_GUARD_IS_NOT_NONE_POP, (val -- )) {
             int is_none = PyStackRef_IsNone(val);
+            if (is_none) {
+                DEAD(val);
+                SYNC_SP();
+                JUMP_TO_JUMP_TARGET();
+            }
             PyStackRef_CLOSE(val);
-            SYNC_SP();
-            EXIT_IF(is_none);
         }
 
         op(_JUMP_TO_TOP, (--)) {
@@ -5091,10 +5161,24 @@ dummy_func(
 
         tier2 op(_START_EXECUTOR, (executor/4 --)) {
             Py_CLEAR(tstate->previous_executor);
-#ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
-#endif
-            assert(((_PyExecutorObject *)executor)->vm_data.valid);
+            assert(current_executor->vm_data.valid);
+            // _MAKE_WARM //////////////////////////////////////////////////////
+            current_executor->vm_data.warm = true;
+            // It's okay if this ends up going negative.
+            if (--tstate->interp->trace_run_counter == 0) {
+                _Py_set_eval_breaker_bit(tstate, _PY_EVAL_JIT_INVALIDATE_COLD_BIT);
+            }
+            ////////////////////////////////////////////////////////////////////
+            int offset = frame->instr_ptr - _PyFrame_GetBytecode(frame);
+        #ifdef _Py_JIT
+            jit_func_preserve_none jump = (jit_func_preserve_none)current_executor->jit_offsets[offset];
+            __attribute__((musttail)) return jump(frame, stack_pointer, tstate);
+        #else
+            uintptr_t jump = current_executor->jit_offsets[offset];
+            next_uop = &current_executor->trace[jump];
+            break;
+        #endif
         }
 
         tier2 op(_MAKE_WARM, (--)) {

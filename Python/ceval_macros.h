@@ -429,6 +429,22 @@ do {                                                              \
 #define JUMP_TO_JUMP_TARGET() goto jump_to_jump_target
 #define JUMP_TO_ERROR() goto jump_to_error_target
 
+#define STITCH()                                                                  \
+    do {                                                                          \
+        if (PyStackRef_CodeCheck(frame->f_executable)) {                          \
+            _PyExecutorArray *executors = _PyFrame_GetCode(frame)->co_executors;  \
+            if (executors) {                                                      \
+                for (int i = 0; i < executors->size; i++) {                       \
+                    _PyExecutorObject *executor = executors->executors[i];        \
+                    if (executor) {                                               \
+                        Py_INCREF(executor);                                      \
+                        GOTO_TIER_TWO(executor);                                  \
+                    }                                                             \
+                }                                                                 \
+            }                                                                     \
+        }                                                                         \
+    } while (0)
+
 /* Stackref macros */
 
 /* How much scratch space to give stackref to PyObject* conversion. */

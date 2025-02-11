@@ -1577,6 +1577,19 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             break;
         }
 
@@ -1738,6 +1751,19 @@
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             break;
         }
 
@@ -3903,10 +3929,7 @@
                 }
                 /* iterator ended normally */
                 /* The translator sets the deopt target just past the matching END_FOR */
-                if (true) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
             next = PyStackRef_FromPyObjectSteal(next_o);
             // Common case: no jump, leave it to the code generator
@@ -3938,15 +3961,11 @@
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
             PyListObject *seq = it->it_seq;
             if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
                 it->it_index = -1;
-                if (1) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
             break;
         }
@@ -3988,11 +4007,9 @@
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
             PyTupleObject *seq = it->it_seq;
             if (seq == NULL) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             if (it->it_index >= PyTuple_GET_SIZE(seq)) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -4034,7 +4051,6 @@
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
             if (r->len <= 0) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -4789,6 +4805,19 @@
             LOAD_SP();
             LOAD_IP(0);
             LLTRACE_RESUME_FRAME();
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             break;
         }
 
@@ -6039,6 +6068,19 @@
             stack_pointer[0] = res;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            // XXX:
+            #ifdef TIER_TWO
+            tstate->previous_executor = (PyObject *)current_executor;
+            STITCH();
+            GOTO_TIER_ONE(frame->instr_ptr);
+            #else
+            tstate->previous_executor = Py_None;
+            _Py_CODEUNIT *old = frame->instr_ptr;
+            frame->instr_ptr = next_instr;
+            STITCH();
+            tstate->previous_executor = NULL;
+            frame->instr_ptr = old;
+            #endif
             break;
         }
 
@@ -6225,7 +6267,6 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             if (!is_true) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -6238,7 +6279,6 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             if (!is_false) {
-                UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
             break;
@@ -6254,10 +6294,7 @@
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 PyStackRef_CLOSE(val);
                 stack_pointer = _PyFrame_GetStackPointer(frame);
-                if (1) {
-                    UOP_STAT_INC(uopcode, miss);
-                    JUMP_TO_JUMP_TARGET();
-                }
+                JUMP_TO_JUMP_TARGET();
             }
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -6268,15 +6305,16 @@
             _PyStackRef val;
             val = stack_pointer[-1];
             int is_none = PyStackRef_IsNone(val);
+            if (is_none) {
+                stack_pointer += -1;
+                assert(WITHIN_STACK_BOUNDS());
+                JUMP_TO_JUMP_TARGET();
+            }
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             _PyFrame_SetStackPointer(frame, stack_pointer);
             PyStackRef_CLOSE(val);
             stack_pointer = _PyFrame_GetStackPointer(frame);
-            if (is_none) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             break;
         }
 
@@ -6490,11 +6528,24 @@
             _PyFrame_SetStackPointer(frame, stack_pointer);
             Py_CLEAR(tstate->previous_executor);
             stack_pointer = _PyFrame_GetStackPointer(frame);
-            #ifndef _Py_JIT
             current_executor = (_PyExecutorObject*)executor;
-            #endif
-            assert(((_PyExecutorObject *)executor)->vm_data.valid);
+            assert(current_executor->vm_data.valid);
+            // _MAKE_WARM //////////////////////////////////////////////////////
+            current_executor->vm_data.warm = true;
+            // It's okay if this ends up going negative.
+            if (--tstate->interp->trace_run_counter == 0) {
+                _Py_set_eval_breaker_bit(tstate, _PY_EVAL_JIT_INVALIDATE_COLD_BIT);
+            }
+            ////////////////////////////////////////////////////////////////////
+            int offset = frame->instr_ptr - _PyFrame_GetBytecode(frame);
+            #ifdef _Py_JIT
+            jit_func_preserve_none jump = (jit_func_preserve_none)current_executor->jit_offsets[offset];
+            __attribute__((musttail)) return jump(frame, stack_pointer, tstate);
+            #else
+            uintptr_t jump = current_executor->jit_offsets[offset];
+            next_uop = &current_executor->trace[jump];
             break;
+            #endif
         }
 
         case _MAKE_WARM: {
