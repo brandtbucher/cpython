@@ -2779,6 +2779,9 @@ int
     if (t == &PyDictIterValue_Type) {
         return SPEC_FAIL_ITER_DICT_VALUES;
     }
+    if (t == &PyDictIterItem_Type) {
+        return SPEC_FAIL_ITER_DICT_ITEMS;
+    }
     if (t == &PySetIter_Type) {
         return SPEC_FAIL_ITER_SET;
     }
@@ -2868,7 +2871,7 @@ _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int oparg)
         instr->op.code = FOR_ITER_GEN;
         goto success;
     }
-    SPECIALIZATION_FAIL(FOR_ITER,min_instrumented
+    SPECIALIZATION_FAIL(FOR_ITER,
                         _PySpecialization_ClassifyIterator(iter_o));
 failure:
     STAT_INC(FOR_ITER, failure);
