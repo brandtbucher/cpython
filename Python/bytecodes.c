@@ -1235,7 +1235,7 @@ dummy_func(
             retval = PyStackRef_FromPyObjectSteal(retval_o);
         }
 
-        macro(SEND) = _SPECIALIZE_SEND + _SEND;
+        macro(SEND) = _SPECIALIZE_SEND + unused/2 + unused/1 + _SEND;
 
         op(_SEND_GEN_FRAME, (receiver, v -- receiver, gen_frame: _PyInterpreterFrame *)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
@@ -1256,6 +1256,8 @@ dummy_func(
         macro(SEND_GEN) =
             unused/1 +
             _CHECK_PEP_523 +
+            unused/2 +
+            unused/1 +
             _SEND_GEN_FRAME +
             _PUSH_FRAME;
 
@@ -3071,10 +3073,10 @@ dummy_func(
             // Common case: no jump, leave it to the code generator
         }
 
-        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + _FOR_ITER;
+        macro(FOR_ITER) = _SPECIALIZE_FOR_ITER + unused/2 + unused/1 + _FOR_ITER;
 
 
-        inst(INSTRUMENTED_FOR_ITER, (unused/1 -- )) {
+        inst(INSTRUMENTED_FOR_ITER, (unused/4 -- )) {
             _PyStackRef iter_stackref = TOP();
             PyObject *iter = PyStackRef_AsPyObjectBorrow(iter_stackref);
             PyObject *next = (*Py_TYPE(iter)->tp_iternext)(iter);
@@ -3149,6 +3151,8 @@ dummy_func(
 
         macro(FOR_ITER_LIST) =
             unused/1 +  // Skip over the counter
+            unused/2 +
+            unused/1 +
             _ITER_CHECK_LIST +
             _ITER_JUMP_LIST +
             _ITER_NEXT_LIST;
@@ -3196,6 +3200,8 @@ dummy_func(
 
         macro(FOR_ITER_TUPLE) =
             unused/1 +  // Skip over the counter
+            unused/2 +
+            unused/1 +
             _ITER_CHECK_TUPLE +
             _ITER_JUMP_TUPLE +
             _ITER_NEXT_TUPLE;
@@ -3237,6 +3243,8 @@ dummy_func(
 
         macro(FOR_ITER_RANGE) =
             unused/1 +  // Skip over the counter
+            unused/2 +
+            unused/1 +
             _ITER_CHECK_RANGE +
             _ITER_JUMP_RANGE +
             _ITER_NEXT_RANGE;
@@ -3259,6 +3267,8 @@ dummy_func(
         macro(FOR_ITER_GEN) =
             unused/1 +
             _CHECK_PEP_523 +
+            unused/2 +
+            unused/1 +
             _FOR_ITER_GEN_FRAME +
             _PUSH_FRAME;
 

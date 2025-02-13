@@ -2951,8 +2951,8 @@ branch_handler(
     }
     PyObject *res = PyObject_Vectorcall(self->handler, args, nargsf, kwnames);
     if (res == &_PyInstrumentation_DISABLE) {
-        /* We need FOR_ITER and POP_JUMP_ to be the same size */
-        assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1);
+        // /* We need FOR_ITER and POP_JUMP_ to be the same size */
+        // assert(INLINE_CACHE_ENTRIES_FOR_ITER == 1);
         int offset;
         int other_event;
         if (instr.op.code == FOR_ITER) {

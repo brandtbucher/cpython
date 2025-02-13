@@ -708,10 +708,17 @@ static const _Py_CODEUNIT _Py_INTERPRETER_TRAMPOLINE_INSTRUCTIONS[] = {
     * the code, rather than before it */
     { .op.code = NOP, .op.arg = 0 },
     { .op.code = INTERPRETER_EXIT, .op.arg = 0 },  /* reached on return */
-    { .op.code = NOP, .op.arg = 0 },
+    // Same number of cache entries as FOR_ITER/SEND:
+    { .op.code = CACHE, .op.arg = 0 },
+    { .op.code = CACHE, .op.arg = 0 },
+    { .op.code = CACHE, .op.arg = 0 },
+    { .op.code = CACHE, .op.arg = 0 },
     { .op.code = INTERPRETER_EXIT, .op.arg = 0 },  /* reached on yield */
     { .op.code = RESUME, .op.arg = RESUME_OPARG_DEPTH1_MASK | RESUME_AT_FUNC_START }
 };
+
+static_assert(INLINE_CACHE_ENTRIES_FOR_ITER == 4);
+static_assert(INLINE_CACHE_ENTRIES_SEND == 4);
 
 #ifdef Py_DEBUG
 extern void _PyUOpPrint(const _PyUOpInstruction *uop);
