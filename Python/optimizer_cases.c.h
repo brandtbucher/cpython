@@ -756,6 +756,18 @@
 
         /* _SEND is not a viable micro-op for tier 2 */
 
+        case _CHECK_SEND_GEN: {
+            break;
+        }
+
+        case _CHECK_SEND_GEN_FUNCTION: {
+            break;
+        }
+
+        case _CHECK_SEND_GEN_OFFSET: {
+            break;
+        }
+
         case _SEND_GEN_FRAME: {
             // We are about to hit the end of the trace:
             ctx->done = true;
@@ -1565,6 +1577,18 @@
             stack_pointer[0] = next;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _CHECK_FOR_ITER_GEN: {
+            break;
+        }
+
+        case _CHECK_FOR_ITER_GEN_FUNCTION: {
+            break;
+        }
+
+        case _CHECK_FOR_ITER_GEN_OFFSET: {
             break;
         }
 

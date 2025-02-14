@@ -2852,6 +2852,22 @@ _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int oparg)
             SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OTHER);
             goto failure;
         }
+        _PyInterpreterFrame *frame = &((PyGenObject *)iter_o)->gi_iframe;
+        if (PyStackRef_IsNull(frame->f_funcobj)) {
+            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OTHER);
+            goto failure;
+        }
+        uint32_t version = function_get_version((PyObject *)_PyFrame_GetFunction(frame), FOR_ITER);
+        if (version == 0) {
+            goto failure;
+        }
+        int offset = _PyInterpreterFrame_LASTI(frame);
+        if (offset != (uint16_t)offset) {
+            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OUT_OF_RANGE);
+            goto failure;
+        }
+        write_u32(cache->version, version);
+        cache->offset = offset;
         instr->op.code = FOR_ITER_GEN;
         goto success;
     }
@@ -2874,6 +2890,7 @@ _Py_Specialize_Send(_PyStackRef receiver_st, _Py_CODEUNIT *instr)
 
     assert(ENABLE_SPECIALIZATION_FT);
     assert(_PyOpcode_Caches[SEND] == INLINE_CACHE_ENTRIES_SEND);
+    _PySendCache *cache = (_PySendCache *)(instr + 1);
     PyTypeObject *tp = Py_TYPE(receiver);
     if (tp == &PyGen_Type || tp == &PyCoro_Type) {
         /* Don't specialize if PEP 523 is active */
@@ -2881,6 +2898,22 @@ _Py_Specialize_Send(_PyStackRef receiver_st, _Py_CODEUNIT *instr)
             SPECIALIZATION_FAIL(SEND, SPEC_FAIL_OTHER);
             goto failure;
         }
+        _PyInterpreterFrame *frame = &((PyGenObject *)receiver)->gi_iframe;
+        if (PyStackRef_IsNull(frame->f_funcobj)) {
+            SPECIALIZATION_FAIL(SEND, SPEC_FAIL_OTHER);
+            goto failure;
+        }
+        uint32_t version = function_get_version((PyObject *)_PyFrame_GetFunction(frame), FOR_ITER);
+        if (version == 0) {
+            goto failure;
+        }
+        int offset = _PyInterpreterFrame_LASTI(frame);
+        if (offset != (uint16_t)offset) {
+            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OUT_OF_RANGE);
+            goto failure;
+        }
+        write_u32(cache->version, version);
+        cache->offset = offset;
         specialize(instr, SEND_GEN);
         return;
     }

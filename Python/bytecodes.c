@@ -1237,11 +1237,26 @@ dummy_func(
 
         macro(SEND) = _SPECIALIZE_SEND + unused/2 + unused/1 + _SEND;
 
-        op(_SEND_GEN_FRAME, (receiver, v -- receiver, gen_frame: _PyInterpreterFrame *)) {
+        op(_CHECK_SEND_GEN, (receiver, unused -- receiver, unused)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
-            DEOPT_IF(Py_TYPE(gen) != &PyGen_Type && Py_TYPE(gen) != &PyCoro_Type);
-            DEOPT_IF(gen->gi_frame_state >= FRAME_EXECUTING);
+            EXIT_IF(Py_TYPE(gen) != &PyGen_Type && Py_TYPE(gen) != &PyCoro_Type);
+            EXIT_IF(gen->gi_frame_state >= FRAME_EXECUTING);
+        }
+
+        op(_CHECK_SEND_GEN_FUNCTION, (version/2, receiver, unused -- receiver, unused)) {
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
+            EXIT_IF(PyStackRef_IsNull(gen->gi_iframe.f_funcobj));
+            EXIT_IF(_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version);
+        }
+
+        op(_CHECK_SEND_GEN_OFFSET, (offset/1, receiver, unused -- receiver, unused)) {
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
+            EXIT_IF(_PyInterpreterFrame_LASTI(&gen->gi_iframe) != offset);
+        }
+
+        op(_SEND_GEN_FRAME, (receiver, v -- receiver, gen_frame: _PyInterpreterFrame *)) {
             STAT_INC(SEND, hit);
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
             gen_frame = &gen->gi_iframe;
             _PyFrame_StackPush(gen_frame, v);
             DEAD(v);
@@ -1256,8 +1271,9 @@ dummy_func(
         macro(SEND_GEN) =
             unused/1 +
             _CHECK_PEP_523 +
-            unused/2 +
-            unused/1 +
+            _CHECK_SEND_GEN +
+            _CHECK_SEND_GEN_FUNCTION +
+            _CHECK_SEND_GEN_OFFSET +
             _SEND_GEN_FRAME +
             _PUSH_FRAME;
 
@@ -3249,11 +3265,26 @@ dummy_func(
             _ITER_JUMP_RANGE +
             _ITER_NEXT_RANGE;
 
-        op(_FOR_ITER_GEN_FRAME, (iter -- iter, gen_frame: _PyInterpreterFrame*)) {
+        op(_CHECK_FOR_ITER_GEN, (iter -- iter)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-            DEOPT_IF(Py_TYPE(gen) != &PyGen_Type);
-            DEOPT_IF(gen->gi_frame_state >= FRAME_EXECUTING);
+            EXIT_IF(Py_TYPE(gen) != &PyGen_Type);
+            EXIT_IF(gen->gi_frame_state >= FRAME_EXECUTING);
+        }
+
+        op(_CHECK_FOR_ITER_GEN_FUNCTION, (version/2, iter -- iter)) {
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
+            EXIT_IF(PyStackRef_IsNull(gen->gi_iframe.f_funcobj));
+            EXIT_IF(_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version);
+        }
+
+        op(_CHECK_FOR_ITER_GEN_OFFSET, (offset/1, iter -- iter)) {
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
+            EXIT_IF(_PyInterpreterFrame_LASTI(&gen->gi_iframe) != offset);
+        }
+
+        op(_FOR_ITER_GEN_FRAME, (iter -- iter, gen_frame: _PyInterpreterFrame *)) {
             STAT_INC(FOR_ITER, hit);
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
             gen_frame = &gen->gi_iframe;
             _PyFrame_StackPush(gen_frame, PyStackRef_None);
             gen->gi_frame_state = FRAME_EXECUTING;
@@ -3267,8 +3298,9 @@ dummy_func(
         macro(FOR_ITER_GEN) =
             unused/1 +
             _CHECK_PEP_523 +
-            unused/2 +
-            unused/1 +
+            _CHECK_FOR_ITER_GEN +
+            _CHECK_FOR_ITER_GEN_FUNCTION +
+            _CHECK_FOR_ITER_GEN_OFFSET +
             _FOR_ITER_GEN_FRAME +
             _PUSH_FRAME;
 

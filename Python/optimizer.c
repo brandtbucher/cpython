@@ -663,17 +663,6 @@ translate_bytecode_to_trace(
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
                     int nuops = expansion->nuops;
                     RESERVE(nuops + 1); /* One extra for exit */
-                    int16_t last_op = expansion->uops[nuops-1].uop;
-                    if (last_op == _RETURN_VALUE || last_op == _RETURN_GENERATOR || last_op == _YIELD_VALUE) {
-                        // Check for trace stack underflow now:
-                        // We can't bail e.g. in the middle of
-                        // LOAD_CONST + _RETURN_VALUE.
-                        if (trace_stack_depth == 0) {
-                            DPRINTF(2, "Trace stack underflow\n");
-                            OPT_STAT_INC(trace_stack_underflow);
-                            return 0;
-                        }
-                    }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
                     for (int i = 0; i < nuops; i++) {
                         oparg = orig_oparg;
@@ -726,7 +715,26 @@ translate_bytecode_to_trace(
                         }
 
                         if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR || uop == _YIELD_VALUE) {
+                            if (trace_stack_depth == 0) {
+                                DPRINTF(2, "Trace stack underflow\n");
+                                OPT_STAT_INC(trace_stack_underflow);
+                                return 0;
+                            }
                             TRACE_STACK_POP();
+                            if (instr->op.code == FOR_ITER_GEN || instr->op.code == SEND_GEN) {
+                                if (uop == _YIELD_VALUE) {
+                                    instr += _PyOpcode_Caches[_PyOpcode_Deopt[instr->op.code]] + 1;
+                                }
+                                else {
+                                    instr += _PyOpcode_Caches[_PyOpcode_Deopt[instr->op.code]] + 1 + instr->op.arg;
+                                }
+                            }
+                            else {
+                                assert(_PyOpcode_Deopt[instr->op.code] == CALL ||
+                                       _PyOpcode_Deopt[instr->op.code] == CALL_KW);
+                                assert(uop != _YIELD_VALUE);
+                                instr += _PyOpcode_Caches[_PyOpcode_Deopt[instr->op.code]] + 1;
+                            }
                             /* Set the operand to the function or code object returned to,
                              * to assist optimization passes. (See _PUSH_FRAME below.)
                              */
@@ -751,16 +759,24 @@ translate_bytecode_to_trace(
 
                         if (uop == _PUSH_FRAME) {
                             assert(i + 1 == nuops);
-                            if (opcode == FOR_ITER_GEN ||
-                                opcode == LOAD_ATTR_PROPERTY ||
-                                opcode == BINARY_OP_SUBSCR_GETITEM ||
-                                opcode == SEND_GEN)
-                            {
+                            if (opcode == FOR_ITER_GEN || opcode == SEND_GEN) {
+                                if (orig_oparg > 255) {
+                                    return 0; // XXX
+                                }
+                            }
+                            if (opcode == LOAD_ATTR_PROPERTY || opcode == BINARY_OP_SUBSCR_GETITEM) {
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 OPT_STAT_INC(unknown_callee);
                                 return 0;
                             }
-                            assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
+                            assert(_PyOpcode_Deopt[opcode] == CALL ||
+                                   _PyOpcode_Deopt[opcode] == CALL_KW ||
+                                   opcode == FOR_ITER_GEN ||
+                                   opcode == SEND_GEN);
+                            static_assert(offsetof(_PyForIterCache, version) ==
+                                          offsetof(_PyCallCache, func_version));
+                            static_assert(offsetof(_PySendCache, version) ==
+                                          offsetof(_PyCallCache, func_version));
                             int func_version_offset =
                                 offsetof(_PyCallCache, func_version)/sizeof(_Py_CODEUNIT)
                                 // Add one to account for the actual opcode/oparg pair:
@@ -780,7 +796,15 @@ translate_bytecode_to_trace(
                                             new_code->co_firstlineno);
                                     OPT_STAT_INC(recursive_call);
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    int offset = 0;
+                                    if (opcode == FOR_ITER_GEN || opcode == SEND_GEN) {
+                                        int offset_offset =
+                                            offsetof(_PyForIterCache, offset)/sizeof(_Py_CODEUNIT)
+                                            // Add one to account for the actual opcode/oparg pair:
+                                            + 1;
+                                        offset = instr[offset_offset].cache;
+                                    }
+                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, offset);
                                     goto done;
                                 }
                                 if (new_code->co_version != func_version) {
@@ -793,7 +817,6 @@ translate_bytecode_to_trace(
                                     goto done;
                                 }
                                 // Increment IP to the return address
-                                instr += _PyOpcode_Caches[_PyOpcode_Deopt[opcode]] + 1;
                                 TRACE_STACK_PUSH();
                                 _Py_BloomFilter_Add(dependencies, new_code);
                                 /* Set the operand to the callee's function or code object,
@@ -814,7 +837,16 @@ translate_bytecode_to_trace(
                                 ADD_TO_TRACE(uop, oparg, operand, target);
                                 code = new_code;
                                 func = new_func;
-                                instr = _PyCode_CODE(code);
+                                if (opcode == FOR_ITER_GEN || opcode == SEND_GEN) {
+                                    int offset_offset =
+                                        offsetof(_PyForIterCache, offset)/sizeof(_Py_CODEUNIT)
+                                        // Add one to account for the actual opcode/oparg pair:
+                                        + 1;
+                                    instr = _PyCode_CODE(code) + instr[offset_offset].cache;
+                                }
+                                else {
+                                    instr = _PyCode_CODE(code);
+                                }
                                 DPRINTF(2,
                                     "Continuing in %s (%s:%d) at byte offset %d\n",
                                     PyUnicode_AsUTF8(code->co_qualname),

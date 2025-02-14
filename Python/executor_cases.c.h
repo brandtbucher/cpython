@@ -1768,12 +1768,8 @@
 
         /* _SEND is not a viable micro-op for tier 2 because it uses the 'this_instr' variable */
 
-        case _SEND_GEN_FRAME: {
-            _PyStackRef v;
+        case _CHECK_SEND_GEN: {
             _PyStackRef receiver;
-            _PyInterpreterFrame *gen_frame;
-            oparg = CURRENT_OPARG();
-            v = stack_pointer[-1];
             receiver = stack_pointer[-2];
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
             if (Py_TYPE(gen) != &PyGen_Type && Py_TYPE(gen) != &PyCoro_Type) {
@@ -1784,7 +1780,46 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
+            break;
+        }
+
+        case _CHECK_SEND_GEN_FUNCTION: {
+            _PyStackRef receiver;
+            receiver = stack_pointer[-2];
+            uint32_t version = (uint32_t)CURRENT_OPERAND0();
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
+            if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _CHECK_SEND_GEN_OFFSET: {
+            _PyStackRef receiver;
+            receiver = stack_pointer[-2];
+            uint16_t offset = (uint16_t)CURRENT_OPERAND0();
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
+            if (_PyInterpreterFrame_LASTI(&gen->gi_iframe) != offset) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _SEND_GEN_FRAME: {
+            _PyStackRef v;
+            _PyStackRef receiver;
+            _PyInterpreterFrame *gen_frame;
+            oparg = CURRENT_OPARG();
+            v = stack_pointer[-1];
+            receiver = stack_pointer[-2];
             STAT_INC(SEND, hit);
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
             gen_frame = &gen->gi_iframe;
             _PyFrame_StackPush(gen_frame, v);
             gen->gi_frame_state = FRAME_EXECUTING;
@@ -4338,10 +4373,8 @@
             break;
         }
 
-        case _FOR_ITER_GEN_FRAME: {
+        case _CHECK_FOR_ITER_GEN: {
             _PyStackRef iter;
-            _PyInterpreterFrame *gen_frame;
-            oparg = CURRENT_OPARG();
             iter = stack_pointer[-1];
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
             if (Py_TYPE(gen) != &PyGen_Type) {
@@ -4352,7 +4385,44 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
+            break;
+        }
+
+        case _CHECK_FOR_ITER_GEN_FUNCTION: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            uint32_t version = (uint32_t)CURRENT_OPERAND0();
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _CHECK_FOR_ITER_GEN_OFFSET: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            uint16_t offset = (uint16_t)CURRENT_OPERAND0();
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
+            if (_PyInterpreterFrame_LASTI(&gen->gi_iframe) != offset) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _FOR_ITER_GEN_FRAME: {
+            _PyStackRef iter;
+            _PyInterpreterFrame *gen_frame;
+            oparg = CURRENT_OPARG();
+            iter = stack_pointer[-1];
             STAT_INC(FOR_ITER, hit);
+            PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
             gen_frame = &gen->gi_iframe;
             _PyFrame_StackPush(gen_frame, PyStackRef_None);
             gen->gi_frame_state = FRAME_EXECUTING;
