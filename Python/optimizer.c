@@ -114,6 +114,9 @@ _PyOptimizer_Optimize(
     // this is true, since a deopt won't infinitely re-enter the executor:
     chain_depth %= MAX_CHAIN_DEPTH;
     bool progress_needed = chain_depth == 0;
+    if (!PyStackRef_CodeCheck(frame->f_executable) || !PyFunction_Check(PyStackRef_AsPyObjectBorrow(frame->f_funcobj))) {
+        return 0;
+    }
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     if (progress_needed && !has_space_for_executor(code, start)) {
@@ -662,17 +665,6 @@ translate_bytecode_to_trace(
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
                     int nuops = expansion->nuops;
                     RESERVE(nuops + 1); /* One extra for exit */
-                    int16_t last_op = expansion->uops[nuops-1].uop;
-                    if (last_op == _RETURN_VALUE || last_op == _RETURN_GENERATOR || last_op == _YIELD_VALUE) {
-                        // Check for trace stack underflow now:
-                        // We can't bail e.g. in the middle of
-                        // LOAD_CONST + _RETURN_VALUE.
-                        if (trace_stack_depth == 0) {
-                            DPRINTF(2, "Trace stack underflow\n");
-                            OPT_STAT_INC(trace_stack_underflow);
-                            goto done;
-                        }
-                    }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
                     for (int i = 0; i < nuops; i++) {
                         oparg = orig_oparg;
@@ -725,6 +717,15 @@ translate_bytecode_to_trace(
                         }
 
                         if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR || uop == _YIELD_VALUE) {
+                            assert(i == nuops - 1);
+                            if (trace_stack_depth == 0) {
+                                DPRINTF(2, "Trace stack underflow\n");
+                                OPT_STAT_INC(trace_stack_underflow);
+                                ADD_TO_TRACE(uop, oparg, 0, target);
+                                ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                first = false;
+                                goto done;
+                            }
                             TRACE_STACK_POP();
                             /* Set the operand to the function or code object returned to,
                              * to assist optimization passes. (See _PUSH_FRAME below.)
@@ -758,6 +759,7 @@ translate_bytecode_to_trace(
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 ADD_TO_TRACE(uop, oparg, 0, target);
                                 ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                                first = false;
                                 goto done;
                             }
                             assert(_PyOpcode_Deopt[opcode] == CALL || _PyOpcode_Deopt[opcode] == CALL_KW);
@@ -781,7 +783,8 @@ translate_bytecode_to_trace(
                                     OPT_STAT_INC(recursive_call);
                                     ADD_TO_TRACE(uop, oparg, 0, target);
                                     ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
-                                    goto done;
+                                    first = false;
+                                    goto done;  // XXX
                                 }
                                 if (new_code->co_version != func_version) {
                                     // func.__code__ was updated.
@@ -790,6 +793,7 @@ translate_bytecode_to_trace(
                                     DPRINTF(2, "Bailing because co_version != func_version\n");
                                     ADD_TO_TRACE(uop, oparg, 0, target);
                                     ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    first = false;
                                     goto done;
                                 }
                                 // Increment IP to the return address
@@ -826,6 +830,7 @@ translate_bytecode_to_trace(
                             DPRINTF(2, "Bail, new_code == NULL\n");
                             ADD_TO_TRACE(uop, oparg, 0, target);
                             ADD_TO_TRACE(_DYNAMIC_EXIT, 0, 0, 0);
+                            first = false;
                             goto done;
                         }
 

@@ -722,6 +722,10 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;
+                break;
+            }
             frame_pop(ctx);
             stack_pointer = ctx->frame->stack_pointer;
             /* Stack space handling */
@@ -776,8 +780,31 @@
 
         case _YIELD_VALUE: {
             JitOptSymbol *res;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;
+                break;
+            }
+            frame_pop(ctx);
+            stack_pointer = ctx->frame->stack_pointer;
             res = sym_new_unknown(ctx);
-            stack_pointer[-1] = res;
+            /* Stack space handling */
+            assert(corresponding_check_stack == NULL);
+            assert(co != NULL);
+            int framesize = co->co_framesize;
+            assert(framesize > 0);
+            assert(framesize <= curr_space);
+            curr_space -= framesize;
+            stack_pointer[0] = res;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            co = get_code(this_instr);
+            if (co == NULL) {
+                // might be impossible, but bailing is still safe
+                ctx->done = true;
+            }
             break;
         }
 
@@ -2251,6 +2278,10 @@
         case _RETURN_GENERATOR: {
             JitOptSymbol *res;
             ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;
+                break;
+            }
             frame_pop(ctx);
             stack_pointer = ctx->frame->stack_pointer;
             res = sym_new_unknown(ctx);
@@ -2595,6 +2626,9 @@
         }
 
         case _DYNAMIC_EXIT: {
+            PyObject *exit_p = (PyObject *)this_instr->operand0;
+            (void)exit_p;
+            ctx->done = true;
             break;
         }
 

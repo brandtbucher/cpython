@@ -5124,6 +5124,9 @@ dummy_func(
             }
         #endif
             _PyExecutorObject *executor;
+            if (exit->executor) {
+                executor = exit->executor;
+            }
             if (target->op.code == ENTER_EXECUTOR) {
                 PyCodeObject *code = _PyFrame_GetCode(frame);
                 executor = code->co_executors->executors[target->op.arg];

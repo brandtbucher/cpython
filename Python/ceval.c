@@ -868,7 +868,10 @@ enter_tier_two:
 #else
 
 #undef LOAD_IP
-#define LOAD_IP(UNUSED) (void)0
+#define LOAD_IP(OFFSET)               \
+    do {                              \
+        frame->instr_ptr += (OFFSET); \
+    } while (0)
 
 #undef GOTO_ERROR
 #define GOTO_ERROR(LABEL) goto LABEL ## _tier_two

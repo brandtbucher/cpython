@@ -745,6 +745,10 @@ dummy_func(void) {
     op(_RETURN_VALUE, (retval -- res)) {
         SAVE_STACK();
         ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;
+            break;
+        }
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
 
@@ -768,6 +772,10 @@ dummy_func(void) {
     op(_RETURN_GENERATOR, ( -- res)) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;
+            break;
+        }
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
         res = sym_new_unknown(ctx);
@@ -788,7 +796,29 @@ dummy_func(void) {
     }
 
     op(_YIELD_VALUE, (unused -- res)) {
+        SYNC_SP();
+        ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;
+            break;
+        }
+        frame_pop(ctx);
+        stack_pointer = ctx->frame->stack_pointer;
         res = sym_new_unknown(ctx);
+
+        /* Stack space handling */
+        assert(corresponding_check_stack == NULL);
+        assert(co != NULL);
+        int framesize = co->co_framesize;
+        assert(framesize > 0);
+        assert(framesize <= curr_space);
+        curr_space -= framesize;
+
+        co = get_code(this_instr);
+        if (co == NULL) {
+            // might be impossible, but bailing is still safe
+            ctx->done = true;
+        }
     }
 
     op(_FOR_ITER_GEN_FRAME, ( -- )) {
@@ -927,6 +957,11 @@ dummy_func(void) {
     }
 
     op(_EXIT_TRACE, (exit_p/4 --)) {
+        (void)exit_p;
+        ctx->done = true;
+    }
+
+    op(_DYNAMIC_EXIT, (exit_p/4--)) {
         (void)exit_p;
         ctx->done = true;
     }
