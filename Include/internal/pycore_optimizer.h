@@ -157,7 +157,7 @@ static inline uint16_t uop_get_error_target(const _PyUOpInstruction *inst)
 // progress (and inserting a new ENTER_EXECUTOR instruction). In practice, this
 // is the "maximum amount of polymorphism" that an isolated trace tree can
 // handle before rejoining the rest of the program.
-#define MAX_CHAIN_DEPTH 4
+#define MAX_CHAIN_DEPTH 5
 
 /* Symbols */
 /* See explanation in optimizer_symbols.c */
