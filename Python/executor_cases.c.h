@@ -6823,10 +6823,7 @@
         }
 
         case _CHECK_VALIDITY: {
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
+            // DEOPT_IF(!current_executor->vm_data.valid);
             break;
         }
 
@@ -6971,10 +6968,7 @@
 
         case _CHECK_VALIDITY_AND_SET_IP: {
             PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND0();
-            if (!current_executor->vm_data.valid) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
+            // DEOPT_IF(!current_executor->vm_data.valid);
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
             break;
         }

@@ -5034,7 +5034,7 @@ dummy_func(
         }
 
         tier2 op(_CHECK_VALIDITY, (--)) {
-            DEOPT_IF(!current_executor->vm_data.valid);
+            // DEOPT_IF(!current_executor->vm_data.valid);
         }
 
         tier2 pure op(_LOAD_CONST_INLINE, (ptr/4 -- value)) {
@@ -5110,7 +5110,7 @@ dummy_func(
         }
 
         tier2 op(_CHECK_VALIDITY_AND_SET_IP, (instr_ptr/4 --)) {
-            DEOPT_IF(!current_executor->vm_data.valid);
+            // DEOPT_IF(!current_executor->vm_data.valid);
             frame->instr_ptr = (_Py_CODEUNIT *)instr_ptr;
         }
 
