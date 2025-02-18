@@ -108,6 +108,8 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_CHECK_SEND_GEN_FUNCTION] = HAS_EXIT_FLAG,
     [_CHECK_SEND_GEN_OFFSET] = HAS_EXIT_FLAG,
     [_SEND_GEN_FRAME] = HAS_ARG_FLAG,
+    [_CHECK_YIELD_VALUE_FUNCTION] = HAS_EXIT_FLAG,
+    [_CHECK_YIELD_VALUE_OFFSET] = HAS_EXIT_FLAG,
     [_YIELD_VALUE] = HAS_ARG_FLAG,
     [_POP_EXCEPT] = HAS_ESCAPES_FLAG,
     [_LOAD_COMMON_CONSTANT] = HAS_ARG_FLAG,
@@ -375,6 +377,8 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_CHECK_STACK_SPACE_OPERAND] = "_CHECK_STACK_SPACE_OPERAND",
     [_CHECK_VALIDITY] = "_CHECK_VALIDITY",
     [_CHECK_VALIDITY_AND_SET_IP] = "_CHECK_VALIDITY_AND_SET_IP",
+    [_CHECK_YIELD_VALUE_FUNCTION] = "_CHECK_YIELD_VALUE_FUNCTION",
+    [_CHECK_YIELD_VALUE_OFFSET] = "_CHECK_YIELD_VALUE_OFFSET",
     [_COMPARE_OP] = "_COMPARE_OP",
     [_COMPARE_OP_FLOAT] = "_COMPARE_OP_FLOAT",
     [_COMPARE_OP_INT] = "_COMPARE_OP_INT",
@@ -759,6 +763,10 @@ int _PyUop_num_popped(int opcode, int oparg)
             return 0;
         case _SEND_GEN_FRAME:
             return 1;
+        case _CHECK_YIELD_VALUE_FUNCTION:
+            return 0;
+        case _CHECK_YIELD_VALUE_OFFSET:
+            return 0;
         case _YIELD_VALUE:
             return 1;
         case _POP_EXCEPT:

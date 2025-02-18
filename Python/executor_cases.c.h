@@ -1788,11 +1788,11 @@
             receiver = stack_pointer[-2];
             uint32_t version = (uint32_t)CURRENT_OPERAND0();
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
-            if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+            if (!PyStackRef_CodeCheck(gen->gi_iframe.f_executable)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+            if (_PyFrame_GetCode(&gen->gi_iframe)->co_version != version) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
@@ -1832,6 +1832,30 @@
             break;
         }
 
+        case _CHECK_YIELD_VALUE_FUNCTION: {
+            uint32_t version = (uint32_t)CURRENT_OPERAND0();
+            _PyInterpreterFrame *previous = frame->previous;
+            if (!PyStackRef_CodeCheck(previous->f_executable)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (_PyFrame_GetCode(previous)->co_version != version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _CHECK_YIELD_VALUE_OFFSET: {
+            uint16_t offset = (uint16_t)CURRENT_OPERAND0();
+            _PyInterpreterFrame *previous = frame->previous;
+            if (_PyInterpreterFrame_LASTI(previous) != offset) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
         case _YIELD_VALUE: {
             _PyStackRef retval;
             _PyStackRef value;
@@ -1841,7 +1865,7 @@
             // The compiler treats any exception raised here as a failed close()
             // or throw() call.
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
-            frame->instr_ptr++;
+            frame->instr_ptr += 5 ;
             PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
             assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
             assert(oparg == 0 || oparg == 1);
@@ -4393,11 +4417,11 @@
             iter = stack_pointer[-1];
             uint32_t version = (uint32_t)CURRENT_OPERAND0();
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-            if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+            if (!PyStackRef_CodeCheck(gen->gi_iframe.f_executable)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+            if (_PyFrame_GetCode(&gen->gi_iframe)->co_version != version) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
@@ -6529,7 +6553,7 @@
             assert(EMPTY());
             _PyFrame_SetStackPointer(frame, stack_pointer);
             _PyInterpreterFrame *gen_frame = &gen->gi_iframe;
-            frame->instr_ptr++;
+            frame->instr_ptr += 1 ;
             _PyFrame_Copy(frame, gen_frame);
             assert(frame->frame_obj == NULL);
             gen->gi_frame_state = FRAME_CREATED;

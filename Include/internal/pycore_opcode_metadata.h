@@ -497,6 +497,8 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
             return 5;
         case YIELD_VALUE:
             return 1;
+        case YIELD_VALUE_KNOWN:
+            return 1;
         default:
             return -1;
     }
@@ -969,6 +971,8 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
         case WITH_EXCEPT_START:
             return 6;
         case YIELD_VALUE:
+            return 1;
+        case YIELD_VALUE_KNOWN:
             return 1;
         default:
             return -1;
@@ -1925,6 +1929,10 @@ int _PyOpcode_max_stack_effect(int opcode, int oparg, int *effect)  {
             *effect = 0;
             return 0;
         }
+        case YIELD_VALUE_KNOWN: {
+            *effect = 0;
+            return 0;
+        }
         default:
             return -1;
     }
@@ -2113,7 +2121,7 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [INSTRUMENTED_POP_JUMP_IF_TRUE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG },
     [INSTRUMENTED_RESUME] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [INSTRUMENTED_RETURN_VALUE] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
-    [INSTRUMENTED_YIELD_VALUE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
+    [INSTRUMENTED_YIELD_VALUE] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_ERROR_FLAG | HAS_ERROR_NO_POP_FLAG | HAS_ESCAPES_FLAG },
     [INTERPRETER_EXIT] = { true, INSTR_FMT_IX, 0 },
     [IS_OP] = { true, INSTR_FMT_IB, HAS_ARG_FLAG },
     [JUMP_BACKWARD] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2221,7 +2229,8 @@ const struct opcode_metadata _PyOpcode_opcode_metadata[266] = {
     [UNPACK_SEQUENCE_TUPLE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG },
     [UNPACK_SEQUENCE_TWO_TUPLE] = { true, INSTR_FMT_IBC, HAS_ARG_FLAG | HAS_DEOPT_FLAG | HAS_ESCAPES_FLAG },
     [WITH_EXCEPT_START] = { true, INSTR_FMT_IX, HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
-    [YIELD_VALUE] = { true, INSTR_FMT_IB, HAS_ARG_FLAG },
+    [YIELD_VALUE] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_ESCAPES_FLAG },
+    [YIELD_VALUE_KNOWN] = { true, INSTR_FMT_IBC000, HAS_ARG_FLAG | HAS_EXIT_FLAG },
     [JUMP] = { true, -1, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_EVAL_BREAK_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [JUMP_IF_FALSE] = { true, -1, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
     [JUMP_IF_TRUE] = { true, -1, HAS_ARG_FLAG | HAS_JUMP_FLAG | HAS_ERROR_FLAG | HAS_ESCAPES_FLAG },
@@ -2423,6 +2432,7 @@ _PyOpcode_macro_expansion[256] = {
     [UNPACK_SEQUENCE_TWO_TUPLE] = { .nuops = 1, .uops = { { _UNPACK_SEQUENCE_TWO_TUPLE, 0, 0 } } },
     [WITH_EXCEPT_START] = { .nuops = 1, .uops = { { _WITH_EXCEPT_START, 0, 0 } } },
     [YIELD_VALUE] = { .nuops = 1, .uops = { { _YIELD_VALUE, 0, 0 } } },
+    [YIELD_VALUE_KNOWN] = { .nuops = 3, .uops = { { _CHECK_YIELD_VALUE_FUNCTION, 2, 1 }, { _CHECK_YIELD_VALUE_OFFSET, 1, 3 }, { _YIELD_VALUE, 0, 0 } } },
 };
 #endif // NEED_OPCODE_METADATA
 
@@ -2660,6 +2670,7 @@ const char *_PyOpcode_OpName[266] = {
     [UNPACK_SEQUENCE_TWO_TUPLE] = "UNPACK_SEQUENCE_TWO_TUPLE",
     [WITH_EXCEPT_START] = "WITH_EXCEPT_START",
     [YIELD_VALUE] = "YIELD_VALUE",
+    [YIELD_VALUE_KNOWN] = "YIELD_VALUE_KNOWN",
 };
 #endif
 
@@ -2669,6 +2680,7 @@ const uint8_t _PyOpcode_Caches[256] = {
     [TO_BOOL] = 3,
     [STORE_SUBSCR] = 1,
     [SEND] = 4,
+    [YIELD_VALUE] = 4,
     [UNPACK_SEQUENCE] = 1,
     [STORE_ATTR] = 4,
     [LOAD_GLOBAL] = 4,
@@ -2912,6 +2924,7 @@ const uint8_t _PyOpcode_Deopt[256] = {
     [UNPACK_SEQUENCE_TWO_TUPLE] = UNPACK_SEQUENCE,
     [WITH_EXCEPT_START] = WITH_EXCEPT_START,
     [YIELD_VALUE] = YIELD_VALUE,
+    [YIELD_VALUE_KNOWN] = YIELD_VALUE,
 };
 
 #endif // NEED_OPCODE_METADATA
@@ -2939,16 +2952,15 @@ const uint8_t _PyOpcode_Deopt[256] = {
     case 136: \
     case 137: \
     case 138: \
-    case 139: \
-    case 140: \
-    case 141: \
-    case 142: \
-    case 143: \
-    case 144: \
-    case 145: \
-    case 146: \
-    case 147: \
-    case 148: \
+    case 223: \
+    case 224: \
+    case 225: \
+    case 226: \
+    case 227: \
+    case 228: \
+    case 229: \
+    case 230: \
+    case 231: \
     case 232: \
     case 233: \
     case 234: \

@@ -658,8 +658,11 @@ translate_bytecode_to_trace(
 
             default:
             {
+                if (opcode == YIELD_VALUE_KNOWN && trace_stack_depth != 0) {
+                    opcode = YIELD_VALUE;
+                }
                 const struct opcode_macro_expansion *expansion = &_PyOpcode_macro_expansion[opcode];
-                if (expansion->nuops > 0) {
+                if (expansion->nuops > 0) {// XXX
                     // Reserve space for nuops (+ _SET_IP + _EXIT_TRACE)
                     int nuops = expansion->nuops;
                     RESERVE(nuops + 1); /* One extra for exit */
@@ -716,16 +719,41 @@ translate_bytecode_to_trace(
 
                         if (uop == _RETURN_VALUE || uop == _RETURN_GENERATOR || uop == _YIELD_VALUE) {
                             if (trace_stack_depth == 0) {
-                                DPRINTF(2, "Trace stack underflow\n");
-                                OPT_STAT_INC(trace_stack_underflow);
-                                return 0;
+                                if (opcode != YIELD_VALUE_KNOWN) {
+                                    DPRINTF(2, "Trace stack underflow\n");
+                                    OPT_STAT_INC(trace_stack_underflow);
+                                    return 0;
+                                }
+                                _PyYieldValueCache *cache = (_PyYieldValueCache *)(instr + 1);
+                                uint32_t version = read_u32(cache->version);
+                                code = NULL;
+                                func = _PyFunction_LookupByVersion(version, (PyObject **)&code);
+                                if (code == NULL) {
+                                    DPRINTF(2, "Trace stack underflow\n");
+                                    OPT_STAT_INC(trace_stack_underflow);
+                                    return 0;
+                                }
+                                if (code->co_version != version) {
+                                    // func.__code__ was updated.
+                                    // Perhaps it may happen again, so don't bother tracing.
+                                    // TODO: Reason about this -- is it better to bail or not?
+                                    DPRINTF(2, "Bailing because co_version != func_version\n");
+                                    ADD_TO_TRACE(uop, oparg, 0, target);
+                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    assert(0);  // XXX
+                                    goto done;
+                                }
+                                instr = _PyCode_CODE(code) + cache->offset;
+                                TRACE_STACK_PUSH();
+                                _Py_BloomFilter_Add(dependencies, code);
                             }
                             TRACE_STACK_POP();
-                            if (instr->op.code == FOR_ITER_GEN || instr->op.code == SEND_GEN) {
+                            if (_PyOpcode_Deopt[instr->op.code] == FOR_ITER || _PyOpcode_Deopt[instr->op.code] == SEND) {
                                 if (uop == _YIELD_VALUE) {
                                     instr += _PyOpcode_Caches[_PyOpcode_Deopt[instr->op.code]] + 1;
                                 }
                                 else {
+                                    return 0; // XXX: oparg could be long.
                                     instr += _PyOpcode_Caches[_PyOpcode_Deopt[instr->op.code]] + 1 + instr->op.arg;
                                 }
                             }
@@ -759,11 +787,6 @@ translate_bytecode_to_trace(
 
                         if (uop == _PUSH_FRAME) {
                             assert(i + 1 == nuops);
-                            if (opcode == FOR_ITER_GEN || opcode == SEND_GEN) {
-                                if (orig_oparg > 255) {
-                                    return 0; // XXX
-                                }
-                            }
                             if (opcode == LOAD_ATTR_PROPERTY || opcode == BINARY_OP_SUBSCR_GETITEM) {
                                 DPRINTF(2, "Bailing due to dynamic target\n");
                                 OPT_STAT_INC(unknown_callee);
@@ -814,6 +837,7 @@ translate_bytecode_to_trace(
                                     DPRINTF(2, "Bailing because co_version != func_version\n");
                                     ADD_TO_TRACE(uop, oparg, 0, target);
                                     ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    assert(0);  // XXX
                                     goto done;
                                 }
                                 // Increment IP to the return address
@@ -898,7 +922,7 @@ done:
     while (trace_stack_depth > 0) {
         TRACE_STACK_POP();
     }
-    assert(code == initial_code);
+    // assert(code == initial_code);
     // Skip short traces where we can't even translate a single instruction:
     if (first) {
         OPT_STAT_INC(trace_too_short);

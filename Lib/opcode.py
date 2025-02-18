@@ -108,6 +108,11 @@ _cache_format = {
         "counter": 1,
         "version": 2,
     },
+    "YIELD_VALUE": {
+        "counter": 1,
+        "version": 2,
+        "offset": 1,
+    },
     "POP_JUMP_IF_TRUE": {
         "counter": 1,
     },

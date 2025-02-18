@@ -5523,12 +5523,12 @@
             {
                 uint32_t version = read_u32(&this_instr[2].cache);
                 PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-                if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+                if (!PyStackRef_CodeCheck(gen->gi_iframe.f_executable)) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+                if (_PyFrame_GetCode(&gen->gi_iframe)->co_version != version) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
@@ -7250,7 +7250,7 @@
             _Py_CODEUNIT* const this_instr = next_instr;
             (void)this_instr;
             frame->instr_ptr = next_instr;
-            next_instr += 1;
+            next_instr += 5;
             INSTRUCTION_STATS(INSTRUMENTED_YIELD_VALUE);
             _PyStackRef val;
             _PyStackRef retval;
@@ -7271,6 +7271,7 @@
                     DISPATCH();
                 }
             }
+            /* Skip 4 cache entries */
             // _YIELD_VALUE
             {
                 retval = val;
@@ -7278,7 +7279,7 @@
                 // The compiler treats any exception raised here as a failed close()
                 // or throw() call.
                 assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
-                frame->instr_ptr++;
+                frame->instr_ptr += 5 ;
                 PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
                 assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
                 assert(oparg == 0 || oparg == 1);
@@ -10253,7 +10254,7 @@
             assert(EMPTY());
             _PyFrame_SetStackPointer(frame, stack_pointer);
             _PyInterpreterFrame *gen_frame = &gen->gi_iframe;
-            frame->instr_ptr++;
+            frame->instr_ptr += 1 ;
             _PyFrame_Copy(frame, gen_frame);
             assert(frame->frame_obj == NULL);
             gen->gi_frame_state = FRAME_CREATED;
@@ -10453,12 +10454,12 @@
             {
                 uint32_t version = read_u32(&this_instr[2].cache);
                 PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
-                if (PyStackRef_IsNull(gen->gi_iframe.f_funcobj)) {
+                if (!PyStackRef_CodeCheck(gen->gi_iframe.f_executable)) {
                     UPDATE_MISS_STATS(SEND);
                     assert(_PyOpcode_Deopt[opcode] == (SEND));
                     JUMP_TO_PREDICTED(SEND);
                 }
-                if (_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version) {
+                if (_PyFrame_GetCode(&gen->gi_iframe)->co_version != version) {
                     UPDATE_MISS_STATS(SEND);
                     assert(_PyOpcode_Deopt[opcode] == (SEND));
                     JUMP_TO_PREDICTED(SEND);
@@ -11952,44 +11953,151 @@
             (void)(opcode);
             #endif
             frame->instr_ptr = next_instr;
-            next_instr += 1;
+            next_instr += 5;
             INSTRUCTION_STATS(YIELD_VALUE);
+            PREDICTED_YIELD_VALUE:;
+            _Py_CODEUNIT* const this_instr = next_instr - 5;
+            (void)this_instr;
             _PyStackRef retval;
             _PyStackRef value;
-            retval = stack_pointer[-1];
-            // NOTE: It's important that YIELD_VALUE never raises an exception!
-            // The compiler treats any exception raised here as a failed close()
-            // or throw() call.
-            assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
-            frame->instr_ptr++;
-            PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
-            assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
-            assert(oparg == 0 || oparg == 1);
-            gen->gi_frame_state = FRAME_SUSPENDED + oparg;
-            _PyStackRef temp = retval;
-            stack_pointer += -1;
-            assert(WITHIN_STACK_BOUNDS());
-            _PyFrame_SetStackPointer(frame, stack_pointer);
-            tstate->exc_info = gen->gi_exc_state.previous_item;
-            gen->gi_exc_state.previous_item = NULL;
-            _Py_LeaveRecursiveCallPy(tstate);
-            _PyInterpreterFrame *gen_frame = frame;
-            frame = tstate->current_frame = frame->previous;
-            gen_frame->previous = NULL;
-            /* We don't know which of these is relevant here, so keep them equal */
-            assert(INLINE_CACHE_ENTRIES_SEND == INLINE_CACHE_ENTRIES_FOR_ITER);
-            #if TIER_ONE
-            assert(frame->instr_ptr->op.code == INSTRUMENTED_LINE ||
+            // _SPECIALIZE_YIELD_VALUE
+            {
+                uint16_t counter = read_u16(&this_instr[1].cache);
+                (void)counter;
+                #if ENABLE_SPECIALIZATION
+                if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
+                    next_instr = this_instr;
+                    _PyFrame_SetStackPointer(frame, stack_pointer);
+                    _Py_Specialize_YieldValue(next_instr, frame);
+                    stack_pointer = _PyFrame_GetStackPointer(frame);
+                    DISPATCH_SAME_OPARG();
+                }
+                OPCODE_DEFERRED_INC(YIELD_VALUE);
+                ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+                #endif
+                (void)counter;
+            }
+            /* Skip 2 cache entries */
+            /* Skip 1 cache entry */
+            // _YIELD_VALUE
+            {
+                retval = stack_pointer[-1];
+                // NOTE: It's important that YIELD_VALUE never raises an exception!
+                // The compiler treats any exception raised here as a failed close()
+                // or throw() call.
+                assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+                frame->instr_ptr += 5 ;
+                PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
+                assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
+                assert(oparg == 0 || oparg == 1);
+                gen->gi_frame_state = FRAME_SUSPENDED + oparg;
+                _PyStackRef temp = retval;
+                stack_pointer += -1;
+                assert(WITHIN_STACK_BOUNDS());
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                tstate->exc_info = gen->gi_exc_state.previous_item;
+                gen->gi_exc_state.previous_item = NULL;
+                _Py_LeaveRecursiveCallPy(tstate);
+                _PyInterpreterFrame *gen_frame = frame;
+                frame = tstate->current_frame = frame->previous;
+                gen_frame->previous = NULL;
+                /* We don't know which of these is relevant here, so keep them equal */
+                assert(INLINE_CACHE_ENTRIES_SEND == INLINE_CACHE_ENTRIES_FOR_ITER);
+                #if TIER_ONE
+                assert(frame->instr_ptr->op.code == INSTRUMENTED_LINE ||
                   frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
                   _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                #endif
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+                value = temp;
+                LLTRACE_RESUME_FRAME();
+            }
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            DISPATCH();
+        }
+
+        TARGET(YIELD_VALUE_KNOWN) {
+            #if defined(Py_TAIL_CALL_INTERP)
+            int opcode = YIELD_VALUE_KNOWN;
+            (void)(opcode);
             #endif
-            stack_pointer = _PyFrame_GetStackPointer(frame);
-            LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
-            value = temp;
-            LLTRACE_RESUME_FRAME();
+            _Py_CODEUNIT* const this_instr = next_instr;
+            (void)this_instr;
+            frame->instr_ptr = next_instr;
+            next_instr += 5;
+            INSTRUCTION_STATS(YIELD_VALUE_KNOWN);
+            static_assert(INLINE_CACHE_ENTRIES_YIELD_VALUE == 4, "incorrect cache size");
+            _PyStackRef retval;
+            _PyStackRef value;
+            /* Skip 1 cache entry */
+            // _CHECK_YIELD_VALUE_FUNCTION
+            {
+                uint32_t version = read_u32(&this_instr[2].cache);
+                _PyInterpreterFrame *previous = frame->previous;
+                if (!PyStackRef_CodeCheck(previous->f_executable)) {
+                    UPDATE_MISS_STATS(YIELD_VALUE);
+                    assert(_PyOpcode_Deopt[opcode] == (YIELD_VALUE));
+                    JUMP_TO_PREDICTED(YIELD_VALUE);
+                }
+                if (_PyFrame_GetCode(previous)->co_version != version) {
+                    UPDATE_MISS_STATS(YIELD_VALUE);
+                    assert(_PyOpcode_Deopt[opcode] == (YIELD_VALUE));
+                    JUMP_TO_PREDICTED(YIELD_VALUE);
+                }
+            }
+            // _CHECK_YIELD_VALUE_OFFSET
+            {
+                uint16_t offset = read_u16(&this_instr[4].cache);
+                _PyInterpreterFrame *previous = frame->previous;
+                if (_PyInterpreterFrame_LASTI(previous) != offset) {
+                    UPDATE_MISS_STATS(YIELD_VALUE);
+                    assert(_PyOpcode_Deopt[opcode] == (YIELD_VALUE));
+                    JUMP_TO_PREDICTED(YIELD_VALUE);
+                }
+            }
+            // _YIELD_VALUE
+            {
+                retval = stack_pointer[-1];
+                // NOTE: It's important that YIELD_VALUE never raises an exception!
+                // The compiler treats any exception raised here as a failed close()
+                // or throw() call.
+                assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
+                frame->instr_ptr += 5 ;
+                PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
+                assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
+                assert(oparg == 0 || oparg == 1);
+                gen->gi_frame_state = FRAME_SUSPENDED + oparg;
+                _PyStackRef temp = retval;
+                stack_pointer += -1;
+                assert(WITHIN_STACK_BOUNDS());
+                _PyFrame_SetStackPointer(frame, stack_pointer);
+                tstate->exc_info = gen->gi_exc_state.previous_item;
+                gen->gi_exc_state.previous_item = NULL;
+                _Py_LeaveRecursiveCallPy(tstate);
+                _PyInterpreterFrame *gen_frame = frame;
+                frame = tstate->current_frame = frame->previous;
+                gen_frame->previous = NULL;
+                /* We don't know which of these is relevant here, so keep them equal */
+                assert(INLINE_CACHE_ENTRIES_SEND == INLINE_CACHE_ENTRIES_FOR_ITER);
+                #if TIER_ONE
+                assert(frame->instr_ptr->op.code == INSTRUMENTED_LINE ||
+                  frame->instr_ptr->op.code == INSTRUMENTED_INSTRUCTION ||
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == SEND ||
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == FOR_ITER ||
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == INTERPRETER_EXIT ||
+                  _PyOpcode_Deopt[frame->instr_ptr->op.code] == ENTER_EXECUTOR);
+                #endif
+                stack_pointer = _PyFrame_GetStackPointer(frame);
+                LOAD_IP(1 + INLINE_CACHE_ENTRIES_SEND);
+                value = temp;
+                LLTRACE_RESUME_FRAME();
+            }
             stack_pointer[0] = value;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());

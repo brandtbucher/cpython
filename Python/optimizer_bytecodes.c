@@ -748,8 +748,31 @@ dummy_func(void) {
         }
     }
 
-    op(_YIELD_VALUE, (unused -- res)) {
-        res = sym_new_unknown(ctx);
+    op(_YIELD_VALUE, (retval -- res)) {
+        if (ctx->curr_frame_depth == 1) {
+            ctx->done = true;  // XXX
+            break;
+        }
+        SAVE_STACK();
+        ctx->frame->stack_pointer = stack_pointer;
+        frame_pop(ctx);
+        stack_pointer = ctx->frame->stack_pointer;
+
+        /* Stack space handling */
+        assert(corresponding_check_stack == NULL);
+        assert(co != NULL);
+        int framesize = co->co_framesize;
+        assert(framesize > 0);
+        assert(framesize <= curr_space);
+        curr_space -= framesize;
+
+        co = get_code(this_instr);
+        if (co == NULL) {
+            // might be impossible, but bailing is still safe
+            ctx->done = true;
+        }
+        RELOAD_STACK();
+        res = retval;
     }
 
     op(_FOR_ITER_GEN_FRAME, ( -- )) {

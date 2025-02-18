@@ -2853,12 +2853,13 @@ _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int oparg)
             goto failure;
         }
         _PyInterpreterFrame *frame = &((PyGenObject *)iter_o)->gi_iframe;
-        if (PyStackRef_IsNull(frame->f_funcobj)) {
-            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OTHER);
+        if (!PyStackRef_CodeCheck(frame->f_executable)) {
+            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_CODE_NOT_OPTIMIZED);  // XXX
             goto failure;
         }
-        uint32_t version = function_get_version((PyObject *)_PyFrame_GetFunction(frame), FOR_ITER);
+        uint32_t version = _PyFrame_GetCode(frame)->co_version;
         if (version == 0) {
+            SPECIALIZATION_FAIL(FOR_ITER, SPEC_FAIL_OUT_OF_VERSIONS);
             goto failure;
         }
         int offset = _PyInterpreterFrame_LASTI(frame);
@@ -2899,12 +2900,13 @@ _Py_Specialize_Send(_PyStackRef receiver_st, _Py_CODEUNIT *instr)
             goto failure;
         }
         _PyInterpreterFrame *frame = &((PyGenObject *)receiver)->gi_iframe;
-        if (PyStackRef_IsNull(frame->f_funcobj)) {
-            SPECIALIZATION_FAIL(SEND, SPEC_FAIL_OTHER);
+        if (!PyStackRef_CodeCheck(frame->f_executable)) {
+            SPECIALIZATION_FAIL(SEND, SPEC_FAIL_CODE_NOT_OPTIMIZED);  // XXX
             goto failure;
         }
-        uint32_t version = function_get_version((PyObject *)_PyFrame_GetFunction(frame), FOR_ITER);
+        uint32_t version = _PyFrame_GetCode(frame)->co_version;
         if (version == 0) {
+            SPECIALIZATION_FAIL(SEND, SPEC_FAIL_OUT_OF_VERSIONS);
             goto failure;
         }
         int offset = _PyInterpreterFrame_LASTI(frame);
@@ -3063,6 +3065,39 @@ _Py_Specialize_ContainsOp(_PyStackRef value_st, _Py_CODEUNIT *instr)
     SPECIALIZATION_FAIL(CONTAINS_OP, containsop_fail_kind(value));
     unspecialize(instr);
     return;
+}
+
+void
+_Py_Specialize_YieldValue(_Py_CODEUNIT *instr, _PyInterpreterFrame *frame)
+{
+    assert(ENABLE_SPECIALIZATION);
+    assert(_PyOpcode_Caches[YIELD_VALUE] == INLINE_CACHE_ENTRIES_YIELD_VALUE);
+    _PyYieldValueCache *cache = (_PyYieldValueCache *)(instr + 1);
+    _PyInterpreterFrame *previous = frame->previous;
+    if (!PyStackRef_CodeCheck(previous->f_executable)) {
+        SPECIALIZATION_FAIL(YIELD_VALUE, SPEC_FAIL_CODE_NOT_OPTIMIZED);  // XXX
+        goto failure;
+    }
+    uint32_t version = _PyFrame_GetCode(previous)->co_version;
+    if (version == 0) {
+        SPECIALIZATION_FAIL(YIELD_VALUE, SPEC_FAIL_OUT_OF_VERSIONS);
+        goto failure;
+    }
+    int offset = _PyInterpreterFrame_LASTI(previous);
+    if (offset != (uint16_t)offset) {
+        SPECIALIZATION_FAIL(YIELD_VALUE, SPEC_FAIL_OUT_OF_RANGE);
+        goto failure;
+    }
+    write_u32(cache->version, version);
+    cache->offset = offset;
+    instr->op.code = YIELD_VALUE_KNOWN;
+    STAT_INC(YIELD_VALUE, success);
+    cache->counter = adaptive_counter_cooldown();
+    return;
+failure:
+    STAT_INC(YIELD_VALUE, failure);
+    instr->op.code = YIELD_VALUE;
+    cache->counter = adaptive_counter_backoff(cache->counter);
 }
 
 /* Code init cleanup.

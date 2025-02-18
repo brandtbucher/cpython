@@ -1245,8 +1245,8 @@ dummy_func(
 
         op(_CHECK_SEND_GEN_FUNCTION, (version/2, receiver, unused -- receiver, unused)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(receiver);
-            EXIT_IF(PyStackRef_IsNull(gen->gi_iframe.f_funcobj));
-            EXIT_IF(_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version);
+            EXIT_IF(!PyStackRef_CodeCheck(gen->gi_iframe.f_executable));
+            EXIT_IF(_PyFrame_GetCode(&gen->gi_iframe)->co_version != version);
         }
 
         op(_CHECK_SEND_GEN_OFFSET, (offset/1, receiver, unused -- receiver, unused)) {
@@ -1277,12 +1277,36 @@ dummy_func(
             _SEND_GEN_FRAME +
             _PUSH_FRAME;
 
-        inst(YIELD_VALUE, (retval -- value)) {
+        op(_CHECK_YIELD_VALUE_FUNCTION, (version/2 -- )) {
+            _PyInterpreterFrame *previous = frame->previous;
+            EXIT_IF(!PyStackRef_CodeCheck(previous->f_executable));
+            EXIT_IF(_PyFrame_GetCode(previous)->co_version != version);
+        }
+
+        op(_CHECK_YIELD_VALUE_OFFSET, (offset/1 -- )) {
+            _PyInterpreterFrame *previous = frame->previous;
+            EXIT_IF(_PyInterpreterFrame_LASTI(previous) != offset);
+        }
+
+        specializing op(_SPECIALIZE_YIELD_VALUE, (counter/1 --)) {
+        #if ENABLE_SPECIALIZATION
+            if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
+                next_instr = this_instr;
+                _Py_Specialize_YieldValue(next_instr, frame);
+                DISPATCH_SAME_OPARG();
+            }
+            OPCODE_DEFERRED_INC(YIELD_VALUE);
+            ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+        #endif
+            (void)counter;
+        }
+
+        op(_YIELD_VALUE, (retval -- value)) {
             // NOTE: It's important that YIELD_VALUE never raises an exception!
             // The compiler treats any exception raised here as a failed close()
             // or throw() call.
             assert(frame->owner != FRAME_OWNED_BY_INTERPRETER);
-            frame->instr_ptr++;
+            frame->instr_ptr += INSTRUCTION_SIZE;
             PyGenObject *gen = _PyGen_GetGeneratorFromFrame(frame);
             assert(FRAME_SUSPENDED_YIELD_FROM == FRAME_SUSPENDED + 1);
             assert(oparg == 0 || oparg == 1);
@@ -1312,6 +1336,13 @@ dummy_func(
             LLTRACE_RESUME_FRAME();
         }
 
+        macro(YIELD_VALUE) = _SPECIALIZE_YIELD_VALUE + unused/2 + unused/1 + _YIELD_VALUE;
+        macro(YIELD_VALUE_KNOWN) = unused/1 + _CHECK_YIELD_VALUE_FUNCTION + _CHECK_YIELD_VALUE_OFFSET + _YIELD_VALUE;
+
+        family(YIELD_VALUE, INLINE_CACHE_ENTRIES_YIELD_VALUE) = {
+            YIELD_VALUE_KNOWN,
+        };
+
         tier1 op(_YIELD_VALUE_EVENT, (val -- val)) {
             int err = _Py_call_instrumentation_arg(
                     tstate, PY_MONITORING_EVENT_PY_YIELD,
@@ -1327,7 +1358,8 @@ dummy_func(
 
         macro(INSTRUMENTED_YIELD_VALUE) =
             _YIELD_VALUE_EVENT +
-            YIELD_VALUE;
+            unused/4 +
+            _YIELD_VALUE;
 
         inst(POP_EXCEPT, (exc_value -- )) {
             _PyErr_StackItem *exc_info = tstate->exc_info;
@@ -3273,8 +3305,8 @@ dummy_func(
 
         op(_CHECK_FOR_ITER_GEN_FUNCTION, (version/2, iter -- iter)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-            EXIT_IF(PyStackRef_IsNull(gen->gi_iframe.f_funcobj));
-            EXIT_IF(_PyFrame_GetFunction(&gen->gi_iframe)->func_version != version);
+            EXIT_IF(!PyStackRef_CodeCheck(gen->gi_iframe.f_executable));
+            EXIT_IF(_PyFrame_GetCode(&gen->gi_iframe)->co_version != version);
         }
 
         op(_CHECK_FOR_ITER_GEN_OFFSET, (offset/1, iter -- iter)) {
@@ -4753,7 +4785,7 @@ dummy_func(
             assert(EMPTY());
             SAVE_STACK();
             _PyInterpreterFrame *gen_frame = &gen->gi_iframe;
-            frame->instr_ptr++;
+            frame->instr_ptr += INSTRUCTION_SIZE;
             _PyFrame_Copy(frame, gen_frame);
             assert(frame->frame_obj == NULL);
             gen->gi_frame_state = FRAME_CREATED;

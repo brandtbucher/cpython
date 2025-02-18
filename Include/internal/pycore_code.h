@@ -195,6 +195,14 @@ typedef struct {
 
 #define INLINE_CACHE_ENTRIES_CONTAINS_OP CACHE_ENTRIES(_PyContainsOpCache)
 
+typedef struct {
+    _Py_BackoffCounter counter;
+    uint16_t version[2];
+    uint16_t offset;
+} _PyYieldValueCache;
+
+#define INLINE_CACHE_ENTRIES_YIELD_VALUE CACHE_ENTRIES(_PyYieldValueCache)
+
 // Borrowed references to common callables:
 struct callable_cache {
     PyObject *isinstance;
@@ -358,6 +366,8 @@ extern void _Py_Specialize_ForIter(_PyStackRef iter, _Py_CODEUNIT *instr, int op
 extern void _Py_Specialize_Send(_PyStackRef receiver, _Py_CODEUNIT *instr);
 extern void _Py_Specialize_ToBool(_PyStackRef value, _Py_CODEUNIT *instr);
 extern void _Py_Specialize_ContainsOp(_PyStackRef value, _Py_CODEUNIT *instr);
+struct _PyInterpreterFrame;
+extern void _Py_Specialize_YieldValue(_Py_CODEUNIT *instr, struct _PyInterpreterFrame *frame);
 
 #ifdef Py_STATS
 

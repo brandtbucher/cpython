@@ -774,10 +774,43 @@
             break;
         }
 
+        case _CHECK_YIELD_VALUE_FUNCTION: {
+            break;
+        }
+
+        case _CHECK_YIELD_VALUE_OFFSET: {
+            break;
+        }
+
         case _YIELD_VALUE: {
+            JitOptSymbol *retval;
             JitOptSymbol *res;
-            res = sym_new_unknown(ctx);
-            stack_pointer[-1] = res;
+            retval = stack_pointer[-1];
+            if (ctx->curr_frame_depth == 1) {
+                ctx->done = true;  // XXX
+                break;
+            }
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            ctx->frame->stack_pointer = stack_pointer;
+            frame_pop(ctx);
+            stack_pointer = ctx->frame->stack_pointer;
+            /* Stack space handling */
+            assert(corresponding_check_stack == NULL);
+            assert(co != NULL);
+            int framesize = co->co_framesize;
+            assert(framesize > 0);
+            assert(framesize <= curr_space);
+            curr_space -= framesize;
+            co = get_code(this_instr);
+            if (co == NULL) {
+                // might be impossible, but bailing is still safe
+                ctx->done = true;
+            }
+            res = retval;
+            stack_pointer[0] = res;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
