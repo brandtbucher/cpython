@@ -400,6 +400,23 @@ dummy_func(void) {
             sym_set_type(value, &PyBool_Type);
             res = value;
         }
+        if (!sym_is_const(value)) {
+            assert(sym_matches_type(value, &PyBool_Type));
+            int next_opcode = (this_instr + 1)->opcode;
+            assert(next_opcode == _CHECK_VALIDITY_AND_SET_IP);
+            next_opcode = (this_instr + 2)->opcode;
+            // If the next uop is a guard, we can narrow value. However, we
+            // *can't* narrow res, since that would cause the guard to be
+            // removed and the narrowed value to be invalid:
+            if (next_opcode == _GUARD_IS_FALSE_POP) {
+                sym_set_const(value, Py_False);
+                res = sym_new_type(ctx, &PyBool_Type);
+            }
+            else if (next_opcode == _GUARD_IS_TRUE_POP) {
+                sym_set_const(value, Py_True);
+                res = sym_new_type(ctx, &PyBool_Type);
+            }
+        }
     }
 
     op(_TO_BOOL_INT, (value -- res)) {
