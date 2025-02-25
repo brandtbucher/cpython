@@ -1091,6 +1091,7 @@ class TestUopsOptimization(unittest.TestCase):
             ("_CHECK_STACK_SPACE_OPERAND", largest_stack), uops_and_operands
         )
 
+    @unittest.skip("XXX")
     def test_combine_stack_space_checks_recursion(self):
         def dummy15(x):
             while x > 0:

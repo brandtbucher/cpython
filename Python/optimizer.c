@@ -772,17 +772,17 @@ translate_bytecode_to_trace(
                             DPRINTF(2, "Function: version=%#x; new_func=%p, new_code=%p\n",
                                     (int)func_version, new_func, new_code);
                             if (new_code != NULL) {
-                                if (new_code == code) {
-                                    // Recursive call, bail (we could be here forever).
-                                    DPRINTF(2, "Bailing on recursive call to %s (%s:%d)\n",
-                                            PyUnicode_AsUTF8(new_code->co_qualname),
-                                            PyUnicode_AsUTF8(new_code->co_filename),
-                                            new_code->co_firstlineno);
-                                    OPT_STAT_INC(recursive_call);
-                                    ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
-                                    goto done;
-                                }
+                                // if (new_code == code) {
+                                //     // Recursive call, bail (we could be here forever).
+                                //     DPRINTF(2, "Bailing on recursive call to %s (%s:%d)\n",
+                                //             PyUnicode_AsUTF8(new_code->co_qualname),
+                                //             PyUnicode_AsUTF8(new_code->co_filename),
+                                //             new_code->co_firstlineno);
+                                //     OPT_STAT_INC(recursive_call);
+                                //     ADD_TO_TRACE(uop, oparg, 0, target);
+                                //     ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                //     goto done;
+                                // }
                                 if (new_code->co_version != func_version) {
                                     // func.__code__ was updated.
                                     // Perhaps it may happen again, so don't bother tracing.
