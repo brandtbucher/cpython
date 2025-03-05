@@ -108,7 +108,10 @@ _PyOptimizer_Optimize(
     _PyExecutorObject **executor_ptr, int chain_depth)
 {
     _PyStackRef *stack_pointer = frame->stackpointer;
-    assert(_PyInterpreterState_GET()->jit);
+    if (!_PyInterpreterState_GET()->jit) {
+        // This can happen if we're currently shutting down.
+        return 0;
+    }
     // The first executor in a chain and the MAX_CHAIN_DEPTH'th executor *must*
     // make progress in order to avoid infinite loops or excessively-long
     // side-exit chains. We can only insert the executor into the bytecode if
