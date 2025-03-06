@@ -1250,16 +1250,26 @@
         }
 
         case _COMPARE_OP: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
             JitOptSymbol *res;
-            if (oparg & 16) {
-                res = sym_new_type(ctx, &PyBool_Type);
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            int cmp = oparg >> 5;
+            if (cmp == Py_EQ || cmp == Py_NE) {
+                res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
             }
             else {
-                stack_pointer += -2;
-                assert(WITHIN_STACK_BOUNDS());
-                res = _Py_uop_sym_new_not_null(ctx);
-                stack_pointer += 2;
-                assert(WITHIN_STACK_BOUNDS());
+                if (oparg & 16) {
+                    res = sym_new_type(ctx, &PyBool_Type);
+                }
+                else {
+                    stack_pointer += -2;
+                    assert(WITHIN_STACK_BOUNDS());
+                    res = _Py_uop_sym_new_not_null(ctx);
+                    stack_pointer += 2;
+                    assert(WITHIN_STACK_BOUNDS());
+                }
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -1268,8 +1278,18 @@
         }
 
         case _COMPARE_OP_FLOAT: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
             JitOptSymbol *res;
-            res = sym_new_type(ctx, &PyBool_Type);
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            int cmp = oparg >> 5;
+            if (cmp == Py_EQ || cmp == Py_NE) {
+                res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+            }
+            else {
+                res = sym_new_type(ctx, &PyBool_Type);
+            }
             stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -1277,8 +1297,18 @@
         }
 
         case _COMPARE_OP_INT: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
             JitOptSymbol *res;
-            res = sym_new_type(ctx, &PyBool_Type);
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            int cmp = oparg >> 5;
+            if (cmp == Py_EQ || cmp == Py_NE) {
+                res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+            }
+            else {
+                res = sym_new_type(ctx, &PyBool_Type);
+            }
             stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
@@ -1286,8 +1316,18 @@
         }
 
         case _COMPARE_OP_STR: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
             JitOptSymbol *res;
-            res = sym_new_type(ctx, &PyBool_Type);
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            int cmp = oparg >> 5;
+            if (cmp == Py_EQ || cmp == Py_NE) {
+                res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+            }
+            else {
+                res = sym_new_type(ctx, &PyBool_Type);
+            }
             stack_pointer[-2] = res;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());

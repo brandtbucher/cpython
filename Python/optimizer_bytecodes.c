@@ -35,6 +35,7 @@ typedef struct _Py_UOpsAbstractFrame _Py_UOpsAbstractFrame;
 #define sym_tuple_length _Py_uop_sym_tuple_length
 #define sym_is_immortal _Py_uop_sym_is_immortal
 #define sym_new_truthiness _Py_uop_sym_new_truthiness
+#define sym_new_equality _Py_uop_sym_new_equality
 
 extern int
 optimize_to_bool(
@@ -437,7 +438,11 @@ dummy_func(void) {
     }
 
     op(_COMPARE_OP, (left, right -- res)) {
-        if (oparg & 16) {
+        int cmp = oparg >> 5;
+        if (cmp == Py_EQ || cmp == Py_NE) {
+            res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+        }
+        else if (oparg & 16) {
             res = sym_new_type(ctx, &PyBool_Type);
         }
         else {
@@ -446,15 +451,33 @@ dummy_func(void) {
     }
 
     op(_COMPARE_OP_INT, (left, right -- res)) {
-        res = sym_new_type(ctx, &PyBool_Type);
+        int cmp = oparg >> 5;
+        if (cmp == Py_EQ || cmp == Py_NE) {
+            res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+        }
+        else {
+            res = sym_new_type(ctx, &PyBool_Type);
+        }
     }
 
     op(_COMPARE_OP_FLOAT, (left, right -- res)) {
-        res = sym_new_type(ctx, &PyBool_Type);
+        int cmp = oparg >> 5;
+        if (cmp == Py_EQ || cmp == Py_NE) {
+            res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+        }
+        else {
+            res = sym_new_type(ctx, &PyBool_Type);
+        }
     }
 
     op(_COMPARE_OP_STR, (left, right -- res)) {
-        res = sym_new_type(ctx, &PyBool_Type);
+        int cmp = oparg >> 5;
+        if (cmp == Py_EQ || cmp == Py_NE) {
+            res = sym_new_equality(ctx, left, right, cmp == Py_EQ);
+        }
+        else {
+            res = sym_new_type(ctx, &PyBool_Type);
+        }
     }
 
     op(_IS_OP, (left, right -- res)) {
