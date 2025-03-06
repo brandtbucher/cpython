@@ -73,6 +73,7 @@ sym_new(JitOptContext *ctx)
     }
     ctx->t_arena.ty_curr_number++;
     self->tag = JIT_SYM_UNKNOWN_TAG;
+    self->truthy = 0;
     return self;
 }
 
@@ -304,10 +305,11 @@ _Py_uop_sym_set_const(JitOptContext *ctx, JitOptSymbol *sym, PyObject *const_val
             JitOptSymbol *value = allocation_base(ctx) + sym->truthiness.value;
             PyTypeObject *type = _Py_uop_sym_get_type(value);
             if (const_val == (sym->truthiness.not ? Py_False : Py_True)) {
-                // value is truthy. This is only useful for bool:
+                // value is truthy:
                 if (type == &PyBool_Type) {
                     _Py_uop_sym_set_const(ctx, value, Py_True);
                 }
+                value->truthy = 1;
             }
             // value is falsey:
             else if (type == &PyBool_Type) {
@@ -357,6 +359,9 @@ _Py_uop_sym_set_const(JitOptContext *ctx, JitOptSymbol *sym, PyObject *const_val
                 else if (unknown_type == &PyBool_Type) {
                     known_value = (known_value == Py_True) ? Py_False : Py_True;
                     _Py_uop_sym_set_const(ctx, unknown, known_value);
+                }
+                else if (_Py_uop_sym_truthiness(ctx, known) == 0) {
+                    unknown->truthy = 1;
                 }
             }
             make_const(sym, const_val);
@@ -526,8 +531,8 @@ _Py_uop_sym_matches_type_version(JitOptSymbol *sym, unsigned int version)
     return _Py_uop_sym_get_type_version(sym) == version;
 }
 
-int
-_Py_uop_sym_truthiness(JitOptContext *ctx, JitOptSymbol *sym)
+static int
+sym_truthiness_inner(JitOptContext *ctx, JitOptSymbol *sym)
 {
     switch(sym->tag) {
         case JIT_SYM_NULL_TAG:
@@ -571,6 +576,19 @@ _Py_uop_sym_truthiness(JitOptContext *ctx, JitOptSymbol *sym)
         return value == Py_True;
     }
     return -1;
+}
+
+int
+_Py_uop_sym_truthiness(JitOptContext *ctx, JitOptSymbol *sym)
+{
+    if (sym->truthy) {
+        return 1;
+    }
+    int truthiness = sym_truthiness_inner(ctx, sym);
+    if (truthiness == 1) {
+        sym->truthy = 1;
+    }
+    return truthiness;
 }
 
 JitOptSymbol *

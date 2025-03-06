@@ -177,44 +177,53 @@ typedef enum _JitSymType {
 } JitSymType;
 
 typedef struct _jit_opt_known_class {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     uint32_t version;
     PyTypeObject *type;
 } JitOptKnownClass;
 
 typedef struct _jit_opt_known_version {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     uint32_t version;
 } JitOptKnownVersion;
 
 typedef struct _jit_opt_known_value {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     PyObject *value;
 } JitOptKnownValue;
 
 #define MAX_SYMBOLIC_TUPLE_SIZE 7
 
 typedef struct _jit_opt_tuple {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     uint8_t length;
     uint16_t items[MAX_SYMBOLIC_TUPLE_SIZE];
 } JitOptTuple;
 
 typedef struct {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     bool not;
     uint16_t value;
 } JitOptTruthiness;
 
 typedef struct {
-    uint8_t tag;
+    uint8_t tag:7;
+    uint8_t truthy:1;
     bool not;
     uint16_t lhs;
     uint16_t rhs;
 } JitOptEquality;
 
 typedef union _jit_opt_symbol {
-    uint8_t tag;
+    struct {
+        uint8_t tag:7;
+        uint8_t truthy:1;
+    };
     JitOptKnownClass cls;
     JitOptKnownValue value;
     JitOptKnownVersion version;
