@@ -565,21 +565,40 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                 last_set_ip = pc;
                 break;
             case _POP_TOP:
+            case _POP_TOP_LOAD_CONST_INLINE:
+            case _POP_TOP_LOAD_CONST_INLINE_BORROW:
             {
+                // XXX: Any instruction that pops may have escaped (they aren't
+                // marked as such currently), but we don't want that to affect
+                // us skipping over NOPs.
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {
                     last--;
                 }
-                if (last->opcode == _LOAD_CONST_INLINE  ||
+                if (last->opcode == _COPY ||
+                    last->opcode == _LOAD_CONST_INLINE  ||
                     last->opcode == _LOAD_CONST_INLINE_BORROW ||
                     last->opcode == _LOAD_FAST ||
-                    last->opcode == _COPY
-                ) {
+                    last->opcode == _LOAD_SMALL_INT)
+                {
                     last->opcode = _NOP;
-                    buffer[pc].opcode = _NOP;
+                    if (opcode == _POP_TOP) {
+                        buffer[pc].opcode = _NOP;
+                    }
+                    else if (opcode == _POP_TOP_LOAD_CONST_INLINE) {
+                        buffer[pc].opcode = _LOAD_CONST_INLINE;
+                    }
+                    else {
+                        assert(opcode == _POP_TOP_LOAD_CONST_INLINE_BORROW);
+                        buffer[pc].opcode = _LOAD_CONST_INLINE_BORROW;
+                    }
                 }
-                if (last->opcode == _REPLACE_WITH_TRUE) {
+                else if (last->opcode == _POP_TOP_LOAD_CONST_INLINE ||
+                         last->opcode == _POP_TOP_LOAD_CONST_INLINE_BORROW)
+                {
                     last->opcode = _NOP;
+                    // If there was anything else worth removing, last would
+                    // have removed it already. No need to check again.
                 }
                 break;
             }
