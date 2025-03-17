@@ -377,6 +377,57 @@ eliminate_pop_guard(_PyUOpInstruction *this_instr, bool exit)
     }
 }
 
+static JitOptSymbol *
+infer_binary_op(JitOptContext *ctx, int oparg, JitOptSymbol *left, JitOptSymbol *right)
+{
+    bool lhs_int = sym_matches_type(left, &PyLong_Type);
+    bool rhs_int = sym_matches_type(right, &PyLong_Type);
+    bool lhs_float = sym_matches_type(left, &PyFloat_Type);
+    bool rhs_float = sym_matches_type(right, &PyFloat_Type);
+    if (!((lhs_int || lhs_float) && (rhs_int || rhs_float))) {
+        // There's something other than an int or float involved:
+        return sym_new_not_null(ctx);
+    }
+    if (oparg == NB_POWER || oparg == NB_INPLACE_POWER) {
+        // This one's fun... the *type* of the result depends on the
+        // *values* being exponentiated. However, exponents with one
+        // constant part are reasonably common, so it's probably worth
+        // trying to infer some simple cases:
+        // - A: 1 ** 1 -> 1 (int ** int -> int)
+        // - B: 1 ** -1 -> 1.0 (int ** int -> float)
+        // - C: 1.0 ** 1 -> 1.0 (float ** int -> float)
+        // - D: 1 ** 1.0 -> 1.0 (int ** float -> float)
+        // - E: -1 ** 0.5 ~> 1j (int ** float -> complex)
+        // - F: 1.0 ** 1.0 -> 1.0 (float ** float -> float)
+        // - G: -1.0 ** 0.5 ~> 1j (float ** float -> complex)
+        if (rhs_float) {
+            // Case D, E, F, or G... can't know without the sign of the LHS
+            // or whether the RHS is whole, which isn't worth the effort:
+            return sym_new_not_null(ctx);
+        }
+        if (lhs_float) {
+            // Case C:
+            return sym_new_type(ctx, &PyFloat_Type);
+        }
+        if (!sym_is_const(ctx, right)) {
+            // Case A or B... can't know without the sign of the RHS:
+            return sym_new_not_null(ctx);
+        }
+        if (_PyLong_IsNegative((PyLongObject *)sym_get_const(ctx, right))) {
+            // Case B:
+            return sym_new_type(ctx, &PyFloat_Type);
+        }
+        return sym_new_type(ctx, &PyLong_Type);
+    }
+    if (oparg == NB_TRUE_DIVIDE || oparg == NB_INPLACE_TRUE_DIVIDE) {
+        return sym_new_type(ctx, &PyFloat_Type);
+    }
+    if (lhs_int && rhs_int) {
+        return sym_new_type(ctx, &PyLong_Type);
+    }
+    return sym_new_type(ctx, &PyFloat_Type);
+}
+
 /* _PUSH_FRAME/_RETURN_VALUE's operand can be 0, a PyFunctionObject *, or a
  * PyCodeObject *. Retrieve the code object if possible.
  */

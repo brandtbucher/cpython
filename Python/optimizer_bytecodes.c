@@ -170,63 +170,11 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP, (left, right -- res)) {
-        bool lhs_int = sym_matches_type(left, &PyLong_Type);
-        bool rhs_int = sym_matches_type(right, &PyLong_Type);
-        bool lhs_float = sym_matches_type(left, &PyFloat_Type);
-        bool rhs_float = sym_matches_type(right, &PyFloat_Type);
-        if (!((lhs_int || lhs_float) && (rhs_int || rhs_float))) {
-            // There's something other than an int or float involved:
-            res = sym_new_unknown(ctx);
-        }
-        else if (oparg == NB_POWER || oparg == NB_INPLACE_POWER) {
-            // This one's fun... the *type* of the result depends on the
-            // *values* being exponentiated. However, exponents with one
-            // constant part are reasonably common, so it's probably worth
-            // trying to infer some simple cases:
-            // - A: 1 ** 1 -> 1 (int ** int -> int)
-            // - B: 1 ** -1 -> 1.0 (int ** int -> float)
-            // - C: 1.0 ** 1 -> 1.0 (float ** int -> float)
-            // - D: 1 ** 1.0 -> 1.0 (int ** float -> float)
-            // - E: -1 ** 0.5 ~> 1j (int ** float -> complex)
-            // - F: 1.0 ** 1.0 -> 1.0 (float ** float -> float)
-            // - G: -1.0 ** 0.5 ~> 1j (float ** float -> complex)
-            if (rhs_float) {
-                // Case D, E, F, or G... can't know without the sign of the LHS
-                // or whether the RHS is whole, which isn't worth the effort:
-                res = sym_new_unknown(ctx);
-            }
-            else if (lhs_float) {
-                // Case C:
-                res = sym_new_type(ctx, &PyFloat_Type);
-            }
-            else if (!sym_is_const(ctx, right)) {
-                // Case A or B... can't know without the sign of the RHS:
-                res = sym_new_unknown(ctx);
-            }
-            else if (_PyLong_IsNegative((PyLongObject *)sym_get_const(ctx, right))) {
-                // Case B:
-                res = sym_new_type(ctx, &PyFloat_Type);
-            }
-            else {
-                // Case A:
-                res = sym_new_type(ctx, &PyLong_Type);
-            }
-        }
-        else if (oparg == NB_TRUE_DIVIDE || oparg == NB_INPLACE_TRUE_DIVIDE) {
-            res = sym_new_type(ctx, &PyFloat_Type);
-        }
-        else if (lhs_int && rhs_int) {
-            res = sym_new_type(ctx, &PyLong_Type);
-        }
-        else {
-            res = sym_new_type(ctx, &PyFloat_Type);
-        }
+        res = infer_binary_op(ctx, oparg, left, right);
     }
 
     op(_BINARY_OP_ADD_INT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyLong_CheckExact(sym_get_const(ctx, left)));
             assert(PyLong_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = _PyLong_Add((PyLongObject *)sym_get_const(ctx, left),
@@ -245,9 +193,7 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_SUBTRACT_INT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyLong_CheckExact(sym_get_const(ctx, left)));
             assert(PyLong_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = _PyLong_Subtract((PyLongObject *)sym_get_const(ctx, left),
@@ -266,9 +212,7 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_MULTIPLY_INT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyLong_CheckExact(sym_get_const(ctx, left)));
             assert(PyLong_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = _PyLong_Multiply((PyLongObject *)sym_get_const(ctx, left),
@@ -287,9 +231,7 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_ADD_FLOAT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
             assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = PyFloat_FromDouble(
@@ -309,9 +251,7 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_SUBTRACT_FLOAT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
             assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = PyFloat_FromDouble(
@@ -331,9 +271,7 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_MULTIPLY_FLOAT, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-        {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
             assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
             assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = PyFloat_FromDouble(
@@ -353,8 +291,9 @@ dummy_func(void) {
     }
 
     op(_BINARY_OP_ADD_UNICODE, (left, right -- res)) {
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+            assert(PyUnicode_CheckExact(sym_get_const(ctx, left)));
+            assert(PyUnicode_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = PyUnicode_Concat(sym_get_const(ctx, left), sym_get_const(ctx, right));
             if (temp == NULL) {
                 goto error;
@@ -369,8 +308,9 @@ dummy_func(void) {
 
     op(_BINARY_OP_INPLACE_ADD_UNICODE, (left, right -- )) {
         JitOptSymbol *res;
-        if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-            sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+            assert(PyUnicode_CheckExact(sym_get_const(ctx, left)));
+            assert(PyUnicode_CheckExact(sym_get_const(ctx, right)));
             PyObject *temp = PyUnicode_Concat(sym_get_const(ctx, left), sym_get_const(ctx, right));
             if (temp == NULL) {
                 goto error;
@@ -383,6 +323,26 @@ dummy_func(void) {
         }
         // _STORE_FAST:
         GETLOCAL(this_instr->operand0) = res;
+    }
+
+    op(_GUARD_BINARY_OP_EXTEND, (descr/4, left, right -- left, right)) {
+        if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+            _PyBinaryOpSpecializationDescr *d = (_PyBinaryOpSpecializationDescr*)descr;
+            // Guards are "safe" to evaluate here:
+            int res = d->guard(sym_get_const(ctx, left), sym_get_const(ctx, right));
+            if (res) {
+                REPLACE_OP(this_instr, _NOP, 0, 0);
+            }
+            else {
+                ctx->done = true;
+            }
+        }
+    }
+
+    op(_BINARY_OP_EXTEND, (descr/4, left, right -- res)) {
+        (void)descr;
+        // Actions aren't "safe" to evaluate here:
+        res = infer_binary_op(ctx, oparg, left, right);
     }
 
     op(_BINARY_OP_SUBSCR_INIT_CALL, (container, sub, getitem  -- new_frame: _Py_UOpsAbstractFrame *)) {

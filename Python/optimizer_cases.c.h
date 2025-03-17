@@ -271,9 +271,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyLong_CheckExact(sym_get_const(ctx, left)));
                 assert(PyLong_CheckExact(sym_get_const(ctx, right)));
                 stack_pointer += -2;
@@ -306,9 +304,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyLong_CheckExact(sym_get_const(ctx, left)));
                 assert(PyLong_CheckExact(sym_get_const(ctx, right)));
                 stack_pointer += -2;
@@ -341,9 +337,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyLong_Type) && sym_matches_type(right, &PyLong_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyLong_CheckExact(sym_get_const(ctx, left)));
                 assert(PyLong_CheckExact(sym_get_const(ctx, right)));
                 stack_pointer += -2;
@@ -407,9 +401,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
                 assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
                 PyObject *temp = PyFloat_FromDouble(
@@ -441,9 +433,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
                 assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
                 PyObject *temp = PyFloat_FromDouble(
@@ -475,9 +465,7 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyFloat_Type) && sym_matches_type(right, &PyFloat_Type))
-            {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
                 assert(PyFloat_CheckExact(sym_get_const(ctx, left)));
                 assert(PyFloat_CheckExact(sym_get_const(ctx, right)));
                 PyObject *temp = PyFloat_FromDouble(
@@ -523,8 +511,9 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+                assert(PyUnicode_CheckExact(sym_get_const(ctx, left)));
+                assert(PyUnicode_CheckExact(sym_get_const(ctx, right)));
                 PyObject *temp = PyUnicode_Concat(sym_get_const(ctx, left), sym_get_const(ctx, right));
                 if (temp == NULL) {
                     goto error;
@@ -550,8 +539,9 @@
             right = stack_pointer[-1];
             left = stack_pointer[-2];
             JitOptSymbol *res;
-            if (sym_is_const(ctx, left) && sym_is_const(ctx, right) &&
-                sym_matches_type(left, &PyUnicode_Type) && sym_matches_type(right, &PyUnicode_Type)) {
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+                assert(PyUnicode_CheckExact(sym_get_const(ctx, left)));
+                assert(PyUnicode_CheckExact(sym_get_const(ctx, right)));
                 PyObject *temp = PyUnicode_Concat(sym_get_const(ctx, left), sym_get_const(ctx, right));
                 if (temp == NULL) {
                     goto error;
@@ -572,14 +562,39 @@
         }
 
         case _GUARD_BINARY_OP_EXTEND: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            PyObject *descr = (PyObject *)this_instr->operand0;
+            if (sym_is_const(ctx, left) && sym_is_const(ctx, right)) {
+                _PyBinaryOpSpecializationDescr *d = (_PyBinaryOpSpecializationDescr*)descr;
+                // Guards are "safe" to evaluate here:
+                int res = d->guard(sym_get_const(ctx, left), sym_get_const(ctx, right));
+                if (res) {
+                    REPLACE_OP(this_instr, _NOP, 0, 0);
+                }
+                else {
+                    ctx->done = true;
+                }
+            }
             break;
         }
 
         case _BINARY_OP_EXTEND: {
+            JitOptSymbol *right;
+            JitOptSymbol *left;
             JitOptSymbol *res;
-            res = sym_new_not_null(ctx);
-            stack_pointer[-2] = res;
-            stack_pointer += -1;
+            right = stack_pointer[-1];
+            left = stack_pointer[-2];
+            PyObject *descr = (PyObject *)this_instr->operand0;
+            (void)descr;
+            // Actions aren't "safe" to evaluate here:
+            stack_pointer += -2;
+            assert(WITHIN_STACK_BOUNDS());
+            res = infer_binary_op(ctx, oparg, left, right);
+            stack_pointer[0] = res;
+            stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -2133,71 +2148,11 @@
             JitOptSymbol *res;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            bool lhs_int = sym_matches_type(left, &PyLong_Type);
-            bool rhs_int = sym_matches_type(right, &PyLong_Type);
-            bool lhs_float = sym_matches_type(left, &PyFloat_Type);
-            bool rhs_float = sym_matches_type(right, &PyFloat_Type);
-            if (!((lhs_int || lhs_float) && (rhs_int || rhs_float))) {
-                // There's something other than an int or float involved:
-                res = sym_new_unknown(ctx);
-            }
-            else {
-                if (oparg == NB_POWER || oparg == NB_INPLACE_POWER) {
-                    // This one's fun... the *type* of the result depends on the
-                    // *values* being exponentiated. However, exponents with one
-                    // constant part are reasonably common, so it's probably worth
-                    // trying to infer some simple cases:
-                    // - A: 1 ** 1 -> 1 (int ** int -> int)
-                    // - B: 1 ** -1 -> 1.0 (int ** int -> float)
-                    // - C: 1.0 ** 1 -> 1.0 (float ** int -> float)
-                    // - D: 1 ** 1.0 -> 1.0 (int ** float -> float)
-                    // - E: -1 ** 0.5 ~> 1j (int ** float -> complex)
-                    // - F: 1.0 ** 1.0 -> 1.0 (float ** float -> float)
-                    // - G: -1.0 ** 0.5 ~> 1j (float ** float -> complex)
-                    if (rhs_float) {
-                        // Case D, E, F, or G... can't know without the sign of the LHS
-                        // or whether the RHS is whole, which isn't worth the effort:
-                        res = sym_new_unknown(ctx);
-                    }
-                    else {
-                        if (lhs_float) {
-                            // Case C:
-                            res = sym_new_type(ctx, &PyFloat_Type);
-                        }
-                        else {
-                            if (!sym_is_const(ctx, right)) {
-                                // Case A or B... can't know without the sign of the RHS:
-                                res = sym_new_unknown(ctx);
-                            }
-                            else {
-                                if (_PyLong_IsNegative((PyLongObject *)sym_get_const(ctx, right))) {
-                                    // Case B:
-                                    res = sym_new_type(ctx, &PyFloat_Type);
-                                }
-                                else {
-                                    // Case A:
-                                    res = sym_new_type(ctx, &PyLong_Type);
-                                }
-                            }
-                        }
-                    }
-                }
-                else {
-                    if (oparg == NB_TRUE_DIVIDE || oparg == NB_INPLACE_TRUE_DIVIDE) {
-                        res = sym_new_type(ctx, &PyFloat_Type);
-                    }
-                    else {
-                        if (lhs_int && rhs_int) {
-                            res = sym_new_type(ctx, &PyLong_Type);
-                        }
-                        else {
-                            res = sym_new_type(ctx, &PyFloat_Type);
-                        }
-                    }
-                }
-            }
-            stack_pointer[-2] = res;
-            stack_pointer += -1;
+            stack_pointer += -2;
+            assert(WITHIN_STACK_BOUNDS());
+            res = infer_binary_op(ctx, oparg, left, right);
+            stack_pointer[0] = res;
+            stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
