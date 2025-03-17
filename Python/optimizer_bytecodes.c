@@ -598,26 +598,33 @@ dummy_func(void) {
     }
 
     op(_LOAD_ATTR_CLASS, (descr/4, owner -- attr)) {
-        attr = sym_new_not_null(ctx);
-        (void)descr;
+        attr = sym_new_const(ctx, descr);
     }
 
     op(_LOAD_ATTR_METHOD_WITH_VALUES, (descr/4, owner -- attr, self)) {
         (void)descr;
-        attr = sym_new_not_null(ctx);
+        attr = sym_new_const(ctx, descr);
         self = owner;
     }
 
     op(_LOAD_ATTR_METHOD_NO_DICT, (descr/4, owner -- attr, self)) {
         (void)descr;
-        attr = sym_new_not_null(ctx);
+        attr = sym_new_const(ctx, descr);
         self = owner;
     }
 
     op(_LOAD_ATTR_METHOD_LAZY_DICT, (descr/4, owner -- attr, self)) {
         (void)descr;
-        attr = sym_new_not_null(ctx);
+        attr = sym_new_const(ctx, descr);
         self = owner;
+    }
+
+    op(_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, (descr/4, owner -- attr)) {
+        attr = sym_new_const(ctx, descr);
+    }
+
+    op(_LOAD_ATTR_NONDESCRIPTOR_NO_DICT, (descr/4, owner -- attr)) {
+        attr = sym_new_const(ctx, descr);
     }
 
     op(_LOAD_ATTR_PROPERTY_FRAME, (fget/4, owner -- new_frame: _Py_UOpsAbstractFrame *)) {

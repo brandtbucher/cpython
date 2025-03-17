@@ -1220,8 +1220,7 @@
         case _LOAD_ATTR_CLASS: {
             JitOptSymbol *attr;
             PyObject *descr = (PyObject *)this_instr->operand0;
-            attr = sym_new_not_null(ctx);
-            (void)descr;
+            attr = sym_new_const(ctx, descr);
             stack_pointer[-1] = attr;
             break;
         }
@@ -1609,7 +1608,7 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_not_null(ctx);
+            attr = sym_new_const(ctx, descr);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1625,7 +1624,7 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_not_null(ctx);
+            attr = sym_new_const(ctx, descr);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1636,14 +1635,16 @@
 
         case _LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
             JitOptSymbol *attr;
-            attr = sym_new_not_null(ctx);
+            PyObject *descr = (PyObject *)this_instr->operand0;
+            attr = sym_new_const(ctx, descr);
             stack_pointer[-1] = attr;
             break;
         }
 
         case _LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
             JitOptSymbol *attr;
-            attr = sym_new_not_null(ctx);
+            PyObject *descr = (PyObject *)this_instr->operand0;
+            attr = sym_new_const(ctx, descr);
             stack_pointer[-1] = attr;
             break;
         }
@@ -1659,7 +1660,7 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_not_null(ctx);
+            attr = sym_new_const(ctx, descr);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
