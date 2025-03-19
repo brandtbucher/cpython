@@ -487,6 +487,9 @@ dummy_func(void) {
 
     op(_LOAD_SMALL_INT, (-- value)) {
         PyObject *val = PyLong_FromLong(this_instr->oparg);
+        assert(val);
+        assert(_Py_IsImmortal(val));
+        REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
         value = sym_new_const(ctx, val);
     }
 
@@ -571,6 +574,9 @@ dummy_func(void) {
     }
 
     op(_LOAD_ATTR_CLASS, (descr/4, owner -- attr)) {
+        int opcode = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                           : _POP_TOP_LOAD_CONST_INLINE;
+        REPLACE_OP(this_instr, opcode, 0, (uintptr_t)descr);
         attr = sym_new_const(ctx, descr);
     }
 
@@ -593,10 +599,16 @@ dummy_func(void) {
     }
 
     op(_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, (descr/4, owner -- attr)) {
+        int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                       : _POP_TOP_LOAD_CONST_INLINE;
+        REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
         attr = sym_new_const(ctx, descr);
     }
 
     op(_LOAD_ATTR_NONDESCRIPTOR_NO_DICT, (descr/4, owner -- attr)) {
+        int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                       : _POP_TOP_LOAD_CONST_INLINE;
+        REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
         attr = sym_new_const(ctx, descr);
     }
 
