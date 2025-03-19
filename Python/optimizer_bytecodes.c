@@ -176,7 +176,7 @@ dummy_func(void) {
         bool rhs_float = sym_matches_type(right, &PyFloat_Type);
         if (!((lhs_int || lhs_float) && (rhs_int || rhs_float))) {
             // There's something other than an int or float involved:
-            res = sym_new_unknown(ctx);
+            res = sym_new_not_null(ctx);
         }
         else if (oparg == NB_POWER || oparg == NB_INPLACE_POWER) {
             // This one's fun... the *type* of the result depends on the
@@ -193,7 +193,7 @@ dummy_func(void) {
             if (rhs_float) {
                 // Case D, E, F, or G... can't know without the sign of the LHS
                 // or whether the RHS is whole, which isn't worth the effort:
-                res = sym_new_unknown(ctx);
+                res = sym_new_not_null(ctx);
             }
             else if (lhs_float) {
                 // Case C:
@@ -201,7 +201,7 @@ dummy_func(void) {
             }
             else if (!sym_is_const(ctx, right)) {
                 // Case A or B... can't know without the sign of the RHS:
-                res = sym_new_unknown(ctx);
+                res = sym_new_not_null(ctx);
             }
             else if (_PyLong_IsNegative((PyLongObject *)sym_get_const(ctx, right))) {
                 // Case B:
@@ -441,7 +441,7 @@ dummy_func(void) {
             res = sym_new_type(ctx, &PyBool_Type);
         }
         else {
-            res = _Py_uop_sym_new_not_null(ctx);
+            res = sym_new_not_null(ctx);
         }
     }
 
@@ -600,7 +600,8 @@ dummy_func(void) {
     }
 
     op(_INIT_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
-        callable[0] = sym_new_not_null(ctx);
+        sym_set_type(callable[0], &PyMethod_Type);
+        callable[0] = sym_new_type(ctx, &PyFunction_Type);
         self_or_null[0] = sym_new_not_null(ctx);
     }
 
@@ -661,8 +662,21 @@ dummy_func(void) {
 
     op(_MAYBE_EXPAND_METHOD, (callable, self_or_null, args[oparg] -- func, maybe_self, args[oparg])) {
         (void)args;
-        func = sym_new_not_null(ctx);
-        maybe_self = sym_new_not_null(ctx);
+        bool method = sym_matches_type(callable, &PyMethod_Type);
+        bool nonmethod = !method && sym_has_type(callable);
+        if (method && sym_is_null(self_or_null)) {
+            func = sym_new_type(ctx, &PyFunction_Type);
+            maybe_self = sym_new_not_null(ctx);
+        }
+        else if (nonmethod || sym_is_not_null(self_or_null)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+            func = callable;
+            maybe_self = self_or_null;
+        }
+        else {
+            func = sym_new_not_null(ctx);
+            maybe_self = sym_new_unknown(ctx);
+        }
     }
 
     op(_PY_FRAME_GENERAL, (callable, self_or_null, args[oparg] -- new_frame: _Py_UOpsAbstractFrame *)) {
@@ -683,10 +697,14 @@ dummy_func(void) {
     }
 
     op(_CHECK_AND_ALLOCATE_OBJECT, (type_version/2, callable, null, args[oparg] -- self, init, args[oparg])) {
-        (void)type_version;
         (void)args;
         self = sym_new_not_null(ctx);
-        init = sym_new_not_null(ctx);
+        sym_set_type_version(self, type_version);
+        PyObject *callable_const = sym_get_const(ctx, callable);
+        if (callable_const && PyType_Check(callable_const)) {
+            sym_set_type(self, (PyTypeObject *)callable_const);
+        }
+        init = sym_new_type(ctx, &PyFunction_Type);
     }
 
     op(_CREATE_INIT_FRAME, (self, init, args[oparg] -- init_frame: _Py_UOpsAbstractFrame *)) {
@@ -722,7 +740,7 @@ dummy_func(void) {
         ctx->frame->stack_pointer = stack_pointer;
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
-        res = sym_new_unknown(ctx);
+        res = sym_new_type(ctx, &PyGen_Type);
 
         /* Stack space handling */
         assert(corresponding_check_stack == NULL);
@@ -739,8 +757,8 @@ dummy_func(void) {
         }
     }
 
-    op(_YIELD_VALUE, (unused -- res)) {
-        res = sym_new_unknown(ctx);
+    op(_YIELD_VALUE, (retval -- res)) {
+        res = retval;
     }
 
     op(_FOR_ITER_GEN_FRAME, ( -- )) {
@@ -799,17 +817,36 @@ dummy_func(void) {
     }
 
     op(_UNPACK_SEQUENCE, (seq -- values[oparg])) {
-        /* This has to be done manually */
         for (int i = 0; i < oparg; i++) {
-            values[i] = sym_new_unknown(ctx);
+            // sym_tuple_getitem gives us "non-null"s if seq is not a tuple:
+            values[oparg - 1 - i] = sym_tuple_getitem(ctx, seq, i);
         }
     }
 
-    op(_UNPACK_EX, (seq -- values[oparg & 0xFF], unused, unused[oparg >> 8])) {
-        /* This has to be done manually */
-        int totalargs = (oparg & 0xFF) + (oparg >> 8) + 1;
-        for (int i = 0; i < totalargs; i++) {
-            values[i] = sym_new_unknown(ctx);
+    op(_UNPACK_EX, (seq -- values[(oparg & 0xFF) + 1 + (oparg >> 8)])) {
+        int left = oparg >> 8;
+        int right = oparg & 0xFF;
+        int length = _Py_uop_sym_tuple_length(seq);
+        if (length < left + right) {
+            int i = 0;
+            for (int j = 0; j < right; j++) {
+                values[i++] = sym_new_not_null(ctx);
+            }
+            values[i++] = sym_new_type(ctx, &PyList_Type);
+            for (int j = 0; j < left; j++) {
+                values[i++] = sym_new_not_null(ctx);
+            }
+        }
+        else {
+            // sym_tuple_getitem gives us "non-null"s if seq is not a tuple:
+            int i = 0;
+            for (int j = 0; j < right; j++) {
+                values[i++] = sym_tuple_getitem(ctx, seq, length - 1 - j);
+            }
+            values[i++] = sym_new_type(ctx, &PyList_Type);
+            for (int j = 0; j < left; j++) {
+                values[i++] = sym_tuple_getitem(ctx, seq, left - 1 - j);
+            }
         }
     }
 

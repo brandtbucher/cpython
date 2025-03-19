@@ -766,8 +766,10 @@
         }
 
         case _YIELD_VALUE: {
+            JitOptSymbol *retval;
             JitOptSymbol *res;
-            res = sym_new_unknown(ctx);
+            retval = stack_pointer[-1];
+            res = retval;
             stack_pointer[-1] = res;
             break;
         }
@@ -807,11 +809,13 @@
         }
 
         case _UNPACK_SEQUENCE: {
+            JitOptSymbol *seq;
             JitOptSymbol **values;
+            seq = stack_pointer[-1];
             values = &stack_pointer[-1];
-            /* This has to be done manually */
             for (int i = 0; i < oparg; i++) {
-                values[i] = sym_new_unknown(ctx);
+                // sym_tuple_getitem gives us "non-null"s if seq is not a tuple:
+                values[oparg - 1 - i] = sym_tuple_getitem(ctx, seq, i);
             }
             stack_pointer += -1 + oparg;
             assert(WITHIN_STACK_BOUNDS());
@@ -857,14 +861,37 @@
         }
 
         case _UNPACK_EX: {
+            JitOptSymbol *seq;
             JitOptSymbol **values;
+            seq = stack_pointer[-1];
             values = &stack_pointer[-1];
-            /* This has to be done manually */
-            int totalargs = (oparg & 0xFF) + (oparg >> 8) + 1;
-            for (int i = 0; i < totalargs; i++) {
-                values[i] = sym_new_unknown(ctx);
+            int left = oparg >> 8;
+            int right = oparg & 0xFF;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            int length = _Py_uop_sym_tuple_length(seq);
+            if (length < left + right) {
+                int i = 0;
+                for (int j = 0; j < right; j++) {
+                    values[i++] = sym_new_not_null(ctx);
+                }
+                values[i++] = sym_new_type(ctx, &PyList_Type);
+                for (int j = 0; j < left; j++) {
+                    values[i++] = sym_new_not_null(ctx);
+                }
             }
-            stack_pointer += (oparg & 0xFF) + (oparg >> 8);
+            else {
+                // sym_tuple_getitem gives us "non-null"s if seq is not a tuple:
+                int i = 0;
+                for (int j = 0; j < right; j++) {
+                    values[i++] = sym_tuple_getitem(ctx, seq, length - 1 - j);
+                }
+                values[i++] = sym_new_type(ctx, &PyList_Type);
+                for (int j = 0; j < left; j++) {
+                    values[i++] = sym_tuple_getitem(ctx, seq, left - 1 - j);
+                }
+            }
+            stack_pointer += (oparg & 0xFF) + 1 + (oparg >> 8);
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1255,11 +1282,7 @@
                 res = sym_new_type(ctx, &PyBool_Type);
             }
             else {
-                stack_pointer += -2;
-                assert(WITHIN_STACK_BOUNDS());
-                res = _Py_uop_sym_new_not_null(ctx);
-                stack_pointer += 2;
-                assert(WITHIN_STACK_BOUNDS());
+                res = sym_new_not_null(ctx);
             }
             stack_pointer[-2] = res;
             stack_pointer += -1;
@@ -1622,13 +1645,32 @@
 
         case _MAYBE_EXPAND_METHOD: {
             JitOptSymbol **args;
+            JitOptSymbol *self_or_null;
+            JitOptSymbol *callable;
             JitOptSymbol *func;
             JitOptSymbol *maybe_self;
             args = &stack_pointer[-oparg];
+            self_or_null = stack_pointer[-1 - oparg];
+            callable = stack_pointer[-2 - oparg];
             args = &stack_pointer[-oparg];
             (void)args;
-            func = sym_new_not_null(ctx);
-            maybe_self = sym_new_not_null(ctx);
+            bool method = sym_matches_type(callable, &PyMethod_Type);
+            bool nonmethod = !method && sym_has_type(callable);
+            if (method && sym_is_null(self_or_null)) {
+                func = sym_new_type(ctx, &PyFunction_Type);
+                maybe_self = sym_new_not_null(ctx);
+            }
+            else {
+                if (nonmethod || sym_is_not_null(self_or_null)) {
+                    REPLACE_OP(this_instr, _NOP, 0, 0);
+                    func = callable;
+                    maybe_self = self_or_null;
+                }
+                else {
+                    func = sym_new_not_null(ctx);
+                    maybe_self = sym_new_unknown(ctx);
+                }
+            }
             stack_pointer[-2 - oparg] = func;
             stack_pointer[-1 - oparg] = maybe_self;
             break;
@@ -1709,7 +1751,8 @@
             JitOptSymbol **callable;
             self_or_null = &stack_pointer[-1 - oparg];
             callable = &stack_pointer[-2 - oparg];
-            callable[0] = sym_new_not_null(ctx);
+            sym_set_type(callable[0], &PyMethod_Type);
+            callable[0] = sym_new_type(ctx, &PyFunction_Type);
             self_or_null[0] = sym_new_not_null(ctx);
             break;
         }
@@ -1848,15 +1891,21 @@
 
         case _CHECK_AND_ALLOCATE_OBJECT: {
             JitOptSymbol **args;
+            JitOptSymbol *callable;
             JitOptSymbol *self;
             JitOptSymbol *init;
             args = &stack_pointer[-oparg];
+            callable = stack_pointer[-2 - oparg];
             args = &stack_pointer[-oparg];
             uint32_t type_version = (uint32_t)this_instr->operand0;
-            (void)type_version;
             (void)args;
             self = sym_new_not_null(ctx);
-            init = sym_new_not_null(ctx);
+            sym_set_type_version(self, type_version);
+            PyObject *callable_const = sym_get_const(ctx, callable);
+            if (callable_const && PyType_Check(callable_const)) {
+                sym_set_type(self, (PyTypeObject *)callable_const);
+            }
+            init = sym_new_type(ctx, &PyFunction_Type);
             stack_pointer[-2 - oparg] = self;
             stack_pointer[-1 - oparg] = init;
             break;
@@ -2064,7 +2113,7 @@
             ctx->frame->stack_pointer = stack_pointer;
             frame_pop(ctx);
             stack_pointer = ctx->frame->stack_pointer;
-            res = sym_new_unknown(ctx);
+            res = sym_new_type(ctx, &PyGen_Type);
             /* Stack space handling */
             assert(corresponding_check_stack == NULL);
             assert(co != NULL);
@@ -2139,7 +2188,7 @@
             bool rhs_float = sym_matches_type(right, &PyFloat_Type);
             if (!((lhs_int || lhs_float) && (rhs_int || rhs_float))) {
                 // There's something other than an int or float involved:
-                res = sym_new_unknown(ctx);
+                res = sym_new_not_null(ctx);
             }
             else {
                 if (oparg == NB_POWER || oparg == NB_INPLACE_POWER) {
@@ -2157,7 +2206,7 @@
                     if (rhs_float) {
                         // Case D, E, F, or G... can't know without the sign of the LHS
                         // or whether the RHS is whole, which isn't worth the effort:
-                        res = sym_new_unknown(ctx);
+                        res = sym_new_not_null(ctx);
                     }
                     else {
                         if (lhs_float) {
@@ -2167,7 +2216,7 @@
                         else {
                             if (!sym_is_const(ctx, right)) {
                                 // Case A or B... can't know without the sign of the RHS:
-                                res = sym_new_unknown(ctx);
+                                res = sym_new_not_null(ctx);
                             }
                             else {
                                 if (_PyLong_IsNegative((PyLongObject *)sym_get_const(ctx, right))) {

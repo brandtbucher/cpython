@@ -553,7 +553,7 @@ _Py_uop_sym_tuple_getitem(JitOptContext *ctx, JitOptSymbol *sym, int item)
     else if (sym->tag == JIT_SYM_TUPLE_TAG && item < sym->tuple.length) {
         return allocation_base(ctx) + sym->tuple.items[item];
     }
-    return _Py_uop_sym_new_unknown(ctx);
+    return _Py_uop_sym_new_not_null(ctx);
 }
 
 int
