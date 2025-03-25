@@ -125,6 +125,7 @@ _PyOptimizer_Optimize(
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     if (progress_needed && !has_space_for_executor(code, start)) {
+        OPT_STAT_INC(trace_too_long);
         return 0;
     }
     int err = uop_optimize(frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)), progress_needed);
