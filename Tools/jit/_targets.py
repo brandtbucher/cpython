@@ -38,7 +38,6 @@ class _Target(typing.Generic[_S, _R]):
     _: dataclasses.KW_ONLY
     alignment: int = 1
     args: typing.Sequence[str] = ()
-    prefix: str = ""
     stable: bool = False
     debug: bool = False
     verbose: bool = False
@@ -240,7 +239,6 @@ class _COFF(
             symbol = wrapped_symbol["Symbol"]
             offset = base + symbol["Value"]
             name = symbol["Name"]
-            name = name.removeprefix(self.prefix)
             if name not in group.symbols:
                 group.symbols[name] = value, offset
         for wrapped_relocation in section["Relocations"]:
@@ -251,9 +249,7 @@ class _COFF(
     def _unwrap_dllimport(self, name: str) -> tuple[_stencils.HoleValue, str | None]:
         if name.startswith("__imp_"):
             name = name.removeprefix("__imp_")
-            name = name.removeprefix(self.prefix)
             return _stencils.HoleValue.GOT, name
-        name = name.removeprefix(self.prefix)
         return _stencils.symbol_to_value(name)
 
     def _handle_relocation(
@@ -336,7 +332,6 @@ class _ELF(
                 symbol = wrapped_symbol["Symbol"]
                 offset = len(stencil.body) + symbol["Value"]
                 name = symbol["Name"]["Name"]
-                name = name.removeprefix(self.prefix)
                 group.symbols[name] = value, offset
             stencil.body.extend(section["SectionData"]["Bytes"])
             assert not section["Relocations"]
@@ -371,7 +366,6 @@ class _ELF(
                 },
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.HoleValue.GOT, s
             case {
                 "Addend": addend,
@@ -380,7 +374,6 @@ class _ELF(
                 "Type": {"Name": kind},
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.symbol_to_value(s)
             case _:
                 raise NotImplementedError(relocation)
@@ -397,7 +390,6 @@ class _MachO(
         assert "SectionData" in section
         flags = {flag["Name"] for flag in section["Attributes"]["Flags"]}
         name = section["Name"]["Value"]
-        name = name.removeprefix(self.prefix)
         if "Debug" in flags:
             return
         if "SomeInstructions" in flags:
@@ -421,7 +413,6 @@ class _MachO(
             symbol = wrapped_symbol["Symbol"]
             offset = symbol["Value"] - start_address
             name = symbol["Name"]["Name"]
-            name = name.removeprefix(self.prefix)
             group.symbols[name] = value, offset
         assert "Relocations" in section
         for wrapped_relocation in section["Relocations"]:
@@ -446,7 +437,6 @@ class _MachO(
                 },
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.HoleValue.GOT, s
                 addend = 0
             case {
@@ -455,7 +445,6 @@ class _MachO(
                 "Type": {"Name": "X86_64_RELOC_GOT" | "X86_64_RELOC_GOT_LOAD" as kind},
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.HoleValue.GOT, s
                 addend = (
                     int.from_bytes(raw[offset : offset + 4], "little", signed=True) - 4
@@ -470,7 +459,6 @@ class _MachO(
                 "Type": {"Name": "X86_64_RELOC_BRANCH" | "X86_64_RELOC_SIGNED" as kind},
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.symbol_to_value(s)
                 addend = (
                     int.from_bytes(raw[offset : offset + 4], "little", signed=True) - 4
@@ -485,7 +473,6 @@ class _MachO(
                 "Type": {"Name": kind},
             }:
                 offset += base
-                s = s.removeprefix(self.prefix)
                 value, symbol = _stencils.symbol_to_value(s)
                 addend = 0
             case _:
@@ -497,7 +484,8 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
     """Build a _Target for the given host "triple" and options."""
     target: _COFF | _ELF | _MachO
     if re.fullmatch(r"aarch64-apple-darwin.*", host):
-        target = _MachO(host, alignment=8, prefix="_")
+        args = ["-fno-leading-underscore"]
+        target = _MachO(host, alignment=8, args=args)
     elif re.fullmatch(r"aarch64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll", "-fplt"]
         target = _COFF(host, alignment=8, args=args)
@@ -514,10 +502,12 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
             "-DPy_NO_ENABLE_SHARED",
             # __attribute__((preserve_none)) is not supported
             "-Wno-ignored-attributes",
+            "-fno-leading-underscore",
         ]
-        target = _COFF(host, args=args, prefix="_")
+        target = _COFF(host, args=args)
     elif re.fullmatch(r"x86_64-apple-darwin.*", host):
-        target = _MachO(host, prefix="_")
+        args = ["-fno-leading-underscore"]
+        target = _MachO(host, args=args)
     elif re.fullmatch(r"x86_64-pc-windows-msvc", host):
         args = ["-fms-runtime-lib=dll"]
         target = _COFF(host, args=args)
