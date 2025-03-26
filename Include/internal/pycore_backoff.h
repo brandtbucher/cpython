@@ -97,7 +97,7 @@ backoff_counter_triggers(_Py_BackoffCounter counter)
 
 /* Initial JUMP_BACKWARD counter.
  * This determines when we create a trace for a loop. */
-#define JUMP_BACKWARD_INITIAL_VALUE 4095
+#define JUMP_BACKWARD_INITIAL_VALUE ((1 << JUMP_BACKWARD_INITIAL_BACKOFF) - 1)
 #define JUMP_BACKWARD_INITIAL_BACKOFF 12
 static inline _Py_BackoffCounter
 initial_jump_backoff_counter(void)
@@ -110,8 +110,8 @@ initial_jump_backoff_counter(void)
  * Must be larger than ADAPTIVE_COOLDOWN_VALUE,
  * otherwise when a side exit warms up we may construct
  * a new trace before the Tier 1 code has properly re-specialized. */
-#define SIDE_EXIT_INITIAL_VALUE 4095
-#define SIDE_EXIT_INITIAL_BACKOFF 12
+#define SIDE_EXIT_INITIAL_VALUE ((1 << SIDE_EXIT_INITIAL_BACKOFF) - 1)
+#define SIDE_EXIT_INITIAL_BACKOFF 11
 
 static inline _Py_BackoffCounter
 initial_temperature_backoff_counter(void)
