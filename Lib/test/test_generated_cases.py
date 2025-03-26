@@ -370,7 +370,7 @@ class TestGeneratedCases(unittest.TestCase):
             assert(WITHIN_STACK_BOUNDS());
             _PyFrame_SetStackPointer(frame, stack_pointer);
             escaping_call();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             res = Py_None;
             stack_pointer[0] = res;
             stack_pointer += 1;
@@ -393,7 +393,7 @@ class TestGeneratedCases(unittest.TestCase):
             stack_pointer[-1] = res;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             escaping_call();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             DISPATCH();
         }
     """
@@ -629,7 +629,7 @@ class TestGeneratedCases(unittest.TestCase):
                 (void)counter;
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 op1(left, right);
-                stack_pointer = _PyFrame_GetStackPointer(frame);
+                assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             }
             /* Skip 2 cache entries */
             // OP2
@@ -639,7 +639,7 @@ class TestGeneratedCases(unittest.TestCase):
                 (void)extra;
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 res = op2(arg2, left, right);
-                stack_pointer = _PyFrame_GetStackPointer(frame);
+                assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             }
             stack_pointer[-3] = res;
             stack_pointer += -2;
@@ -665,7 +665,7 @@ class TestGeneratedCases(unittest.TestCase):
             (void)counter;
             _PyFrame_SetStackPointer(frame, stack_pointer);
             op1(left, right);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             DISPATCH();
         }
 
@@ -688,7 +688,7 @@ class TestGeneratedCases(unittest.TestCase):
             arg2 = stack_pointer[-3];
             _PyFrame_SetStackPointer(frame, stack_pointer);
             res = op3(arg2, left, right);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             stack_pointer[-3] = res;
             stack_pointer += -2;
             assert(WITHIN_STACK_BOUNDS());
@@ -1644,15 +1644,15 @@ class TestGeneratedCases(unittest.TestCase):
             #ifdef Py_GIL_DISABLED
             _PyFrame_SetStackPointer(frame, stack_pointer);
             escaping_call();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             #else
             _PyFrame_SetStackPointer(frame, stack_pointer);
             another_escaping_call();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             #endif
             _PyFrame_SetStackPointer(frame, stack_pointer);
             yet_another_escaping_call();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             DISPATCH();
         }
         """
@@ -1768,7 +1768,7 @@ class TestGeneratedCases(unittest.TestCase):
             // Comment
             _PyFrame_SetStackPointer(frame, stack_pointer);
             do_thing();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             if (complex) {
                 JUMP_TO_LABEL(other_label);
             }
@@ -1852,7 +1852,7 @@ class TestGeneratedCases(unittest.TestCase):
             // Comment
             _PyFrame_SetStackPointer(frame, stack_pointer);
             do_thing1();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             JUMP_TO_LABEL(my_label_2);
         }
 
@@ -1861,7 +1861,7 @@ class TestGeneratedCases(unittest.TestCase):
             // Comment
             _PyFrame_SetStackPointer(frame, stack_pointer);
             do_thing2();
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             JUMP_TO_LABEL(my_label_1);
         }
         """
@@ -1899,13 +1899,13 @@ class TestGeneratedCases(unittest.TestCase):
             in = stack_pointer[-1];
             _PyFrame_SetStackPointer(frame, stack_pointer);
             temp = use(in);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             in = temp;
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             _PyFrame_SetStackPointer(frame, stack_pointer);
             PyStackRef_CLOSE(in);
-            stack_pointer = _PyFrame_GetStackPointer(frame);
+            assert(stack_pointer == _PyFrame_GetStackPointer(frame));
             DISPATCH();
         }
         """

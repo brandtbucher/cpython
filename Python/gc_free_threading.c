@@ -444,7 +444,7 @@ gc_visit_thread_stacks(PyInterpreterState *interp, struct collection_state *stat
                 continue;
             }
 
-            _PyStackRef *top = f->stackpointer;
+            _PyStackRef *top = f->stackpointer;  // XXX
             if (top == NULL) {
                 // GH-129236: The stackpointer may be NULL in cases where
                 // the GC is run during a PyStackRef_CLOSE() call. Skip this
@@ -824,7 +824,7 @@ gc_visit_thread_stacks_mark_alive(PyInterpreterState *interp, gc_mark_args_t *ar
                 continue;
             }
 
-            if (f->stackpointer == NULL) {
+            if (f->stackpointer == NULL) {  // XXX
                 // GH-129236: The stackpointer may be NULL in cases where
                 // the GC is run during a PyStackRef_CLOSE() call. Skip this
                 // frame for now.

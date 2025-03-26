@@ -234,8 +234,10 @@ dummy_func(
         }
 
         op(_MONITOR_RESUME, (--)) {
+            SAVE_STACK();
             int err = _Py_call_instrumentation(
                     tstate, oparg > 0, frame, this_instr);
+            RELOAD_STACK();
             ERROR_IF(err, error);
             if (frame->instr_ptr != this_instr) {
                 /* Instrumentation has jumped */
@@ -1120,9 +1122,11 @@ dummy_func(
         }
 
         tier1 op(_RETURN_VALUE_EVENT, (val -- val)) {
+            SAVE_STACK();
             int err = _Py_call_instrumentation_arg(
                     tstate, PY_MONITORING_EVENT_PY_RETURN,
                     frame, this_instr, PyStackRef_AsPyObjectBorrow(val));
+            RELOAD_STACK();
             ERROR_IF(err, error);
         }
 
@@ -1306,9 +1310,11 @@ dummy_func(
         }
 
         tier1 op(_YIELD_VALUE_EVENT, (val -- val)) {
+            SAVE_STACK();
             int err = _Py_call_instrumentation_arg(
                     tstate, PY_MONITORING_EVENT_PY_YIELD,
                     frame, this_instr, PyStackRef_AsPyObjectBorrow(val));
+            RELOAD_STACK();
             if (err) {
                 ERROR_NO_POP();
             }
@@ -2050,9 +2056,11 @@ dummy_func(
 
             if (opcode == INSTRUMENTED_LOAD_SUPER_ATTR) {
                 PyObject *arg = oparg & 2 ? class : &_PyInstrumentation_MISSING;
+                SAVE_STACK();
                 int err = _Py_call_instrumentation_2args(
                         tstate, PY_MONITORING_EVENT_CALL,
                         frame, this_instr, global_super, arg);
+                RELOAD_STACK();
                 if (err) {
                     DECREF_INPUTS();
                     ERROR_IF(true, error);
@@ -2065,14 +2073,18 @@ dummy_func(
             if (opcode == INSTRUMENTED_LOAD_SUPER_ATTR) {
                 PyObject *arg = oparg & 2 ? class : &_PyInstrumentation_MISSING;
                 if (super == NULL) {
+                    SAVE_STACK();
                     _Py_call_instrumentation_exc2(
                         tstate, PY_MONITORING_EVENT_C_RAISE,
                         frame, this_instr, global_super, arg);
+                    RELOAD_STACK();
                 }
                 else {
+                    SAVE_STACK();
                     int err = _Py_call_instrumentation_2args(
                         tstate, PY_MONITORING_EVENT_C_RETURN,
                         frame, this_instr, global_super, arg);
+                    RELOAD_STACK();
                     if (err < 0) {
                         Py_CLEAR(super);
                     }
@@ -3646,14 +3658,18 @@ dummy_func(
                 PyObject *arg = total_args == 0 ?
                     &_PyInstrumentation_MISSING : PyStackRef_AsPyObjectBorrow(arguments[0]);
                 if (res_o == NULL) {
+                    SAVE_STACK();
                     _Py_call_instrumentation_exc2(
                         tstate, PY_MONITORING_EVENT_C_RAISE,
                         frame, this_instr, callable_o, arg);
+                    RELOAD_STACK();
                 }
                 else {
+                    SAVE_STACK();
                     int err = _Py_call_instrumentation_2args(
                         tstate, PY_MONITORING_EVENT_C_RETURN,
                         frame, this_instr, callable_o, arg);
+                    RELOAD_STACK();
                     if (err < 0) {
                         Py_CLEAR(res_o);
                     }
@@ -3679,10 +3695,12 @@ dummy_func(
                 arg0 = &_PyInstrumentation_MISSING;
             }
             SYNC_SP();
+            SAVE_STACK();
             int err = _Py_call_instrumentation_2args(
                 tstate, PY_MONITORING_EVENT_CALL,
                 frame, this_instr, function, arg0
             );
+            RELOAD_STACK();
             ERROR_IF(err, error);
         }
 
@@ -4418,9 +4436,11 @@ dummy_func(
                 arg = &_PyInstrumentation_MISSING;
             }
             PyObject *function = PyStackRef_AsPyObjectBorrow(callable[0]);
+            SAVE_STACK();
             int err = _Py_call_instrumentation_2args(
                     tstate, PY_MONITORING_EVENT_CALL,
                     frame, this_instr, function, arg);
+            RELOAD_STACK();
             ERROR_IF(err, error);
         }
 
@@ -4492,14 +4512,18 @@ dummy_func(
                 PyObject *arg = total_args == 0 ?
                     &_PyInstrumentation_MISSING : PyStackRef_AsPyObjectBorrow(arguments[0]);
                 if (res_o == NULL) {
+                    SAVE_STACK();
                     _Py_call_instrumentation_exc2(
                         tstate, PY_MONITORING_EVENT_C_RAISE,
                         frame, this_instr, callable_o, arg);
+                    RELOAD_STACK();
                 }
                 else {
+                    SAVE_STACK();
                     int err = _Py_call_instrumentation_2args(
                         tstate, PY_MONITORING_EVENT_C_RETURN,
                         frame, this_instr, callable_o, arg);
+                    RELOAD_STACK();
                     if (err < 0) {
                         Py_CLEAR(res_o);
                     }
@@ -4697,9 +4721,11 @@ dummy_func(
                 assert(PyTuple_CheckExact(callargs));
                 PyObject *arg = PyTuple_GET_SIZE(callargs) > 0 ?
                     PyTuple_GET_ITEM(callargs, 0) : &_PyInstrumentation_MISSING;
+                SAVE_STACK();
                 int err = _Py_call_instrumentation_2args(
                     tstate, PY_MONITORING_EVENT_CALL,
                     frame, this_instr, func, arg);
+                RELOAD_STACK();
                 if (err) {
                     ERROR_NO_POP();
                 }
@@ -4707,14 +4733,18 @@ dummy_func(
 
                 if (!PyFunction_Check(func) && !PyMethod_Check(func)) {
                     if (result_o == NULL) {
+                        SAVE_STACK();
                         _Py_call_instrumentation_exc2(
                             tstate, PY_MONITORING_EVENT_C_RAISE,
                             frame, this_instr, func, arg);
+                        RELOAD_STACK();
                     }
                     else {
+                        SAVE_STACK();
                         int err = _Py_call_instrumentation_2args(
                             tstate, PY_MONITORING_EVENT_C_RETURN,
                             frame, this_instr, func, arg);
+                        RELOAD_STACK();
                         if (err < 0) {
                             Py_CLEAR(result_o);
                         }
@@ -4913,8 +4943,10 @@ dummy_func(
                 original_opcode = code->_co_monitoring->lines->data[index*code->_co_monitoring->lines->bytes_per_entry];
                 next_instr = this_instr;
             } else {
+                SAVE_STACK();
                 original_opcode = _Py_call_instrumentation_line(
                         tstate, frame, this_instr, prev_instr);
+                RELOAD_STACK();
                 if (original_opcode < 0) {
                     next_instr = this_instr+1;
                     goto error;
@@ -4935,8 +4967,10 @@ dummy_func(
         }
 
         inst(INSTRUMENTED_INSTRUCTION, ( -- )) {
+            SAVE_STACK();
             int next_opcode = _Py_call_instrumentation_instruction(
                 tstate, frame, this_instr);
+            RELOAD_STACK();
             ERROR_IF(next_opcode < 0, error);
             next_instr = this_instr;
             if (_PyOpcode_Caches[next_opcode]) {

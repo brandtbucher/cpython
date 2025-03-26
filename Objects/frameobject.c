@@ -2172,7 +2172,7 @@ frame_get_var(_PyInterpreterFrame *frame, PyCodeObject *co, int i,
     }
 
     PyObject *value = NULL;
-    if (frame->stackpointer == NULL || frame->stackpointer > frame->localsplus + i) {
+    if (frame->stackpointer == NULL || frame->stackpointer > frame->localsplus + i) {  // XXX
         value = PyStackRef_AsPyObjectBorrow(frame->localsplus[i]);
         if (kind & CO_FAST_FREE) {
             // The cell was set by COPY_FREE_VARS.

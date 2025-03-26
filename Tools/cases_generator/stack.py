@@ -509,14 +509,14 @@ class Storage:
             out.emit_spill()
         self.spilled += 1
 
-    def reload(self, out: CWriter) -> None:
+    def reload(self, out: CWriter, force: bool = False) -> None:
         if self.spilled == 0:
             raise StackError("Cannot reload stack as it hasn't been saved")
         assert self.spilled > 0
         self.spilled -= 1
         if self.spilled == 0:
             out.start_line()
-            out.emit_reload()
+            out.emit_reload(force)
 
     @staticmethod
     def for_uop(stack: Stack, uop: Uop, check_liveness: bool = True) -> tuple[list[str], "Storage"]:

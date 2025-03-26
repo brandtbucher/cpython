@@ -128,6 +128,7 @@ class CWriter:
 
     def emit_spill(self) -> None:
         if self.pending_reload:
+            assert self.pending_reload is True
             self.pending_reload = False
             return
         assert not self.pending_spill
@@ -137,16 +138,19 @@ class CWriter:
         if self.pending_spill:
             self.pending_spill = False
             self.emit_str("_PyFrame_SetStackPointer(frame, stack_pointer);\n")
-        elif self.pending_reload:
+        elif self.pending_reload == 2:
             self.pending_reload = False
             self.emit_str("stack_pointer = _PyFrame_GetStackPointer(frame);\n")
+        elif self.pending_reload:
+            self.pending_reload = False
+            self.emit_str("assert(stack_pointer == _PyFrame_GetStackPointer(frame));\n")
 
-    def emit_reload(self) -> None:
+    def emit_reload(self, force: bool = False) -> None:
         if self.pending_spill:
             self.pending_spill = False
             return
         assert not self.pending_reload
-        self.pending_reload = True
+        self.pending_reload = 2 if force else True
 
     @contextlib.contextmanager
     def header_guard(self, name: str) -> Iterator[None]:

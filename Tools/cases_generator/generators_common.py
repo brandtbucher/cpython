@@ -421,8 +421,8 @@ class Emitter:
         self.emit_save(storage)
         return True
 
-    def emit_reload(self, storage: Storage) -> None:
-        storage.reload(self.out)
+    def emit_reload(self, storage: Storage, force: bool = False) -> None:
+        storage.reload(self.out, force)
         self._print_storage(storage)
 
     def reload_stack(
@@ -436,7 +436,7 @@ class Emitter:
         next(tkn_iter)
         next(tkn_iter)
         next(tkn_iter)
-        self.emit_reload(storage)
+        self.emit_reload(storage, force=True)
         return True
 
     def instruction_size(self,

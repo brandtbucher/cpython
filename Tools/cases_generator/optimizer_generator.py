@@ -103,7 +103,7 @@ class OptimizerEmitter(Emitter):
     def emit_save(self, storage: Storage) -> None:
         storage.flush(self.out)
 
-    def emit_reload(self, storage: Storage) -> None:
+    def emit_reload(self, storage: Storage, force: bool = False) -> None:
         pass
 
     def goto_label(self, goto: Token, label: Token, storage: Storage) -> None:
