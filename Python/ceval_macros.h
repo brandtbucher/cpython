@@ -76,7 +76,7 @@
 #if Py_TAIL_CALL_INTERP
 #   ifdef _MSC_VER
 #      define Py_MUSTTAIL [[msvc::musttail]]
-#      define Py_PRESERVE_NONE_CC __preserve_none
+#      define Py_PRESERVE_NONE_CC /* __preserve_none */
 #   else
        // Note: [[clang::musttail]] works for GCC 15, but not __attribute__((musttail)) at the moment.
 #      define Py_MUSTTAIL [[clang::musttail]]
