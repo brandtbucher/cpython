@@ -601,42 +601,105 @@ dummy_func(void) {
     }
 
     op(_LOAD_ATTR_CLASS, (descr/4, owner -- attr)) {
-        int opcode = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-                                           : _POP_TOP_LOAD_CONST_INLINE;
-        REPLACE_OP(this_instr, opcode, 0, (uintptr_t)descr);
-        attr = sym_new_const(ctx, descr);
+        // descr may be dead, so we need to perform the lookup again... :(
+        (void)descr;
+        PyTypeObject *type = sym_get_const(owner);
+        PyObject *lookup = NULL;
+        if (type && PyType_Check(type)) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                                : _POP_TOP_LOAD_CONST_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
     }
 
     op(_LOAD_ATTR_METHOD_WITH_VALUES, (descr/4, owner -- attr, self)) {
+        // descr may be dead, so we need to perform the lookup again... :(
         (void)descr;
-        attr = sym_new_const(ctx, descr);
+        PyTypeObject *type = sym_get_type(owner);
+        PyObject *lookup = NULL;
+        if (type) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
+        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
         self = owner;
     }
 
     op(_LOAD_ATTR_METHOD_NO_DICT, (descr/4, owner -- attr, self)) {
+        // descr may be dead, so we need to perform the lookup again... :(
         (void)descr;
-        attr = sym_new_const(ctx, descr);
+        PyTypeObject *type = sym_get_type(owner);
+        PyObject *lookup = NULL;
+        if (type) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
+        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
         self = owner;
     }
 
     op(_LOAD_ATTR_METHOD_LAZY_DICT, (descr/4, owner -- attr, self)) {
+        // descr may be dead, so we need to perform the lookup again... :(
         (void)descr;
-        attr = sym_new_const(ctx, descr);
+        PyTypeObject *type = sym_get_type(owner);
+        PyObject *lookup = NULL;
+        if (type) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
+        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
         self = owner;
     }
 
     op(_LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES, (descr/4, owner -- attr)) {
-        int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-                                       : _POP_TOP_LOAD_CONST_INLINE;
-        REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
-        attr = sym_new_const(ctx, descr);
+        // descr may be dead, so we need to perform the lookup again... :(
+        (void)descr;
+        PyTypeObject *type = sym_get_type(owner);
+        PyObject *lookup = NULL;
+        if (type) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                                : _POP_TOP_LOAD_CONST_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
     }
 
     op(_LOAD_ATTR_NONDESCRIPTOR_NO_DICT, (descr/4, owner -- attr)) {
-        int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-                                       : _POP_TOP_LOAD_CONST_INLINE;
-        REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
-        attr = sym_new_const(ctx, descr);
+        // descr may be dead, so we need to perform the lookup again... :(
+        (void)descr;
+        PyTypeObject *type = sym_get_type(owner);
+        PyObject *lookup = NULL;
+        if (type) {
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            lookup = _PyType_Lookup(type, name);
+        }
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+                                                : _POP_TOP_LOAD_CONST_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
     }
 
     op(_LOAD_ATTR_PROPERTY_FRAME, (fget/4, owner -- new_frame: _Py_UOpsAbstractFrame *)) {
