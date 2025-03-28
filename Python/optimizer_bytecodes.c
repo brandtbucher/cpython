@@ -740,8 +740,18 @@ dummy_func(void) {
         ctx->frame->stack_pointer = stack_pointer;
         frame_pop(ctx);
         stack_pointer = ctx->frame->stack_pointer;
-        res = sym_new_type(ctx, &PyGen_Type);
-
+        int flags = co->co_flags & (CO_GENERATOR | CO_ASYNC_GENERATOR | CO_COROUTINE);
+        assert(flags);
+        if (flags == CO_GENERATOR) {
+            res = sym_new_type(ctx, &PyGen_Type);
+        }
+        else if (flags == CO_ASYNC_GENERATOR) {
+            res = sym_new_type(ctx, &PyAsyncGen_Type);
+        }
+        else {
+            assert(flags == CO_COROUTINE);
+            res = sym_new_type(ctx, &PyCoro_Type);
+        }
         /* Stack space handling */
         assert(corresponding_check_stack == NULL);
         assert(co != NULL);
