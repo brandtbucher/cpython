@@ -3101,26 +3101,21 @@ dummy_func(
         op(_ITER_CHECK_LIST, (iter -- iter)) {
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
             EXIT_IF(Py_TYPE(iter_o) != &PyListIter_Type);
-#ifdef Py_GIL_DISABLED
-            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
-            _PyListIterObject *it = (_PyListIterObject *)iter_o;
-            EXIT_IF(!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
-                    !_PyObject_GC_IS_SHARED(it->it_seq));
-#endif
         }
 
         replaced op(_ITER_JUMP_LIST, (iter -- iter)) {
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
+            _PyListIterObject *it = (_PyListIterObject *)iter_o;
 // For free-threaded Python, the loop exit can happen at any point during
 // item retrieval, so it doesn't make much sense to check and jump
 // separately before item retrieval. Any length check we do here can be
 // invalid by the time we actually try to fetch the item.
 #ifdef Py_GIL_DISABLED
-            assert(_PyObject_IsUniquelyReferenced(iter_o));
-            (void)iter_o;
+            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
+            EXIT_IF(!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
+                    !_PyObject_GC_IS_SHARED(it->it_seq));
 #else
-            _PyListIterObject *it = (_PyListIterObject *)iter_o;
             STAT_INC(FOR_ITER, hit);
             PyListObject *seq = it->it_seq;
             if (seq == NULL || (size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
@@ -3138,10 +3133,14 @@ dummy_func(
 
         // Only used by Tier 2
         op(_GUARD_NOT_EXHAUSTED_LIST, (iter -- iter)) {
-#ifndef Py_GIL_DISABLED
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
             _PyListIterObject *it = (_PyListIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
+#ifdef Py_GIL_DISABLED
+            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
+            EXIT_IF(!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
+                    !_PyObject_GC_IS_SHARED(it->it_seq));
+#else
             PyListObject *seq = it->it_seq;
             EXIT_IF(seq == NULL);
             if ((size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
@@ -3215,17 +3214,13 @@ dummy_func(
         op(_ITER_CHECK_TUPLE, (iter -- iter)) {
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
             EXIT_IF(Py_TYPE(iter_o) != &PyTupleIter_Type);
-#ifdef Py_GIL_DISABLED
-            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
-#endif
         }
 
         replaced op(_ITER_JUMP_TUPLE, (iter -- iter)) {
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
-            (void)iter_o;
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
 #ifdef Py_GIL_DISABLED
-            assert(_PyObject_IsUniquelyReferenced(iter_o));
+            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
 #endif
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
             STAT_INC(FOR_ITER, hit);
@@ -3249,7 +3244,7 @@ dummy_func(
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
 #ifdef Py_GIL_DISABLED
-            assert(_PyObject_IsUniquelyReferenced(iter_o));
+            EXIT_IF(!_PyObject_IsUniquelyReferenced(iter_o));
 #endif
             PyTupleObject *seq = it->it_seq;
             EXIT_IF(seq == NULL);
@@ -3278,16 +3273,13 @@ dummy_func(
         op(_ITER_CHECK_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             EXIT_IF(Py_TYPE(r) != &PyRangeIter_Type);
-#ifdef Py_GIL_DISABLED
-            EXIT_IF(!_PyObject_IsUniquelyReferenced((PyObject *)r));
-#endif
         }
 
         replaced op(_ITER_JUMP_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
 #ifdef Py_GIL_DISABLED
-            assert(_PyObject_IsUniquelyReferenced((PyObject *)r));
+            EXIT_IF(!_PyObject_IsUniquelyReferenced((PyObject *)r));
 #endif
             STAT_INC(FOR_ITER, hit);
             if (r->len <= 0) {
@@ -3301,6 +3293,9 @@ dummy_func(
         op(_GUARD_NOT_EXHAUSTED_RANGE, (iter -- iter)) {
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
+#ifdef Py_GIL_DISABLED
+            EXIT_IF(!_PyObject_IsUniquelyReferenced((PyObject *)r));
+#endif
             EXIT_IF(r->len <= 0);
         }
 
@@ -3325,9 +3320,12 @@ dummy_func(
             _ITER_JUMP_RANGE +
             _ITER_NEXT_RANGE;
 
+        op(_ITER_CHECK_GEN, (iter -- iter)) {
+            DEOPT_IF(!PyGen_CheckExact(PyStackRef_AsPyObjectBorrow(iter)));
+        }
+
         op(_FOR_ITER_GEN_FRAME, (iter -- iter, gen_frame: _PyInterpreterFrame*)) {
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-            DEOPT_IF(Py_TYPE(gen) != &PyGen_Type);
 #ifdef Py_GIL_DISABLED
             // Since generators can't be used by multiple threads anyway we
             // don't need to deopt here, but this lets us work on making
@@ -3350,6 +3348,7 @@ dummy_func(
         macro(FOR_ITER_GEN) =
             unused/1 +
             _CHECK_PEP_523 +
+            _ITER_CHECK_GEN +
             _FOR_ITER_GEN_FRAME +
             _PUSH_FRAME;
 

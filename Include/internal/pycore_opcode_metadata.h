@@ -1371,7 +1371,7 @@ _PyOpcode_macro_expansion[256] = {
     [FORMAT_SIMPLE] = { .nuops = 1, .uops = { { _FORMAT_SIMPLE, OPARG_SIMPLE, 0 } } },
     [FORMAT_WITH_SPEC] = { .nuops = 1, .uops = { { _FORMAT_WITH_SPEC, OPARG_SIMPLE, 0 } } },
     [FOR_ITER] = { .nuops = 1, .uops = { { _FOR_ITER, OPARG_REPLACED, 0 } } },
-    [FOR_ITER_GEN] = { .nuops = 3, .uops = { { _CHECK_PEP_523, OPARG_SIMPLE, 1 }, { _FOR_ITER_GEN_FRAME, OPARG_SIMPLE, 1 }, { _PUSH_FRAME, OPARG_SIMPLE, 1 } } },
+    [FOR_ITER_GEN] = { .nuops = 4, .uops = { { _CHECK_PEP_523, OPARG_SIMPLE, 1 }, { _ITER_CHECK_GEN, OPARG_SIMPLE, 1 }, { _FOR_ITER_GEN_FRAME, OPARG_SIMPLE, 1 }, { _PUSH_FRAME, OPARG_SIMPLE, 1 } } },
     [FOR_ITER_LIST] = { .nuops = 3, .uops = { { _ITER_CHECK_LIST, OPARG_SIMPLE, 1 }, { _ITER_JUMP_LIST, OPARG_REPLACED, 1 }, { _ITER_NEXT_LIST, OPARG_REPLACED, 1 } } },
     [FOR_ITER_RANGE] = { .nuops = 3, .uops = { { _ITER_CHECK_RANGE, OPARG_SIMPLE, 1 }, { _ITER_JUMP_RANGE, OPARG_REPLACED, 1 }, { _ITER_NEXT_RANGE, OPARG_SIMPLE, 1 } } },
     [FOR_ITER_TUPLE] = { .nuops = 3, .uops = { { _ITER_CHECK_TUPLE, OPARG_SIMPLE, 1 }, { _ITER_JUMP_TUPLE, OPARG_REPLACED, 1 }, { _ITER_NEXT_TUPLE, OPARG_SIMPLE, 1 } } },

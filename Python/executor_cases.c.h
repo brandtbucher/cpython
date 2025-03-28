@@ -4176,18 +4176,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #ifdef Py_GIL_DISABLED
-            if (!_PyObject_IsUniquelyReferenced(iter_o)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            _PyListIterObject *it = (_PyListIterObject *)iter_o;
-            if (!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
-                    !_PyObject_GC_IS_SHARED(it->it_seq)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            #endif
             break;
         }
 
@@ -4196,10 +4184,20 @@
         case _GUARD_NOT_EXHAUSTED_LIST: {
             _PyStackRef iter;
             iter = stack_pointer[-1];
-            #ifndef Py_GIL_DISABLED
             PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
             _PyListIterObject *it = (_PyListIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyListIter_Type);
+            #ifdef Py_GIL_DISABLED
+            if (!_PyObject_IsUniquelyReferenced(iter_o)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
+                    !_PyObject_GC_IS_SHARED(it->it_seq)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            #else
             PyListObject *seq = it->it_seq;
             if (seq == NULL) {
                 UOP_STAT_INC(uopcode, miss);
@@ -4267,12 +4265,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #ifdef Py_GIL_DISABLED
-            if (!_PyObject_IsUniquelyReferenced(iter_o)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            #endif
             break;
         }
 
@@ -4285,7 +4277,10 @@
             _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
             assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
             #ifdef Py_GIL_DISABLED
-            assert(_PyObject_IsUniquelyReferenced(iter_o));
+            if (!_PyObject_IsUniquelyReferenced(iter_o)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
             #endif
             PyTupleObject *seq = it->it_seq;
             if (seq == NULL) {
@@ -4327,12 +4322,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #ifdef Py_GIL_DISABLED
-            if (!_PyObject_IsUniquelyReferenced((PyObject *)r)) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
-            #endif
             break;
         }
 
@@ -4343,6 +4332,12 @@
             iter = stack_pointer[-1];
             _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
             assert(Py_TYPE(r) == &PyRangeIter_Type);
+            #ifdef Py_GIL_DISABLED
+            if (!_PyObject_IsUniquelyReferenced((PyObject *)r)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            #endif
             if (r->len <= 0) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -4374,16 +4369,22 @@
             break;
         }
 
+        case _ITER_CHECK_GEN: {
+            _PyStackRef iter;
+            iter = stack_pointer[-1];
+            if (!PyGen_CheckExact(PyStackRef_AsPyObjectBorrow(iter))) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
         case _FOR_ITER_GEN_FRAME: {
             _PyStackRef iter;
             _PyInterpreterFrame *gen_frame;
             oparg = CURRENT_OPARG();
             iter = stack_pointer[-1];
             PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-            if (Py_TYPE(gen) != &PyGen_Type) {
-                UOP_STAT_INC(uopcode, miss);
-                JUMP_TO_JUMP_TARGET();
-            }
             #ifdef Py_GIL_DISABLED
             // Since generators can't be used by multiple threads anyway we
             // don't need to deopt here, but this lets us work on making

@@ -5504,15 +5504,18 @@
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
             }
-            // _FOR_ITER_GEN_FRAME
+            // _ITER_CHECK_GEN
             {
                 iter = stack_pointer[-1];
-                PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
-                if (Py_TYPE(gen) != &PyGen_Type) {
+                if (!PyGen_CheckExact(PyStackRef_AsPyObjectBorrow(iter))) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
+            }
+            // _FOR_ITER_GEN_FRAME
+            {
+                PyGenObject *gen = (PyGenObject *)PyStackRef_AsPyObjectBorrow(iter);
                 #ifdef Py_GIL_DISABLED
                 // Since generators can't be used by multiple threads anyway we
                 // don't need to deopt here, but this lets us work on making
@@ -5581,34 +5584,29 @@
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
+            }
+            // _ITER_JUMP_LIST
+            {
+                PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
+                assert(Py_TYPE(iter_o) == &PyListIter_Type);
+                _PyListIterObject *it = (_PyListIterObject *)iter_o;
+                // For free-threaded Python, the loop exit can happen at any point during
+                // item retrieval, so it doesn't make much sense to check and jump
+                // separately before item retrieval. Any length check we do here can be
+                // invalid by the time we actually try to fetch the item.
                 #ifdef Py_GIL_DISABLED
                 if (!_PyObject_IsUniquelyReferenced(iter_o)) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                _PyListIterObject *it = (_PyListIterObject *)iter_o;
                 if (!_Py_IsOwnedByCurrentThread((PyObject *)it->it_seq) ||
                     !_PyObject_GC_IS_SHARED(it->it_seq)) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                #endif
-            }
-            // _ITER_JUMP_LIST
-            {
-                PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
-                assert(Py_TYPE(iter_o) == &PyListIter_Type);
-                // For free-threaded Python, the loop exit can happen at any point during
-                // item retrieval, so it doesn't make much sense to check and jump
-                // separately before item retrieval. Any length check we do here can be
-                // invalid by the time we actually try to fetch the item.
-                #ifdef Py_GIL_DISABLED
-                assert(_PyObject_IsUniquelyReferenced(iter_o));
-                (void)iter_o;
                 #else
-                _PyListIterObject *it = (_PyListIterObject *)iter_o;
                 STAT_INC(FOR_ITER, hit);
                 PyListObject *seq = it->it_seq;
                 if (seq == NULL || (size_t)it->it_index >= (size_t)PyList_GET_SIZE(seq)) {
@@ -5688,20 +5686,17 @@
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                #ifdef Py_GIL_DISABLED
-                if (!_PyObject_IsUniquelyReferenced((PyObject *)r)) {
-                    UPDATE_MISS_STATS(FOR_ITER);
-                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
-                    JUMP_TO_PREDICTED(FOR_ITER);
-                }
-                #endif
             }
             // _ITER_JUMP_RANGE
             {
                 _PyRangeIterObject *r = (_PyRangeIterObject *)PyStackRef_AsPyObjectBorrow(iter);
                 assert(Py_TYPE(r) == &PyRangeIter_Type);
                 #ifdef Py_GIL_DISABLED
-                assert(_PyObject_IsUniquelyReferenced((PyObject *)r));
+                if (!_PyObject_IsUniquelyReferenced((PyObject *)r)) {
+                    UPDATE_MISS_STATS(FOR_ITER);
+                    assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
+                    JUMP_TO_PREDICTED(FOR_ITER);
+                }
                 #endif
                 STAT_INC(FOR_ITER, hit);
                 if (r->len <= 0) {
@@ -5756,21 +5751,17 @@
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
+            }
+            // _ITER_JUMP_TUPLE
+            {
+                PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
+                assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
                 #ifdef Py_GIL_DISABLED
                 if (!_PyObject_IsUniquelyReferenced(iter_o)) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                #endif
-            }
-            // _ITER_JUMP_TUPLE
-            {
-                PyObject *iter_o = PyStackRef_AsPyObjectBorrow(iter);
-                (void)iter_o;
-                assert(Py_TYPE(iter_o) == &PyTupleIter_Type);
-                #ifdef Py_GIL_DISABLED
-                assert(_PyObject_IsUniquelyReferenced(iter_o));
                 #endif
                 _PyTupleIterObject *it = (_PyTupleIterObject *)iter_o;
                 STAT_INC(FOR_ITER, hit);

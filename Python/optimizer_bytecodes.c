@@ -923,6 +923,67 @@ dummy_func(void) {
         }
     }
 
+    op(_BUILD_LIST, (unused[oparg] -- list)) {
+        list = sym_new_type(ctx, &PyList_Type);
+    }
+
+    op(_BUILD_MAP, (unused[oparg * 2] -- map)) {
+        map = sym_new_type(ctx, &PyDict_Type);
+    }
+
+    op(_BUILD_SET, (unused[oparg] -- set)) {
+        set = sym_new_type(ctx, &PySet_Type);
+    }
+
+    op(_GET_ITER, (iterable -- iterator)) {
+        // We can't do this for ranges, since they have two types of iterators.
+        // Maybe it's worth adding logic to track constant ranges, since that
+        // seems like a reasonably common case... especially in benchmarks. ;)
+        if (sym_matches_type(iterable, &PyList_Type)) {
+            iterator = sym_new_type(ctx, &PyListIter_Type);
+        }
+        else if (sym_matches_type(iterable, &PyTuple_Type)) {
+            iterator = sym_new_type(ctx, &PyTupleIter_Type);
+        }
+        else if (sym_has_type(iterable) &&
+                 sym_get_type(iterable)->tp_iter == PyObject_SelfIter)
+        {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+            iterator = iterable;
+        }
+        else {
+            iterator = sym_new_not_null(ctx);
+        }
+    }
+
+    op(_ITER_CHECK_LIST, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyListIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyListIter_Type);
+    }
+
+    op(_ITER_CHECK_TUPLE, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyTupleIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyTupleIter_Type);
+    }
+
+    op(_ITER_CHECK_RANGE, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyRangeIter_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyRangeIter_Type);
+    }
+
+    op(_ITER_CHECK_GEN, (iter -- iter)) {
+        if (sym_matches_type(iter, &PyGen_Type)) {
+            REPLACE_OP(this_instr, _NOP, 0, 0);
+        }
+        sym_set_type(iter, &PyGen_Type);
+    }
+
 
 // END BYTECODES //
 
