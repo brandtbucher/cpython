@@ -366,14 +366,19 @@ PyStackRef_AsStrongReference(_PyStackRef stackref)
 /* References to immortal objects always have their tag bit set to Py_TAG_REFCNT
  * as they can (must) have their reclamation deferred */
 
-#define Py_TAG_BITS 1
-#define Py_TAG_REFCNT 1
+#define Py_TAG_SIZE  2
+#define Py_TAG_BITS   ((1 << Py_TAG_SIZE) - 1)
+#define Py_TAG_REFCNT  (1 << 0)
+#define Py_TAG_INT    ((1 << 1) | Py_TAG_REFCNT)
 #if _Py_IMMORTAL_FLAGS != Py_TAG_REFCNT
 #  error "_Py_IMMORTAL_FLAGS != Py_TAG_REFCNT"
 #endif
 
 #define BITS_TO_PTR(REF) ((PyObject *)((REF).bits))
 #define BITS_TO_PTR_MASKED(REF) ((PyObject *)(((REF).bits) & (~Py_TAG_BITS)))
+
+#define UNBOX(REF) ((intptr_t)((REF).bits) >> Py_TAG_SIZE)
+#define BOX(VAL)   (((_PyStackRef){.bits = ((intptr_t)(VAL) << Py_TAG_SIZE) | Py_TAG_INT}))
 
 #define PyStackRef_NULL_BITS Py_TAG_REFCNT
 static const _PyStackRef PyStackRef_NULL = { .bits = PyStackRef_NULL_BITS };
@@ -414,7 +419,7 @@ static inline void PyStackRef_CheckValid(_PyStackRef ref) {
 
 #ifdef _WIN32
 #define PyStackRef_RefcountOnObject(REF) (((REF).bits & Py_TAG_BITS) == 0)
-#define PyStackRef_AsPyObjectBorrow BITS_TO_PTR_MASKED
+#define PyStackRef_AsPyObjectBorrow(REF) (((ref.bits & Py_TAG_INT) == Py_TAG_INT) ? PyLong_FromSsize_t(UNBOX(ref)) : BITS_TO_PTR_MASKED(REF))
 #else
 /* Does this ref not have an embedded refcount and thus not refer to a declared immmortal object? */
 static inline int
@@ -426,6 +431,10 @@ PyStackRef_RefcountOnObject(_PyStackRef ref)
 static inline PyObject *
 PyStackRef_AsPyObjectBorrow(_PyStackRef ref)
 {
+    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
+        // XXX: Leak!
+        return PyLong_FromSsize_t(UNBOX(ref));
+    }
     return BITS_TO_PTR_MASKED(ref);
 }
 #endif
@@ -436,9 +445,11 @@ PyStackRef_AsPyObjectSteal(_PyStackRef ref)
     if (PyStackRef_RefcountOnObject(ref)) {
         return BITS_TO_PTR(ref);
     }
-    else {
-        return Py_NewRef(BITS_TO_PTR_MASKED(ref));
+    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
+        // XXX: What if this fails?
+        return PyLong_FromSsize_t(UNBOX(ref));
     }
+    return Py_NewRef(BITS_TO_PTR_MASKED(ref));
 }
 
 static inline _PyStackRef
@@ -523,7 +534,10 @@ PyStackRef_DUP(_PyStackRef ref)
 static inline bool
 PyStackRef_IsHeapSafe(_PyStackRef ref)
 {
-    return (ref.bits & Py_TAG_BITS) == 0 || ref.bits == PyStackRef_NULL_BITS ||  _Py_IsImmortal(BITS_TO_PTR_MASKED(ref));
+    return ((ref.bits & Py_TAG_BITS) == 0 ||
+            ref.bits == PyStackRef_NULL_BITS ||
+            ((ref.bits & Py_TAG_BITS) == Py_TAG_INT) ||
+            _Py_IsImmortal(BITS_TO_PTR_MASKED(ref)));
 }
 
 static inline _PyStackRef
@@ -596,6 +610,43 @@ PyStackRef_XCLOSE(_PyStackRef ref)
 
 #endif // !defined(Py_GIL_DISABLED) && defined(Py_STACKREF_DEBUG)
 
+static inline bool
+PyStackRef_IsInt(_PyStackRef ref)
+{
+    if ((ref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return true;
+    }
+    PyObject *o = BITS_TO_PTR_MASKED(ref);
+    return PyLong_CheckExact(o) && _PyLong_IsCompact((PyLongObject *)o);
+}
+
+static inline intptr_t
+PyStackRef_AsIntBorrow(_PyStackRef ref)
+{
+    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
+        return UNBOX(ref);
+    }
+    return _PyLong_CompactValue((PyLongObject *)BITS_TO_PTR_MASKED(ref));
+}
+
+static inline intptr_t
+PyStackRef_AsIntSteal(_PyStackRef ref)
+{
+    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
+        return UNBOX(ref);
+    }
+    intptr_t i = _PyLong_CompactValue((PyLongObject *)BITS_TO_PTR_MASKED(ref));
+    // XXX: PyStackRef_CLOSE_SPECIALIZED(ref, _PyLong_ExactDealloc);
+    PyStackRef_CLOSE(ref);
+    return i;
+}
+
+static inline _PyStackRef
+PyStackRef_FromInt(intptr_t i)
+{
+    return BOX(i);
+}
+
 #define PyStackRef_TYPE(stackref) Py_TYPE(PyStackRef_AsPyObjectBorrow(stackref))
 
 // Converts a PyStackRef back to a PyObject *, converting the
@@ -619,7 +670,7 @@ PyStackRef_BoolCheck(_PyStackRef stackref)
 static inline bool
 PyStackRef_LongCheck(_PyStackRef stackref)
 {
-    return PyLong_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    return ((stackref.bits & Py_TAG_INT) == Py_TAG_INT) || PyLong_Check(PyStackRef_AsPyObjectBorrow(stackref));
 }
 
 static inline bool

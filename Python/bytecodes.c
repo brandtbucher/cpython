@@ -321,9 +321,7 @@ dummy_func(
         }
 
         replicate(4) inst(LOAD_SMALL_INT, (-- value)) {
-            assert(oparg < _PY_NSMALLPOSINTS);
-            PyObject *obj = (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + oparg];
-            value = PyStackRef_FromPyObjectImmortal(obj);
+            value = PyStackRef_FromInt(oparg);
         }
 
         replicate(8) inst(STORE_FAST, (value --)) {
@@ -482,18 +480,15 @@ dummy_func(
         }
 
         inst(TO_BOOL_INT, (unused/1, unused/2, value -- res)) {
-            PyObject *value_o = PyStackRef_AsPyObjectBorrow(value);
-            EXIT_IF(!PyLong_CheckExact(value_o));
+            EXIT_IF(!PyStackRef_IsInt(value));
             STAT_INC(TO_BOOL, hit);
-            if (_PyLong_IsZero((PyLongObject *)value_o)) {
-                assert(_Py_IsImmortal(value_o));
-                DEAD(value);
+            if (PyStackRef_AsIntSteal(value) == 0) {
                 res = PyStackRef_False;
             }
             else {
-                PyStackRef_CLOSE(value);
                 res = PyStackRef_True;
             }
+            DEAD(value);
         }
 
         inst(TO_BOOL_LIST, (unused/1, unused/2, value -- res)) {
@@ -563,65 +558,46 @@ dummy_func(
         };
 
         op(_GUARD_BOTH_INT, (left, right -- left, right)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
-            EXIT_IF(!PyLong_CheckExact(left_o));
-            EXIT_IF(!PyLong_CheckExact(right_o));
+            EXIT_IF(!PyStackRef_IsInt(left));
+            EXIT_IF(!PyStackRef_IsInt(right));
         }
 
         op(_GUARD_NOS_INT, (left, unused -- left, unused)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            EXIT_IF(!PyLong_CheckExact(left_o));
+            EXIT_IF(!PyStackRef_IsInt(left));
         }
 
         op(_GUARD_TOS_INT, (value -- value)) {
-            PyObject *value_o = PyStackRef_AsPyObjectBorrow(value);
-            EXIT_IF(!PyLong_CheckExact(value_o));
+            EXIT_IF(!PyStackRef_IsInt(value));
         }
 
         pure op(_BINARY_OP_MULTIPLY_INT, (left, right -- res)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
-            assert(PyLong_CheckExact(left_o));
-            assert(PyLong_CheckExact(right_o));
-
+            assert(PyStackRef_IsInt(left));
+            assert(PyStackRef_IsInt(right));
             STAT_INC(BINARY_OP, hit);
-            PyObject *res_o = _PyLong_Multiply((PyLongObject *)left_o, (PyLongObject *)right_o);
-            PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
-            PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
+            intptr_t res_i = PyStackRef_AsIntSteal(left) * PyStackRef_AsIntSteal(right);
             INPUTS_DEAD();
-            ERROR_IF(res_o == NULL, error);
-            res = PyStackRef_FromPyObjectSteal(res_o);
+            // XXX: Check for overflow!
+            res = PyStackRef_FromInt(res_i);
         }
 
         pure op(_BINARY_OP_ADD_INT, (left, right -- res)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
-            assert(PyLong_CheckExact(left_o));
-            assert(PyLong_CheckExact(right_o));
-
+            assert(PyStackRef_IsInt(left));
+            assert(PyStackRef_IsInt(right));
             STAT_INC(BINARY_OP, hit);
-            PyObject *res_o = _PyLong_Add((PyLongObject *)left_o, (PyLongObject *)right_o);
-            PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
-            PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
+            intptr_t res_i = PyStackRef_AsIntSteal(left) + PyStackRef_AsIntSteal(right);
             INPUTS_DEAD();
-            ERROR_IF(res_o == NULL, error);
-            res = PyStackRef_FromPyObjectSteal(res_o);
+            // XXX: Check for overflow!
+            res = PyStackRef_FromInt(res_i);
         }
 
         pure op(_BINARY_OP_SUBTRACT_INT, (left, right -- res)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
-            assert(PyLong_CheckExact(left_o));
-            assert(PyLong_CheckExact(right_o));
-
+            assert(PyStackRef_IsInt(left));
+            assert(PyStackRef_IsInt(right));
             STAT_INC(BINARY_OP, hit);
-            PyObject *res_o = _PyLong_Subtract((PyLongObject *)left_o, (PyLongObject *)right_o);
-            PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
-            PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
+            intptr_t res_i = PyStackRef_AsIntSteal(left) - PyStackRef_AsIntSteal(right);
             INPUTS_DEAD();
-            ERROR_IF(res_o == NULL, error);
-            res = PyStackRef_FromPyObjectSteal(res_o);
+            // XXX: Check for overflow!
+            res = PyStackRef_FromInt(res_i);
         }
 
         macro(BINARY_OP_MULTIPLY_INT) =
@@ -857,15 +833,14 @@ dummy_func(
         macro(STORE_SLICE) = _SPECIALIZE_STORE_SLICE + _STORE_SLICE;
 
         inst(BINARY_OP_SUBSCR_LIST_INT, (unused/5, list_st, sub_st -- res)) {
-            PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
             PyObject *list = PyStackRef_AsPyObjectBorrow(list_st);
 
-            DEOPT_IF(!PyLong_CheckExact(sub));
+            DEOPT_IF(!PyStackRef_IsInt(sub_st));
             DEOPT_IF(!PyList_CheckExact(list));
 
+            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
             // Deopt unless 0 <= sub < PyList_Size(list)
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            DEOPT_IF(index < 0);
 #ifdef Py_GIL_DISABLED
             PyObject *res_o = _PyList_GetItemRef((PyListObject*)list, index);
             DEOPT_IF(res_o == NULL);
@@ -883,40 +858,35 @@ dummy_func(
         }
 
         inst(BINARY_OP_SUBSCR_STR_INT, (unused/5, str_st, sub_st -- res)) {
-            PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
             PyObject *str = PyStackRef_AsPyObjectBorrow(str_st);
 
-            DEOPT_IF(!PyLong_CheckExact(sub));
+            DEOPT_IF(!PyStackRef_IsInt(sub_st));
             DEOPT_IF(!PyUnicode_CheckExact(str));
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
             DEOPT_IF(PyUnicode_GET_LENGTH(str) <= index);
             // Specialize for reading an ASCII character from any string:
             Py_UCS4 c = PyUnicode_READ_CHAR(str, index);
             DEOPT_IF(Py_ARRAY_LENGTH(_Py_SINGLETON(strings).ascii) <= c);
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = (PyObject*)&_Py_SINGLETON(strings).ascii[c];
-            PyStackRef_CLOSE_SPECIALIZED(sub_st, _PyLong_ExactDealloc);
-            DEAD(sub_st);
+            PyStackRef_CLOSE(sub_st);
             PyStackRef_CLOSE(str_st);
             res = PyStackRef_FromPyObjectImmortal(res_o);
         }
 
         inst(BINARY_OP_SUBSCR_TUPLE_INT, (unused/5, tuple_st, sub_st -- res)) {
-            PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
             PyObject *tuple = PyStackRef_AsPyObjectBorrow(tuple_st);
 
-            DEOPT_IF(!PyLong_CheckExact(sub));
+            DEOPT_IF(!PyStackRef_IsInt(sub_st));
             DEOPT_IF(!PyTuple_CheckExact(tuple));
 
             // Deopt unless 0 <= sub < PyTuple_Size(list)
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
             DEOPT_IF(index >= PyTuple_GET_SIZE(tuple));
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = PyTuple_GET_ITEM(tuple, index);
             assert(res_o != NULL);
-            PyStackRef_CLOSE_SPECIALIZED(sub_st, _PyLong_ExactDealloc);
+            PyStackRef_CLOSE(sub_st);
             res = PyStackRef_FromPyObjectNew(res_o);
             DECREF_INPUTS();
         }
@@ -1007,15 +977,13 @@ dummy_func(
         macro(STORE_SUBSCR) = _SPECIALIZE_STORE_SUBSCR + _STORE_SUBSCR;
 
         inst(STORE_SUBSCR_LIST_INT, (unused/1, value, list_st, sub_st -- )) {
-            PyObject *sub = PyStackRef_AsPyObjectBorrow(sub_st);
             PyObject *list = PyStackRef_AsPyObjectBorrow(list_st);
 
-            DEOPT_IF(!PyLong_CheckExact(sub));
+            DEOPT_IF(!PyStackRef_IsInt(sub_st));
             DEOPT_IF(!PyList_CheckExact(list));
 
             // Ensure nonnegative, zero-or-one-digit ints.
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
             DEOPT_IF(!LOCK_OBJECT(list));
             // Ensure index < len(list)
             if (index >= PyList_GET_SIZE(list)) {
@@ -1023,14 +991,13 @@ dummy_func(
                 DEOPT_IF(true);
             }
             STAT_INC(STORE_SUBSCR, hit);
+            PyStackRef_CLOSE(sub_st);
 
             PyObject *old_value = PyList_GET_ITEM(list, index);
             FT_ATOMIC_STORE_PTR_RELEASE(_PyList_ITEMS(list)[index],
                                         PyStackRef_AsPyObjectSteal(value));
             assert(old_value != NULL);
             UNLOCK_OBJECT(list);  // unlock before decrefs!
-            PyStackRef_CLOSE_SPECIALIZED(sub_st, _PyLong_ExactDealloc);
-            DEAD(sub_st);
             PyStackRef_CLOSE(list_st);
             Py_DECREF(old_value);
         }
@@ -1334,9 +1301,8 @@ dummy_func(
 
             assert(oparg >= 0 && oparg <= 2);
             if (oparg) {
-                PyObject *lasti = PyStackRef_AsPyObjectBorrow(values[0]);
-                if (PyLong_Check(lasti)) {
-                    frame->instr_ptr = _PyFrame_GetBytecode(frame) + PyLong_AsLong(lasti);
+                if (PyStackRef_IsInt(values[0])) {
+                    frame->instr_ptr = _PyFrame_GetBytecode(frame) + PyStackRef_AsIntSteal(values[0]);
                     assert(!_PyErr_Occurred(tstate));
                 }
                 else {
@@ -2592,21 +2558,14 @@ dummy_func(
 
         // Similar to COMPARE_OP_FLOAT
         op(_COMPARE_OP_INT, (left, right -- res)) {
-            PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-            PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
-
-            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)left_o));
-            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)right_o));
+            DEOPT_IF(!PyStackRef_IsInt(left));
+            DEOPT_IF(!PyStackRef_IsInt(right));
             STAT_INC(COMPARE_OP, hit);
-            assert(_PyLong_DigitCount((PyLongObject *)left_o) <= 1 &&
-                   _PyLong_DigitCount((PyLongObject *)right_o) <= 1);
-            Py_ssize_t ileft = _PyLong_CompactValue((PyLongObject *)left_o);
-            Py_ssize_t iright = _PyLong_CompactValue((PyLongObject *)right_o);
+            intptr_t ileft = PyStackRef_AsIntSteal(left);
+            intptr_t iright = PyStackRef_AsIntSteal(right);
             // 2 if <, 4 if >, 8 if ==; this matches the low 4 bits of the oparg
             int sign_ish = COMPARISON_BIT(ileft, iright);
-            PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
             DEAD(left);
-            PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
             DEAD(right);
             res =  (sign_ish & oparg) ? PyStackRef_True : PyStackRef_False;
             // It's always a bool, so we don't care about oparg & 16.
@@ -2910,9 +2869,7 @@ dummy_func(
             // PUSH(len(TOS))
             Py_ssize_t len_i = PyObject_Length(PyStackRef_AsPyObjectBorrow(obj));
             ERROR_IF(len_i < 0, error);
-            PyObject *len_o = PyLong_FromSsize_t(len_i);
-            ERROR_IF(len_o == NULL, error);
-            len = PyStackRef_FromPyObjectSteal(len_o);
+            len = PyStackRef_FromInt(len_i);
         }
 
         inst(MATCH_CLASS, (subject, type, names -- attrs)) {
@@ -3306,9 +3263,7 @@ dummy_func(
             long value = r->start;
             r->start = value + r->step;
             r->len--;
-            PyObject *res = PyLong_FromLong(value);
-            ERROR_IF(res == NULL, error);
-            next = PyStackRef_FromPyObjectSteal(res);
+            next = PyStackRef_FromInt(value);
         }
 
         macro(FOR_ITER_RANGE) =
@@ -4171,16 +4126,11 @@ dummy_func(
             if (len_i < 0) {
                 ERROR_NO_POP();
             }
-            PyObject *res_o = PyLong_FromSsize_t(len_i);
-            assert((res_o != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            if (res_o == NULL) {
-                ERROR_NO_POP();
-            }
             PyStackRef_CLOSE(arg_stackref);
             DEAD(args);
             DEAD(self_or_null);
             PyStackRef_CLOSE(callable[0]);
-            res = PyStackRef_FromPyObjectSteal(res_o);
+            res = PyStackRef_FromInt(len_i);
         }
 
         inst(CALL_ISINSTANCE, (unused/1, unused/2, callable, self_or_null[1], args[oparg] -- res)) {
@@ -5273,11 +5223,7 @@ dummy_func(
             }
             if (lasti) {
                 int frame_lasti = _PyInterpreterFrame_LASTI(frame);
-                PyObject *lasti = PyLong_FromLong(frame_lasti);
-                if (lasti == NULL) {
-                    goto exception_unwind;
-                }
-                _PyFrame_StackPush(frame, PyStackRef_FromPyObjectSteal(lasti));
+                _PyFrame_StackPush(frame, PyStackRef_FromInt(frame_lasti));
             }
 
             /* Make the raw exception data
