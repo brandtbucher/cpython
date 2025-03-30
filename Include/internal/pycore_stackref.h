@@ -366,6 +366,8 @@ PyStackRef_AsStrongReference(_PyStackRef stackref)
 /* References to immortal objects always have their tag bit set to Py_TAG_REFCNT
  * as they can (must) have their reclamation deferred */
 
+// XXX: Tagged integer overflow/underflow is just totally ignored right now.
+
 #define Py_TAG_SIZE  2
 #define Py_TAG_BITS   ((1 << Py_TAG_SIZE) - 1)
 #define Py_TAG_REFCNT  (1 << 0)

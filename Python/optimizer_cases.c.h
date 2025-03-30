@@ -177,7 +177,7 @@
             JitOptSymbol *res;
             value = stack_pointer[-1];
             if (!optimize_to_bool(this_instr, ctx, value, &res)) {
-                sym_set_type(value, &PyLong_Type);
+                sym_set_type(value, &PyLong_Type);  // XXX
                 res = sym_new_truthiness(ctx, value, true);
             }
             stack_pointer[-1] = res;
@@ -239,21 +239,21 @@
             JitOptSymbol *left;
             right = stack_pointer[-1];
             left = stack_pointer[-2];
-            if (sym_matches_type(left, &PyLong_Type)) {
-                if (sym_matches_type(right, &PyLong_Type)) {
-                    REPLACE_OP(this_instr, _NOP, 0, 0);
-                }
-                else {
-                    REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0);
-                }
-            }
-            else {
-                if (sym_matches_type(right, &PyLong_Type)) {
-                    REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0);
-                }
-            }
-            sym_set_type(left, &PyLong_Type);
-            sym_set_type(right, &PyLong_Type);
+            // if (sym_matches_type(left, &PyLong_Type)) {  // XXX
+                //     if (sym_matches_type(right, &PyLong_Type)) {  // XXX
+                    //         REPLACE_OP(this_instr, _NOP, 0, 0);
+                //     }
+                //     else {
+                    //         REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0);
+                //     }
+            // }
+            // else {
+                //     if (sym_matches_type(right, &PyLong_Type)) {  // XXX
+                    //         REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0);
+                //     }
+            // }
+            sym_set_type(left, &PyLong_Type);  // XXX
+            sym_set_type(right, &PyLong_Type);  // XXX
             break;
         }
 
@@ -288,7 +288,7 @@
                 // replace opcode with constant propagated one and add tests!
             }
             else {
-                res = sym_new_type(ctx, &PyLong_Type);
+                res = sym_new_type(ctx, &PyLong_Type);  // XXX
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
@@ -319,7 +319,7 @@
                 // replace opcode with constant propagated one and add tests!
             }
             else {
-                res = sym_new_type(ctx, &PyLong_Type);
+                res = sym_new_type(ctx, &PyLong_Type);  // XXX
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
@@ -350,7 +350,7 @@
                 // replace opcode with constant propagated one and add tests!
             }
             else {
-                res = sym_new_type(ctx, &PyLong_Type);
+                res = sym_new_type(ctx, &PyLong_Type);  // XXX
                 stack_pointer += -1;
                 assert(WITHIN_STACK_BOUNDS());
             }
@@ -1507,7 +1507,7 @@
 
         case _ITER_NEXT_RANGE: {
             JitOptSymbol *next;
-            next = sym_new_type(ctx, &PyLong_Type);
+            next = sym_new_type(ctx, &PyLong_Type);  // XXX
             stack_pointer[0] = next;
             stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
@@ -1917,14 +1917,7 @@
             break;
         }
 
-        case _CALL_LEN: {
-            JitOptSymbol *res;
-            res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
-            assert(WITHIN_STACK_BOUNDS());
-            break;
-        }
+        /* _CALL_LEN is not a viable micro-op for tier 2 */
 
         case _CALL_ISINSTANCE: {
             JitOptSymbol *res;

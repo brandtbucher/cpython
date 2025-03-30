@@ -101,21 +101,21 @@ dummy_func(void) {
     }
 
     op(_GUARD_BOTH_INT, (left, right -- left, right)) {
-        if (sym_matches_type(left, &PyLong_Type)) {
-            if (sym_matches_type(right, &PyLong_Type)) {
-                REPLACE_OP(this_instr, _NOP, 0, 0);
-            }
-            else {
-                REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0);
-            }
-        }
-        else {
-            if (sym_matches_type(right, &PyLong_Type)) {
-                REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0);
-            }
-        }
-        sym_set_type(left, &PyLong_Type);
-        sym_set_type(right, &PyLong_Type);
+        // if (sym_matches_type(left, &PyLong_Type)) {  // XXX
+        //     if (sym_matches_type(right, &PyLong_Type)) {  // XXX
+        //         REPLACE_OP(this_instr, _NOP, 0, 0);
+        //     }
+        //     else {
+        //         REPLACE_OP(this_instr, _GUARD_TOS_INT, 0, 0);
+        //     }
+        // }
+        // else {
+        //     if (sym_matches_type(right, &PyLong_Type)) {  // XXX
+        //         REPLACE_OP(this_instr, _GUARD_NOS_INT, 0, 0);
+        //     }
+        // }
+        sym_set_type(left, &PyLong_Type);  // XXX
+        sym_set_type(right, &PyLong_Type);  // XXX
     }
 
     op(_GUARD_TYPE_VERSION, (type_version/2, owner -- owner)) {
@@ -238,7 +238,7 @@ dummy_func(void) {
             // replace opcode with constant propagated one and add tests!
         }
         else {
-            res = sym_new_type(ctx, &PyLong_Type);
+            res = sym_new_type(ctx, &PyLong_Type);  // XXX
         }
     }
 
@@ -257,7 +257,7 @@ dummy_func(void) {
             // replace opcode with constant propagated one and add tests!
         }
         else {
-            res = sym_new_type(ctx, &PyLong_Type);
+            res = sym_new_type(ctx, &PyLong_Type);  // XXX
         }
     }
 
@@ -276,7 +276,7 @@ dummy_func(void) {
             // replace opcode with constant propagated one and add tests!
         }
         else {
-            res = sym_new_type(ctx, &PyLong_Type);
+            res = sym_new_type(ctx, &PyLong_Type);  // XXX
         }
     }
 
@@ -395,7 +395,7 @@ dummy_func(void) {
 
     op(_TO_BOOL_INT, (value -- res)) {
         if (!optimize_to_bool(this_instr, ctx, value, &res)) {
-            sym_set_type(value, &PyLong_Type);
+            sym_set_type(value, &PyLong_Type);  // XXX
             res = sym_new_truthiness(ctx, value, true);
         }
     }
@@ -827,7 +827,7 @@ dummy_func(void) {
     }
 
     op(_ITER_NEXT_RANGE, (iter -- iter, next)) {
-       next = sym_new_type(ctx, &PyLong_Type);
+       next = sym_new_type(ctx, &PyLong_Type);  // XXX
     }
 
     op(_GUARD_IS_TRUE_POP, (flag -- )) {
