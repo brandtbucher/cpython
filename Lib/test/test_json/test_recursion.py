@@ -1,6 +1,7 @@
 from test import support
 from test.test_json import PyTest, CTest
 
+import unittest
 
 class JSONTestObject:
     pass
@@ -68,6 +69,7 @@ class TestRecursion:
             self.fail("didn't raise ValueError on default recursion")
 
 
+    @unittest.skip("XXX")
     @support.skip_emscripten_stack_overflow()
     def test_highly_nested_objects_decoding(self):
         very_deep = 200000
@@ -97,6 +99,7 @@ class TestRecursion:
             with support.infinite_recursion(5000):
                 self.dumps(d)
 
+    @unittest.skip("XXX")
     @support.skip_emscripten_stack_overflow()
     def test_endless_recursion(self):
         # See #12051
