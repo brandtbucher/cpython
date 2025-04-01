@@ -2814,7 +2814,7 @@ lookup_method_ex(PyObject *self, PyObject *attr, _PyStackRef *out,
         return -1;
     }
 
-    PyObject *value = PyStackRef_AsPyObjectBorrow(*out);
+    PyObject *value = PyStackRef_AsPyObjectBorrow(out);
     if (_PyType_HasFeature(Py_TYPE(value), Py_TPFLAGS_METHOD_DESCRIPTOR)) {
         /* Avoid temporary PyMethodObject */
         return 1;
@@ -2887,7 +2887,7 @@ call_method_noarg(PyObject *self, PyObject *attr)
     PyObject *res = NULL;
     int unbound = lookup_method(self, attr, &cref.ref);
     if (unbound >= 0) {
-        PyObject *func = PyStackRef_AsPyObjectBorrow(cref.ref);
+        PyObject *func = PyStackRef_AsPyObjectBorrow(&cref.ref);
         res = call_unbound_noarg(unbound, func, self);
     }
     _PyThreadState_PopCStackRef(tstate, &cref);
@@ -2903,7 +2903,7 @@ call_method(PyObject *self, PyObject *attr, PyObject *args, PyObject *kwds)
     PyObject *res = NULL;
     int unbound = lookup_method(self, attr, &cref.ref);
     if (unbound >= 0) {
-        PyObject *meth = PyStackRef_AsPyObjectBorrow(cref.ref);
+        PyObject *meth = PyStackRef_AsPyObjectBorrow(&cref.ref);
         if (unbound) {
             res = _PyObject_Call_Prepend(tstate, meth, self, args, kwds);
         }
@@ -2932,7 +2932,7 @@ vectorcall_method(PyObject *name, PyObject *const *args, Py_ssize_t nargs)
     _PyThreadState_PushCStackRef(tstate, &cref);
     int unbound = lookup_method(self, name, &cref.ref);
     if (unbound >= 0) {
-        PyObject *func = PyStackRef_AsPyObjectBorrow(cref.ref);
+        PyObject *func = PyStackRef_AsPyObjectBorrow(&cref.ref);
         retval = vectorcall_unbound(tstate, unbound, func, args, nargs);
     }
     _PyThreadState_PopCStackRef(tstate, &cref);
@@ -2951,7 +2951,7 @@ vectorcall_maybe(PyThreadState *tstate, PyObject *name,
     _PyCStackRef cref;
     _PyThreadState_PushCStackRef(tstate, &cref);
     int unbound = lookup_maybe_method(self, name, &cref.ref);
-    PyObject *func = PyStackRef_AsPyObjectBorrow(cref.ref);
+    PyObject *func = PyStackRef_AsPyObjectBorrow(&cref.ref);
     if (func == NULL) {
         _PyThreadState_PopCStackRef(tstate, &cref);
         if (!PyErr_Occurred()) {
@@ -2977,7 +2977,7 @@ maybe_call_special_no_args(PyObject *self, PyObject *attr, int *attr_is_none)
 
     PyObject *res = NULL;
     int unbound = lookup_maybe_method(self, attr, &cref.ref);
-    PyObject *func = PyStackRef_AsPyObjectBorrow(cref.ref);
+    PyObject *func = PyStackRef_AsPyObjectBorrow(&cref.ref);
     if (attr_is_none != NULL) {
         *attr_is_none = (func == Py_None);
     }
@@ -2998,7 +2998,7 @@ maybe_call_special_one_arg(PyObject *self, PyObject *attr, PyObject *arg,
 
     PyObject *res = NULL;
     int unbound = lookup_maybe_method(self, attr, &cref.ref);
-    PyObject *func = PyStackRef_AsPyObjectBorrow(cref.ref);
+    PyObject *func = PyStackRef_AsPyObjectBorrow(&cref.ref);
     if (attr_is_none != NULL) {
         *attr_is_none = (func == Py_None);
     }
@@ -10395,7 +10395,7 @@ slot_tp_finalize(PyObject *self)
     /* Execute __del__ method, if any. */
     int unbound = lookup_maybe_method(self, &_Py_ID(__del__), &cref.ref);
     if (unbound >= 0) {
-        PyObject *del = PyStackRef_AsPyObjectBorrow(cref.ref);
+        PyObject *del = PyStackRef_AsPyObjectBorrow(&cref.ref);
         PyObject *res = call_unbound_noarg(unbound, del, self);
         if (res == NULL) {
             PyErr_FormatUnraisable("Exception ignored while "
@@ -11855,7 +11855,7 @@ super_init_without_args(_PyInterpreterFrame *cframe, PyTypeObject **type_p,
     }
 
     assert(_PyFrame_GetCode(cframe)->co_nlocalsplus > 0);
-    PyObject *firstarg = PyStackRef_AsPyObjectBorrow(_PyFrame_GetLocalsArray(cframe)[0]);
+    PyObject *firstarg = PyStackRef_AsPyObjectBorrow(&_PyFrame_GetLocalsArray(cframe)[0]);
     if (firstarg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "super(): arg[0] deleted");
         return -1;
@@ -11888,7 +11888,7 @@ super_init_without_args(_PyInterpreterFrame *cframe, PyTypeObject **type_p,
         PyObject *name = PyTuple_GET_ITEM(co->co_localsplusnames, i);
         assert(PyUnicode_Check(name));
         if (_PyUnicode_Equal(name, &_Py_ID(__class__))) {
-            PyObject *cell = PyStackRef_AsPyObjectBorrow(_PyFrame_GetLocalsArray(cframe)[i]);
+            PyObject *cell = PyStackRef_AsPyObjectBorrow(&_PyFrame_GetLocalsArray(cframe)[i]);
             if (cell == NULL || !PyCell_Check(cell)) {
                 PyErr_SetString(PyExc_RuntimeError,
                   "super(): bad __class__ cell");

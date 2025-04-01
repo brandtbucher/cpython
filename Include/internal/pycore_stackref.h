@@ -408,6 +408,8 @@ static inline void PyStackRef_CheckValid(_PyStackRef ref) {
         case Py_TAG_REFCNT:
             assert(obj == NULL || _Py_IsImmortal(obj));
             break;
+        case Py_TAG_INT:
+            break;
         default:
             assert(0);
     }
@@ -421,7 +423,6 @@ static inline void PyStackRef_CheckValid(_PyStackRef ref) {
 
 #ifdef _WIN32
 #define PyStackRef_RefcountOnObject(REF) (((REF).bits & Py_TAG_BITS) == 0)
-#define PyStackRef_AsPyObjectBorrow(REF) (((ref.bits & Py_TAG_INT) == Py_TAG_INT) ? PyLong_FromSsize_t(UNBOX(ref)) : BITS_TO_PTR_MASKED(REF))
 #else
 /* Does this ref not have an embedded refcount and thus not refer to a declared immmortal object? */
 static inline int
@@ -429,30 +430,7 @@ PyStackRef_RefcountOnObject(_PyStackRef ref)
 {
     return (ref.bits & Py_TAG_BITS) == 0;
 }
-
-static inline PyObject *
-PyStackRef_AsPyObjectBorrow(_PyStackRef ref)
-{
-    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
-        // XXX: Leak!
-        return PyLong_FromSsize_t(UNBOX(ref));
-    }
-    return BITS_TO_PTR_MASKED(ref);
-}
 #endif
-
-static inline PyObject *
-PyStackRef_AsPyObjectSteal(_PyStackRef ref)
-{
-    if (PyStackRef_RefcountOnObject(ref)) {
-        return BITS_TO_PTR(ref);
-    }
-    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
-        // XXX: What if this fails?
-        return PyLong_FromSsize_t(UNBOX(ref));
-    }
-    return Py_NewRef(BITS_TO_PTR_MASKED(ref));
-}
 
 static inline _PyStackRef
 PyStackRef_FromPyObjectSteal(PyObject *obj)
@@ -476,6 +454,43 @@ PyStackRef_FromPyObjectStealMortal(PyObject *obj)
     _PyStackRef ref = ((_PyStackRef){.bits = ((uintptr_t)(obj)) });
     PyStackRef_CheckValid(ref);
     return ref;
+}
+
+static inline PyObject *
+PyStackRef_AsPyObjectBorrow(_PyStackRef *ref)
+{
+    if ((ref->bits & Py_TAG_INT) == Py_TAG_INT) {
+        PyObject *o = PyLong_FromSsize_t(UNBOX(*ref));
+        if (o == NULL) {
+            Py_FatalError("Reboxing integer failed!");
+        }
+        *ref = PyStackRef_FromPyObjectSteal(o);
+        return o;
+    }
+    return BITS_TO_PTR_MASKED(*ref);
+}
+
+static inline PyObject *
+PyStackRef_AsPyObjectBorrowNonInt(_PyStackRef ref)
+{
+    assert((ref.bits & Py_TAG_INT) != Py_TAG_INT);
+    return BITS_TO_PTR_MASKED(ref);
+}
+
+static inline PyObject *
+PyStackRef_AsPyObjectSteal(_PyStackRef ref)
+{
+    if (PyStackRef_RefcountOnObject(ref)) {
+        return BITS_TO_PTR(ref);
+    }
+    if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
+        PyObject *o = PyLong_FromSsize_t(UNBOX(ref));
+        if (o == NULL) {
+            Py_FatalError("Reboxing integer failed!");
+        }
+        return o;
+    }
+    return Py_NewRef(BITS_TO_PTR_MASKED(ref));
 }
 
 // Check if a stackref is exactly the same as another stackref, including the
@@ -518,6 +533,8 @@ PyStackRef_FromPyObjectImmortal(PyObject *obj)
 }
 
 /* WARNING: This macro evaluates its argument more than once */
+// XXX: Box these in-place if they're integers to preserve "is"/"is not"
+// behavior and prevent multiple re-boxings.
 #ifdef _WIN32
 #define PyStackRef_DUP(REF) \
     (PyStackRef_RefcountOnObject(REF) ? (Py_INCREF_MORTAL(BITS_TO_PTR(REF)), (REF)) : (REF))
@@ -649,48 +666,66 @@ PyStackRef_FromInt(intptr_t i)
     return BOX(i);
 }
 
-#define PyStackRef_TYPE(stackref) Py_TYPE(PyStackRef_AsPyObjectBorrow(stackref))
+#define PyStackRef_TYPE(stackref) (((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) ? &PyLong_Type : Py_TYPE(PyStackRef_AsPyObjectBorrowNonInt(stackref)))
 
 // Converts a PyStackRef back to a PyObject *, converting the
 // stackref to a new reference.
-#define PyStackRef_AsPyObjectNew(stackref) Py_NewRef(PyStackRef_AsPyObjectBorrow(stackref))
+#define PyStackRef_AsPyObjectNew(stackref_p) Py_NewRef(PyStackRef_AsPyObjectBorrow(stackref_p))
 
 // StackRef type checks
 
 static inline bool
 PyStackRef_GenCheck(_PyStackRef stackref)
 {
-    return PyGen_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return false;
+    }
+    return PyGen_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline bool
 PyStackRef_BoolCheck(_PyStackRef stackref)
 {
-    return PyBool_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return false;
+    }
+    return PyBool_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline bool
 PyStackRef_LongCheck(_PyStackRef stackref)
 {
-    return ((stackref.bits & Py_TAG_INT) == Py_TAG_INT) || PyLong_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return true;
+    }
+    return PyLong_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline bool
 PyStackRef_ExceptionInstanceCheck(_PyStackRef stackref)
 {
-    return PyExceptionInstance_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return false;
+    }
+    return PyExceptionInstance_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline bool
 PyStackRef_CodeCheck(_PyStackRef stackref)
 {
-    return PyCode_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return false;
+    }
+    return PyCode_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline bool
 PyStackRef_FunctionCheck(_PyStackRef stackref)
 {
-    return PyFunction_Check(PyStackRef_AsPyObjectBorrow(stackref));
+    if ((stackref.bits & Py_TAG_BITS) == Py_TAG_INT) {
+        return false;
+    }
+    return PyFunction_Check(PyStackRef_AsPyObjectBorrowNonInt(stackref));
 }
 
 static inline void

@@ -148,8 +148,8 @@ _PyStackRef _PyFloat_FromDouble_ConsumeInputs(_PyStackRef left, _PyStackRef righ
 
 _PyStackRef _PyFloat_FromDouble_ConsumeInputs(_PyStackRef left, _PyStackRef right, double value)
 {
-    PyObject *left_o = PyStackRef_AsPyObjectBorrow(left);
-    PyObject *right_o = PyStackRef_AsPyObjectBorrow(right);
+    PyObject *left_o = PyStackRef_AsPyObjectBorrowNonInt(left);
+    PyObject *right_o = PyStackRef_AsPyObjectBorrowNonInt(right);
     if (Py_REFCNT(left_o) == 1) {
         ((PyFloatObject *)left_o)->ob_fval = value;
         PyStackRef_CLOSE_SPECIALIZED(right, _PyFloat_ExactDealloc);

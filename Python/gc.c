@@ -544,7 +544,7 @@ visit_decref(PyObject *op, void *parent)
 int
 _PyGC_VisitStackRef(_PyStackRef *ref, visitproc visit, void *arg)
 {
-    Py_VISIT(PyStackRef_AsPyObjectBorrow(*ref));
+    Py_VISIT(PyStackRef_AsPyObjectBorrow(ref));
     return 0;
 }
 
@@ -554,7 +554,7 @@ _PyGC_VisitFrameStack(_PyInterpreterFrame *frame, visitproc visit, void *arg)
     _PyStackRef *ref = _PyFrame_GetLocalsArray(frame);
     /* locals and stack */
     for (; ref < frame->stackpointer; ref++) {
-        Py_VISIT(PyStackRef_AsPyObjectBorrow(*ref));
+        Py_VISIT(PyStackRef_AsPyObjectBorrow(ref));
     }
     return 0;
 }
@@ -1485,11 +1485,11 @@ mark_stacks(PyInterpreterState *interp, PyGC_Head *visited, int visited_space, b
             _PyStackRef *locals = frame->localsplus;
             _PyStackRef *sp = frame->stackpointer;
             objects_marked += move_to_reachable(frame->f_locals, &reachable, visited_space);
-            PyObject *func = PyStackRef_AsPyObjectBorrow(frame->f_funcobj);
+            PyObject *func = PyStackRef_AsPyObjectBorrowNonInt(frame->f_funcobj);
             objects_marked += move_to_reachable(func, &reachable, visited_space);
             while (sp > locals) {
                 sp--;
-                PyObject *op = PyStackRef_AsPyObjectBorrow(*sp);
+                PyObject *op = PyStackRef_AsPyObjectBorrow(sp);
                 if (op == NULL || _Py_IsImmortal(op)) {
                     continue;
                 }

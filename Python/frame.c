@@ -130,7 +130,7 @@ _PyFrame_ClearExceptCode(_PyInterpreterFrame *frame)
 PyObject *
 PyUnstable_InterpreterFrame_GetCode(struct _PyInterpreterFrame *frame)
 {
-    return PyStackRef_AsPyObjectNew(frame->f_executable);
+    return Py_NewRef(PyStackRef_AsPyObjectBorrowNonInt(frame->f_executable));
 }
 
 int

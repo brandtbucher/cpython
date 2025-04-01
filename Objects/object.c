@@ -1693,7 +1693,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name,
     _PyThreadState_PushCStackRef(tstate, &cref);
 
     _PyType_LookupStackRefAndVersion(tp, name, &cref.ref);
-    descr = PyStackRef_AsPyObjectBorrow(cref.ref);
+    descr = PyStackRef_AsPyObjectBorrow(&cref.ref);
 
     f = NULL;
     if (descr != NULL) {
@@ -1817,7 +1817,7 @@ _PyObject_GenericSetAttrWithDict(PyObject *obj, PyObject *name,
     _PyThreadState_PushCStackRef(tstate, &cref);
 
     _PyType_LookupStackRefAndVersion(tp, name, &cref.ref);
-    descr = PyStackRef_AsPyObjectBorrow(cref.ref);
+    descr = PyStackRef_AsPyObjectBorrow(&cref.ref);
 
     if (descr != NULL) {
         f = Py_TYPE(descr)->tp_descr_set;

@@ -18,7 +18,7 @@ extern "C" {
     ((int)((IF)->instr_ptr - _PyFrame_GetBytecode((IF))))
 
 static inline PyCodeObject *_PyFrame_GetCode(_PyInterpreterFrame *f) {
-    PyObject *executable = PyStackRef_AsPyObjectBorrow(f->f_executable);
+    PyObject *executable = PyStackRef_AsPyObjectBorrowNonInt(f->f_executable);
     assert(PyCode_Check(executable));
     return (PyCodeObject *)executable;
 }
@@ -37,7 +37,7 @@ _PyFrame_GetBytecode(_PyInterpreterFrame *f)
 }
 
 static inline PyFunctionObject *_PyFrame_GetFunction(_PyInterpreterFrame *f) {
-    PyObject *func = PyStackRef_AsPyObjectBorrow(f->f_funcobj);
+    PyObject *func = PyStackRef_AsPyObjectBorrowNonInt(f->f_funcobj);
     assert(PyFunction_Check(func));
     return (PyFunctionObject *)func;
 }
@@ -46,10 +46,10 @@ static inline _PyStackRef *_PyFrame_Stackbase(_PyInterpreterFrame *f) {
     return (f->localsplus + _PyFrame_GetCode(f)->co_nlocalsplus);
 }
 
-static inline _PyStackRef _PyFrame_StackPeek(_PyInterpreterFrame *f) {
+static inline _PyStackRef *_PyFrame_StackPeek(_PyInterpreterFrame *f) {
     assert(f->stackpointer >  f->localsplus + _PyFrame_GetCode(f)->co_nlocalsplus);
     assert(!PyStackRef_IsNull(f->stackpointer[-1]));
-    return f->stackpointer[-1];
+    return &f->stackpointer[-1];
 }
 
 static inline _PyStackRef _PyFrame_StackPop(_PyInterpreterFrame *f) {
@@ -130,7 +130,7 @@ _PyFrame_Initialize(
     frame->previous = previous;
     frame->f_funcobj = func;
     frame->f_executable = PyStackRef_FromPyObjectNew(code);
-    PyFunctionObject *func_obj = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(func);
+    PyFunctionObject *func_obj = (PyFunctionObject *)PyStackRef_AsPyObjectBorrowNonInt(func);
     frame->f_builtins = func_obj->func_builtins;
     frame->f_globals = func_obj->func_globals;
     frame->f_locals = locals;
@@ -289,7 +289,7 @@ static inline _PyInterpreterFrame *
 _PyFrame_PushUnchecked(PyThreadState *tstate, _PyStackRef func, int null_locals_from, _PyInterpreterFrame * previous)
 {
     CALL_STAT_INC(frames_pushed);
-    PyFunctionObject *func_obj = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(func);
+    PyFunctionObject *func_obj = (PyFunctionObject *)PyStackRef_AsPyObjectBorrowNonInt(func);
     PyCodeObject *code = (PyCodeObject *)func_obj->func_code;
     _PyInterpreterFrame *new_frame = (_PyInterpreterFrame *)tstate->datastack_top;
     tstate->datastack_top += code->co_framesize;
@@ -335,7 +335,7 @@ _PyFrame_PushTrampolineUnchecked(PyThreadState *tstate, PyCodeObject *code, int 
 
 PyAPI_FUNC(_PyInterpreterFrame *)
 _PyEvalFramePushAndInit(PyThreadState *tstate, _PyStackRef func,
-                        PyObject *locals, _PyStackRef const *args,
+                        PyObject *locals, _PyStackRef *args,
                         size_t argcount, PyObject *kwnames,
                         _PyInterpreterFrame *previous);
 

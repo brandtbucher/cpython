@@ -579,6 +579,7 @@ NON_ESCAPING_FUNCTIONS = (
     "PyStackRef_AsIntBorrow",
     "PyStackRef_AsIntSteal",
     "PyStackRef_AsPyObjectBorrow",
+    "PyStackRef_AsPyObjectBorrowNonInt",
     "PyStackRef_AsPyObjectNew",
     "PyStackRef_FromPyObjectNewMortal",
     "PyStackRef_AsPyObjectSteal",
