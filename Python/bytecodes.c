@@ -578,12 +578,8 @@ dummy_func(
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-        #if _Py__has_builtin(__builtin_mul_overflow)
             DEOPT_IF(__builtin_mul_overflow(l, r, &x));
             DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
-        #else
-            #error "TODO"
-        #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -596,12 +592,8 @@ dummy_func(
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-        #if _Py__has_builtin(__builtin_add_overflow)
             DEOPT_IF(__builtin_add_overflow(l, r, &x));
             DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
-        #else
-            #error "TODO"
-        #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -614,12 +606,8 @@ dummy_func(
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-        #if _Py__has_builtin(__builtin_sub_overflow)
             DEOPT_IF(__builtin_sub_overflow(l, r, &x));
             DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
-        #else
-            #error "TODO"
-        #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);

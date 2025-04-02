@@ -748,7 +748,6 @@
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-            #if _Py__has_builtin(__builtin_mul_overflow)
             if (__builtin_mul_overflow(l, r, &x)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -757,9 +756,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #else
-            #error "TODO"
-            #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -781,7 +777,6 @@
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-            #if _Py__has_builtin(__builtin_add_overflow)
             if (__builtin_add_overflow(l, r, &x)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -790,9 +785,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #else
-            #error "TODO"
-            #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -814,7 +806,6 @@
             uintptr_t l = PyStackRef_AsIntBorrow(left);
             uintptr_t r = PyStackRef_AsIntBorrow(right);
             uintptr_t x;
-            #if _Py__has_builtin(__builtin_sub_overflow)
             if (__builtin_sub_overflow(l, r, &x)) {
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
@@ -823,9 +814,6 @@
                 UOP_STAT_INC(uopcode, miss);
                 JUMP_TO_JUMP_TARGET();
             }
-            #else
-            #error "TODO"
-            #endif
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
