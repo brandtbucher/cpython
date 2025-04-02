@@ -170,7 +170,6 @@
                 intptr_t l = PyStackRef_AsIntBorrow(left);
                 intptr_t r = PyStackRef_AsIntBorrow(right);
                 intptr_t x;
-                #if _Py__has_builtin(__builtin_add_overflow)
                 if (__builtin_add_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
@@ -186,9 +185,6 @@
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                #else
-                #error "TODO"
-                #endif
                 STAT_INC(BINARY_OP, hit);
                 res = PyStackRef_FromInt(x);
                 PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -487,7 +483,6 @@
                 intptr_t l = PyStackRef_AsIntBorrow(left);
                 intptr_t r = PyStackRef_AsIntBorrow(right);
                 intptr_t x;
-                #if _Py__has_builtin(__builtin_mul_overflow)
                 if (__builtin_mul_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
@@ -503,9 +498,6 @@
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                #else
-                #error "TODO"
-                #endif
                 STAT_INC(BINARY_OP, hit);
                 res = PyStackRef_FromInt(x);
                 PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
@@ -942,7 +934,6 @@
                 intptr_t l = PyStackRef_AsIntBorrow(left);
                 intptr_t r = PyStackRef_AsIntBorrow(right);
                 intptr_t x;
-                #if _Py__has_builtin(__builtin_sub_overflow)
                 if (__builtin_sub_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
@@ -958,9 +949,6 @@
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                #else
-                #error "TODO"
-                #endif
                 STAT_INC(BINARY_OP, hit);
                 res = PyStackRef_FromInt(x);
                 PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
