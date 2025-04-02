@@ -167,21 +167,16 @@
             {
                 assert(PyStackRef_IsInt(left));
                 assert(PyStackRef_IsInt(right));
-                intptr_t l = PyStackRef_AsIntBorrow(left);
-                intptr_t r = PyStackRef_AsIntBorrow(right);
-                intptr_t x;
+                uintptr_t l = PyStackRef_AsIntBorrow(left);
+                uintptr_t r = PyStackRef_AsIntBorrow(right);
+                uintptr_t x;
                 #if _Py__has_builtin(__builtin_add_overflow)
                 if (__builtin_add_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                if (x > (INTPTR_MAX >> Py_TAG_SIZE)) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
-                }
-                if (x < (INTPTR_MIN >> Py_TAG_SIZE)) {
+                if (x > (UINTPTR_MAX >> Py_TAG_SIZE)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
@@ -484,21 +479,16 @@
             {
                 assert(PyStackRef_IsInt(left));
                 assert(PyStackRef_IsInt(right));
-                intptr_t l = PyStackRef_AsIntBorrow(left);
-                intptr_t r = PyStackRef_AsIntBorrow(right);
-                intptr_t x;
+                uintptr_t l = PyStackRef_AsIntBorrow(left);
+                uintptr_t r = PyStackRef_AsIntBorrow(right);
+                uintptr_t x;
                 #if _Py__has_builtin(__builtin_mul_overflow)
                 if (__builtin_mul_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                if (x > (INTPTR_MAX >> Py_TAG_SIZE)) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
-                }
-                if (x < (INTPTR_MIN >> Py_TAG_SIZE)) {
+                if (x > (UINTPTR_MAX >> Py_TAG_SIZE)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
@@ -686,13 +676,8 @@
                 JUMP_TO_PREDICTED(BINARY_OP);
             }
             PyObject *list = PyStackRef_AsPyObjectBorrowNonInt(list_st);
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
             // Deopt unless 0 <= sub < PyList_Size(list)
-            if (index < 0) {
-                UPDATE_MISS_STATS(BINARY_OP);
-                assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                JUMP_TO_PREDICTED(BINARY_OP);
-            }
             #ifdef Py_GIL_DISABLED
             _PyFrame_SetStackPointer(frame, stack_pointer);
             PyObject *res_o = _PyList_GetItemRef((PyListObject*)list, index);
@@ -705,7 +690,7 @@
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromPyObjectSteal(res_o);
             #else
-            if (index >= PyList_GET_SIZE(list)) {
+            if ((intptr_t)index >= PyList_GET_SIZE(list)) {
                 UPDATE_MISS_STATS(BINARY_OP);
                 assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                 JUMP_TO_PREDICTED(BINARY_OP);
@@ -759,13 +744,8 @@
                 JUMP_TO_PREDICTED(BINARY_OP);
             }
             PyObject *str = PyStackRef_AsPyObjectBorrowNonInt(str_st);
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            if (index < 0) {
-                UPDATE_MISS_STATS(BINARY_OP);
-                assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                JUMP_TO_PREDICTED(BINARY_OP);
-            }
-            if (PyUnicode_GET_LENGTH(str) <= index) {
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            if (PyUnicode_GET_LENGTH(str) <= (intptr_t)index) {
                 UPDATE_MISS_STATS(BINARY_OP);
                 assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                 JUMP_TO_PREDICTED(BINARY_OP);
@@ -825,13 +805,8 @@
             }
             PyObject *tuple = PyStackRef_AsPyObjectBorrowNonInt(tuple_st);
             // Deopt unless 0 <= sub < PyTuple_Size(list)
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            if (index < 0) {
-                UPDATE_MISS_STATS(BINARY_OP);
-                assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                JUMP_TO_PREDICTED(BINARY_OP);
-            }
-            if (index >= PyTuple_GET_SIZE(tuple)) {
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            if ((intptr_t)index >= PyTuple_GET_SIZE(tuple)) {
                 UPDATE_MISS_STATS(BINARY_OP);
                 assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                 JUMP_TO_PREDICTED(BINARY_OP);
@@ -939,21 +914,16 @@
             {
                 assert(PyStackRef_IsInt(left));
                 assert(PyStackRef_IsInt(right));
-                intptr_t l = PyStackRef_AsIntBorrow(left);
-                intptr_t r = PyStackRef_AsIntBorrow(right);
-                intptr_t x;
+                uintptr_t l = PyStackRef_AsIntBorrow(left);
+                uintptr_t r = PyStackRef_AsIntBorrow(right);
+                uintptr_t x;
                 #if _Py__has_builtin(__builtin_sub_overflow)
                 if (__builtin_sub_overflow(l, r, &x)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                if (x > (INTPTR_MAX >> Py_TAG_SIZE)) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
-                }
-                if (x < (INTPTR_MIN >> Py_TAG_SIZE)) {
+                if (x > (UINTPTR_MAX >> Py_TAG_SIZE)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
@@ -3233,7 +3203,7 @@
             _PyFrame_SetStackPointer(frame, stack_pointer);
             PyStackRef_CLOSE(callable[0]);
             stack_pointer = _PyFrame_GetStackPointer(frame);
-            if (len_i <= (INTPTR_MAX >> Py_TAG_SIZE)) {
+            if (len_i <= (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE)) {
                 res = PyStackRef_FromInt(len_i);
             }
             else {
@@ -4620,8 +4590,8 @@
                     JUMP_TO_PREDICTED(COMPARE_OP);
                 }
                 STAT_INC(COMPARE_OP, hit);
-                intptr_t ileft = PyStackRef_AsIntSteal(left);
-                intptr_t iright = PyStackRef_AsIntSteal(right);
+                uintptr_t ileft = PyStackRef_AsIntSteal(left);
+                uintptr_t iright = PyStackRef_AsIntSteal(right);
                 // 2 if <, 4 if >, 8 if ==; this matches the low 4 bits of the oparg
                 int sign_ish = COMPARISON_BIT(ileft, iright);
                 res =  (sign_ish & oparg) ? PyStackRef_True : PyStackRef_False;
@@ -5705,12 +5675,12 @@
                 #endif
                 assert(r->len > 0);
                 long value = r->start;
-                if (value > (INTPTR_MAX >> Py_TAG_SIZE)) {
+                if (value < 0) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
                 }
-                if (value < (INTPTR_MIN >> Py_TAG_SIZE)) {
+                if (value > (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE)) {
                     UPDATE_MISS_STATS(FOR_ITER);
                     assert(_PyOpcode_Deopt[opcode] == (FOR_ITER));
                     JUMP_TO_PREDICTED(FOR_ITER);
@@ -5962,7 +5932,7 @@
             if (len_i < 0) {
                 JUMP_TO_LABEL(error);
             }
-            if (len_i <= (INTPTR_MAX >> Py_TAG_SIZE)) {
+            if (len_i <= (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE)) {
                 len = PyStackRef_FromInt(len_i);
             }
             else {
@@ -11308,19 +11278,14 @@
             }
             PyObject *list = PyStackRef_AsPyObjectBorrowNonInt(list_st);
             // Ensure nonnegative, zero-or-one-digit ints.
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            if (index < 0) {
-                UPDATE_MISS_STATS(STORE_SUBSCR);
-                assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
-                JUMP_TO_PREDICTED(STORE_SUBSCR);
-            }
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
             if (!LOCK_OBJECT(list)) {
                 UPDATE_MISS_STATS(STORE_SUBSCR);
                 assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
                 JUMP_TO_PREDICTED(STORE_SUBSCR);
             }
             // Ensure index < len(list)
-            if (index >= PyList_GET_SIZE(list)) {
+            if ((intptr_t)index >= PyList_GET_SIZE(list)) {
                 UNLOCK_OBJECT(list);
                 if (true) {
                     UPDATE_MISS_STATS(STORE_SUBSCR);

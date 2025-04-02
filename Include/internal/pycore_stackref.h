@@ -13,6 +13,7 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#include "pycore_long.h"
 #include "pycore_object.h"        // Py_DECREF_MORTAL
 #include "pycore_object_deferred.h" // _PyObject_HasDeferredRefcount()
 
@@ -379,8 +380,8 @@ PyStackRef_AsStrongReference(_PyStackRef stackref)
 #define BITS_TO_PTR(REF) ((PyObject *)((REF).bits))
 #define BITS_TO_PTR_MASKED(REF) ((PyObject *)(((REF).bits) & (~Py_TAG_BITS)))
 
-#define UNBOX(REF) ((intptr_t)((REF).bits) >> Py_TAG_SIZE)
-#define BOX(VAL)   (((_PyStackRef){.bits = ((intptr_t)(VAL) << Py_TAG_SIZE) | Py_TAG_INT}))
+#define UNBOX(REF) ((uintptr_t)((REF).bits) >> Py_TAG_SIZE)
+#define BOX(VAL)   (((_PyStackRef){.bits = ((uintptr_t)(VAL) << Py_TAG_SIZE) | Py_TAG_INT}))
 
 #define PyStackRef_NULL_BITS Py_TAG_REFCNT
 static const _PyStackRef PyStackRef_NULL = { .bits = PyStackRef_NULL_BITS };
@@ -636,10 +637,10 @@ PyStackRef_IsInt(_PyStackRef ref)
         return true;
     }
     PyObject *o = BITS_TO_PTR_MASKED(ref);
-    return PyLong_CheckExact(o) && _PyLong_IsCompact((PyLongObject *)o);
+    return PyLong_CheckExact(o) && _PyLong_IsNonNegativeCompact((PyLongObject *)o);
 }
 
-static inline intptr_t
+static inline uintptr_t
 PyStackRef_AsIntBorrow(_PyStackRef ref)
 {
     if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
@@ -648,20 +649,19 @@ PyStackRef_AsIntBorrow(_PyStackRef ref)
     return _PyLong_CompactValue((PyLongObject *)BITS_TO_PTR_MASKED(ref));
 }
 
-static inline intptr_t
+static inline uintptr_t
 PyStackRef_AsIntSteal(_PyStackRef ref)
 {
     if ((ref.bits & Py_TAG_INT) == Py_TAG_INT) {
         return UNBOX(ref);
     }
-    intptr_t i = _PyLong_CompactValue((PyLongObject *)BITS_TO_PTR_MASKED(ref));
-    // XXX: PyStackRef_CLOSE_SPECIALIZED(ref, _PyLong_ExactDealloc);
-    PyStackRef_CLOSE(ref);
+    uintptr_t i = _PyLong_CompactValue((PyLongObject *)BITS_TO_PTR_MASKED(ref));
+    PyStackRef_CLOSE_SPECIALIZED(ref, _PyLong_ExactDealloc);
     return i;
 }
 
 static inline _PyStackRef
-PyStackRef_FromInt(intptr_t i)
+PyStackRef_FromInt(uintptr_t i)
 {
     return BOX(i);
 }

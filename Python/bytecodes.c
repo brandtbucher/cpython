@@ -575,13 +575,12 @@ dummy_func(
         pure op(_BINARY_OP_MULTIPLY_INT, (left, right -- res)) {
             assert(PyStackRef_IsInt(left));
             assert(PyStackRef_IsInt(right));
-            intptr_t l = PyStackRef_AsIntBorrow(left);
-            intptr_t r = PyStackRef_AsIntBorrow(right);
-            intptr_t x;
+            uintptr_t l = PyStackRef_AsIntBorrow(left);
+            uintptr_t r = PyStackRef_AsIntBorrow(right);
+            uintptr_t x;
         #if _Py__has_builtin(__builtin_mul_overflow)
             DEOPT_IF(__builtin_mul_overflow(l, r, &x));
-            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
-            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+            DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
         #else
             #error "TODO"
         #endif
@@ -594,13 +593,12 @@ dummy_func(
         pure op(_BINARY_OP_ADD_INT, (left, right -- res)) {
             assert(PyStackRef_IsInt(left));
             assert(PyStackRef_IsInt(right));
-            intptr_t l = PyStackRef_AsIntBorrow(left);
-            intptr_t r = PyStackRef_AsIntBorrow(right);
-            intptr_t x;
+            uintptr_t l = PyStackRef_AsIntBorrow(left);
+            uintptr_t r = PyStackRef_AsIntBorrow(right);
+            uintptr_t x;
         #if _Py__has_builtin(__builtin_add_overflow)
             DEOPT_IF(__builtin_add_overflow(l, r, &x));
-            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
-            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+            DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
         #else
             #error "TODO"
         #endif
@@ -613,13 +611,12 @@ dummy_func(
         pure op(_BINARY_OP_SUBTRACT_INT, (left, right -- res)) {
             assert(PyStackRef_IsInt(left));
             assert(PyStackRef_IsInt(right));
-            intptr_t l = PyStackRef_AsIntBorrow(left);
-            intptr_t r = PyStackRef_AsIntBorrow(right);
-            intptr_t x;
+            uintptr_t l = PyStackRef_AsIntBorrow(left);
+            uintptr_t r = PyStackRef_AsIntBorrow(right);
+            uintptr_t x;
         #if _Py__has_builtin(__builtin_sub_overflow)
             DEOPT_IF(__builtin_sub_overflow(l, r, &x));
-            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
-            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+            DEOPT_IF(x > (UINTPTR_MAX >> Py_TAG_SIZE));
         #else
             #error "TODO"
         #endif
@@ -860,16 +857,15 @@ dummy_func(
 
             PyObject *list = PyStackRef_AsPyObjectBorrowNonInt(list_st);
 
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
             // Deopt unless 0 <= sub < PyList_Size(list)
-            DEOPT_IF(index < 0);
 #ifdef Py_GIL_DISABLED
             PyObject *res_o = _PyList_GetItemRef((PyListObject*)list, index);
             DEOPT_IF(res_o == NULL);
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromPyObjectSteal(res_o);
 #else
-            DEOPT_IF(index >= PyList_GET_SIZE(list));
+            DEOPT_IF((intptr_t)index >= PyList_GET_SIZE(list));
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = PyList_GET_ITEM(list, index);
             assert(res_o != NULL);
@@ -883,9 +879,8 @@ dummy_func(
             DEOPT_IF(!PyStackRef_IsInt(sub_st));
             DEOPT_IF(PyStackRef_TYPE(str_st) != &PyUnicode_Type);
             PyObject *str = PyStackRef_AsPyObjectBorrowNonInt(str_st);
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            DEOPT_IF(index < 0);
-            DEOPT_IF(PyUnicode_GET_LENGTH(str) <= index);
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            DEOPT_IF(PyUnicode_GET_LENGTH(str) <= (intptr_t)index);
             // Specialize for reading an ASCII character from any string:
             Py_UCS4 c = PyUnicode_READ_CHAR(str, index);
             DEOPT_IF(Py_ARRAY_LENGTH(_Py_SINGLETON(strings).ascii) <= c);
@@ -903,9 +898,8 @@ dummy_func(
             PyObject *tuple = PyStackRef_AsPyObjectBorrowNonInt(tuple_st);
 
             // Deopt unless 0 <= sub < PyTuple_Size(list)
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            DEOPT_IF(index < 0);
-            DEOPT_IF(index >= PyTuple_GET_SIZE(tuple));
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
+            DEOPT_IF((intptr_t)index >= PyTuple_GET_SIZE(tuple));
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = PyTuple_GET_ITEM(tuple, index);
             assert(res_o != NULL);
@@ -1006,11 +1000,10 @@ dummy_func(
             PyObject *list = PyStackRef_AsPyObjectBorrowNonInt(list_st);
 
             // Ensure nonnegative, zero-or-one-digit ints.
-            intptr_t index = PyStackRef_AsIntBorrow(sub_st);
-            DEOPT_IF(index < 0);
+            uintptr_t index = PyStackRef_AsIntBorrow(sub_st);
             DEOPT_IF(!LOCK_OBJECT(list));
             // Ensure index < len(list)
-            if (index >= PyList_GET_SIZE(list)) {
+            if ((intptr_t)index >= PyList_GET_SIZE(list)) {
                 UNLOCK_OBJECT(list);
                 DEOPT_IF(true);
             }
@@ -2596,8 +2589,8 @@ dummy_func(
             DEOPT_IF(!PyStackRef_IsInt(left));
             DEOPT_IF(!PyStackRef_IsInt(right));
             STAT_INC(COMPARE_OP, hit);
-            intptr_t ileft = PyStackRef_AsIntSteal(left);
-            intptr_t iright = PyStackRef_AsIntSteal(right);
+            uintptr_t ileft = PyStackRef_AsIntSteal(left);
+            uintptr_t iright = PyStackRef_AsIntSteal(right);
             // 2 if <, 4 if >, 8 if ==; this matches the low 4 bits of the oparg
             int sign_ish = COMPARISON_BIT(ileft, iright);
             DEAD(left);
@@ -2905,7 +2898,7 @@ dummy_func(
             // PUSH(len(TOS))
             Py_ssize_t len_i = PyObject_Length(PyStackRef_AsPyObjectBorrow(obj));
             ERROR_IF(len_i < 0, error);
-            if (len_i <= (INTPTR_MAX >> Py_TAG_SIZE)) {
+            if (len_i <= (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE)) {
                 len = PyStackRef_FromInt(len_i);
             }
             else {
@@ -3304,8 +3297,8 @@ dummy_func(
 #endif
             assert(r->len > 0);
             long value = r->start;
-            DEOPT_IF(value > (INTPTR_MAX >> Py_TAG_SIZE));
-            DEOPT_IF(value < (INTPTR_MIN >> Py_TAG_SIZE));
+            DEOPT_IF(value < 0);
+            DEOPT_IF(value > (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE));
             r->start = value + r->step;
             r->len--;
             next = PyStackRef_FromInt(value);
@@ -4176,7 +4169,7 @@ dummy_func(
             DEAD(args);
             DEAD(self_or_null);
             PyStackRef_CLOSE(callable[0]);
-            if (len_i <= (INTPTR_MAX >> Py_TAG_SIZE)) {
+            if (len_i <= (intptr_t)(UINTPTR_MAX >> Py_TAG_SIZE)) {
                 res = PyStackRef_FromInt(len_i);
             }
             else {
