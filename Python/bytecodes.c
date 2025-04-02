@@ -577,10 +577,16 @@ dummy_func(
             assert(PyStackRef_IsInt(right));
             intptr_t l = PyStackRef_AsIntBorrow(left);
             intptr_t r = PyStackRef_AsIntBorrow(right);
-            DEOPT_IF(r > 0 && l > (INTPTR_MAX >> Py_TAG_SIZE) / r);
-            DEOPT_IF(r < 0 && l < (INTPTR_MIN >> Py_TAG_SIZE) / r);
+            intptr_t x;
+        #if _Py__has_builtin(__builtin_mul_overflow)
+            DEOPT_IF(__builtin_mul_overflow(l, r, &x));
+            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
+            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+        #else
+            #error "TODO"
+        #endif
             STAT_INC(BINARY_OP, hit);
-            res = PyStackRef_FromInt(l * r);
+            res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
             PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
         }
@@ -590,10 +596,16 @@ dummy_func(
             assert(PyStackRef_IsInt(right));
             intptr_t l = PyStackRef_AsIntBorrow(left);
             intptr_t r = PyStackRef_AsIntBorrow(right);
-            DEOPT_IF(r > 0 && l > (INTPTR_MAX >> Py_TAG_SIZE) - r);
-            DEOPT_IF(r < 0 && l < (INTPTR_MIN >> Py_TAG_SIZE) - r);
+            intptr_t x;
+        #if _Py__has_builtin(__builtin_add_overflow)
+            DEOPT_IF(__builtin_add_overflow(l, r, &x));
+            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
+            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+        #else
+            #error "TODO"
+        #endif
             STAT_INC(BINARY_OP, hit);
-            res = PyStackRef_FromInt(l + r);
+            res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
             PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
         }
@@ -603,10 +615,16 @@ dummy_func(
             assert(PyStackRef_IsInt(right));
             intptr_t l = PyStackRef_AsIntBorrow(left);
             intptr_t r = PyStackRef_AsIntBorrow(right);
-            DEOPT_IF(r > 0 && l < (INTPTR_MIN >> Py_TAG_SIZE) + r);
-            DEOPT_IF(r < 0 && l > (INTPTR_MAX >> Py_TAG_SIZE) + r);
+            intptr_t x;
+        #if _Py__has_builtin(__builtin_sub_overflow)
+            DEOPT_IF(__builtin_sub_overflow(l, r, &x));
+            DEOPT_IF(x > (INTPTR_MAX >> Py_TAG_SIZE));
+            DEOPT_IF(x < (INTPTR_MIN >> Py_TAG_SIZE));
+        #else
+            #error "TODO"
+        #endif
             STAT_INC(BINARY_OP, hit);
-            res = PyStackRef_FromInt(l - r);
+            res = PyStackRef_FromInt(x);
             PyStackRef_CLOSE_SPECIALIZED(left, _PyLong_ExactDealloc);
             PyStackRef_CLOSE_SPECIALIZED(right, _PyLong_ExactDealloc);
         }
