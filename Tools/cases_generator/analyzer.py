@@ -635,7 +635,6 @@ NON_ESCAPING_FUNCTIONS = (
     "_PyLong_DigitCount",
     "_PyLong_IsCompact",
     "_PyLong_IsNegative",
-    "_PyLong_IsNonNegativeCompact",
     "_PyLong_IsZero",
     "_PyManagedDictPointer_IsValues",
     "_PyObject_GC_IS_SHARED",

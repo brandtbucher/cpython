@@ -727,12 +727,20 @@
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
                 // Deopt unless 0 <= sub < PyList_Size(list)
-                if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
+                if (!_PyLong_IsCompact((PyLongObject *)sub)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+                Py_ssize_t index = _PyLong_CompactValue((PyLongObject*)sub);
+                if (index < 0) {
+                    index += PyList_GET_SIZE(list);
+                    if (index < 0) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
+                }
                 #ifdef Py_GIL_DISABLED
                 _PyFrame_SetStackPointer(frame, stack_pointer);
                 PyObject *res_o = _PyList_GetItemRef((PyListObject*)list, index);
@@ -745,10 +753,12 @@
                 STAT_INC(BINARY_OP, hit);
                 res = PyStackRef_FromPyObjectSteal(res_o);
                 #else
-                if (index >= PyList_GET_SIZE(list)) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
+                else {
+                    if (PyList_GET_SIZE(list) <= index) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
                 }
                 STAT_INC(BINARY_OP, hit);
                 PyObject *res_o = PyList_GET_ITEM(list, index);
@@ -820,16 +830,26 @@
                 PyObject *str = PyStackRef_AsPyObjectBorrow(str_st);
                 assert(PyLong_CheckExact(sub));
                 assert(PyUnicode_CheckExact(str));
-                if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
+                if (!_PyLong_IsCompact((PyLongObject *)sub)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-                if (PyUnicode_GET_LENGTH(str) <= index) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
+                Py_ssize_t index = _PyLong_CompactValue((PyLongObject *)sub);
+                if (index < 0) {
+                    index += PyUnicode_GET_LENGTH(str);
+                    if (index < 0) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
+                }
+                else {
+                    if (PyUnicode_GET_LENGTH(str) <= index) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
                 }
                 // Specialize for reading an ASCII character from any string:
                 Py_UCS4 c = PyUnicode_READ_CHAR(str, index);
@@ -893,16 +913,26 @@
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
                 // Deopt unless 0 <= sub < PyTuple_Size(list)
-                if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
+                if (!_PyLong_IsCompact((PyLongObject *)sub)) {
                     UPDATE_MISS_STATS(BINARY_OP);
                     assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
                     JUMP_TO_PREDICTED(BINARY_OP);
                 }
-                Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-                if (index >= PyTuple_GET_SIZE(tuple)) {
-                    UPDATE_MISS_STATS(BINARY_OP);
-                    assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
-                    JUMP_TO_PREDICTED(BINARY_OP);
+                Py_ssize_t index = _PyLong_CompactValue((PyLongObject *)sub);
+                if (index < 0) {
+                    index += PyTuple_GET_SIZE(tuple);
+                    if (index < 0) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
+                }
+                else {
+                    if (PyTuple_GET_SIZE(tuple) <= index) {
+                        UPDATE_MISS_STATS(BINARY_OP);
+                        assert(_PyOpcode_Deopt[opcode] == (BINARY_OP));
+                        JUMP_TO_PREDICTED(BINARY_OP);
+                    }
                 }
                 STAT_INC(BINARY_OP, hit);
                 PyObject *res_o = PyTuple_GET_ITEM(tuple, index);
@@ -11489,24 +11519,37 @@
                     JUMP_TO_PREDICTED(STORE_SUBSCR);
                 }
                 // Ensure nonnegative, zero-or-one-digit ints.
-                if (!_PyLong_IsNonNegativeCompact((PyLongObject *)sub)) {
+                if (!_PyLong_IsCompact((PyLongObject *)sub)) {
                     UPDATE_MISS_STATS(STORE_SUBSCR);
                     assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
                     JUMP_TO_PREDICTED(STORE_SUBSCR);
                 }
-                Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+                Py_ssize_t index = _PyLong_CompactValue((PyLongObject*)sub);
                 if (!LOCK_OBJECT(list)) {
                     UPDATE_MISS_STATS(STORE_SUBSCR);
                     assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
                     JUMP_TO_PREDICTED(STORE_SUBSCR);
                 }
                 // Ensure index < len(list)
-                if (index >= PyList_GET_SIZE(list)) {
-                    UNLOCK_OBJECT(list);
-                    if (true) {
-                        UPDATE_MISS_STATS(STORE_SUBSCR);
-                        assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
-                        JUMP_TO_PREDICTED(STORE_SUBSCR);
+                if (index < 0) {
+                    index += PyList_GET_SIZE(list);
+                    if (index < 0) {
+                        UNLOCK_OBJECT(list);
+                        if (true) {
+                            UPDATE_MISS_STATS(STORE_SUBSCR);
+                            assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
+                            JUMP_TO_PREDICTED(STORE_SUBSCR);
+                        }
+                    }
+                }
+                else {
+                    if (index >= PyList_GET_SIZE(list)) {
+                        UNLOCK_OBJECT(list);
+                        if (true) {
+                            UPDATE_MISS_STATS(STORE_SUBSCR);
+                            assert(_PyOpcode_Deopt[opcode] == (STORE_SUBSCR));
+                            JUMP_TO_PREDICTED(STORE_SUBSCR);
+                        }
                     }
                 }
                 STAT_INC(STORE_SUBSCR, hit);

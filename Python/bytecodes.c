@@ -872,15 +872,21 @@ dummy_func(
             DEOPT_IF(!PyList_CheckExact(list));
 
             // Deopt unless 0 <= sub < PyList_Size(list)
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)sub));
+            Py_ssize_t index = _PyLong_CompactValue((PyLongObject*)sub);
+            if (index < 0) {
+                index += PyList_GET_SIZE(list);
+                DEOPT_IF(index < 0);
+            }
 #ifdef Py_GIL_DISABLED
             PyObject *res_o = _PyList_GetItemRef((PyListObject*)list, index);
             DEOPT_IF(res_o == NULL);
             STAT_INC(BINARY_OP, hit);
             res = PyStackRef_FromPyObjectSteal(res_o);
 #else
-            DEOPT_IF(index >= PyList_GET_SIZE(list));
+            else {
+                DEOPT_IF(PyList_GET_SIZE(list) <= index);
+            }
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = PyList_GET_ITEM(list, index);
             assert(res_o != NULL);
@@ -899,9 +905,15 @@ dummy_func(
 
             assert(PyLong_CheckExact(sub));
             assert(PyUnicode_CheckExact(str));
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            DEOPT_IF(PyUnicode_GET_LENGTH(str) <= index);
+            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)sub));
+            Py_ssize_t index = _PyLong_CompactValue((PyLongObject *)sub);
+            if (index < 0) {
+                index += PyUnicode_GET_LENGTH(str);
+                DEOPT_IF(index < 0);
+            }
+            else {
+                DEOPT_IF(PyUnicode_GET_LENGTH(str) <= index);
+            }
             // Specialize for reading an ASCII character from any string:
             Py_UCS4 c = PyUnicode_READ_CHAR(str, index);
             DEOPT_IF(Py_ARRAY_LENGTH(_Py_SINGLETON(strings).ascii) <= c);
@@ -924,9 +936,15 @@ dummy_func(
             DEOPT_IF(!PyTuple_CheckExact(tuple));
 
             // Deopt unless 0 <= sub < PyTuple_Size(list)
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
-            DEOPT_IF(index >= PyTuple_GET_SIZE(tuple));
+            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)sub));
+            Py_ssize_t index = _PyLong_CompactValue((PyLongObject *)sub);
+            if (index < 0) {
+                index += PyTuple_GET_SIZE(tuple);
+                DEOPT_IF(index < 0);
+            }
+            else {
+                DEOPT_IF(PyTuple_GET_SIZE(tuple) <= index);
+            }
             STAT_INC(BINARY_OP, hit);
             PyObject *res_o = PyTuple_GET_ITEM(tuple, index);
             assert(res_o != NULL);
@@ -1031,11 +1049,18 @@ dummy_func(
             DEOPT_IF(!PyList_CheckExact(list));
 
             // Ensure nonnegative, zero-or-one-digit ints.
-            DEOPT_IF(!_PyLong_IsNonNegativeCompact((PyLongObject *)sub));
-            Py_ssize_t index = ((PyLongObject*)sub)->long_value.ob_digit[0];
+            DEOPT_IF(!_PyLong_IsCompact((PyLongObject *)sub));
+            Py_ssize_t index = _PyLong_CompactValue((PyLongObject*)sub);
             DEOPT_IF(!LOCK_OBJECT(list));
             // Ensure index < len(list)
-            if (index >= PyList_GET_SIZE(list)) {
+            if (index < 0) {
+                index += PyList_GET_SIZE(list);
+                if (index < 0) {
+                    UNLOCK_OBJECT(list);
+                    DEOPT_IF(true);
+                }
+            }
+            else if (index >= PyList_GET_SIZE(list)) {
                 UNLOCK_OBJECT(list);
                 DEOPT_IF(true);
             }
