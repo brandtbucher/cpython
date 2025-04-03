@@ -4,6 +4,24 @@
 #include "pycore_object.h"
 #include "pycore_stackref.h"
 
+#if !defined(Py_GIL_DISABLED) && !defined(Py_STACKREF_DEBUG)
+
+PyObject *
+PyStackRef_AsPyObjectBorrow(_PyStackRef *ref)
+{
+    if ((ref->bits & Py_TAG_INT) == Py_TAG_INT) {
+        PyObject *o = PyLong_FromSsize_t(UNBOX(*ref));
+        if (o == NULL) {
+            Py_FatalError("Reboxing integer failed!");
+        }
+        *ref = PyStackRef_FromPyObjectSteal(o);
+        return o;
+    }
+    return BITS_TO_PTR_MASKED(*ref);
+}
+
+#endif
+
 #if !defined(Py_GIL_DISABLED) && defined(Py_STACKREF_DEBUG)
 
 #if SIZEOF_VOID_P < 8

@@ -456,19 +456,7 @@ PyStackRef_FromPyObjectStealMortal(PyObject *obj)
     return ref;
 }
 
-static inline PyObject *
-PyStackRef_AsPyObjectBorrow(_PyStackRef *ref)
-{
-    if ((ref->bits & Py_TAG_INT) == Py_TAG_INT) {
-        PyObject *o = PyLong_FromSsize_t(UNBOX(*ref));
-        if (o == NULL) {
-            Py_FatalError("Reboxing integer failed!");
-        }
-        *ref = PyStackRef_FromPyObjectSteal(o);
-        return o;
-    }
-    return BITS_TO_PTR_MASKED(*ref);
-}
+PyObject *PyStackRef_AsPyObjectBorrow(_PyStackRef *ref);
 
 static inline PyObject *
 PyStackRef_AsPyObjectBorrowNonInt(_PyStackRef ref)
