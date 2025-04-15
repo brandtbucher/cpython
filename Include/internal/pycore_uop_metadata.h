@@ -995,7 +995,7 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _MAYBE_EXPAND_METHOD:
             return 0;
         case _PY_FRAME_GENERAL:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CHECK_FUNCTION_VERSION:
             return 0;
         case _CHECK_FUNCTION_VERSION_INLINE:
@@ -1007,7 +1007,7 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _CHECK_IS_NOT_PY_CALLABLE:
             return 0;
         case _CALL_NON_PY_GENERAL:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CHECK_CALL_BOUND_METHOD_EXACT_ARGS:
             return 0;
         case _INIT_CALL_BOUND_METHOD_EXACT_ARGS:
@@ -1019,57 +1019,57 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _CHECK_STACK_SPACE:
             return 0;
         case _INIT_CALL_PY_EXACT_ARGS_0:
-            return 2 + oparg;
+            return 1 + oparg;
         case _INIT_CALL_PY_EXACT_ARGS_1:
-            return 2 + oparg;
+            return 1 + oparg;
         case _INIT_CALL_PY_EXACT_ARGS_2:
-            return 2 + oparg;
+            return 1 + oparg;
         case _INIT_CALL_PY_EXACT_ARGS_3:
-            return 2 + oparg;
+            return 1 + oparg;
         case _INIT_CALL_PY_EXACT_ARGS_4:
-            return 2 + oparg;
+            return 1 + oparg;
         case _INIT_CALL_PY_EXACT_ARGS:
-            return 2 + oparg;
+            return 1 + oparg;
         case _PUSH_FRAME:
             return 1;
         case _CALL_TYPE_1:
-            return 3;
+            return 2;
         case _CALL_STR_1:
-            return 3;
+            return 2;
         case _CALL_TUPLE_1:
-            return 3;
+            return 2;
         case _CHECK_AND_ALLOCATE_OBJECT:
             return 0;
         case _CREATE_INIT_FRAME:
-            return 2 + oparg;
+            return 1 + oparg;
         case _EXIT_INIT_CHECK:
             return 1;
         case _CALL_BUILTIN_CLASS:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_BUILTIN_O:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_BUILTIN_FAST:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_BUILTIN_FAST_WITH_KEYWORDS:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_LEN:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_ISINSTANCE:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_LIST_APPEND:
             return 3;
         case _CALL_METHOD_DESCRIPTOR_O:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_METHOD_DESCRIPTOR_NOARGS:
-            return 2 + oparg;
+            return 1 + oparg;
         case _CALL_METHOD_DESCRIPTOR_FAST:
-            return 2 + oparg;
+            return 1 + oparg;
         case _MAYBE_EXPAND_METHOD_KW:
             return 1;
         case _PY_FRAME_KW:
-            return 3 + oparg;
+            return 2 + oparg;
         case _CHECK_FUNCTION_VERSION_KW:
             return 0;
         case _CHECK_METHOD_VERSION_KW:
@@ -1079,7 +1079,7 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _CHECK_IS_NOT_PY_CALLABLE_KW:
             return 0;
         case _CALL_KW_NON_PY:
-            return 3 + oparg;
+            return 2 + oparg;
         case _MAKE_CALLARGS_A_TUPLE:
             return 0;
         case _MAKE_FUNCTION:

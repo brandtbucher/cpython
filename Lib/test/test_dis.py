@@ -1297,7 +1297,6 @@ class DisTests(DisTestBase):
 
     @cpython_only
     @requires_specialization
-    @unittest.skip("XXX")
     def test_call_specialize(self):
         call_quicken = """\
   0           RESUME_CHECK             0
@@ -1314,7 +1313,6 @@ class DisTests(DisTestBase):
 
     @cpython_only
     @requires_specialization
-    @unittest.skip("XXX")
     def test_loop_quicken(self):
         # Loop can trigger a quicken where the loop is located
         self.code_quicken(loop_test)

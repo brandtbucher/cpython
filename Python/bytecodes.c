@@ -3637,15 +3637,15 @@ dummy_func(
         };
 
         specializing op(_SPECIALIZE_CALL, (counter/1, callable[1], args[oparg] -- callable[1], args[oparg])) {
-            // #if ENABLE_SPECIALIZATION_FT
-            // if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
-            //     next_instr = this_instr;
-            //     _Py_Specialize_Call(callable[0], next_instr, oparg + !PyStackRef_IsNull(self_or_null[0]));
-            //     DISPATCH_SAME_OPARG();
-            // }
-            // OPCODE_DEFERRED_INC(CALL);
-            // ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
-            // #endif  /* ENABLE_SPECIALIZATION_FT */
+            #if ENABLE_SPECIALIZATION_FT
+            if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
+                next_instr = this_instr;
+                _Py_Specialize_Call(callable[0], next_instr, oparg - (oparg && PyStackRef_IsNull(args[0])));
+                DISPATCH_SAME_OPARG();
+            }
+            OPCODE_DEFERRED_INC(CALL);
+            ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            #endif  /* ENABLE_SPECIALIZATION_FT */
         }
 
         op(_MAYBE_EXPAND_METHOD, (callable[1], args[oparg] -- callable[1], args[oparg])) {
@@ -3724,12 +3724,6 @@ dummy_func(
                 }
             }
             assert((res_o != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
-            for (int _i = oparg; --_i >= 0;) {  // XXX
-                _PyStackRef tmp = args[_i];
-                args[_i] = PyStackRef_NULL;
-                PyStackRef_XCLOSE(tmp);  // XXX
-            }
-            DEAD(args);
             DECREF_INPUTS();
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
@@ -3756,14 +3750,14 @@ dummy_func(
         macro(CALL) = _SPECIALIZE_CALL + unused/2 + _MAYBE_EXPAND_METHOD + _DO_CALL + _CHECK_PERIODIC;
         macro(INSTRUMENTED_CALL) = unused/3 + _MAYBE_EXPAND_METHOD + _MONITOR_CALL + _DO_CALL + _CHECK_PERIODIC;
 
-        op(_PY_FRAME_GENERAL, (callable[1], self_or_null[1], args[oparg] -- new_frame: _PyInterpreterFrame*)) {
+        op(_PY_FRAME_GENERAL, (callable[1], args[oparg] -- new_frame: _PyInterpreterFrame*)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             // oparg counts all of the args, but *not* self:
             int total_args = oparg;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                args--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                args++;
+                total_args--;
             }
             assert(Py_TYPE(callable_o) == &PyFunction_Type);
             int code_flags = ((PyCodeObject*)PyFunction_GET_CODE(callable_o))->co_flags;
@@ -3781,7 +3775,7 @@ dummy_func(
             new_frame = temp;
         }
 
-        op(_CHECK_FUNCTION_VERSION, (func_version/2, callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
+        op(_CHECK_FUNCTION_VERSION, (func_version/2, callable[1], unused[oparg] -- callable[1], unused[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             EXIT_IF(!PyFunction_Check(callable_o));
             PyFunctionObject *func = (PyFunctionObject *)callable_o;
@@ -3802,21 +3796,22 @@ dummy_func(
             _SAVE_RETURN_OFFSET +
             _PUSH_FRAME;
 
-        op(_CHECK_METHOD_VERSION, (func_version/2, callable[1], null[1], unused[oparg] -- callable[1], null[1], unused[oparg])) {
+        op(_CHECK_METHOD_VERSION, (func_version/2, callable[1], args[oparg] -- callable[1], args[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             EXIT_IF(Py_TYPE(callable_o) != &PyMethod_Type);
             PyObject *func = ((PyMethodObject *)callable_o)->im_func;
             EXIT_IF(!PyFunction_Check(func));
             EXIT_IF(((PyFunctionObject *)func)->func_version != func_version);
-            EXIT_IF(!PyStackRef_IsNull(null[0]));
+            EXIT_IF(oparg == 0);
+            EXIT_IF(!PyStackRef_IsNull(args[0]));
         }
 
-        op(_EXPAND_METHOD, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
+        op(_EXPAND_METHOD, (callable[1], args[oparg] -- callable[1], args[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
-            assert(PyStackRef_IsNull(self_or_null[0]));
+            assert(oparg && PyStackRef_IsNull(args[0]));
             assert(Py_TYPE(callable_o) == &PyMethod_Type);
-            self_or_null[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
+            args[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
             _PyStackRef temp = callable[0];
             callable[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_func);
             assert(PyStackRef_FunctionCheck(callable[0]));
@@ -3833,13 +3828,13 @@ dummy_func(
             _SAVE_RETURN_OFFSET +
             _PUSH_FRAME;
 
-        op(_CHECK_IS_NOT_PY_CALLABLE, (callable[1], unused[1], unused[oparg] -- callable[1], unused[1], unused[oparg])) {
+        op(_CHECK_IS_NOT_PY_CALLABLE, (callable[1], unused[oparg] -- callable[1], unused[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             EXIT_IF(PyFunction_Check(callable_o));
             EXIT_IF(Py_TYPE(callable_o) == &PyMethod_Type);
         }
 
-        op(_CALL_NON_PY_GENERAL, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_NON_PY_GENERAL, (callable[1], args[oparg] -- res)) {
 #if TIER_ONE
             assert(opcode != INSTRUMENTED_CALL);
 #endif
@@ -3847,9 +3842,9 @@ dummy_func(
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             /* Callable is not a normal Python function */
             STACKREFS_TO_PYOBJECTS(arguments, total_args, args_o);
@@ -3875,16 +3870,17 @@ dummy_func(
             _CALL_NON_PY_GENERAL +
             _CHECK_PERIODIC;
 
-        op(_CHECK_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], null[1], unused[oparg] -- callable[1], null[1], unused[oparg])) {
-            EXIT_IF(!PyStackRef_IsNull(null[0]));
+        op(_CHECK_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], args[oparg] -- callable[1], args[oparg])) {
+            EXIT_IF(oparg == 0);
+            EXIT_IF(!PyStackRef_IsNull(args[0]));
             EXIT_IF(Py_TYPE(PyStackRef_AsPyObjectBorrow(callable[0])) != &PyMethod_Type);
         }
 
-        op(_INIT_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
-            assert(PyStackRef_IsNull(self_or_null[0]));
+        op(_INIT_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], args[oparg] -- callable[1], args[oparg])) {
+            assert(oparg && PyStackRef_IsNull(args[0]));
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             STAT_INC(CALL, hit);
-            self_or_null[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
+            args[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
             _PyStackRef temp = callable[0];
             callable[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_func);
             PyStackRef_CLOSE(temp);
@@ -3894,15 +3890,15 @@ dummy_func(
             DEOPT_IF(tstate->interp->eval_frame);
         }
 
-        op(_CHECK_FUNCTION_EXACT_ARGS, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
+        op(_CHECK_FUNCTION_EXACT_ARGS, (callable[1], args[oparg] -- callable[1], args[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             assert(PyFunction_Check(callable_o));
             PyFunctionObject *func = (PyFunctionObject *)callable_o;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
-            EXIT_IF(code->co_argcount != oparg + (!PyStackRef_IsNull(self_or_null[0])));
+            EXIT_IF(code->co_argcount != oparg - (oparg && PyStackRef_IsNull(args[0])));
         }
 
-        op(_CHECK_STACK_SPACE, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
+        op(_CHECK_STACK_SPACE, (callable[1], args[oparg] -- callable[1], args[oparg])) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             PyFunctionObject *func = (PyFunctionObject *)callable_o;
             PyCodeObject *code = (PyCodeObject *)func->func_code;
@@ -3910,14 +3906,12 @@ dummy_func(
             DEOPT_IF(tstate->py_recursion_remaining <= 1);
         }
 
-        replicate(5) pure op(_INIT_CALL_PY_EXACT_ARGS, (callable[1], self_or_null[1], args[oparg] -- new_frame: _PyInterpreterFrame*)) {
-            int has_self = !PyStackRef_IsNull(self_or_null[0]);
+        replicate(5) pure op(_INIT_CALL_PY_EXACT_ARGS, (callable[1], args[oparg] -- new_frame: _PyInterpreterFrame*)) {
+            int has_null = oparg && PyStackRef_IsNull(args[0]);
             STAT_INC(CALL, hit);
-            new_frame = _PyFrame_PushUnchecked(tstate, callable[0], oparg + has_self, frame);
-            _PyStackRef *first_non_self_local = new_frame->localsplus + has_self;
-            new_frame->localsplus[0] = self_or_null[0];
-            for (int i = 0; i < oparg; i++) {
-                first_non_self_local[i] = args[i];
+            new_frame = _PyFrame_PushUnchecked(tstate, callable[0], oparg - has_null, frame);
+            for (int i = 0; i < oparg - has_null; i++) {
+                new_frame->localsplus[i] = args[has_null + i];
             }
             INPUTS_DEAD();
         }
@@ -3962,13 +3956,11 @@ dummy_func(
             _SAVE_RETURN_OFFSET +
             _PUSH_FRAME;
 
-        inst(CALL_TYPE_1, (unused/1, unused/2, callable, null, arg -- res)) {
+        inst(CALL_TYPE_1, (unused/1, unused/2, callable, arg -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             PyObject *arg_o = PyStackRef_AsPyObjectBorrow(arg);
 
             assert(oparg == 1);
-            DEOPT_IF(!PyStackRef_IsNull(null));
-            DEAD(null);
             DEOPT_IF(callable_o != (PyObject *)&PyType_Type);
             DEAD(callable);
             STAT_INC(CALL, hit);
@@ -3976,16 +3968,14 @@ dummy_func(
             PyStackRef_CLOSE(arg);
         }
 
-        op(_CALL_STR_1, (callable, null, arg -- res)) {
+        op(_CALL_STR_1, (callable, arg -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             PyObject *arg_o = PyStackRef_AsPyObjectBorrow(arg);
 
             assert(oparg == 1);
-            DEOPT_IF(!PyStackRef_IsNull(null));
             DEOPT_IF(callable_o != (PyObject *)&PyUnicode_Type);
             STAT_INC(CALL, hit);
             PyObject *res_o = PyObject_Str(arg_o);
-            DEAD(null);
             DEAD(callable);
             PyStackRef_CLOSE(arg);
             ERROR_IF(res_o == NULL, error);
@@ -3998,16 +3988,14 @@ dummy_func(
             _CALL_STR_1 +
             _CHECK_PERIODIC;
 
-        op(_CALL_TUPLE_1, (callable, null, arg -- res)) {
+        op(_CALL_TUPLE_1, (callable, arg -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             PyObject *arg_o = PyStackRef_AsPyObjectBorrow(arg);
 
             assert(oparg == 1);
-            DEOPT_IF(!PyStackRef_IsNull(null));
             DEOPT_IF(callable_o != (PyObject *)&PyTuple_Type);
             STAT_INC(CALL, hit);
             PyObject *res_o = PySequence_Tuple(arg_o);
-            DEAD(null);
             DEAD(callable);
             PyStackRef_CLOSE(arg);
             ERROR_IF(res_o == NULL, error);
@@ -4020,10 +4008,10 @@ dummy_func(
             _CALL_TUPLE_1 +
             _CHECK_PERIODIC;
 
-        op(_CHECK_AND_ALLOCATE_OBJECT, (type_version/2, callable[1], self_or_null[1], args[oparg] -- callable[1], self_or_null[1], args[oparg])) {
+        op(_CHECK_AND_ALLOCATE_OBJECT, (type_version/2, callable[1], args[oparg] -- callable[1], args[oparg])) {
             (void)args;
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
-            DEOPT_IF(!PyStackRef_IsNull(self_or_null[0]));
+            DEOPT_IF(oparg == 0 || !PyStackRef_IsNull(args[0]));
             DEOPT_IF(!PyType_Check(callable_o));
             PyTypeObject *tp = (PyTypeObject *)callable_o;
             DEOPT_IF(FT_ATOMIC_LOAD_UINT32_RELAXED(tp->tp_version_tag) != type_version);
@@ -4039,23 +4027,22 @@ dummy_func(
             if (self_o == NULL) {
                 ERROR_NO_POP();
             }
-            self_or_null[0] = PyStackRef_FromPyObjectSteal(self_o);
+            args[0] = PyStackRef_FromPyObjectSteal(self_o);
             _PyStackRef temp = callable[0];
             callable[0] = PyStackRef_FromPyObjectNew(init_func);
             PyStackRef_CLOSE(temp);
         }
 
-        op(_CREATE_INIT_FRAME, (init[1], self[1], args[oparg] -- init_frame: _PyInterpreterFrame *)) {
+        op(_CREATE_INIT_FRAME, (init[1], args[oparg] -- init_frame: _PyInterpreterFrame *)) {
             _PyInterpreterFrame *shim = _PyFrame_PushTrampolineUnchecked(
                 tstate, (PyCodeObject *)&_Py_InitCleanup, 1, frame);
             assert(_PyFrame_GetBytecode(shim)[0].op.code == EXIT_INIT_CHECK);
             assert(_PyFrame_GetBytecode(shim)[1].op.code == RETURN_VALUE);
             /* Push self onto stack of shim */
-            shim->localsplus[0] = PyStackRef_DUP(self[0]);
+            shim->localsplus[0] = PyStackRef_DUP(args[0]);
             _PyInterpreterFrame *temp = _PyEvalFramePushAndInit(
-                tstate, init[0], NULL, args-1, oparg+1, NULL, shim);
+                tstate, init[0], NULL, args, oparg, NULL, shim);
             DEAD(init);
-            DEAD(self);
             DEAD(args);
             SYNC_SP();
             if (temp == NULL) {
@@ -4087,15 +4074,15 @@ dummy_func(
             DEAD(should_be_none);
         }
 
-        op(_CALL_BUILTIN_CLASS, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_BUILTIN_CLASS, (callable[1], args[oparg] -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             DEOPT_IF(!PyType_Check(callable_o));
             PyTypeObject *tp = (PyTypeObject *)callable_o;
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             DEOPT_IF(tp->tp_vectorcall == NULL);
             STAT_INC(CALL, hit);
@@ -4117,14 +4104,14 @@ dummy_func(
             _CALL_BUILTIN_CLASS +
             _CHECK_PERIODIC;
 
-        op(_CALL_BUILTIN_O, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_BUILTIN_O, (callable[1], args[oparg] -- res)) {
             /* Builtin METH_O functions */
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                args--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                args++;
+                total_args--;
             }
             EXIT_IF(total_args != 1);
             EXIT_IF(!PyCFunction_CheckExact(callable_o));
@@ -4140,7 +4127,6 @@ dummy_func(
 
             PyStackRef_CLOSE(arg);
             DEAD(args);
-            DEAD(self_or_null);
             PyStackRef_CLOSE(callable[0]);
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
@@ -4152,15 +4138,15 @@ dummy_func(
             _CALL_BUILTIN_O +
             _CHECK_PERIODIC;
 
-        op(_CALL_BUILTIN_FAST, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_BUILTIN_FAST, (callable[1], args[oparg] -- res)) {
             /* Builtin METH_FASTCALL functions, without keywords */
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             DEOPT_IF(!PyCFunction_CheckExact(callable_o));
             DEOPT_IF(PyCFunction_GET_FLAGS(callable_o) != METH_FASTCALL);
@@ -4189,15 +4175,15 @@ dummy_func(
             _CALL_BUILTIN_FAST +
             _CHECK_PERIODIC;
 
-        op(_CALL_BUILTIN_FAST_WITH_KEYWORDS, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_BUILTIN_FAST_WITH_KEYWORDS, (callable[1], args[oparg] -- res)) {
             /* Builtin METH_FASTCALL | METH_KEYWORDS functions */
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             DEOPT_IF(!PyCFunction_CheckExact(callable_o));
             DEOPT_IF(PyCFunction_GET_FLAGS(callable_o) != (METH_FASTCALL | METH_KEYWORDS));
@@ -4226,14 +4212,14 @@ dummy_func(
             _CALL_BUILTIN_FAST_WITH_KEYWORDS +
             _CHECK_PERIODIC;
 
-        inst(CALL_LEN, (unused/1, unused/2, callable[1], self_or_null[1], args[oparg] -- res)) {
+        inst(CALL_LEN, (unused/1, unused/2, callable[1], args[oparg] -- res)) {
             /* len(o) */
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                args--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                args++;
+                total_args--;
             }
             DEOPT_IF(total_args != 1);
             PyInterpreterState *interp = tstate->interp;
@@ -4252,20 +4238,19 @@ dummy_func(
             }
             PyStackRef_CLOSE(arg_stackref);
             DEAD(args);
-            DEAD(self_or_null);
             PyStackRef_CLOSE(callable[0]);
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
 
-        inst(CALL_ISINSTANCE, (unused/1, unused/2, callable, self_or_null[1], args[oparg] -- res)) {
+        inst(CALL_ISINSTANCE, (unused/1, unused/2, callable, args[oparg] -- res)) {
             /* isinstance(o, o2) */
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             DEOPT_IF(total_args != 2);
             PyInterpreterState *interp = tstate->interp;
@@ -4284,7 +4269,7 @@ dummy_func(
 
         // This is secretly a super-instruction
         inst(CALL_LIST_APPEND, (unused/1, unused/2, callable, self, arg -- )) {
-            assert(oparg == 1);
+            assert(oparg == 2);
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             PyObject *self_o = PyStackRef_AsPyObjectBorrow(self);
 
@@ -4307,14 +4292,14 @@ dummy_func(
         #endif
         }
 
-         op(_CALL_METHOD_DESCRIPTOR_O, (callable[1], self_or_null[1], args[oparg] -- res)) {
+         op(_CALL_METHOD_DESCRIPTOR_O, (callable[1], args[oparg] -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
 
             PyMethodDescrObject *method = (PyMethodDescrObject *)callable_o;
@@ -4346,14 +4331,14 @@ dummy_func(
             _CALL_METHOD_DESCRIPTOR_O +
             _CHECK_PERIODIC;
 
-        op(_CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS, (callable[1], args[oparg] -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             EXIT_IF(total_args == 0);
             PyMethodDescrObject *method = (PyMethodDescrObject *)callable_o;
@@ -4388,14 +4373,14 @@ dummy_func(
             _CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS +
             _CHECK_PERIODIC;
 
-        op(_CALL_METHOD_DESCRIPTOR_NOARGS, (callable[1], self_or_null[1], args[oparg] -- res)) {
-            assert(oparg == 0 || oparg == 1);
+        op(_CALL_METHOD_DESCRIPTOR_NOARGS, (callable[1], args[oparg] -- res)) {
+            assert(oparg == 1 || oparg == 2);
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                args--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                args++;
+                total_args--;
             }
             EXIT_IF(total_args != 1);
             PyMethodDescrObject *method = (PyMethodDescrObject *)callable_o;
@@ -4414,7 +4399,6 @@ dummy_func(
             assert((res_o != NULL) ^ (_PyErr_Occurred(tstate) != NULL));
             PyStackRef_CLOSE(self_stackref);
             DEAD(args);
-            DEAD(self_or_null);
             PyStackRef_CLOSE(callable[0]);
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
@@ -4426,14 +4410,14 @@ dummy_func(
             _CALL_METHOD_DESCRIPTOR_NOARGS +
             _CHECK_PERIODIC;
 
-        op(_CALL_METHOD_DESCRIPTOR_FAST, (callable[1], self_or_null[1], args[oparg] -- res)) {
+        op(_CALL_METHOD_DESCRIPTOR_FAST, (callable[1], args[oparg] -- res)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             EXIT_IF(total_args == 0);
             PyMethodDescrObject *method = (PyMethodDescrObject *)callable_o;
@@ -4572,26 +4556,20 @@ dummy_func(
                 }
             }
             PyStackRef_CLOSE(kwnames);
-            for (int _i = oparg; --_i >= 0;) {  // XXX
-                _PyStackRef tmp = args[_i];
-                args[_i] = PyStackRef_NULL;
-                PyStackRef_XCLOSE(tmp);  // XXX
-            }
-            DEAD(args);
             DECREF_INPUTS();
             ERROR_IF(res_o == NULL, error);
             res = PyStackRef_FromPyObjectSteal(res_o);
         }
 
-        op(_PY_FRAME_KW, (callable[1], self_or_null[1], args[oparg], kwnames -- new_frame: _PyInterpreterFrame*)) {
+        op(_PY_FRAME_KW, (callable[1], args[oparg], kwnames -- new_frame: _PyInterpreterFrame*)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             // oparg counts all of the args, but *not* self:
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             PyObject *kwnames_o = PyStackRef_AsPyObjectBorrow(kwnames);
             int positional_args = total_args - (int)PyTuple_GET_SIZE(kwnames_o);
@@ -4606,14 +4584,13 @@ dummy_func(
             // The frame has stolen all the arguments from the stack,
             // so there is no need to clean them up.
             DEAD(args);
-            DEAD(self_or_null);
             DEAD(callable);
             SYNC_SP();
             ERROR_IF(temp == NULL, error);
             new_frame = temp;
         }
 
-        op(_CHECK_FUNCTION_VERSION_KW, (func_version/2, callable[1], self_or_null[1], unused[oparg], kwnames -- callable[1], self_or_null[1], unused[oparg], kwnames)) {
+        op(_CHECK_FUNCTION_VERSION_KW, (func_version/2, callable[1], unused[oparg], kwnames -- callable[1], unused[oparg], kwnames)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             EXIT_IF(!PyFunction_Check(callable_o));
             PyFunctionObject *func = (PyFunctionObject *)callable_o;
@@ -4628,22 +4605,23 @@ dummy_func(
             _SAVE_RETURN_OFFSET +
             _PUSH_FRAME;
 
-        op(_CHECK_METHOD_VERSION_KW, (func_version/2, callable[1], null[1], unused[oparg], kwnames -- callable[1], null[1], unused[oparg], kwnames)) {
+        op(_CHECK_METHOD_VERSION_KW, (func_version/2, callable[1], args[oparg], kwnames -- callable[1], args[oparg], kwnames)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
 
             EXIT_IF(Py_TYPE(callable_o) != &PyMethod_Type);
             PyObject *func = ((PyMethodObject *)callable_o)->im_func;
             EXIT_IF(!PyFunction_Check(func));
             EXIT_IF(((PyFunctionObject *)func)->func_version != func_version);
-            EXIT_IF(!PyStackRef_IsNull(null[0]));
+            EXIT_IF(oparg == 0);
+            EXIT_IF(!PyStackRef_IsNull(args[0]));
         }
 
-        op(_EXPAND_METHOD_KW, (callable[1], self_or_null[1], unused[oparg], unused -- callable[1], self_or_null[1], unused[oparg], unused)) {
-            assert(PyStackRef_IsNull(self_or_null[0]));
+        op(_EXPAND_METHOD_KW, (callable[1], args[oparg], unused -- callable[1], args[oparg], unused)) {
+            assert(oparg && PyStackRef_IsNull(args[0]));
             _PyStackRef callable_s = callable[0];
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable_s);
             assert(Py_TYPE(callable_o) == &PyMethod_Type);
-            self_or_null[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
+            args[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_self);
             callable[0] = PyStackRef_FromPyObjectNew(((PyMethodObject *)callable_o)->im_func);
             assert(PyStackRef_FunctionCheck(callable[0]));
             PyStackRef_CLOSE(callable_s);
@@ -4660,15 +4638,15 @@ dummy_func(
             _PUSH_FRAME;
 
         specializing op(_SPECIALIZE_CALL_KW, (counter/1, callable[1], args[oparg], kwnames -- callable[1], args[oparg], kwnames)) {
-            // #if ENABLE_SPECIALIZATION_FT
-            // if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
-            //     next_instr = this_instr;
-            //     _Py_Specialize_CallKw(callable[0], next_instr, oparg + !PyStackRef_IsNull(self_or_null[0]));
-            //     DISPATCH_SAME_OPARG();
-            // }
-            // OPCODE_DEFERRED_INC(CALL_KW);
-            // ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
-            // #endif  /* ENABLE_SPECIALIZATION_FT */
+            #if ENABLE_SPECIALIZATION_FT
+            if (ADAPTIVE_COUNTER_TRIGGERS(counter)) {
+                next_instr = this_instr;
+                _Py_Specialize_CallKw(callable[0], next_instr, oparg - (oparg && PyStackRef_IsNull(args[0])));
+                DISPATCH_SAME_OPARG();
+            }
+            OPCODE_DEFERRED_INC(CALL_KW);
+            ADVANCE_ADAPTIVE_COUNTER(this_instr[1].counter);
+            #endif  /* ENABLE_SPECIALIZATION_FT */
         }
 
         macro(CALL_KW) =
@@ -4684,14 +4662,14 @@ dummy_func(
             _MONITOR_CALL_KW +
             _DO_CALL_KW;
 
-        op(_CHECK_IS_NOT_PY_CALLABLE_KW, (callable[1], unused[1], unused[oparg], kwnames -- callable[1], unused[1], unused[oparg], kwnames)) {
+        op(_CHECK_IS_NOT_PY_CALLABLE_KW, (callable[1], unused[oparg], kwnames -- callable[1], unused[oparg], kwnames)) {
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
             EXIT_IF(PyFunction_Check(callable_o));
             EXIT_IF(Py_TYPE(callable_o) == &PyMethod_Type);
         }
 
 
-        op(_CALL_KW_NON_PY, (callable[1], self_or_null[1], args[oparg], kwnames -- res)) {
+        op(_CALL_KW_NON_PY, (callable[1], args[oparg], kwnames -- res)) {
 #if TIER_ONE
             assert(opcode != INSTRUMENTED_CALL);
 #endif
@@ -4699,9 +4677,9 @@ dummy_func(
 
             int total_args = oparg;
             _PyStackRef *arguments = args;
-            if (!PyStackRef_IsNull(self_or_null[0])) {
-                arguments--;
-                total_args++;
+            if (oparg && PyStackRef_IsNull(args[0])) {
+                arguments++;
+                total_args--;
             }
             /* Callable is not a normal Python function */
             STACKREFS_TO_PYOBJECTS(arguments, total_args, args_o);

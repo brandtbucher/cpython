@@ -672,6 +672,7 @@ class Storage:
             self.save(out)
             out.start_line()
             if var.size:
+                close = "PyStackRef_XCLOSE"
                 if var.size == "1":
                     close_named(close, f"{var.name}[0]", overwrite)
                 else:

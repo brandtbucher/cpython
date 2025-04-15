@@ -626,12 +626,13 @@ dummy_func(void) {
         ctx->done = true;
     }
 
-    op(_INIT_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], self_or_null[1], unused[oparg] -- callable[1], self_or_null[1], unused[oparg])) {
+    op(_INIT_CALL_BOUND_METHOD_EXACT_ARGS, (callable[1], args[oparg] -- callable[1], args[oparg])) {
+        assert(oparg);
         callable[0] = sym_new_not_null(ctx);
-        self_or_null[0] = sym_new_not_null(ctx);
+        args[0] = sym_new_not_null(ctx);
     }
 
-    op(_CHECK_FUNCTION_VERSION, (func_version/2, callable, self_or_null, unused[oparg] -- callable, self_or_null, unused[oparg])) {
+    op(_CHECK_FUNCTION_VERSION, (func_version/2, callable, unused[oparg] -- callable, unused[oparg])) {
         if (sym_is_const(ctx, callable) && sym_matches_type(callable, &PyFunction_Type)) {
             assert(PyFunction_Check(sym_get_const(ctx, callable)));
             REPLACE_OP(this_instr, _CHECK_FUNCTION_VERSION_INLINE, 0, func_version);
@@ -640,25 +641,26 @@ dummy_func(void) {
         sym_set_type(callable, &PyFunction_Type);
     }
 
-    op(_CHECK_FUNCTION_EXACT_ARGS, (callable, self_or_null, unused[oparg] -- callable, self_or_null, unused[oparg])) {
+    op(_CHECK_FUNCTION_EXACT_ARGS, (callable, args[oparg] -- callable, args[oparg])) {
         assert(sym_matches_type(callable, &PyFunction_Type));
         if (sym_is_const(ctx, callable)) {
-            if (sym_is_null(self_or_null) || sym_is_not_null(self_or_null)) {
+            if (oparg == 0 || (sym_is_null(args[0]) || sym_is_not_null(args[0]))) {
                 PyFunctionObject *func = (PyFunctionObject *)sym_get_const(ctx, callable);
                 PyCodeObject *co = (PyCodeObject *)func->func_code;
-                if (co->co_argcount == oparg + !sym_is_null(self_or_null)) {
+                if (co->co_argcount == oparg - (oparg && sym_is_null(args[0]))) {
                     REPLACE_OP(this_instr, _NOP, 0 ,0);
                 }
             }
         }
     }
 
-    op(_CHECK_CALL_BOUND_METHOD_EXACT_ARGS, (callable, null, unused[oparg] -- callable, null, unused[oparg])) {
-        sym_set_null(null);
+    op(_CHECK_CALL_BOUND_METHOD_EXACT_ARGS, (callable, args[oparg] -- callable, args[oparg])) {
+        assert(oparg);
+        sym_set_null(args[0]);
         sym_set_type(callable, &PyMethod_Type);
     }
 
-    op(_INIT_CALL_PY_EXACT_ARGS, (callable, self_or_null, args[oparg] -- new_frame: _Py_UOpsAbstractFrame *)) {
+    op(_INIT_CALL_PY_EXACT_ARGS, (callable, args[oparg] -- new_frame: _Py_UOpsAbstractFrame *)) {
         int argcount = oparg;
 
         PyCodeObject *co = NULL;
@@ -670,15 +672,14 @@ dummy_func(void) {
         }
 
 
-        assert(self_or_null != NULL);
         assert(args != NULL);
-        if (sym_is_not_null(self_or_null)) {
+        if (oparg && sym_is_null(args[0])) {
             // Bound method fiddling, same as _INIT_CALL_PY_EXACT_ARGS in VM
-            args--;
-            argcount++;
+            args++;
+            argcount--;
         }
 
-        if (sym_is_null(self_or_null) || sym_is_not_null(self_or_null)) {
+        if (argcount == 0 || (sym_is_null(args[0]) || sym_is_not_null(args[0]))) {
             new_frame = frame_new(ctx, co, 0, args, argcount);
         } else {
             new_frame = frame_new(ctx, co, 0, NULL, 0);
@@ -686,13 +687,14 @@ dummy_func(void) {
         }
     }
 
-    op(_MAYBE_EXPAND_METHOD, (callable, self_or_null, args[oparg] -- func, maybe_self, args[oparg])) {
+    op(_MAYBE_EXPAND_METHOD, (callable, args[oparg] -- func, args[oparg])) {
         (void)args;
+        assert(oparg);
         func = sym_new_not_null(ctx);
-        maybe_self = sym_new_not_null(ctx);
+        args[0] = sym_new_not_null(ctx);
     }
 
-    op(_PY_FRAME_GENERAL, (callable, self_or_null, args[oparg] -- new_frame: _Py_UOpsAbstractFrame *)) {
+    op(_PY_FRAME_GENERAL, (callable, args[oparg] -- new_frame: _Py_UOpsAbstractFrame *)) {
         PyCodeObject *co = NULL;
         assert((this_instr + 2)->opcode == _PUSH_FRAME);
         co = get_code_with_logging((this_instr + 2));
@@ -704,19 +706,20 @@ dummy_func(void) {
         new_frame = frame_new(ctx, co, 0, NULL, 0);
     }
 
-    op(_PY_FRAME_KW, (callable, self_or_null, args[oparg], kwnames -- new_frame: _Py_UOpsAbstractFrame *)) {
+    op(_PY_FRAME_KW, (callable, args[oparg], kwnames -- new_frame: _Py_UOpsAbstractFrame *)) {
         new_frame = NULL;
         ctx->done = true;
     }
 
-    op(_CHECK_AND_ALLOCATE_OBJECT, (type_version/2, callable, null, args[oparg] -- self, init, args[oparg])) {
+    op(_CHECK_AND_ALLOCATE_OBJECT, (type_version/2, callable, args[oparg] -- self, args[oparg])) {
         (void)type_version;
         (void)args;
+        assert(oparg);
         self = sym_new_not_null(ctx);
-        init = sym_new_not_null(ctx);
+        args[0] = sym_new_not_null(ctx);
     }
 
-    op(_CREATE_INIT_FRAME, (self, init, args[oparg] -- init_frame: _Py_UOpsAbstractFrame *)) {
+    op(_CREATE_INIT_FRAME, (self, args[oparg] -- init_frame: _Py_UOpsAbstractFrame *)) {
         init_frame = NULL;
         ctx->done = true;
     }

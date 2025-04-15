@@ -1047,7 +1047,6 @@ class ExceptionMonitoringTest(CheckEvents):
         self.assertEqual(events[0], ("throw", IndexError))
 
     @requires_specialization_ft
-    @unittest.skip("XXX")
     def test_no_unwind_for_shim_frame(self):
         class ValueErrorRaiser:
             def __init__(self):

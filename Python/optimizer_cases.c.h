@@ -1662,14 +1662,13 @@
         case _MAYBE_EXPAND_METHOD: {
             JitOptSymbol **args;
             JitOptSymbol *func;
-            JitOptSymbol *maybe_self;
             args = &stack_pointer[-oparg];
             args = &stack_pointer[-oparg];
             (void)args;
+            assert(oparg);
             func = sym_new_not_null(ctx);
-            maybe_self = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = func;
-            stack_pointer[-1 - oparg] = maybe_self;
+            args[0] = sym_new_not_null(ctx);
+            stack_pointer[-1 - oparg] = func;
             break;
         }
 
@@ -1687,15 +1686,15 @@
                 break;
             }
             new_frame = frame_new(ctx, co, 0, NULL, 0);
-            stack_pointer[-2 - oparg] = (JitOptSymbol *)new_frame;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = (JitOptSymbol *)new_frame;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
         case _CHECK_FUNCTION_VERSION: {
             JitOptSymbol *callable;
-            callable = stack_pointer[-2 - oparg];
+            callable = stack_pointer[-1 - oparg];
             uint32_t func_version = (uint32_t)this_instr->operand0;
             if (sym_is_const(ctx, callable) && sym_matches_type(callable, &PyFunction_Type)) {
                 assert(PyFunction_Check(sym_get_const(ctx, callable)));
@@ -1725,29 +1724,31 @@
         case _CALL_NON_PY_GENERAL: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
         case _CHECK_CALL_BOUND_METHOD_EXACT_ARGS: {
-            JitOptSymbol *null;
+            JitOptSymbol **args;
             JitOptSymbol *callable;
-            null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
-            sym_set_null(null);
+            args = &stack_pointer[-oparg];
+            callable = stack_pointer[-1 - oparg];
+            assert(oparg);
+            sym_set_null(args[0]);
             sym_set_type(callable, &PyMethod_Type);
             break;
         }
 
         case _INIT_CALL_BOUND_METHOD_EXACT_ARGS: {
-            JitOptSymbol **self_or_null;
+            JitOptSymbol **args;
             JitOptSymbol **callable;
-            self_or_null = &stack_pointer[-1 - oparg];
-            callable = &stack_pointer[-2 - oparg];
+            args = &stack_pointer[-oparg];
+            callable = &stack_pointer[-1 - oparg];
+            assert(oparg);
             callable[0] = sym_new_not_null(ctx);
-            self_or_null[0] = sym_new_not_null(ctx);
+            args[0] = sym_new_not_null(ctx);
             break;
         }
 
@@ -1759,16 +1760,16 @@
         }
 
         case _CHECK_FUNCTION_EXACT_ARGS: {
-            JitOptSymbol *self_or_null;
+            JitOptSymbol **args;
             JitOptSymbol *callable;
-            self_or_null = stack_pointer[-1 - oparg];
-            callable = stack_pointer[-2 - oparg];
+            args = &stack_pointer[-oparg];
+            callable = stack_pointer[-1 - oparg];
             assert(sym_matches_type(callable, &PyFunction_Type));
             if (sym_is_const(ctx, callable)) {
-                if (sym_is_null(self_or_null) || sym_is_not_null(self_or_null)) {
+                if (oparg == 0 || (sym_is_null(args[0]) || sym_is_not_null(args[0]))) {
                     PyFunctionObject *func = (PyFunctionObject *)sym_get_const(ctx, callable);
                     PyCodeObject *co = (PyCodeObject *)func->func_code;
-                    if (co->co_argcount == oparg + !sym_is_null(self_or_null)) {
+                    if (co->co_argcount == oparg - (oparg && sym_is_null(args[0]))) {
                         REPLACE_OP(this_instr, _NOP, 0 ,0);
                     }
                 }
@@ -1784,10 +1785,8 @@
 
         case _INIT_CALL_PY_EXACT_ARGS: {
             JitOptSymbol **args;
-            JitOptSymbol *self_or_null;
             _Py_UOpsAbstractFrame *new_frame;
             args = &stack_pointer[-oparg];
-            self_or_null = stack_pointer[-1 - oparg];
             int argcount = oparg;
             PyCodeObject *co = NULL;
             assert((this_instr + 2)->opcode == _PUSH_FRAME);
@@ -1796,19 +1795,18 @@
                 ctx->done = true;
                 break;
             }
-            assert(self_or_null != NULL);
             assert(args != NULL);
-            if (sym_is_not_null(self_or_null)) {
-                args--;
-                argcount++;
+            if (oparg && sym_is_null(args[0])) {
+                args++;
+                argcount--;
             }
-            if (sym_is_null(self_or_null) || sym_is_not_null(self_or_null)) {
+            if (argcount == 0 || (sym_is_null(args[0]) || sym_is_not_null(args[0]))) {
                 new_frame = frame_new(ctx, co, 0, args, argcount);
             } else {
                 new_frame = frame_new(ctx, co, 0, NULL, 0);
             }
-            stack_pointer[-2 - oparg] = (JitOptSymbol *)new_frame;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = (JitOptSymbol *)new_frame;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1848,8 +1846,8 @@
         case _CALL_TYPE_1: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-3] = res;
-            stack_pointer += -2;
+            stack_pointer[-2] = res;
+            stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1857,8 +1855,8 @@
         case _CALL_STR_1: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-3] = res;
-            stack_pointer += -2;
+            stack_pointer[-2] = res;
+            stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1866,8 +1864,8 @@
         case _CALL_TUPLE_1: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-3] = res;
-            stack_pointer += -2;
+            stack_pointer[-2] = res;
+            stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1875,16 +1873,15 @@
         case _CHECK_AND_ALLOCATE_OBJECT: {
             JitOptSymbol **args;
             JitOptSymbol *self;
-            JitOptSymbol *init;
             args = &stack_pointer[-oparg];
             args = &stack_pointer[-oparg];
             uint32_t type_version = (uint32_t)this_instr->operand0;
             (void)type_version;
             (void)args;
+            assert(oparg);
             self = sym_new_not_null(ctx);
-            init = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = self;
-            stack_pointer[-1 - oparg] = init;
+            args[0] = sym_new_not_null(ctx);
+            stack_pointer[-1 - oparg] = self;
             break;
         }
 
@@ -1892,8 +1889,8 @@
             _Py_UOpsAbstractFrame *init_frame;
             init_frame = NULL;
             ctx->done = true;
-            stack_pointer[-2 - oparg] = (JitOptSymbol *)init_frame;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = (JitOptSymbol *)init_frame;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1907,8 +1904,8 @@
         case _CALL_BUILTIN_CLASS: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1916,8 +1913,8 @@
         case _CALL_BUILTIN_O: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1925,8 +1922,8 @@
         case _CALL_BUILTIN_FAST: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1934,8 +1931,8 @@
         case _CALL_BUILTIN_FAST_WITH_KEYWORDS: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1943,8 +1940,8 @@
         case _CALL_LEN: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1952,8 +1949,8 @@
         case _CALL_ISINSTANCE: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1967,8 +1964,8 @@
         case _CALL_METHOD_DESCRIPTOR_O: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1976,8 +1973,8 @@
         case _CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1985,8 +1982,8 @@
         case _CALL_METHOD_DESCRIPTOR_NOARGS: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -1994,8 +1991,8 @@
         case _CALL_METHOD_DESCRIPTOR_FAST: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-2 - oparg] = res;
-            stack_pointer += -1 - oparg;
+            stack_pointer[-1 - oparg] = res;
+            stack_pointer += -oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -2015,8 +2012,8 @@
             _Py_UOpsAbstractFrame *new_frame;
             new_frame = NULL;
             ctx->done = true;
-            stack_pointer[-3 - oparg] = (JitOptSymbol *)new_frame;
-            stack_pointer += -2 - oparg;
+            stack_pointer[-2 - oparg] = (JitOptSymbol *)new_frame;
+            stack_pointer += -1 - oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }
@@ -2040,8 +2037,8 @@
         case _CALL_KW_NON_PY: {
             JitOptSymbol *res;
             res = sym_new_not_null(ctx);
-            stack_pointer[-3 - oparg] = res;
-            stack_pointer += -2 - oparg;
+            stack_pointer[-2 - oparg] = res;
+            stack_pointer += -1 - oparg;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }

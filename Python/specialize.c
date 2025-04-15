@@ -2040,7 +2040,7 @@ specialize_method_descriptor(PyMethodDescrObject *descr, _Py_CODEUNIT *instr,
             _Py_CODEUNIT next = instr[INLINE_CACHE_ENTRIES_CALL + 1];
             bool pop = (next.op.code == POP_TOP);
             int oparg = instr->op.arg;
-            if ((PyObject *)descr == list_append && oparg == 1 && pop) {
+            if ((PyObject *)descr == list_append && oparg == 2 && pop) {
                 specialize(instr, CALL_LIST_APPEND);
                 return 0;
             }
@@ -2194,7 +2194,7 @@ _Py_Specialize_Call(_PyStackRef callable_st, _Py_CODEUNIT *instr, int nargs)
     }
     else if (PyMethod_Check(callable)) {
         PyObject *func = ((PyMethodObject *)callable)->im_func;
-        if (PyFunction_Check(func)) {
+        if (PyFunction_Check(func) && instr->op.arg) {
             fail = specialize_py_call((PyFunctionObject *)func, instr, nargs, true);
         }
         else {
@@ -2225,7 +2225,7 @@ _Py_Specialize_CallKw(_PyStackRef callable_st, _Py_CODEUNIT *instr, int nargs)
     }
     else if (PyMethod_Check(callable)) {
         PyObject *func = ((PyMethodObject *)callable)->im_func;
-        if (PyFunction_Check(func)) {
+        if (PyFunction_Check(func) && instr->op.arg) {
             fail = specialize_py_call_kw((PyFunctionObject *)func, instr, nargs, true);
         }
         else {

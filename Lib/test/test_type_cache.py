@@ -215,7 +215,6 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(store_bar_2, B(), "STORE_ATTR", should_specialize=False)
 
     @requires_specialization_ft
-    @unittest.skip("XXX")
     def test_class_call_specialization_user_type(self):
         class F:
             def __init__(self):
