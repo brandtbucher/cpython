@@ -82,7 +82,7 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case CACHE:
             return 0;
         case CALL:
-            return 2 + oparg;
+            return 1 + oparg;
         case CALL_ALLOC_AND_ENTER_INIT:
             return 2 + oparg;
         case CALL_BOUND_METHOD_EXACT_ARGS:
@@ -98,7 +98,7 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case CALL_BUILTIN_O:
             return 2 + oparg;
         case CALL_FUNCTION_EX:
-            return 4;
+            return 3;
         case CALL_INTRINSIC_1:
             return 1;
         case CALL_INTRINSIC_2:
@@ -106,7 +106,7 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case CALL_ISINSTANCE:
             return 2 + oparg;
         case CALL_KW:
-            return 3 + oparg;
+            return 2 + oparg;
         case CALL_KW_BOUND_METHOD:
             return 3 + oparg;
         case CALL_KW_NON_PY:
@@ -176,7 +176,7 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case DELETE_SUBSCR:
             return 2;
         case DICT_MERGE:
-            return 5 + (oparg - 1);
+            return 4 + (oparg - 1);
         case DICT_UPDATE:
             return 2 + (oparg - 1);
         case END_ASYNC_FOR:
@@ -222,11 +222,11 @@ int _PyOpcode_num_popped(int opcode, int oparg)  {
         case IMPORT_NAME:
             return 2;
         case INSTRUMENTED_CALL:
-            return 2 + oparg;
+            return 1 + oparg;
         case INSTRUMENTED_CALL_FUNCTION_EX:
-            return 4;
+            return 3;
         case INSTRUMENTED_CALL_KW:
-            return 3 + oparg;
+            return 2 + oparg;
         case INSTRUMENTED_END_ASYNC_FOR:
             return 2;
         case INSTRUMENTED_END_FOR:
@@ -655,7 +655,7 @@ int _PyOpcode_num_pushed(int opcode, int oparg)  {
         case DELETE_SUBSCR:
             return 0;
         case DICT_MERGE:
-            return 4 + (oparg - 1);
+            return 3 + (oparg - 1);
         case DICT_UPDATE:
             return 1 + (oparg - 1);
         case END_ASYNC_FOR:

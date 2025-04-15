@@ -2881,7 +2881,7 @@
             oparg = CURRENT_OPARG();
             update = stack_pointer[-1];
             dict = stack_pointer[-2 - (oparg - 1)];
-            callable = stack_pointer[-5 - (oparg - 1)];
+            callable = stack_pointer[-4 - (oparg - 1)];
             PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable);
             PyObject *dict_o = PyStackRef_AsPyObjectBorrow(dict);
             PyObject *update_o = PyStackRef_AsPyObjectBorrow(update);
@@ -4649,17 +4649,15 @@
 
         case _MAYBE_EXPAND_METHOD: {
             _PyStackRef *args;
-            _PyStackRef *self_or_null;
             _PyStackRef *callable;
             oparg = CURRENT_OPARG();
             args = &stack_pointer[-oparg];
-            self_or_null = &stack_pointer[-1 - oparg];
-            callable = &stack_pointer[-2 - oparg];
+            callable = &stack_pointer[-1 - oparg];
             (void)args;
-            if (PyStackRef_TYPE(callable[0]) == &PyMethod_Type && PyStackRef_IsNull(self_or_null[0])) {
+            if (PyStackRef_TYPE(callable[0]) == &PyMethod_Type && oparg && PyStackRef_IsNull(args[0])) {
                 PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
                 PyObject *self = ((PyMethodObject *)callable_o)->im_self;
-                self_or_null[0] = PyStackRef_FromPyObjectNew(self);
+                args[0] = PyStackRef_FromPyObjectNew(self);
                 PyObject *method = ((PyMethodObject *)callable_o)->im_func;
                 _PyStackRef temp = callable[0];
                 callable[0] = PyStackRef_FromPyObjectNew(method);
@@ -6110,19 +6108,17 @@
         case _MAYBE_EXPAND_METHOD_KW: {
             _PyStackRef kwnames_in;
             _PyStackRef *args;
-            _PyStackRef *self_or_null;
             _PyStackRef *callable;
             _PyStackRef kwnames_out;
             oparg = CURRENT_OPARG();
             kwnames_in = stack_pointer[-1];
             args = &stack_pointer[-1 - oparg];
-            self_or_null = &stack_pointer[-2 - oparg];
-            callable = &stack_pointer[-3 - oparg];
+            callable = &stack_pointer[-2 - oparg];
             (void)args;
-            if (PyStackRef_TYPE(callable[0]) == &PyMethod_Type && PyStackRef_IsNull(self_or_null[0])) {
+            if (PyStackRef_TYPE(callable[0]) == &PyMethod_Type && oparg && PyStackRef_IsNull(args[0])) {
                 PyObject *callable_o = PyStackRef_AsPyObjectBorrow(callable[0]);
                 PyObject *self = ((PyMethodObject *)callable_o)->im_self;
-                self_or_null[0] = PyStackRef_FromPyObjectNew(self);
+                args[0] = PyStackRef_FromPyObjectNew(self);
                 PyObject *method = ((PyMethodObject *)callable_o)->im_func;
                 _PyStackRef temp = callable[0];
                 callable[0] = PyStackRef_FromPyObjectNew(method);
@@ -6353,7 +6349,7 @@
             _PyStackRef callargs;
             _PyStackRef func;
             callargs = stack_pointer[-2];
-            func = stack_pointer[-4];
+            func = stack_pointer[-3];
             PyObject *callargs_o = PyStackRef_AsPyObjectBorrow(callargs);
             if (!PyTuple_CheckExact(callargs_o)) {
                 _PyFrame_SetStackPointer(frame, stack_pointer);

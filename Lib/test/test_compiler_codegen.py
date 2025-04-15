@@ -52,7 +52,6 @@ class IsolatedCodeGenTests(CodegenTestCase):
             ('NOP', None, 1, 1),
             ('STORE_NAME', 1, 1),
             ('LOAD_NAME', 2, 2),
-            ('PUSH_NULL', None, 2),
             ('LOAD_NAME', 1, 2),
             ('CALL', 1, 2),
             ('POP_TOP', None),
