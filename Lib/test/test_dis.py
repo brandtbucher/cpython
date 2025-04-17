@@ -813,7 +813,28 @@ Disassembly of <code object foo at 0x..., file "%s", line %d>:
 
 %4d           RESUME                   0
 
-%4d           LOAD_GLOBAL              1 (list + NULL)
+%4d           LOAD_GLOBAL              0 (list)
+               COPY                     1
+               LOAD_COMMON_CONSTANT     5 (list)
+               IS_OP                    0 (is)
+               POP_JUMP_IF_FALSE       21 (to L3)
+               NOT_TAKEN
+               POP_TOP
+               BUILD_LIST               0
+               LOAD_FAST_BORROW         0 (x)
+               BUILD_TUPLE              1
+               LOAD_CONST               1 (<code object <genexpr> at 0x..., file "%s", line %d>)
+               MAKE_FUNCTION
+               SET_FUNCTION_ATTRIBUTE   8 (closure)
+               LOAD_DEREF               1 (y)
+               CALL                     0
+       L1:     FOR_ITER                 3 (to L2)
+               LIST_APPEND              2
+               JUMP_BACKWARD            5 (to L1)
+       L2:     END_FOR
+               POP_ITER
+               RETURN_VALUE
+       L3:     PUSH_NULL
                LOAD_FAST_BORROW         0 (x)
                BUILD_TUPLE              1
                LOAD_CONST               1 (<code object <genexpr> at 0x..., file "%s", line %d>)
@@ -827,6 +848,8 @@ Disassembly of <code object foo at 0x..., file "%s", line %d>:
        __file__,
        _h.__code__.co_firstlineno + 1,
        _h.__code__.co_firstlineno + 1,
+       _h.__code__.co_firstlineno + 3,
+       __file__,
        _h.__code__.co_firstlineno + 3,
        __file__,
        _h.__code__.co_firstlineno + 3,
