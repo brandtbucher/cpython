@@ -362,9 +362,9 @@ class TestUops(unittest.TestCase):
             next(it)
 
     def test_call_py_exact_args(self):
+        def dummy(x):  # XXX: Are we unsafe with function inlining currently?
+            return x+1
         def testfunc(n):
-            def dummy(x):
-                return x+1
             for i in range(n):
                 dummy(i)
 
@@ -541,9 +541,9 @@ class TestUopsOptimization(unittest.TestCase):
         self.assertGreaterEqual(len(binop_count), 3)
 
     def test_call_py_exact_args(self):
+        def dummy(x):  # XXX: Are we unsafe with function inlining currently?
+            return x+1
         def testfunc(n):
-            def dummy(x):
-                return x+1
             for i in range(n):
                 dummy(i)
 

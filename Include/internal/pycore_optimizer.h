@@ -38,6 +38,9 @@ typedef struct {
     _PyBloomFilter bloom;
     _PyExecutorLinkListNode links;
     PyCodeObject *code;  // Weak (NULL if no corresponding ENTER_EXECUTOR).
+    struct _PyExecutorObject *parent;
+    int parent_offset;
+    int curr_stacklen;
 } _PyVMData;
 
 /* Depending on the format,
@@ -120,7 +123,7 @@ PyAPI_FUNC(void) _Py_Executors_InvalidateCold(PyInterpreterState *interp);
 
 int _Py_uop_analyze_and_optimize(_PyInterpreterFrame *frame,
     _PyUOpInstruction *trace, int trace_len, int curr_stackentries,
-    _PyBloomFilter *dependencies);
+    _PyBloomFilter *dependencies, _PyExecutorObject *parent, int parent_offset);
 
 extern PyTypeObject _PyUOpExecutor_Type;
 
@@ -292,7 +295,7 @@ extern int _Py_uop_frame_pop(JitOptContext *ctx);
 
 PyAPI_FUNC(PyObject *) _Py_uop_symbols_test(PyObject *self, PyObject *ignored);
 
-PyAPI_FUNC(int) _PyOptimizer_Optimize(_PyInterpreterFrame *frame, _Py_CODEUNIT *start, _PyExecutorObject **exec_ptr, int chain_depth);
+PyAPI_FUNC(int) _PyOptimizer_Optimize(_PyInterpreterFrame *frame, _Py_CODEUNIT *start, _PyExecutorObject **exec_ptr, _PyExecutorObject *parent, _PyExitData *exit);
 
 static inline int is_terminator(const _PyUOpInstruction *uop)
 {

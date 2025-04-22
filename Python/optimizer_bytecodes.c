@@ -791,7 +791,7 @@ dummy_func(void) {
         (void)framesize;
         /* We should never see _CHECK_STACK_SPACE_OPERANDs.
         * They are only created at the end of this pass. */
-        Py_UNREACHABLE();
+        // Py_UNREACHABLE();
     }
 
     op(_PUSH_FRAME, (new_frame: _Py_UOpsAbstractFrame * -- )) {
@@ -817,7 +817,10 @@ dummy_func(void) {
             break;
         }
         max_space = curr_space > max_space ? curr_space : max_space;
-        if (first_valid_check_stack == NULL) {
+        if (j != ntraces - 1) {
+            // XXX
+        }
+        else if (first_valid_check_stack == NULL) {
             first_valid_check_stack = corresponding_check_stack;
         }
         else if (corresponding_check_stack) {

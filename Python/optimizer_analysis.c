@@ -430,8 +430,9 @@ get_code_with_logging(_PyUOpInstruction *op)
 static int
 optimize_uops(
     PyCodeObject *co,
-    _PyUOpInstruction *trace,
-    int trace_len,
+    _PyUOpInstruction **traces,
+    int *trace_lens,
+    int ntraces,
     int curr_stacklen,
     _PyBloomFilter *dependencies
 )
@@ -457,8 +458,11 @@ optimize_uops(
     ctx->contradiction = false;
 
     _PyUOpInstruction *this_instr = NULL;
-    for (int i = 0; !ctx->done; i++) {
-        assert(i < trace_len);
+    int trace_len = 0;
+for (int j = 0; j < ntraces; j++) {
+    _PyUOpInstruction *trace = traces[j];
+    trace_len = trace_lens[j];
+    for (int i = 0; !ctx->done && i < trace_len; i++) {
         this_instr = &trace[i];
 
         int oparg = this_instr->oparg;
@@ -469,14 +473,57 @@ optimize_uops(
         if (get_lltrace() >= 3) {
             printf("%4d abs: ", (int)(this_instr - trace));
             _PyUOpPrint(this_instr);
-            printf(" ");
+            printf("\n");
         }
 #endif
-
+        again:
         switch (opcode) {
 
 #include "optimizer_cases.c.h"
 
+            case _LOAD_FAST_0:
+            case _LOAD_FAST_1:
+            case _LOAD_FAST_2:
+            case _LOAD_FAST_3:
+            case _LOAD_FAST_4:
+            case _LOAD_FAST_5:
+            case _LOAD_FAST_6:
+            case _LOAD_FAST_7:
+                opcode = _LOAD_FAST;
+                goto again;
+            case _LOAD_FAST_BORROW_0:
+            case _LOAD_FAST_BORROW_1:
+            case _LOAD_FAST_BORROW_2:
+            case _LOAD_FAST_BORROW_3:
+            case _LOAD_FAST_BORROW_4:
+            case _LOAD_FAST_BORROW_5:
+            case _LOAD_FAST_BORROW_6:
+            case _LOAD_FAST_BORROW_7:
+                opcode = _LOAD_FAST_BORROW;
+                goto again;
+            case _LOAD_SMALL_INT_0:
+            case _LOAD_SMALL_INT_1:
+            case _LOAD_SMALL_INT_2:
+            case _LOAD_SMALL_INT_3:
+                opcode = _LOAD_SMALL_INT;
+                goto again;
+            case _STORE_FAST_0:
+            case _STORE_FAST_1:
+            case _STORE_FAST_2:
+            case _STORE_FAST_3:
+            case _STORE_FAST_4:
+            case _STORE_FAST_5:
+            case _STORE_FAST_6:
+            case _STORE_FAST_7:
+                opcode = _STORE_FAST;
+                goto again;
+            case _INIT_CALL_PY_EXACT_ARGS_0:
+            case _INIT_CALL_PY_EXACT_ARGS_1:
+            case _INIT_CALL_PY_EXACT_ARGS_2:
+            case _INIT_CALL_PY_EXACT_ARGS_3:
+            case _INIT_CALL_PY_EXACT_ARGS_4:
+                opcode = _INIT_CALL_PY_EXACT_ARGS;
+                goto again;
             default:
                 DPRINTF(1, "\nUnknown opcode in abstract interpreter\n");
                 Py_UNREACHABLE();
@@ -484,8 +531,17 @@ optimize_uops(
         assert(ctx->frame != NULL);
         DPRINTF(3, " stack_level %d\n", STACK_LEVEL());
         ctx->frame->stack_pointer = stack_pointer;
+        if (j != ntraces - 1 && i == trace_len - 1 &&
+            (trace[trace_len].opcode == _GUARD_IS_FALSE_POP ||
+             trace[trace_len].opcode == _GUARD_IS_NONE_POP ||
+             trace[trace_len].opcode == _GUARD_IS_NOT_NONE_POP ||
+             trace[trace_len].opcode == _GUARD_IS_TRUE_POP))
+        {
+            ctx->frame->stack_pointer--;
+        }
         assert(STACK_LEVEL() >= 0);
     }
+}
     if (ctx->out_of_space) {
         DPRINTF(3, "\n");
         DPRINTF(1, "Out of space in abstract interpreter\n");
@@ -606,7 +662,9 @@ _Py_uop_analyze_and_optimize(
     _PyUOpInstruction *buffer,
     int length,
     int curr_stacklen,
-    _PyBloomFilter *dependencies
+    _PyBloomFilter *dependencies,
+    _PyExecutorObject *parent,
+    int parent_offset
 )
 {
     OPT_STAT_INC(optimizer_attempts);
@@ -615,10 +673,30 @@ _Py_uop_analyze_and_optimize(
     if (err <= 0) {
         return err;
     }
+    _PyUOpInstruction *buff = buffer;
+    _PyUOpInstruction *traces[MAX_CHAIN_DEPTH];
+    int trace_lens[MAX_CHAIN_DEPTH];
+    int i = 0;
+    PyCodeObject *co = _PyFrame_GetCode(frame);
+    while (true) {
+        i++;
+        assert(i <= MAX_CHAIN_DEPTH);
+        traces[MAX_CHAIN_DEPTH - i] = buff;
+        trace_lens[MAX_CHAIN_DEPTH - i] = length;
+        if (parent == NULL) {
+            break;
+        }
+        buff = (_PyUOpInstruction *)parent->trace;  // XXX Need to tell optimizer not to modify this.
+        length = parent_offset;
+        co = parent->vm_data.code;
+        parent_offset = parent->vm_data.parent_offset;
+        curr_stacklen = parent->vm_data.curr_stacklen;
+        parent = parent->vm_data.parent;
+    }
 
     length = optimize_uops(
-        _PyFrame_GetCode(frame), buffer,
-        length, curr_stacklen, dependencies);
+        co, &traces[MAX_CHAIN_DEPTH - i], &trace_lens[MAX_CHAIN_DEPTH - i], i,
+        curr_stacklen, dependencies);
 
     if (length <= 0) {
         return length;

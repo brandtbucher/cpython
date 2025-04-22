@@ -104,7 +104,7 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
 static int
 uop_optimize(_PyInterpreterFrame *frame, _Py_CODEUNIT *instr,
              _PyExecutorObject **exec_ptr, int curr_stackentries,
-             bool progress_needed);
+             bool progress_needed, _PyExecutorObject *parent, int parent_offset);
 
 /* Returns 1 if optimized, 0 if not optimized, and -1 for an error.
  * If optimized, *executor_ptr contains a new reference to the executor
@@ -112,7 +112,7 @@ uop_optimize(_PyInterpreterFrame *frame, _Py_CODEUNIT *instr,
 int
 _PyOptimizer_Optimize(
     _PyInterpreterFrame *frame, _Py_CODEUNIT *start,
-    _PyExecutorObject **executor_ptr, int chain_depth)
+    _PyExecutorObject **executor_ptr, _PyExecutorObject *parent, _PyExitData *exit)
 {
     _PyStackRef *stack_pointer = frame->stackpointer;
     assert(_PyInterpreterState_GET()->jit);
@@ -120,14 +120,34 @@ _PyOptimizer_Optimize(
     // make progress in order to avoid infinite loops or excessively-long
     // side-exit chains. We can only insert the executor into the bytecode if
     // this is true, since a deopt won't infinitely re-enter the executor:
+    int chain_depth = parent ? parent->vm_data.chain_depth + 1 : 0;
     chain_depth %= MAX_CHAIN_DEPTH;
     bool progress_needed = chain_depth == 0;
+    if (progress_needed) {
+        parent = NULL;  // XXX
+    }
     PyCodeObject *code = _PyFrame_GetCode(frame);
     assert(PyCode_Check(code));
     if (progress_needed && !has_space_for_executor(code, start)) {
         return 0;
     }
-    int err = uop_optimize(frame, start, executor_ptr, (int)(stack_pointer - _PyFrame_Stackbase(frame)), progress_needed);
+    int curr_stacklen = (int)(stack_pointer - _PyFrame_Stackbase(frame));
+    int parent_offset = 0;
+    if (parent) {
+        assert(exit);
+        for (int i = 0; i < (int)parent->code_size; i++) {
+            const _PyUOpInstruction *instr = &parent->trace[i];
+            if (((_PyUop_Flags[instr->opcode] & HAS_EXIT_FLAG) &&
+                 parent->trace[uop_get_jump_target(instr)].operand0 == (uint64_t)exit) ||
+                (instr->opcode == _EXIT_TRACE && instr->operand0 == (uint64_t)exit))
+            {
+                parent_offset = i;
+                break;
+            }
+        }
+        assert(parent_offset);
+    }
+    int err = uop_optimize(frame, start, executor_ptr, curr_stacklen, progress_needed, parent, parent_offset);
     if (err <= 0) {
         return err;
     }
@@ -149,7 +169,11 @@ _PyOptimizer_Optimize(
     else {
         (*executor_ptr)->vm_data.code = NULL;
     }
+    Py_XINCREF(parent);
     (*executor_ptr)->vm_data.chain_depth = chain_depth;
+    (*executor_ptr)->vm_data.parent = parent;
+    (*executor_ptr)->vm_data.parent_offset = parent_offset;
+    (*executor_ptr)->vm_data.curr_stacklen = curr_stacklen;
     assert((*executor_ptr)->vm_data.valid);
     return 1;
 }
@@ -320,6 +344,7 @@ executor_traverse(PyObject *o, visitproc visit, void *arg)
     for (uint32_t i = 0; i < executor->exit_count; i++) {
         Py_VISIT(executor->exits[i].executor);
     }
+    Py_VISIT(executor->vm_data.parent);
     return 0;
 }
 
@@ -829,6 +854,7 @@ translate_bytecode_to_trace(
                                  * use the code, setting the low bit so the optimizer knows.
                                  */
                                 if (new_func != NULL) {
+                                    _Py_BloomFilter_Add(dependencies, new_func);
                                     operand = (uintptr_t)new_func;
                                 }
                                 else if (new_code != NULL) {
@@ -1206,7 +1232,9 @@ uop_optimize(
     _Py_CODEUNIT *instr,
     _PyExecutorObject **exec_ptr,
     int curr_stackentries,
-    bool progress_needed)
+    bool progress_needed,
+    _PyExecutorObject *parent,
+    int parent_offset)
 {
     _PyBloomFilter dependencies;
     _Py_BloomFilter_Init(&dependencies);
@@ -1221,9 +1249,8 @@ uop_optimize(
     OPT_STAT_INC(traces_created);
     char *env_var = Py_GETENV("PYTHON_UOPS_OPTIMIZE");
     if (env_var == NULL || *env_var == '\0' || *env_var > '0') {
-        length = _Py_uop_analyze_and_optimize(frame, buffer,
-                                           length,
-                                           curr_stackentries, &dependencies);
+        length = _Py_uop_analyze_and_optimize(frame, buffer, length, curr_stackentries,
+                                              &dependencies, parent, parent_offset);
         if (length <= 0) {
             return length;
         }
@@ -1443,6 +1470,7 @@ executor_clear(PyObject *op)
         executor->exits[i].temperature = initial_unreachable_backoff_counter();
         Py_CLEAR(executor->exits[i].executor);
     }
+    Py_CLEAR(executor->vm_data.parent);
     _Py_ExecutorDetach(executor);
     Py_DECREF(executor);
     return 0;

@@ -2852,7 +2852,7 @@ dummy_func(
                     start--;
                 }
                 _PyExecutorObject *executor;
-                int optimized = _PyOptimizer_Optimize(frame, start, &executor, 0);
+                int optimized = _PyOptimizer_Optimize(frame, start, &executor, NULL, NULL);
                 if (optimized <= 0) {
                     this_instr[1].counter = restart_backoff_counter(counter);
                     ERROR_IF(optimized < 0, error);
@@ -5172,8 +5172,7 @@ dummy_func(
                     Py_INCREF(executor);
                 }
                 else {
-                    int chain_depth = current_executor->vm_data.chain_depth + 1;
-                    int optimized = _PyOptimizer_Optimize(frame, target, &executor, chain_depth);
+                    int optimized = _PyOptimizer_Optimize(frame, target, &executor, current_executor, exit);
                     if (optimized <= 0) {
                         exit->temperature = restart_backoff_counter(temperature);
                         GOTO_TIER_ONE(optimized < 0 ? NULL : target);

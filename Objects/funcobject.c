@@ -6,6 +6,7 @@
 #include "pycore_long.h"          // _PyLong_GetOne()
 #include "pycore_modsupport.h"    // _PyArg_NoKeywords()
 #include "pycore_object.h"        // _PyObject_GC_UNTRACK()
+#include "pycore_optimizer.h"     // _Py_Executors_InvalidateDependency
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
 #include "pycore_stats.h"
 
@@ -1141,6 +1142,7 @@ func_dealloc(PyObject *self)
 {
     PyFunctionObject *op = _PyFunction_CAST(self);
     _PyObject_ResurrectStart(self);
+    _Py_Executors_InvalidateDependency(_PyInterpreterState_GET(), self, true);  // XXX: Use a watcher for this.
     handle_func_event(PyFunction_EVENT_DESTROY, op, NULL);
     if (_PyObject_ResurrectEnd(self)) {
         return;

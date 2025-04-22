@@ -1837,7 +1837,9 @@
                 break;
             }
             max_space = curr_space > max_space ? curr_space : max_space;
-            if (first_valid_check_stack == NULL) {
+            if (j != ntraces - 1) {
+            }
+            else if (first_valid_check_stack == NULL) {
                 first_valid_check_stack = corresponding_check_stack;
             }
             else if (corresponding_check_stack) {
@@ -2285,7 +2287,6 @@
         case _CHECK_STACK_SPACE_OPERAND: {
             uint32_t framesize = (uint32_t)this_instr->operand0;
             (void)framesize;
-            Py_UNREACHABLE();
             break;
         }
 
