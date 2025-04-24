@@ -1634,7 +1634,15 @@
                 PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
                 lookup = _PyType_Lookup(type, name);
             }
-            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+            : _LOAD_CONST_UNDER_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1656,7 +1664,15 @@
                 PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
                 lookup = _PyType_Lookup(type, name);
             }
-            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+            : _LOAD_CONST_UNDER_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1732,7 +1748,15 @@
                 PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
                 lookup = _PyType_Lookup(type, name);
             }
-            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+            : _LOAD_CONST_UNDER_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -2488,6 +2512,30 @@
             value = sym_new_not_null(ctx);
             stack_pointer[-2] = value;
             stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_CONST_UNDER_INLINE: {
+            JitOptSymbol *value;
+            JitOptSymbol *new;
+            value = sym_new_not_null(ctx);
+            new = sym_new_not_null(ctx);
+            stack_pointer[-1] = value;
+            stack_pointer[0] = new;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
+            break;
+        }
+
+        case _LOAD_CONST_UNDER_INLINE_BORROW: {
+            JitOptSymbol *value;
+            JitOptSymbol *new;
+            value = sym_new_not_null(ctx);
+            new = sym_new_not_null(ctx);
+            stack_pointer[-1] = value;
+            stack_pointer[0] = new;
+            stack_pointer += 1;
             assert(WITHIN_STACK_BOUNDS());
             break;
         }

@@ -560,25 +560,30 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
             case _POP_TWO_LOAD_CONST_INLINE_BORROW:
             optimize_pop_top_again:
             {
+                bool again = false;
                 _PyUOpInstruction *last = &buffer[pc-1];
                 while (last->opcode == _NOP) {
                     last--;
                 }
                 switch (last->opcode) {
+                    // Side-effect-free instructions that produce a value:
                     case _POP_TWO_LOAD_CONST_INLINE_BORROW:
                         last->opcode = _POP_TOP;
                         break;
                     case _POP_TOP_LOAD_CONST_INLINE:
                     case _POP_TOP_LOAD_CONST_INLINE_BORROW:
+                        // Rerun the optimization on this instruction:
                         last->opcode = _NOP;
-                        goto optimize_pop_top_again;
+                        again = true;
+                        break;
                     case _COPY:
                     case _LOAD_CONST_INLINE:
                     case _LOAD_CONST_INLINE_BORROW:
+                    case _LOAD_CONST_UNDER_INLINE:
+                    case _LOAD_CONST_UNDER_INLINE_BORROW:
                     case _LOAD_FAST:
                     case _LOAD_FAST_BORROW:
                     case _LOAD_SMALL_INT:
-                        last->opcode = _NOP;
                         if (opcode == _POP_TOP) {
                             opcode = buffer[pc].opcode = _NOP;
                         }
@@ -590,9 +595,30 @@ remove_unneeded_uops(_PyUOpInstruction *buffer, int buffer_size)
                         }
                         else {
                             assert(opcode == _POP_TWO_LOAD_CONST_INLINE_BORROW);
+                            // Rerun the optimization on this instruction:
                             opcode = buffer[pc].opcode = _POP_TOP_LOAD_CONST_INLINE_BORROW;
-                            goto optimize_pop_top_again;
+                            again = true;
                         }
+                        if (last->opcode == _LOAD_CONST_UNDER_INLINE) {
+                            // Rerun the optimization on last:
+                            opcode = last->opcode = _POP_TOP_LOAD_CONST_INLINE;
+                            pc = last - buffer;
+                            again = true;
+                            assert(0);
+                        }
+                        else if (last->opcode == _LOAD_CONST_UNDER_INLINE_BORROW) {
+                            // Rerun the optimization on last:
+                            last->opcode = _POP_TOP_LOAD_CONST_INLINE_BORROW;
+                            pc = last - buffer;
+                            again = true;
+                            assert(0);
+                        }
+                        else {
+                            last->opcode = _NOP;
+                        }
+                }
+                if (again) {
+                    goto optimize_pop_top_again;
                 }
                 _Py_FALLTHROUGH;
             }

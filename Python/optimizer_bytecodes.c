@@ -629,8 +629,15 @@ dummy_func(void) {
             PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
-        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
-        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+                                                : _LOAD_CONST_UNDER_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
         self = owner;
     }
 
@@ -643,8 +650,15 @@ dummy_func(void) {
             PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
-        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
-        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+                                                : _LOAD_CONST_UNDER_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
         self = owner;
     }
 
@@ -657,8 +671,15 @@ dummy_func(void) {
             PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
-        // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
-        attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
+        if (lookup) {
+            int opcode = _Py_IsImmortal(lookup) ? _LOAD_CONST_UNDER_INLINE_BORROW
+                                                : _LOAD_CONST_UNDER_INLINE;
+            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+            attr = sym_new_const(ctx, lookup);
+        }
+        else {
+            attr = sym_new_not_null(ctx);
+        }
         self = owner;
     }
 
