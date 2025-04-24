@@ -70,7 +70,7 @@
 
         case _LOAD_CONST_MORTAL: {
             JitOptSymbol *value;
-            PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
+            PyObject *val = PyTuple_GET_ITEM(co->co_consts, oparg);
             int opcode = _Py_IsImmortal(val) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
             REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val);
             value = sym_new_const(ctx, val);
@@ -82,7 +82,7 @@
 
         case _LOAD_CONST_IMMORTAL: {
             JitOptSymbol *value;
-            PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
+            PyObject *val = PyTuple_GET_ITEM(co->co_consts, oparg);
             REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
             value = sym_new_const(ctx, val);
             stack_pointer[0] = value;
@@ -93,7 +93,7 @@
 
         case _LOAD_SMALL_INT: {
             JitOptSymbol *value;
-            PyObject *val = PyLong_FromLong(this_instr->oparg);
+            PyObject *val = PyLong_FromLong(oparg);
             assert(val);
             assert(_Py_IsImmortal(val));
             REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
@@ -1221,12 +1221,26 @@
         }
 
         case _LOAD_ATTR_CLASS: {
+            JitOptSymbol *owner;
             JitOptSymbol *attr;
+            owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
-            int opcode = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-        : _POP_TOP_LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, opcode, 0, (uintptr_t)descr);
-            attr = sym_new_const(ctx, descr);
+            (void)descr;
+            PyObject *type = sym_get_const(ctx, owner);
+            PyObject *lookup = NULL;
+            if (type && PyType_Check(type)) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup((PyTypeObject *)type, name);
+            }
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+            : _POP_TOP_LOAD_CONST_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             stack_pointer[-1] = attr;
             break;
         }
@@ -1614,7 +1628,13 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_const(ctx, descr);
+            PyTypeObject *type = sym_get_type(owner);
+            PyObject *lookup = NULL;
+            if (type) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup(type, name);
+            }
+            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1630,7 +1650,13 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_const(ctx, descr);
+            PyTypeObject *type = sym_get_type(owner);
+            PyObject *lookup = NULL;
+            if (type) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup(type, name);
+            }
+            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;
@@ -1640,23 +1666,51 @@
         }
 
         case _LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES: {
+            JitOptSymbol *owner;
             JitOptSymbol *attr;
+            owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
-            int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-        : _POP_TOP_LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
-            attr = sym_new_const(ctx, descr);
+            (void)descr;
+            PyTypeObject *type = sym_get_type(owner);
+            PyObject *lookup = NULL;
+            if (type) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup(type, name);
+            }
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+            : _POP_TOP_LOAD_CONST_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             stack_pointer[-1] = attr;
             break;
         }
 
         case _LOAD_ATTR_NONDESCRIPTOR_NO_DICT: {
+            JitOptSymbol *owner;
             JitOptSymbol *attr;
+            owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
-            int op = _Py_IsImmortal(descr) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
-        : _POP_TOP_LOAD_CONST_INLINE;
-            REPLACE_OP(this_instr, op, 0, (uintptr_t)descr);
-            attr = sym_new_const(ctx, descr);
+            (void)descr;
+            PyTypeObject *type = sym_get_type(owner);
+            PyObject *lookup = NULL;
+            if (type) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup(type, name);
+            }
+            if (lookup) {
+                int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
+            : _POP_TOP_LOAD_CONST_INLINE;
+                REPLACE_OP(this_instr, opcode, 0, (uintptr_t)lookup);
+                attr = sym_new_const(ctx, lookup);
+            }
+            else {
+                attr = sym_new_not_null(ctx);
+            }
             stack_pointer[-1] = attr;
             break;
         }
@@ -1672,7 +1726,13 @@
             owner = stack_pointer[-1];
             PyObject *descr = (PyObject *)this_instr->operand0;
             (void)descr;
-            attr = sym_new_const(ctx, descr);
+            PyTypeObject *type = sym_get_type(owner);
+            PyObject *lookup = NULL;
+            if (type) {
+                PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+                lookup = _PyType_Lookup(type, name);
+            }
+            attr = lookup ? sym_new_const(ctx, lookup) : sym_new_not_null(ctx);
             self = owner;
             stack_pointer[-1] = attr;
             stack_pointer[0] = self;

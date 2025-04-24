@@ -16,18 +16,38 @@
 /* Symbols
    =======
 
-   See the diagram at
-   https://github.com/faster-cpython/ideas/blob/main/3.13/redundancy_eliminator.md
+Logically, all symbols begin as UNKNOWN, and can transition downwards along the
+edges of the lattice, but *never* upwards (see the diagram below). The UNKNOWN
+state represents no information, and the BOTTOM state represents contradictory
+information. Though symbols logically progress through all intermediate nodes,
+we often skip in-between states for convenience:
 
-   We represent the nodes in the diagram as follows
-   (the flag bits are only defined in optimizer_symbols.c):
-   - Top: no flag bits, typ and const_val are NULL.
-   - NULL: IS_NULL flag set, type and const_val NULL.
-   - Not NULL: NOT_NULL flag set, type and const_val NULL.
-   - None/not None: not used. (None could be represented as any other constant.)
-   - Known type: NOT_NULL flag set and typ set; const_val is NULL.
-   - Known constant: NOT_NULL flag set, type set, const_val set.
-   - Bottom: IS_NULL and NOT_NULL flags set, type and const_val NULL.
+   UNKNOWN
+   |     |
+NULL     |
+|        |                <- Anything below this level is an object.
+|        NON_NULL
+|        |      |         <- Anything below this level has a known type version.
+| TYPE_VERSION  |
+| |             |         <- Anything below this level has a known type.
+| KNOWN_CLASS   |
+| |         |   |         <- Anything below this level has a known truthiness.
+| |         |  TRUTHINESS
+| |         |  |
+| TUPLE     |  |
+|     |     |  |          <- Anything below this level is a known constant.
+|    KNOWN_VALUE
+|    |                    <- Anything below this level is unreachable.
+BOTTOM
+
+For example, after guarding that the type of an UNKNOWN local is int, we can
+narrow the symbol to KNOWN_CLASS (logically progressing though NON_NULL and
+TYPE_VERSION to get there). Later, we may learn that it is falsey based on the
+result of a truth test, which would allow us to narrow the symbol to KNOWN_VALUE
+(with a value of integer zero). If at any point we encounter a float guard on
+the same symbol, that would be a contradiction, and the symbol would be set to
+BOTTOM (indicating that the code is unreachable).
+
  */
 
 #ifdef Py_DEBUG
@@ -398,7 +418,6 @@ _Py_uop_sym_get_type(JitOptSymbol *sym)
     JitSymType tag = sym->tag;
     switch(tag) {
         case JIT_SYM_NULL_TAG:
-        case JIT_SYM_TYPE_VERSION_TAG:
         case JIT_SYM_BOTTOM_TAG:
         case JIT_SYM_NON_NULL_TAG:
         case JIT_SYM_UNKNOWN_TAG:
@@ -407,6 +426,8 @@ _Py_uop_sym_get_type(JitOptSymbol *sym)
             return sym->cls.type;
         case JIT_SYM_KNOWN_VALUE_TAG:
             return Py_TYPE(sym->value.value);
+        case JIT_SYM_TYPE_VERSION_TAG:
+            return _PyType_LookupByVersion(sym->version.version);
         case JIT_SYM_TUPLE_TAG:
             return &PyTuple_Type;
         case JIT_SYM_TRUTHINESS_TAG:
@@ -430,7 +451,7 @@ _Py_uop_sym_get_type_version(JitOptSymbol *sym)
         case JIT_SYM_KNOWN_CLASS_TAG:
             return sym->cls.version;
         case JIT_SYM_KNOWN_VALUE_TAG:
-            return Py_TYPE(sym->value.value)->tp_version_tag;
+            return _PyType_GetVersionForCurrentState(Py_TYPE(sym->value.value));
         case JIT_SYM_TUPLE_TAG:
             return PyTuple_Type.tp_version_tag;
         case JIT_SYM_TRUTHINESS_TAG:
@@ -442,21 +463,7 @@ _Py_uop_sym_get_type_version(JitOptSymbol *sym)
 bool
 _Py_uop_sym_has_type(JitOptSymbol *sym)
 {
-    JitSymType tag = sym->tag;
-    switch(tag) {
-        case JIT_SYM_NULL_TAG:
-        case JIT_SYM_TYPE_VERSION_TAG:
-        case JIT_SYM_BOTTOM_TAG:
-        case JIT_SYM_NON_NULL_TAG:
-        case JIT_SYM_UNKNOWN_TAG:
-            return false;
-        case JIT_SYM_KNOWN_CLASS_TAG:
-        case JIT_SYM_KNOWN_VALUE_TAG:
-        case JIT_SYM_TUPLE_TAG:
-        case JIT_SYM_TRUTHINESS_TAG:
-            return true;
-    }
-    Py_UNREACHABLE();
+    return _Py_uop_sym_get_type(sym) != NULL;
 }
 
 bool

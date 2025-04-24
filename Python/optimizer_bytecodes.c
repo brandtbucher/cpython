@@ -489,27 +489,27 @@ dummy_func(void) {
     }
 
     op(_LOAD_CONST, (-- value)) {
-        PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
+        PyObject *val = PyTuple_GET_ITEM(co->co_consts, oparg);
         int opcode = _Py_IsImmortal(val) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
         REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val);
         value = sym_new_const(ctx, val);
     }
 
     op(_LOAD_CONST_MORTAL, (-- value)) {
-        PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
+        PyObject *val = PyTuple_GET_ITEM(co->co_consts, oparg);
         int opcode = _Py_IsImmortal(val) ? _LOAD_CONST_INLINE_BORROW : _LOAD_CONST_INLINE;
         REPLACE_OP(this_instr, opcode, 0, (uintptr_t)val);
         value = sym_new_const(ctx, val);
     }
 
     op(_LOAD_CONST_IMMORTAL, (-- value)) {
-        PyObject *val = PyTuple_GET_ITEM(co->co_consts, this_instr->oparg);
+        PyObject *val = PyTuple_GET_ITEM(co->co_consts, oparg);
         REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
         value = sym_new_const(ctx, val);
     }
 
     op(_LOAD_SMALL_INT, (-- value)) {
-        PyObject *val = PyLong_FromLong(this_instr->oparg);
+        PyObject *val = PyLong_FromLong(oparg);
         assert(val);
         assert(_Py_IsImmortal(val));
         REPLACE_OP(this_instr, _LOAD_CONST_INLINE_BORROW, 0, (uintptr_t)val);
@@ -603,11 +603,11 @@ dummy_func(void) {
     op(_LOAD_ATTR_CLASS, (descr/4, owner -- attr)) {
         // descr may be dead, so we need to perform the lookup again... :(
         (void)descr;
-        PyTypeObject *type = sym_get_const(owner);
+        PyObject *type = sym_get_const(ctx, owner);
         PyObject *lookup = NULL;
         if (type && PyType_Check(type)) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
-            lookup = _PyType_Lookup(type, name);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
+            lookup = _PyType_Lookup((PyTypeObject *)type, name);
         }
         if (lookup) {
             int opcode = _Py_IsImmortal(lookup) ? _POP_TOP_LOAD_CONST_INLINE_BORROW
@@ -626,7 +626,7 @@ dummy_func(void) {
         PyTypeObject *type = sym_get_type(owner);
         PyObject *lookup = NULL;
         if (type) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
         // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
@@ -640,7 +640,7 @@ dummy_func(void) {
         PyTypeObject *type = sym_get_type(owner);
         PyObject *lookup = NULL;
         if (type) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
         // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
@@ -654,7 +654,7 @@ dummy_func(void) {
         PyTypeObject *type = sym_get_type(owner);
         PyObject *lookup = NULL;
         if (type) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
         // XXX: Need something like _LOAD_CONST_UNDER_INLINE to replace this op:
@@ -668,7 +668,7 @@ dummy_func(void) {
         PyTypeObject *type = sym_get_type(owner);
         PyObject *lookup = NULL;
         if (type) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
         if (lookup) {
@@ -688,7 +688,7 @@ dummy_func(void) {
         PyTypeObject *type = sym_get_type(owner);
         PyObject *lookup = NULL;
         if (type) {
-            PyObject *name = PyTuple_GET_ITEM(co->co_names, this_instr->oparg);
+            PyObject *name = PyTuple_GET_ITEM(co->co_names, oparg >> 1);
             lookup = _PyType_Lookup(type, name);
         }
         if (lookup) {
