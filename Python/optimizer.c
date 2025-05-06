@@ -568,7 +568,7 @@ translate_bytecode_to_trace(
     int trace_stack_depth = 0;
     int confidence = CONFIDENCE_RANGE;  // Adjusted by branch instructions
     bool jump_seen = false;
-    int recursive_top = -1;
+    int recursive_top = INSTR_IP(instr, code) ? -1 : 1;
 
 #ifdef Py_DEBUG
     char *python_lltrace = Py_GETENV("PYTHON_LLTRACE");
@@ -865,7 +865,7 @@ translate_bytecode_to_trace(
                                             new_code->co_firstlineno);
                                     OPT_STAT_INC(recursive_call);
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    if (recursive_top < 0) {
+                                    if (new_func == func && recursive_top < 0) {
                                         ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
                                     }
                                     else {
