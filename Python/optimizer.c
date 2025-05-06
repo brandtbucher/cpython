@@ -568,6 +568,7 @@ translate_bytecode_to_trace(
     int trace_stack_depth = 0;
     int confidence = CONFIDENCE_RANGE;  // Adjusted by branch instructions
     bool jump_seen = false;
+    int recursive_top = -1;
 
 #ifdef Py_DEBUG
     char *python_lltrace = Py_GETENV("PYTHON_LLTRACE");
@@ -598,7 +599,7 @@ translate_bytecode_to_trace(
         if (!first && instr == initial_instr) {
             // We have looped around to the start:
             RESERVE(1);
-            ADD_TO_TRACE(_JUMP_TO_TOP, 0, 0, 0);
+            ADD_TO_TRACE(_JUMP_TO_TOP, 1, 0, 0);
             goto done;
         }
 
@@ -864,7 +865,13 @@ translate_bytecode_to_trace(
                                             new_code->co_firstlineno);
                                     OPT_STAT_INC(recursive_call);
                                     ADD_TO_TRACE(uop, oparg, 0, target);
-                                    ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    if (recursive_top < 0) {
+                                        ADD_TO_TRACE(_EXIT_TRACE, 0, 0, 0);
+                                    }
+                                    else {
+                                        ADD_TO_TRACE(_MAKE_WARM, 0, 0, 0);
+                                        ADD_TO_TRACE(_JUMP_TO_TOP, recursive_top, 0, 0);
+                                    }
                                     goto done;
                                 }
                                 if (new_code->co_version != func_version) {
@@ -896,6 +903,7 @@ translate_bytecode_to_trace(
                                     operand = 0;
                                 }
                                 ADD_TO_TRACE(uop, oparg, operand, target);
+                                recursive_top = trace_length;
                                 code = new_code;
                                 func = new_func;
                                 instr = _PyCode_CODE(code);
@@ -1030,12 +1038,12 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
     _PyUOpInstruction *copy_to = &buffer[0];
     for (int i = 0; i < length; i++) {
         _PyUOpInstruction *inst = &buffer[i];
-        if (inst->opcode != _NOP) {
+        // if (inst->opcode != _NOP) {
             if (copy_to != inst) {
                 *copy_to = *inst;
             }
             copy_to++;
-        }
+        // }
     }
     length = (int)(copy_to - buffer);
     int next_spare = length;
@@ -1084,7 +1092,7 @@ prepare_for_execution(_PyUOpInstruction *buffer, int length)
         if (opcode == _JUMP_TO_TOP) {
             assert(buffer[0].opcode == _START_EXECUTOR);
             buffer[i].format = UOP_FORMAT_JUMP;
-            buffer[i].jump_target = 1;
+            buffer[i].jump_target = inst->oparg;
         }
     }
     return next_spare;
