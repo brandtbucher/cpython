@@ -400,9 +400,6 @@ class EmbeddingTests(EmbeddingTestsMixin, unittest.TestCase):
                         opname in opcode._specialized_opmap
                         # Exclude superinstructions:
                         and "__" not in opname
-                        # LOAD_CONST_IMMORTAL is "specialized", but is
-                        # inserted during quickening.
-                        and opname != "LOAD_CONST_IMMORTAL"
                     ):
                         return True
                 return False

@@ -491,6 +491,7 @@ static inline void PyStackRef_CheckValid(_PyStackRef ref) {
 #define PyStackRef_RefcountOnObject(REF) (((REF).bits & Py_TAG_REFCNT) == 0)
 #define PyStackRef_AsPyObjectBorrow BITS_TO_PTR_MASKED
 #define PyStackRef_Borrow(REF) (_PyStackRef){ .bits = ((REF).bits) | Py_TAG_REFCNT};
+#define PyStackRef_FromPyObjectBorrow(OBJ) (_PyStackRef){ .bits = (uintptr_t)(OBJ) | Py_TAG_REFCNT }
 #else
 /* Does this ref not have an embedded refcount and thus not refer to a declared immmortal object? */
 static inline int
@@ -510,6 +511,12 @@ static inline _PyStackRef
 PyStackRef_Borrow(_PyStackRef ref)
 {
     return (_PyStackRef){ .bits = ref.bits | Py_TAG_REFCNT };
+}
+
+static inline _PyStackRef
+PyStackRef_FromPyObjectBorrow(PyObject *obj)
+{
+    return (_PyStackRef){ .bits = (uintptr_t)obj | Py_TAG_REFCNT };
 }
 #endif
 
