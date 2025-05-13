@@ -269,7 +269,9 @@ uop_dealloc(PyObject *op) {
     _PyExecutorObject *self = _PyExecutorObject_CAST(op);
     _PyObject_GC_UNTRACK(self);
     assert(self->vm_data.code == NULL);
-    unlink_executor(self);
+    if (self->vm_data.valid) {
+        unlink_executor(self);
+    }
     for (uint32_t i = 0; i < self->exit_count; i++) {
         Py_XDECREF(self->exits[i].executor);
     }
@@ -1131,7 +1133,6 @@ sanity_check(_PyExecutorObject *executor)
         _PyExitData *exit = &executor->exits[i];
         CHECK(exit->target < (1 << 25));
     }
-    // bool ended = false;
     uint32_t i = 0;
     CHECK(executor->trace[0].opcode == _START_EXECUTOR);
     for (; i < executor->code_size; i++) {
@@ -1151,21 +1152,7 @@ sanity_check(_PyExecutorObject *executor)
             CHECK(inst->format == UOP_FORMAT_JUMP);
             CHECK(inst->error_target < executor->code_size);
         }
-        // if (is_terminator(inst)) {
-        //     ended = true;
-        //     i++;
-        //     break;
-        // }
     }
-    // CHECK(ended);
-    // for (; i < executor->code_size; i++) {
-    //     const _PyUOpInstruction *inst = &executor->trace[i];
-    //     uint16_t opcode = inst->opcode;
-    //     CHECK(
-    //         opcode == _DEOPT ||
-    //         opcode == _EXIT_TRACE ||
-    //         opcode == _ERROR_POP_N);
-    // }
 }
 
 #undef CHECK
@@ -1262,8 +1249,6 @@ int effective_trace_length(_PyUOpInstruction *buffer, int length)
 }
 #endif
 
-#define MAX_COMPACTION (1 << 4)
-
 static _PyExecutorObject *
 compact_executor(_PyExecutorObject *root)
 {
@@ -1272,58 +1257,48 @@ compact_executor(_PyExecutorObject *root)
     root->vm_data.compact = false;
     _PyBloomFilter dependencies;
     _Py_BloomFilter_Init(&dependencies);
-    // Perform a breadth-first search to find all of the executors we want to compact:
-    _PyExecutorObject *executors[MAX_COMPACTION] = {root};
-    int nexecutors = 1;
     _PyUOpInstruction buffer[UOP_MAX_TRACE_LENGTH];
-    int length = 0;
-    int remaining = UOP_MAX_TRACE_LENGTH - root->code_size;
-    for (int i = 0; i < nexecutors; i++) {
-        _PyExecutorObject *executor = executors[i];
-        _Py_BloomFilter_Update(&dependencies, &executor->vm_data.bloom);
-        assert(executor->trace[0].opcode == _START_EXECUTOR);
-        for (int j = !!i; j < (int)executor->code_size; j++) {
-            _PyUOpInstruction *instruction = &buffer[length + j - !!i];
-            *instruction = executor->trace[j];
-            if (instruction->format == UOP_FORMAT_JUMP) {
-                instruction->jump_target += length - !!i;
-                instruction->error_target += length - !!i;
-            }
-            if (instruction->opcode != _EXIT_TRACE) {
-                continue;
-            }
-            _PyExitData *exit = (_PyExitData *)instruction->operand0;
-            _PyExecutorObject *chained = exit->executor;
-            if (chained == NULL || !chained->vm_data.valid) {
-                continue;
-            }
-            if (chained == root) {
-                instruction->format = UOP_FORMAT_JUMP;
-                instruction->opcode = _JUMP_TO_TOP;
-                instruction->jump_target = 1;
-            }
-            else if (nexecutors < MAX_COMPACTION && (int)chained->code_size - 1 <= remaining) {
-                int offset = UOP_MAX_TRACE_LENGTH - remaining;
-                remaining -= chained->code_size - 1;  // _START_EXECUTOR
-                executors[nexecutors++] = chained;
-                // XXX: Clean this up:
-                for (int k = length; k < length + j; k++) {
-                    _PyUOpInstruction *inst = &buffer[k];
-                    if (inst->format == UOP_FORMAT_JUMP && inst->jump_target == length + j - !!i) {
-                        inst->jump_target = offset;
-                    }
+    size_t length = root->code_size;
+    memcpy(buffer, root->trace, root->code_size * sizeof(_PyUOpInstruction));
+    for (size_t i = 0; i < length; i++) {
+        _PyUOpInstruction *instruction = &buffer[i];
+        if (instruction->opcode != _EXIT_TRACE) {
+            continue;
+        }
+        int jump_target;
+        _PyExitData *exit = (_PyExitData *)instruction->operand0;
+        _PyExecutorObject *chained = exit->executor;
+        if (chained == root) {
+            jump_target = 1;  // _START_EXECUTOR
+        }
+        else if (chained == NULL ||
+                 !chained->vm_data.valid ||
+                 chained->vm_data.chain_depth == 0 ||
+                 UOP_MAX_TRACE_LENGTH < length + chained->code_size - 1)
+        {
+            continue;
+        }
+        else {
+            jump_target = length;
+            length += chained->code_size - 1;
+            assert(!chained->vm_data.compact);
+            _Py_BloomFilter_Update(&dependencies, &chained->vm_data.bloom);
+            memcpy(buffer + jump_target, chained->trace + 1,
+                   (length - jump_target) * sizeof(_PyUOpInstruction));
+            for (size_t j = jump_target; j < length; j++) {
+                _PyUOpInstruction *new = buffer + j;
+                if (new->format == UOP_FORMAT_JUMP) {
+                    new->jump_target += jump_target - 1;
+                    new->error_target += jump_target - 1;
                 }
-                instruction->format = UOP_FORMAT_JUMP;
-                instruction->opcode = _JUMP_TO_TOP;  // Not really...
-                instruction->jump_target = offset;
             }
         }
-        length += executor->code_size - !!i;
+        instruction->format = UOP_FORMAT_JUMP;
+        instruction->opcode = _JUMP_TO_TOP;  // Not really...
+        instruction->jump_target = jump_target;
     }
-    assert(1 <= length && length < UOP_MAX_TRACE_LENGTH + 1);
-    assert(0 <= remaining && remaining < UOP_MAX_TRACE_LENGTH);
-    assert(length + remaining == UOP_MAX_TRACE_LENGTH);
-    if (nexecutors == 1) {
+    assert(root->code_size <= length && length <= UOP_MAX_TRACE_LENGTH);
+    if (length == root->code_size) {
         return (_PyExecutorObject *)Py_NewRef(root);
     }
     _PyExecutorObject *new = make_executor_from_uops(buffer, length, &dependencies);
@@ -1709,7 +1684,7 @@ _Py_Executors_InvalidateCold(PyInterpreterState *interp)
             int index = instruction->op.arg;
             assert(code->co_executors->executors[index] == old);
             insert_executor(code, instruction, index, new);
-            executor_clear(old);
+            executor_clear((PyObject *)old);
         }
         Py_DECREF(new);
     }
