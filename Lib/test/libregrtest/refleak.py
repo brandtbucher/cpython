@@ -115,8 +115,10 @@ def runtest_refleak(test_name, test_func,
     gettotalrefcount = sys.gettotalrefcount
     getunicodeinternedsize = sys.getunicodeinternedsize
     fd_count = os_helper.fd_count
+    jit_xxx = sys._jit._xxx
+    jit_yyy = sys._jit._yyy
     # initialize variables to make pyflakes quiet
-    rc_before = alloc_before = fd_before = interned_immortal_before = 0
+    rc_before = alloc_before = fd_before = interned_immortal_before = jit_xxx_before = jit_yyy_before = 0
 
     if not quiet:
         print("beginning", repcount, "repetitions. Showing number of leaks "
@@ -150,8 +152,10 @@ def runtest_refleak(test_name, test_func,
         interned_immortal_after = getunicodeinternedsize(
             # Use an internal-only keyword argument that mypy doesn't know yet
             _only_immortal=True)  # type: ignore[call-arg]
-        alloc_after = getallocatedblocks() - interned_immortal_after
-        rc_after = gettotalrefcount()
+        jit_xxx_after = jit_xxx()
+        jit_yyy_after = jit_yyy()
+        alloc_after = getallocatedblocks() - interned_immortal_after - jit_xxx_after
+        rc_after = gettotalrefcount() - jit_yyy_after
         fd_after = fd_count()
 
         rc_deltas[i] = get_pooled_int(rc_after - rc_before)
@@ -179,6 +183,8 @@ def runtest_refleak(test_name, test_func,
         rc_before = rc_after
         fd_before = fd_after
         interned_immortal_before = interned_immortal_after
+        jit_xxx_before = jit_xxx_after
+        jit_yyy_before = jit_yyy_after
 
         restore_support_xml(xml_filename)
 
