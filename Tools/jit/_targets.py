@@ -133,6 +133,8 @@ class _Target(typing.Generic[_S, _R]):
             f"-I{CPYTHON / 'Python'}",
             f"-I{CPYTHON / 'Tools' / 'jit'}",
             "-O3",
+            # Error if symbols above the deployment target without guards
+            "-Werror=unguarded-availability",
             "-c",
             # Shorten full absolute file paths in the generated code (like the
             # __FILE__ macro and assert failure messages) for reproducibility:
