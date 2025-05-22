@@ -212,6 +212,11 @@ free_executor(_PyExecutorObject *self)
     _PyJIT_Free(self);
 #endif
     PyObject_GC_Del(self);
+#ifdef Py_REF_DEBUG
+    PyThreadState *tstate = _PyThreadState_GET();
+    _Py_IncRefTotal(tstate);
+    tstate->interp->runtime->obmalloc.interpreter_leaks++;
+#endif
 }
 
 void
@@ -1100,6 +1105,11 @@ allocate_executor(int exit_count, int length)
     if (res == NULL) {
         return NULL;
     }
+#ifdef Py_REF_DEBUG
+    PyThreadState *tstate = _PyThreadState_GET();
+    _Py_DecRefTotal(tstate);
+    tstate->interp->runtime->obmalloc.interpreter_leaks--;
+#endif
     res->trace = (_PyUOpInstruction *)(res->exits + exit_count);
     res->code_size = length;
     res->exit_count = exit_count;

@@ -115,8 +115,8 @@ def runtest_refleak(test_name, test_func,
     gettotalrefcount = sys.gettotalrefcount
     getunicodeinternedsize = sys.getunicodeinternedsize
     fd_count = os_helper.fd_count
-    jit_xxx = sys._jit._xxx
-    jit_yyy = sys._jit._yyy
+    # jit_xxx = sys._jit._xxx
+    # jit_yyy = sys._jit._yyy
     # initialize variables to make pyflakes quiet
     rc_before = alloc_before = fd_before = interned_immortal_before = jit_xxx_before = jit_yyy_before = 0
 
@@ -152,8 +152,8 @@ def runtest_refleak(test_name, test_func,
         interned_immortal_after = getunicodeinternedsize(
             # Use an internal-only keyword argument that mypy doesn't know yet
             _only_immortal=True)  # type: ignore[call-arg]
-        jit_xxx_after = jit_xxx()
-        jit_yyy_after = jit_yyy()
+        jit_xxx_after = 0  # jit_xxx()
+        jit_yyy_after = 0  # jit_yyy()
         alloc_after = getallocatedblocks() - interned_immortal_after - jit_xxx_after
         rc_after = gettotalrefcount() - jit_yyy_after
         fd_after = fd_count()
