@@ -514,7 +514,7 @@ add_to_trace(
     }
 
 // Reserve space for N uops, plus 3 for _SET_IP, _CHECK_VALIDITY and _EXIT_TRACE
-#define RESERVE(needed) RESERVE_RAW((needed) + 3, _PyUOpName(opcode))
+#define RESERVE(needed) RESERVE_RAW((needed) + 3, _PyOpcode_OpName[opcode])
 
 // Trace stack operations (used by _PUSH_FRAME, _RETURN_VALUE)
 #define TRACE_STACK_PUSH() \
@@ -551,6 +551,7 @@ translate_bytecode_to_trace(
     _PyBloomFilter *dependencies, bool progress_needed)
 {
     bool first = true;
+    _PyInterpreterFrame *previous = frame->previous;
     PyCodeObject *code = _PyFrame_GetCode(frame);
     PyFunctionObject *func = _PyFrame_GetFunction(frame);
     assert(PyFunction_Check(func));
@@ -738,9 +739,33 @@ translate_bytecode_to_trace(
                         // We can't bail e.g. in the middle of
                         // LOAD_CONST + _RETURN_VALUE.
                         if (trace_stack_depth == 0) {
-                            DPRINTF(2, "Trace stack underflow\n");
-                            OPT_STAT_INC(trace_stack_underflow);
-                            return 0;
+                            if (first && progress_needed) {
+                                return 0;
+                            }
+                            PyCodeObject *old_code = code;
+                            PyFunctionObject *old_func = func;
+                            _Py_CODEUNIT *old_instr = instr;
+                            if (previous->owner == FRAME_OWNED_BY_INTERPRETER) {
+                                return 0;
+                            }
+                            code = (PyCodeObject *)PyStackRef_AsPyObjectBorrow(previous->f_executable);
+                            func = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(previous->f_funcobj);
+                            instr = previous->instr_ptr;
+                            if (last_op != _YIELD_VALUE) {
+                                instr += previous->return_offset;
+                            }
+                            if (code == NULL || !PyCode_Check(code) ||
+                                func == NULL || !PyFunction_Check(func))
+                            {
+                                return 0;
+                            }
+                            TRACE_STACK_PUSH();
+                            ADD_TO_TRACE(_GUARD_CALLER_INSTR_PTR, 0, (uintptr_t)instr, target);
+                            ADD_TO_TRACE(_GUARD_CALLER_FUNCTION_VERSION, 0, _PyFunction_GetVersionForCurrentState(func), target);
+                            code = old_code;
+                            func = old_func;
+                            instr = old_instr;
+                            previous = previous->previous;
                         }
                     }
                     uint32_t orig_oparg = oparg;  // For OPARG_TOP/BOTTOM
@@ -947,10 +972,11 @@ translate_bytecode_to_trace(
     }  // End for (;;)
 
 done:
-    while (trace_stack_depth > 0) {
-        TRACE_STACK_POP();
-    }
-    assert(code == initial_code);
+    // while (trace_stack_depth > 0) {
+    //     TRACE_STACK_POP();
+    // }
+    // assert(code == initial_code);
+    code = initial_code;
     // Skip short traces where we can't even translate a single instruction:
     if (first) {
         OPT_STAT_INC(trace_too_short);

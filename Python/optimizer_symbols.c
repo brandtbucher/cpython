@@ -4,6 +4,7 @@
 
 #include "pycore_code.h"
 #include "pycore_frame.h"
+#include "pycore_interpframe.h"
 #include "pycore_long.h"
 #include "pycore_optimizer.h"
 #include "pycore_stats.h"
@@ -724,6 +725,7 @@ _Py_uop_abstractcontext_init(JitOptContext *ctx)
 
     // Frame setup
     ctx->curr_frame_depth = 0;
+    ctx->previous = _PyThreadState_GET()->current_frame->previous;
 }
 
 int
@@ -732,7 +734,13 @@ _Py_uop_frame_pop(JitOptContext *ctx)
     _Py_UOpsAbstractFrame *frame = ctx->frame;
     ctx->n_consumed = frame->locals;
     ctx->curr_frame_depth--;
-    assert(ctx->curr_frame_depth >= 1);
+    if (ctx->curr_frame_depth == 0) {
+        if (_Py_uop_frame_new(ctx, _PyFrame_GetCode(ctx->previous), ctx->previous->stackpointer - _PyFrame_Stackbase(ctx->previous), NULL, 0) == NULL) {
+            return -1;
+        }
+        ctx->curr_frame_depth++;
+        ctx->previous = ctx->previous->previous;
+    }
     ctx->frame = &ctx->frames[ctx->curr_frame_depth - 1];
 
     return 0;

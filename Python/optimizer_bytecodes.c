@@ -794,7 +794,23 @@ dummy_func(void) {
         DEAD(retval);
         SAVE_STACK();
         ctx->frame->stack_pointer = stack_pointer;
-        frame_pop(ctx);
+        if (ctx->curr_frame_depth == 1) {
+            assert(curr_space == 0);
+            curr_space = co->co_framesize;
+            if (first_valid_check_stack) {
+                assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                assert(max_space > 0);
+                assert(max_space <= INT_MAX);
+                assert(max_space <= INT32_MAX);
+                first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                first_valid_check_stack->operand0 = max_space;
+                first_valid_check_stack = NULL;
+                max_space = 0;
+            }
+        }
+        if (frame_pop(ctx)) {
+            return -1;
+        }
         stack_pointer = ctx->frame->stack_pointer;
 
         /* Stack space handling */
@@ -817,7 +833,23 @@ dummy_func(void) {
     op(_RETURN_GENERATOR, ( -- res)) {
         SYNC_SP();
         ctx->frame->stack_pointer = stack_pointer;
-        frame_pop(ctx);
+        if (ctx->curr_frame_depth == 1) {
+            assert(curr_space == 0);
+            curr_space = co->co_framesize;
+            if (first_valid_check_stack) {
+                assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                assert(max_space > 0);
+                assert(max_space <= INT_MAX);
+                assert(max_space <= INT32_MAX);
+                first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                first_valid_check_stack->operand0 = max_space;
+                first_valid_check_stack = NULL;
+                max_space = 0;
+            }
+        }
+        if (frame_pop(ctx)) {
+            return -1;
+        }
         stack_pointer = ctx->frame->stack_pointer;
         res = sym_new_unknown(ctx);
 
@@ -836,8 +868,45 @@ dummy_func(void) {
         }
     }
 
-    op(_YIELD_VALUE, (unused -- value)) {
-        value = sym_new_unknown(ctx);
+    op(_YIELD_VALUE, (retval -- value)) {
+        JitOptSymbol *temp = retval;
+        DEAD(retval);
+        SAVE_STACK();
+        ctx->frame->stack_pointer = stack_pointer;
+        if (ctx->curr_frame_depth == 1) {
+            assert(curr_space == 0);
+            curr_space = co->co_framesize;
+            if (first_valid_check_stack) {
+                assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                assert(max_space > 0);
+                assert(max_space <= INT_MAX);
+                assert(max_space <= INT32_MAX);
+                first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                first_valid_check_stack->operand0 = max_space;
+                first_valid_check_stack = NULL;
+                max_space = 0;
+            }
+        }
+        if (frame_pop(ctx)) {
+            return -1;
+        }
+        stack_pointer = ctx->frame->stack_pointer;
+
+        /* Stack space handling */
+        assert(corresponding_check_stack == NULL);
+        assert(co != NULL);
+        int framesize = co->co_framesize;
+        assert(framesize > 0);
+        assert(framesize <= curr_space);
+        curr_space -= framesize;
+
+        co = get_code(this_instr);
+        if (co == NULL) {
+            // might be impossible, but bailing is still safe
+            ctx->done = true;
+        }
+        RELOAD_STACK();
+        value = temp;
     }
 
     op(_FOR_ITER_GEN_FRAME, (unused, unused -- unused, unused, gen_frame: _Py_UOpsAbstractFrame*)) {

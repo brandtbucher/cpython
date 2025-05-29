@@ -7313,4 +7313,35 @@
             break;
         }
 
+        case _GUARD_CALLER_FUNCTION_VERSION: {
+            uint32_t func_version = (uint32_t)CURRENT_OPERAND0();
+            if (frame->previous->owner == FRAME_OWNED_BY_INTERPRETER) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            PyFunctionObject *func = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(frame->previous->f_funcobj);
+            if (func == NULL) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (!PyFunction_Check(func)) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            if (_PyFunction_GetVersionForCurrentState(func) != func_version) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
+        case _GUARD_CALLER_INSTR_PTR: {
+            PyObject *instr_ptr = (PyObject *)CURRENT_OPERAND0();
+            if (frame->previous->instr_ptr != (_Py_CODEUNIT *)instr_ptr) {
+                UOP_STAT_INC(uopcode, miss);
+                JUMP_TO_JUMP_TARGET();
+            }
+            break;
+        }
+
 #undef TIER_TWO

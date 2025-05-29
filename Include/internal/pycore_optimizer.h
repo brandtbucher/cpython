@@ -247,6 +247,7 @@ typedef struct _JitOptContext {
     _Py_UOpsAbstractFrame *frame;
     _Py_UOpsAbstractFrame frames[MAX_ABSTRACT_FRAME_DEPTH];
     int curr_frame_depth;
+    _PyInterpreterFrame *previous;
 
     // Arena for the symbolic types.
     ty_arena t_arena;

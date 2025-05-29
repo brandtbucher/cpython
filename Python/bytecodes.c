@@ -5390,6 +5390,18 @@ dummy_func(
             assert(tstate->tracing || eval_breaker == FT_ATOMIC_LOAD_UINTPTR_ACQUIRE(_PyFrame_GetCode(frame)->_co_instrumentation_version));
         }
 
+        tier2 op(_GUARD_CALLER_FUNCTION_VERSION, (func_version/2 --)) {
+            EXIT_IF(frame->previous->owner == FRAME_OWNED_BY_INTERPRETER);
+            PyFunctionObject *func = (PyFunctionObject *)PyStackRef_AsPyObjectBorrow(frame->previous->f_funcobj);
+            EXIT_IF(func == NULL);
+            EXIT_IF(!PyFunction_Check(func));
+            EXIT_IF(_PyFunction_GetVersionForCurrentState(func) != func_version);
+        }
+
+        tier2 op(_GUARD_CALLER_INSTR_PTR, (instr_ptr/4 --)) {
+            EXIT_IF(frame->previous->instr_ptr != (_Py_CODEUNIT *)instr_ptr);
+        }
+
         label(pop_2_error) {
             stack_pointer -= 2;
             assert(WITHIN_STACK_BOUNDS());

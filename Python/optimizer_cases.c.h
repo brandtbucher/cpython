@@ -766,7 +766,23 @@
             stack_pointer += -1;
             assert(WITHIN_STACK_BOUNDS());
             ctx->frame->stack_pointer = stack_pointer;
-            frame_pop(ctx);
+            if (ctx->curr_frame_depth == 1) {
+                assert(curr_space == 0);
+                curr_space = co->co_framesize;
+                if (first_valid_check_stack) {
+                    assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                    assert(max_space > 0);
+                    assert(max_space <= INT_MAX);
+                    assert(max_space <= INT32_MAX);
+                    first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                    first_valid_check_stack->operand0 = max_space;
+                    first_valid_check_stack = NULL;
+                    max_space = 0;
+                }
+            }
+            if (frame_pop(ctx)) {
+                return -1;
+            }
             stack_pointer = ctx->frame->stack_pointer;
             assert(corresponding_check_stack == NULL);
             assert(co != NULL);
@@ -819,9 +835,45 @@
         }
 
         case _YIELD_VALUE: {
+            JitOptSymbol *retval;
             JitOptSymbol *value;
-            value = sym_new_unknown(ctx);
-            stack_pointer[-1] = value;
+            retval = stack_pointer[-1];
+            JitOptSymbol *temp = retval;
+            stack_pointer += -1;
+            assert(WITHIN_STACK_BOUNDS());
+            ctx->frame->stack_pointer = stack_pointer;
+            if (ctx->curr_frame_depth == 1) {
+                assert(curr_space == 0);
+                curr_space = co->co_framesize;
+                if (first_valid_check_stack) {
+                    assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                    assert(max_space > 0);
+                    assert(max_space <= INT_MAX);
+                    assert(max_space <= INT32_MAX);
+                    first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                    first_valid_check_stack->operand0 = max_space;
+                    first_valid_check_stack = NULL;
+                    max_space = 0;
+                }
+            }
+            if (frame_pop(ctx)) {
+                return -1;
+            }
+            stack_pointer = ctx->frame->stack_pointer;
+            assert(corresponding_check_stack == NULL);
+            assert(co != NULL);
+            int framesize = co->co_framesize;
+            assert(framesize > 0);
+            assert(framesize <= curr_space);
+            curr_space -= framesize;
+            co = get_code(this_instr);
+            if (co == NULL) {
+                ctx->done = true;
+            }
+            value = temp;
+            stack_pointer[0] = value;
+            stack_pointer += 1;
+            assert(WITHIN_STACK_BOUNDS());
             break;
         }
 
@@ -2356,7 +2408,23 @@
         case _RETURN_GENERATOR: {
             JitOptSymbol *res;
             ctx->frame->stack_pointer = stack_pointer;
-            frame_pop(ctx);
+            if (ctx->curr_frame_depth == 1) {
+                assert(curr_space == 0);
+                curr_space = co->co_framesize;
+                if (first_valid_check_stack) {
+                    assert(first_valid_check_stack->opcode == _CHECK_STACK_SPACE);
+                    assert(max_space > 0);
+                    assert(max_space <= INT_MAX);
+                    assert(max_space <= INT32_MAX);
+                    first_valid_check_stack->opcode = _CHECK_STACK_SPACE_OPERAND;
+                    first_valid_check_stack->operand0 = max_space;
+                    first_valid_check_stack = NULL;
+                    max_space = 0;
+                }
+            }
+            if (frame_pop(ctx)) {
+                return -1;
+            }
             stack_pointer = ctx->frame->stack_pointer;
             res = sym_new_unknown(ctx);
             assert(corresponding_check_stack == NULL);
@@ -2732,6 +2800,14 @@
         }
 
         case _TIER2_RESUME_CHECK: {
+            break;
+        }
+
+        case _GUARD_CALLER_FUNCTION_VERSION: {
+            break;
+        }
+
+        case _GUARD_CALLER_INSTR_PTR: {
             break;
         }
 

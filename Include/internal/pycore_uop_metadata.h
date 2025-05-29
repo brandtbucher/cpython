@@ -321,6 +321,8 @@ const uint16_t _PyUop_Flags[MAX_UOP_ID+1] = {
     [_DEOPT] = 0,
     [_ERROR_POP_N] = HAS_ARG_FLAG,
     [_TIER2_RESUME_CHECK] = HAS_DEOPT_FLAG,
+    [_GUARD_CALLER_FUNCTION_VERSION] = HAS_EXIT_FLAG,
+    [_GUARD_CALLER_INSTR_PTR] = HAS_EXIT_FLAG,
 };
 
 const uint8_t _PyUop_Replication[MAX_UOP_ID+1] = {
@@ -444,6 +446,8 @@ const char *const _PyOpcode_uop_name[MAX_UOP_ID+1] = {
     [_GUARD_CALLABLE_STR_1] = "_GUARD_CALLABLE_STR_1",
     [_GUARD_CALLABLE_TUPLE_1] = "_GUARD_CALLABLE_TUPLE_1",
     [_GUARD_CALLABLE_TYPE_1] = "_GUARD_CALLABLE_TYPE_1",
+    [_GUARD_CALLER_FUNCTION_VERSION] = "_GUARD_CALLER_FUNCTION_VERSION",
+    [_GUARD_CALLER_INSTR_PTR] = "_GUARD_CALLER_INSTR_PTR",
     [_GUARD_DORV_NO_DICT] = "_GUARD_DORV_NO_DICT",
     [_GUARD_DORV_VALUES_INST_ATTR_FROM_DICT] = "_GUARD_DORV_VALUES_INST_ATTR_FROM_DICT",
     [_GUARD_GLOBALS_VERSION] = "_GUARD_GLOBALS_VERSION",
@@ -1241,6 +1245,10 @@ int _PyUop_num_popped(int opcode, int oparg)
         case _ERROR_POP_N:
             return 0;
         case _TIER2_RESUME_CHECK:
+            return 0;
+        case _GUARD_CALLER_FUNCTION_VERSION:
+            return 0;
+        case _GUARD_CALLER_INSTR_PTR:
             return 0;
         default:
             return -1;
