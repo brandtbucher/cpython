@@ -760,7 +760,8 @@ translate_bytecode_to_trace(
                                 return 0;
                             }
                             TRACE_STACK_PUSH();
-                            ADD_TO_TRACE(_GUARD_CALLER_INSTR_PTR, 0, (uintptr_t)instr, target);
+                            // XXX: Could return_offset ever vary here?
+                            ADD_TO_TRACE(_GUARD_CALLER_INSTR_PTR, 0, (uintptr_t)previous->instr_ptr, target);
                             ADD_TO_TRACE(_GUARD_CALLER_FUNCTION_VERSION, 0, _PyFunction_GetVersionForCurrentState(func), target);
                             code = old_code;
                             func = old_func;

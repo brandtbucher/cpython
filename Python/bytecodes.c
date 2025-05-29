@@ -5399,6 +5399,7 @@ dummy_func(
         }
 
         tier2 op(_GUARD_CALLER_INSTR_PTR, (instr_ptr/4 --)) {
+            // XXX: Could return_offset ever vary here?
             EXIT_IF(frame->previous->instr_ptr != (_Py_CODEUNIT *)instr_ptr);
         }
 
