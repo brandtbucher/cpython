@@ -604,6 +604,13 @@ translate_bytecode_to_trace(
 
         DPRINTF(2, "%d: %s(%d)\n", target, _PyOpcode_OpName[opcode], oparg);
 
+        if (opcode == ENTER_EXECUTOR) {
+            assert(oparg < 256);
+            _PyExecutorObject *executor = code->co_executors->executors[oparg];
+            opcode = executor->vm_data.opcode;
+            DPRINTF(2, "  * ENTER_EXECUTOR -> %s\n",  _PyOpcode_OpName[opcode]);
+            oparg = executor->vm_data.oparg;
+        }
         if (opcode == EXTENDED_ARG) {
             instr++;
             opcode = instr->op.code;
@@ -612,19 +619,6 @@ translate_bytecode_to_trace(
                 instr--;
                 goto done;
             }
-        }
-        if (opcode == ENTER_EXECUTOR) {
-            // We have a couple of options here. We *could* peek "underneath"
-            // this executor and continue tracing, which could give us a longer,
-            // more optimizeable trace (at the expense of lots of duplicated
-            // tier two code). Instead, we choose to just end here and stitch to
-            // the other trace, which allows a side-exit traces to rejoin the
-            // "main" trace periodically (and also helps protect us against
-            // pathological behavior where the amount of tier two code explodes
-            // for a medium-length, branchy code path). This seems to work
-            // better in practice, but in the future we could be smarter about
-            // what we do here:
-            goto done;
         }
         assert(opcode != ENTER_EXECUTOR && opcode != EXTENDED_ARG);
         RESERVE_RAW(2, "_CHECK_VALIDITY");
