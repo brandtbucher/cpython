@@ -130,9 +130,12 @@ class Optimizer:
                 assert not block.target
                 block.fallthrough = False
 
+    # Override this method to do preprocessing of the textual assembly:
     def _preprocess(self, text: str) -> str:
-        # Override this method to do preprocessing of the textual assembly:
-        return text
+        # text = super()._preprocess(text)
+        # For all platforms, remove .align/.balign/.p2align directives, which
+        # insert nops into our already-unaligned code:
+        return re.sub(r"\n\s*\.(?:b|p2)?align\b.*", r"", text)
 
     @classmethod
     def _invert_branch(cls, line: str, target: str) -> str | None:
