@@ -133,9 +133,7 @@ class Optimizer:
     # Override this method to do preprocessing of the textual assembly:
     def _preprocess(self, text: str) -> str:
         # text = super()._preprocess(text)
-        # For all platforms, remove .align/.balign/.p2align directives, which
-        # insert nops into our already-unaligned code:
-        return re.sub(r"\n\s*\.(?:b|p2)?align\b.*", r"", text)
+        return text
 
     @classmethod
     def _invert_branch(cls, line: str, target: str) -> str | None:
@@ -200,7 +198,7 @@ class Optimizer:
         #    jmp FOO
         # After:
         #    jmp FOO
-        #    .balign 8
+        #    .balign 16
         #    _JIT_CONTINUE:
         # This lets the assembler encode _JIT_CONTINUE jumps at build time!
         align = _Block()
@@ -297,6 +295,7 @@ class OptimizerAArch64(Optimizer):  # pylint: disable = too-few-public-methods
 class OptimizerX86(Optimizer):  # pylint: disable = too-few-public-methods
     """i686-pc-windows-msvc/x86_64-apple-darwin/x86_64-unknown-linux-gnu"""
 
+    _alignment = 16
     _branches = _X86_BRANCHES
     _re_branch = re.compile(
         rf"\s*(?P<instruction>{'|'.join(_X86_BRANCHES)})\s+(?P<target>[\w.]+)"
