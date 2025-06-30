@@ -113,7 +113,7 @@ initial_jump_backoff_counter(void)
  * otherwise when a side exit warms up we may construct
  * a new trace before the Tier 1 code has properly re-specialized. */
 #define SIDE_EXIT_INITIAL_VALUE ((1 << SIDE_EXIT_INITIAL_BACKOFF) - 1)
-#define SIDE_EXIT_INITIAL_BACKOFF 9
+#define SIDE_EXIT_INITIAL_BACKOFF 8
 
 static inline _Py_BackoffCounter
 initial_temperature_backoff_counter(void)
