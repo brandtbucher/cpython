@@ -100,7 +100,7 @@ backoff_counter_triggers(_Py_BackoffCounter counter)
 // invalidated we may construct a new trace before the bytecode has properly
 // re-specialized:
 #define JUMP_BACKWARD_INITIAL_VALUE ((1 << JUMP_BACKWARD_INITIAL_BACKOFF) - 1)
-#define JUMP_BACKWARD_INITIAL_BACKOFF 11
+#define JUMP_BACKWARD_INITIAL_BACKOFF 10
 static inline _Py_BackoffCounter
 initial_jump_backoff_counter(void)
 {
