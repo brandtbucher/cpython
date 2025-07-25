@@ -14,6 +14,7 @@
 #include "pycore_global_objects_fini_generated.h"  // _PyStaticObjects_CheckRefcnt()
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #include "pycore_interpolation.h" // _PyInterpolation_InitTypes()
+#include "pycore_jit.h"
 #include "pycore_long.h"          // _PyLong_InitTypes()
 #include "pycore_object.h"        // _PyDebug_PrintTotalRefs()
 #include "pycore_obmalloc.h"      // _PyMem_init_obmalloc()
@@ -1345,6 +1346,10 @@ init_interp_main(PyThreadState *tstate)
 #endif
             {
                 interp->jit = true;
+                interp->enter_jit_code = _PyJIT_CompileShim();
+                if (interp->enter_jit_code == NULL) {
+                    return _PyStatus_ERR("failed to compile JIT shim");
+                }
             }
         }
     }
@@ -1702,6 +1707,8 @@ finalize_modules(PyThreadState *tstate)
 
     // Invalidate all executors and turn off JIT:
     interp->jit = false;
+    _PyJIT_FreeShim(interp->enter_jit_code);
+    interp->enter_jit_code = NULL;
 #ifdef _Py_TIER2
     _Py_Executors_InvalidateAll(interp, 0);
 #endif

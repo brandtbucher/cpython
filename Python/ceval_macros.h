@@ -360,11 +360,8 @@ do {                                                   \
     OPT_STAT_INC(traces_executed);                     \
     _PyExecutorObject *_executor = (EXECUTOR);         \
     tstate->current_executor = (PyObject *)_executor;  \
-    jit_func jitted = _executor->jit_code;             \
-    /* Keep the shim frame alive via the executor: */  \
-    Py_INCREF(_executor);                              \
-    next_instr = jitted(frame, stack_pointer, tstate); \
-    Py_DECREF(_executor);                              \
+    jit_func jitted = tstate->interp->enter_jit_code;  \
+    next_instr = jitted(_executor, frame, stack_pointer, tstate); \
     frame = tstate->current_frame;                     \
     stack_pointer = _PyFrame_GetStackPointer(frame);   \
     if (next_instr == NULL) {                          \

@@ -1224,7 +1224,6 @@ make_executor_from_uops(_PyUOpInstruction *buffer, int length, const _PyBloomFil
 #endif
 #ifdef _Py_JIT
     executor->jit_code = NULL;
-    executor->jit_side_entry = NULL;
     executor->jit_size = 0;
     // This is initialized to true so we can prevent the executor
     // from being immediately detected as cold and invalidated.

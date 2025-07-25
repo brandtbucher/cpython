@@ -7,9 +7,8 @@
 #include "jit.h"
 
 _Py_CODEUNIT *
-_JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
+_JIT_ENTRY(_PyExecutorObject *executor, _PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
     // Note that this is *not* a tail call:
-    DECLARE_TARGET(_JIT_CONTINUE);
-    return _JIT_CONTINUE(frame, stack_pointer, tstate);
+    return ((jit_func_preserve_none)executor->jit_code)(frame, stack_pointer, tstate);
 }

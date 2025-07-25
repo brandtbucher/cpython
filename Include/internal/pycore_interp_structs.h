@@ -941,6 +941,7 @@ struct _is {
     struct callable_cache callable_cache;
     PyObject *common_consts[NUM_COMMON_CONSTANTS];
     bool jit;
+    void *enter_jit_code;
     struct _PyExecutorObject *executor_list_head;
     struct _PyExecutorObject *executor_deletion_list_head;
     int executor_deletion_list_remaining_capacity;

@@ -501,10 +501,6 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     size_t code_size = 0;
     size_t data_size = 0;
     jit_state state = {0};
-    group = &shim;
-    code_size += group->code_size;
-    data_size += group->data_size;
-    combine_symbol_mask(group->trampoline_mask, state.trampolines.mask);
     for (size_t i = 0; i < length; i++) {
         const _PyUOpInstruction *instruction = &trace[i];
         group = &stencil_groups[instruction->opcode];
@@ -549,13 +545,6 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
     unsigned char *code = memory;
     state.trampolines.mem = memory + code_size;
     unsigned char *data = memory + code_size + state.trampolines.size + code_padding;
-    // Compile the shim, which handles converting between the native
-    // calling convention and the calling convention used by jitted code
-    // (which may be different for efficiency reasons).
-    group = &shim;
-    group->emit(code, data, executor, NULL, &state);
-    code += group->code_size;
-    data += group->data_size;
     assert(trace[0].opcode == _START_EXECUTOR);
     for (size_t i = 0; i < length; i++) {
         const _PyUOpInstruction *instruction = &trace[i];
@@ -579,7 +568,6 @@ _PyJIT_Compile(_PyExecutorObject *executor, const _PyUOpInstruction trace[], siz
         return -1;
     }
     executor->jit_code = memory;
-    executor->jit_side_entry = memory + shim.code_size;
     executor->jit_size = total_size;
     return 0;
 }
@@ -591,12 +579,46 @@ _PyJIT_Free(_PyExecutorObject *executor)
     size_t size = executor->jit_size;
     if (memory) {
         executor->jit_code = NULL;
-        executor->jit_side_entry = NULL;
         executor->jit_size = 0;
         if (jit_free(memory, size)) {
             PyErr_FormatUnraisable("Exception ignored while "
                                    "freeing JIT memory");
         }
+    }
+}
+
+unsigned char *
+_PyJIT_CompileShim(void)
+{
+    size_t page_size = get_page_size();
+    size_t size = shim.code_size + shim.data_size;
+    size += page_size - (size & (page_size - 1));
+    unsigned char *memory = jit_alloc(size);
+    if (memory == NULL) {
+        return NULL;
+    }
+#ifdef MAP_JIT
+    pthread_jit_write_protect_np(0);
+#endif
+    shim.emit(memory, memory + shim.code_size, NULL, NULL, NULL);
+#ifdef MAP_JIT
+    pthread_jit_write_protect_np(1);
+#endif
+    if (mark_executable(memory, size)) {
+        jit_free(memory, size);
+        return NULL;
+    }
+    return memory;
+}
+
+void
+_PyJIT_FreeShim(unsigned char *memory)
+{
+    size_t page_size = get_page_size();
+    size_t size = shim.code_size + shim.data_size;
+    size += page_size - (size & (page_size - 1));
+    if (memory && jit_free(memory, size)) {
+        PyErr_FormatUnraisable("Exception ignored while freeing JIT memory");
     }
 }
 
