@@ -1346,10 +1346,12 @@ init_interp_main(PyThreadState *tstate)
 #endif
             {
                 interp->jit = true;
+#ifdef _Py_JIT
                 interp->enter_jit_code = _PyJIT_CompileShim();
                 if (interp->enter_jit_code == NULL) {
                     return _PyStatus_ERR("failed to compile JIT shim");
                 }
+#endif
             }
         }
     }
@@ -1707,8 +1709,10 @@ finalize_modules(PyThreadState *tstate)
 
     // Invalidate all executors and turn off JIT:
     interp->jit = false;
+#ifdef _Py_JIT
     _PyJIT_FreeShim(interp->enter_jit_code);
     interp->enter_jit_code = NULL;
+#endif
 #ifdef _Py_TIER2
     _Py_Executors_InvalidateAll(interp, 0);
 #endif
