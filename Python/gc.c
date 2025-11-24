@@ -483,12 +483,11 @@ validate_consistent_old_space(PyGC_Head *head)
 /* Set all gc_refs = ob_refcnt.  After this, gc_refs is > 0 and
  * PREV_MASK_COLLECTING bit is set for all objects in containers.
  */
-static Py_ssize_t
-update_refs(PyGC_Head *containers)
+static void
+update_refs(PyGC_Head *containers, struct gc_collection_stats *stats)
 {
     PyGC_Head *next;
     PyGC_Head *gc = GC_NEXT(containers);
-    Py_ssize_t candidates = 0;
 
     while (gc != containers) {
         next = GC_NEXT(gc);
@@ -496,8 +495,9 @@ update_refs(PyGC_Head *containers)
         if (_Py_IsImmortal(op)) {
             assert(!_Py_IsStaticImmortal(op));
             _PyObject_GC_UNTRACK(op);
-           gc = next;
-           continue;
+            stats->untracked++;
+            gc = next;
+            continue;
         }
         gc_reset_refs(gc, Py_REFCNT(op));
         /* Python's cyclic gc should never see an incoming refcount
@@ -519,10 +519,9 @@ update_refs(PyGC_Head *containers)
          * check instead of an assert?
          */
         _PyObject_ASSERT(op, gc_get_refs(gc) != 0);
+        stats->candidates++;
         gc = next;
-        candidates++;
     }
-    return candidates;
 }
 
 /* A traversal callback for subtract_refs. */
@@ -756,18 +755,20 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
 * and is much faster than a more complex approach that
 * would untrack all relevant tuples.
 */
-static void
+static Py_ssize_t
 untrack_tuples(PyGC_Head *head)
 {
+    Py_ssize_t untracked = 0;
     PyGC_Head *gc = GC_NEXT(head);
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
         PyGC_Head *next = GC_NEXT(gc);
         if (PyTuple_CheckExact(op)) {
-            _PyTuple_MaybeUntrack(op);
+            untracked += _PyTuple_MaybeUntrack(op);
         }
         gc = next;
     }
+    return untracked;
 }
 
 /* Return true if object has a pre-PEP 442 finalization method. */
@@ -1243,15 +1244,17 @@ flag set but it does not clear it to skip unnecessary iteration. Before the
 flag is cleared (for example, by using 'clear_unreachable_mask' function or
 by a call to 'move_legacy_finalizers'), the 'unreachable' list is not a normal
 list and we can not use most gc_list_* functions for it. */
-static inline Py_ssize_t
-deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
+static inline void
+deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable,
+                   struct gc_collection_stats *stats)
+{
     validate_list(base, collecting_clear_unreachable_clear);
     /* Using ob_refcnt and gc_refs, calculate which objects in the
      * container set are reachable from outside the set (i.e., have a
      * refcount greater than 0 when all the references within the
      * set are taken into account).
      */
-    Py_ssize_t candidates = update_refs(base);  // gc_prev is used for gc_refs
+    update_refs(base, stats);  // gc_prev is used for gc_refs
     subtract_refs(base);
 
     /* Leave everything reachable from outside base in base, and move
@@ -1292,7 +1295,6 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
     move_unreachable(base, unreachable);  // gc_prev is pointer again
     validate_list(base, collecting_clear_unreachable_clear);
     validate_list(unreachable, collecting_set_unreachable_set);
-    return candidates;
 }
 
 /* Handle objects that may have resurrected after a call to 'finalize_garbage', moving
@@ -1310,7 +1312,8 @@ PREV_MARK_COLLECTING set, but the objects in this set are going to be removed so
 we can skip the expense of clearing the flag to avoid extra iteration. */
 static inline void
 handle_resurrected_objects(PyGC_Head *unreachable, PyGC_Head* still_unreachable,
-                           PyGC_Head *old_generation)
+                           PyGC_Head *old_generation,
+                           struct gc_collection_stats *stats)
 {
     // Remove the PREV_MASK_COLLECTING from unreachable
     // to prepare it for a new call to 'deduce_unreachable'
@@ -1320,7 +1323,10 @@ handle_resurrected_objects(PyGC_Head *unreachable, PyGC_Head* still_unreachable,
     // have the PREV_MARK_COLLECTING set, but the objects are going to be
     // removed so we can skip the expense of clearing the flag.
     PyGC_Head* resurrected = unreachable;
-    deduce_unreachable(resurrected, still_unreachable);
+    // This will double-count candidates. Save and restore the correct count:
+    Py_ssize_t candidates = stats->candidates;
+    deduce_unreachable(resurrected, still_unreachable, stats);
+    stats->candidates = candidates;
     clear_unreachable_mask(still_unreachable);
 
     // Move the resurrected objects to the old generation for future collection.
@@ -1371,6 +1377,8 @@ add_stats(GCState *gcstate, int gen, struct gc_collection_stats *stats)
     gcstate->generation_stats[gen].collected += stats->collected;
     gcstate->generation_stats[gen].uncollectable += stats->uncollectable;
     gcstate->generation_stats[gen].candidates += stats->candidates;
+    gcstate->generation_stats[gen].untracked += stats->untracked;
+    gcstate->generation_stats[gen].marked += stats->marked;
     gcstate->generation_stats[gen].collections += 1;
 }
 
@@ -1382,7 +1390,7 @@ gc_collect_young(PyThreadState *tstate,
     validate_spaces(gcstate);
     PyGC_Head *young = &gcstate->young.head;
     PyGC_Head *visited = &gcstate->old[gcstate->visited_space].head;
-    untrack_tuples(young);
+    stats->untracked += untrack_tuples(young);
     GC_STAT_ADD(0, collections, 1);
 
     PyGC_Head survivors;
@@ -1662,12 +1670,13 @@ gc_collect_increment(PyThreadState *tstate, struct gc_collection_stats *stats)
     if (gcstate->work_to_do < 0) {
         return;
     }
-    untrack_tuples(&gcstate->young.head);
+    stats->untracked += untrack_tuples(&gcstate->young.head);
     if (gcstate->phase == GC_PHASE_MARK) {
         Py_ssize_t objects_marked = mark_at_start(tstate);
         GC_STAT_ADD(1, objects_transitively_reachable, objects_marked);
         gcstate->work_to_do -= objects_marked;
         stats->candidates += objects_marked;
+        stats->marked += objects_marked;
         validate_spaces(gcstate);
         return;
     }
@@ -1682,6 +1691,7 @@ gc_collect_increment(PyThreadState *tstate, struct gc_collection_stats *stats)
     intptr_t objects_marked = mark_stacks(tstate->interp, visited, gcstate->visited_space, false);
     GC_STAT_ADD(1, objects_transitively_reachable, objects_marked);
     gcstate->work_to_do -= objects_marked;
+    stats->marked += objects_marked;
     gc_list_set_space(&gcstate->young.head, gcstate->visited_space);
     gc_list_merge(&gcstate->young.head, &increment);
     gc_list_validate_space(&increment, gcstate->visited_space);
@@ -1723,7 +1733,7 @@ gc_collect_full(PyThreadState *tstate,
     PyGC_Head *young = &gcstate->young.head;
     PyGC_Head *pending = &gcstate->old[gcstate->visited_space^1].head;
     PyGC_Head *visited = &gcstate->old[gcstate->visited_space].head;
-    untrack_tuples(young);
+    stats->untracked += untrack_tuples(young);
     /* merge all generations into visited */
     gc_list_merge(young, pending);
     gc_list_validate_space(pending, 1-gcstate->visited_space);
@@ -1760,9 +1770,9 @@ gc_collect_region(PyThreadState *tstate,
     assert(!_PyErr_Occurred(tstate));
 
     gc_list_init(&unreachable);
-    stats->candidates = deduce_unreachable(from, &unreachable);
+    deduce_unreachable(from, &unreachable, stats);
     validate_consistent_old_space(from);
-    untrack_tuples(from);
+    stats->untracked += untrack_tuples(from);
 
   /* Move reachable objects to next generation. */
     validate_consistent_old_space(to);
@@ -1805,7 +1815,7 @@ gc_collect_region(PyThreadState *tstate,
      * objects that are still unreachable */
     PyGC_Head final_unreachable;
     gc_list_init(&final_unreachable);
-    handle_resurrected_objects(&unreachable, &final_unreachable, to);
+    handle_resurrected_objects(&unreachable, &final_unreachable, to, stats);
 
     /* Clear weakrefs to objects in the unreachable set.  See the comments
      * above handle_weakref_callbacks() for details.

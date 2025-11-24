@@ -101,6 +101,8 @@ struct collection_state {
     Py_ssize_t collected;
     Py_ssize_t uncollectable;
     Py_ssize_t candidates;
+    Py_ssize_t untracked;
+    Py_ssize_t marked;
     Py_ssize_t long_lived_total;
     struct worklist unreachable;
     struct worklist legacy_finalizers;
@@ -496,13 +498,8 @@ gc_maybe_untrack(PyObject *op)
     // Currently we only check for tuples containing only non-GC objects.  In
     // theory we could check other immutable objects that contain references
     // to non-GC objects.
-    if (PyTuple_CheckExact(op)) {
-        _PyTuple_MaybeUntrack(op);
-        if (!_PyObject_GC_IS_TRACKED(op)) {
-            return true;
-        }
-    }
-    return false;
+    assert(_PyObject_GC_IS_TRACKED(op));
+    return PyTuple_CheckExact(op) && _PyTuple_MaybeUntrack(op);
 }
 
 #ifdef GC_ENABLE_MARK_ALIVE
@@ -601,6 +598,7 @@ typedef struct {
     gc_span_stack_t spans;
     PyObject *buffer[BUFFER_SIZE];
     bool use_prefetch;
+    Py_ssize_t untracked;
 } gc_mark_args_t;
 
 
@@ -702,6 +700,7 @@ gc_mark_enqueue_no_buffer(PyObject *op, gc_mark_args_t *args)
         return 0; // already visited this object
     }
     if (gc_maybe_untrack(op)) {
+        args->untracked++;
         return 0; // was untracked, don't visit it
     }
 
@@ -810,11 +809,12 @@ gc_mark_traverse_list(PyObject *self, void *args)
 }
 
 static int
-gc_mark_traverse_tuple(PyObject *self, void *args)
+gc_mark_traverse_tuple(PyObject *self, gc_mark_args_t *args)
 {
-    _PyTuple_MaybeUntrack(self);
-    if (!gc_has_bit(self,  _PyGC_BITS_TRACKED)) {
+    assert(_PyObject_GC_IS_TRACKED(self));
+    if (_PyTuple_MaybeUntrack(self)) {
         gc_clear_alive(self);
+        args->untracked++;
         return 0;
     }
     PyTupleObject *tuple = _PyTuple_CAST(self);
@@ -987,11 +987,13 @@ update_refs(const mi_heap_t *heap, const mi_heap_area_t *area,
         op->ob_tid = 0;
         _PyObject_GC_UNTRACK(op);
         gc_clear_unreachable(op);
+        state->untracked++;
         return true;
     }
     // Marked objects count as candidates, immortals don't:
     state->candidates++;
     if (gc_is_alive(op)) {
+        state->marked++;
         return true;
     }
 
@@ -1004,6 +1006,7 @@ update_refs(const mi_heap_t *heap, const mi_heap_area_t *area,
     if (refcount > 0 && !_PyObject_HasDeferredRefcount(op)) {
         if (gc_maybe_untrack(op)) {
             gc_restore_refs(op);
+            state->untracked++;
             return true;
         }
     }
@@ -1375,6 +1378,7 @@ gc_mark_alive_from_roots(PyInterpreterState *interp,
     gc_visit_heaps(interp, &validate_alive_bits, &state->base);
 #endif
     gc_mark_args_t mark_args = { 0 };
+    int err = -1;
 
     // Using prefetch instructions is only a win if the set of objects being
     // examined by the GC does not fit into CPU caches.  Otherwise, using the
@@ -1388,7 +1392,7 @@ gc_mark_alive_from_roots(PyInterpreterState *interp,
         if (op != NULL ) { \
             if (gc_mark_enqueue(op, &mark_args) < 0) { \
                 gc_abort_mark_alive(interp, state, &mark_args); \
-                return -1; \
+                goto error; \
             } \
         }
     MARK_ENQUEUE(interp->sysdict);
@@ -1408,7 +1412,7 @@ gc_mark_alive_from_roots(PyInterpreterState *interp,
 #ifdef GC_MARK_ALIVE_STACKS
     if (gc_visit_thread_stacks_mark_alive(interp, &mark_args) < 0) {
         gc_abort_mark_alive(interp, state, &mark_args);
-        return -1;
+        goto error;
     }
 #endif
     #undef MARK_ENQUEUE
@@ -1416,7 +1420,7 @@ gc_mark_alive_from_roots(PyInterpreterState *interp,
     // Use tp_traverse to find everything reachable from roots.
     if (gc_propagate_alive(&mark_args) < 0) {
         gc_abort_mark_alive(interp, state, &mark_args);
-        return -1;
+        goto error;
     }
 
     assert(mark_args.spans.size == 0);
@@ -1425,7 +1429,10 @@ gc_mark_alive_from_roots(PyInterpreterState *interp,
     }
     assert(mark_args.stack.head == NULL);
 
-    return 0;
+    err = 0;
+error:
+    state->untracked += mark_args.untracked;
+    return err;
 }
 #endif // GC_ENABLE_MARK_ALIVE
 
@@ -1934,6 +1941,7 @@ invoke_gc_callback(PyThreadState *tstate, const char *phase,
             "collected", collected,
             "uncollectable", uncollectable,
             "candidates", candidates,
+            ""
             "duration", duration);
         if (info == NULL) {
             PyErr_FormatUnraisable("Exception ignored while "

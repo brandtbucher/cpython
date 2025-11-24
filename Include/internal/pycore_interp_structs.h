@@ -181,6 +181,8 @@ struct gc_collection_stats {
     Py_ssize_t uncollectable;
     // Total number of objects considered for collection and traversed:
     Py_ssize_t candidates;
+    Py_ssize_t untracked;
+    Py_ssize_t marked;
     // Duration of the collection in seconds:
     double duration;
 };
@@ -195,6 +197,8 @@ struct gc_generation_stats {
     Py_ssize_t uncollectable;
     // Total number of objects considered for collection and traversed:
     Py_ssize_t candidates;
+    Py_ssize_t untracked;
+    Py_ssize_t marked;
     // Duration of the collection in seconds:
     double duration;
 };

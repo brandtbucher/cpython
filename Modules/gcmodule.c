@@ -358,11 +358,13 @@ gc_get_stats_impl(PyObject *module)
     for (i = 0; i < NUM_GENERATIONS; i++) {
         PyObject *dict;
         st = &stats[i];
-        dict = Py_BuildValue("{snsnsnsnsd}",
+        dict = Py_BuildValue("{snsnsnsnsnsnsd}",
                              "collections", st->collections,
                              "collected", st->collected,
                              "uncollectable", st->uncollectable,
                              "candidates", st->candidates,
+                             "untracked", st->untracked,
+                             "marked", st->marked,
                              "duration", st->duration
                             );
         if (dict == NULL)

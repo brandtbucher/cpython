@@ -848,7 +848,7 @@ class GCTests(unittest.TestCase):
             self.assertIsInstance(st, dict)
             self.assertEqual(
                 set(st),
-                {"collected", "collections", "uncollectable", "candidates", "duration"}
+                {"collected", "collections", "uncollectable", "candidates", "untracked", "marked", "duration"}
             )
             self.assertGreaterEqual(st["collected"], 0)
             self.assertGreaterEqual(st["collections"], 0)
@@ -868,7 +868,7 @@ class GCTests(unittest.TestCase):
         self.assertGreater(new[0]["duration"], old[0]["duration"])
         self.assertEqual(new[1]["duration"], old[1]["duration"])
         self.assertEqual(new[2]["duration"], old[2]["duration"])
-        for stat in ["collected", "uncollectable", "candidates"]:
+        for stat in ["collected", "uncollectable", "candidates", "untracked", "marked"]:
             self.assertGreaterEqual(new[0][stat], old[0][stat])
             self.assertEqual(new[1][stat], old[1][stat])
             self.assertEqual(new[2][stat], old[2][stat])
@@ -880,7 +880,7 @@ class GCTests(unittest.TestCase):
         self.assertEqual(new[0]["duration"], old[0]["duration"])
         self.assertEqual(new[1]["duration"], old[1]["duration"])
         self.assertGreater(new[2]["duration"], old[2]["duration"])
-        for stat in ["collected", "uncollectable", "candidates"]:
+        for stat in ["collected", "uncollectable", "candidates", "untracked", "marked"]:
             self.assertEqual(new[0][stat], old[0][stat])
             self.assertEqual(new[1][stat], old[1][stat])
             self.assertGreaterEqual(new[2][stat], old[2][stat])
