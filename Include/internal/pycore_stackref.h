@@ -57,6 +57,77 @@ extern "C" {
 
 #define Py_TAGGED_SHIFT 2
 
+/* Wrap a pointer in a stack ref.
+ * The resulting stack reference is not safe and should only be used
+ * in the interpreter to pass values from one uop to another.
+ * The GC should never see one of these stack refs. */
+static inline _PyStackRef
+PyStackRef_Wrap(void *ptr)
+{
+    assert(ptr != NULL);
+#ifdef Py_DEBUG
+    assert(((uintptr_t)ptr & Py_TAG_BITS) == 0);
+    return (_PyStackRef){ .bits = ((uintptr_t)ptr) | Py_TAG_INVALID };
+#else
+    return (_PyStackRef){ .bits = (uintptr_t)ptr };
+#endif
+}
+
+static inline void *
+PyStackRef_Unwrap(_PyStackRef ref)
+{
+#ifdef Py_DEBUG
+    assert((ref.bits & Py_TAG_BITS) == Py_TAG_INVALID);
+    return (void *)(ref.bits & ~Py_TAG_BITS);
+#else
+    return (void *)(ref.bits);
+#endif
+}
+
+/* For object stackrefs, does this ref own a normal object refcount? */
+static inline int
+PyStackRef_RefcountOnObject(_PyStackRef ref)
+{
+    return (ref.bits & Py_TAG_REFCNT) == 0;
+}
+
+static inline bool
+PyStackRef_IsMalformed(_PyStackRef ref)
+{
+    return (ref.bits & Py_TAG_BITS) == Py_TAG_INVALID;
+}
+
+static inline bool
+PyStackRef_IsTaggedInt(_PyStackRef ref)
+{
+    return (ref.bits & Py_TAG_BITS) == Py_INT_TAG;
+}
+
+static inline _PyStackRef
+PyStackRef_TagInt(intptr_t i)
+{
+    assert(Py_ARITHMETIC_RIGHT_SHIFT(intptr_t, (intptr_t)(((uintptr_t)i) << Py_TAGGED_SHIFT),
+                                     Py_TAGGED_SHIFT) == i);
+    return (_PyStackRef){ .bits = ((((uintptr_t)i) << Py_TAGGED_SHIFT) | Py_INT_TAG) };
+}
+
+static inline intptr_t
+PyStackRef_UntagInt(_PyStackRef ref)
+{
+    assert(PyStackRef_IsTaggedInt(ref));
+    intptr_t val = (intptr_t)ref.bits;
+    return Py_ARITHMETIC_RIGHT_SHIFT(intptr_t, val, Py_TAGGED_SHIFT);
+}
+
+/* Increments a tagged int, but does not check for overflow */
+static inline _PyStackRef
+PyStackRef_IncrementTaggedIntNoOverflow(_PyStackRef ref)
+{
+    assert(PyStackRef_IsTaggedInt(ref));
+    assert((ref.bits & (~Py_TAG_BITS)) != (INTPTR_MAX & (~Py_TAG_BITS)));
+    return (_PyStackRef){ .bits = ref.bits + (1 << Py_TAGGED_SHIFT) };
+}
+
 #if !defined(Py_GIL_DISABLED) && defined(Py_STACKREF_DEBUG)
 
 PyAPI_FUNC(PyObject *) _Py_stackref_get_object(_PyStackRef ref);
@@ -67,64 +138,29 @@ PyAPI_FUNC(_PyStackRef) _Py_stackref_get_borrowed_from(_PyStackRef ref, const ch
 PyAPI_FUNC(void) _Py_stackref_set_borrowed_from(_PyStackRef ref, _PyStackRef borrowed_from, const char *filename, int linenumber);
 extern void _Py_stackref_associate(PyInterpreterState *interp, PyObject *obj, _PyStackRef ref);
 
-static const _PyStackRef PyStackRef_NULL = { .index = 0 };
-static const _PyStackRef PyStackRef_ERROR = { .index = (1 << Py_TAGGED_SHIFT) };
+static const _PyStackRef PyStackRef_NULL = { .bits = 0 };
+static const _PyStackRef PyStackRef_ERROR = { .bits = (1 << Py_TAGGED_SHIFT) };
 
-#define PyStackRef_None ((_PyStackRef){ .index = (2 << Py_TAGGED_SHIFT) } )
+#define PyStackRef_None ((_PyStackRef){ .bits = (2 << Py_TAGGED_SHIFT) } )
 #define _Py_STACKREF_FALSE_INDEX (3 << Py_TAGGED_SHIFT)
 #define _Py_STACKREF_TRUE_INDEX (4 << Py_TAGGED_SHIFT)
-#define PyStackRef_False ((_PyStackRef){ .index = _Py_STACKREF_FALSE_INDEX })
-#define PyStackRef_True ((_PyStackRef){ .index = _Py_STACKREF_TRUE_INDEX })
+#define PyStackRef_False ((_PyStackRef){ .bits = _Py_STACKREF_FALSE_INDEX })
+#define PyStackRef_True ((_PyStackRef){ .bits = _Py_STACKREF_TRUE_INDEX })
 
 #define INITIAL_STACKREF_INDEX (5 << Py_TAGGED_SHIFT)
 
 #define PyStackRef_ZERO_BITS PyStackRef_NULL
 
-static inline _PyStackRef
-PyStackRef_Wrap(void *ptr)
-{
-    assert(ptr != NULL);
-#ifdef Py_DEBUG
-    assert(((uint64_t)ptr & Py_TAG_BITS) == 0);
-    return (_PyStackRef){ .index = ((uint64_t)ptr) | Py_TAG_INVALID };
-#else
-    return (_PyStackRef){ .index = (uint64_t)ptr };
-#endif
-}
-
-static inline void *
-PyStackRef_Unwrap(_PyStackRef ref)
-{
-#ifdef Py_DEBUG
-    assert ((ref.index & Py_TAG_BITS) == Py_TAG_INVALID);
-    return (void *)(ref.index & ~Py_TAG_BITS);
-#else
-    return (void *)(ref.index);
-#endif
-}
-
-static inline int
-PyStackRef_RefcountOnObject(_PyStackRef ref)
-{
-    return (ref.index & Py_TAG_REFCNT) == 0;
-}
-
 static inline int
 PyStackRef_IsNull(_PyStackRef ref)
 {
-    return ref.index == 0;
+    return ref.bits == 0;
 }
 
 static inline bool
 PyStackRef_IsError(_PyStackRef ref)
 {
-    return ref.index == (1 << Py_TAGGED_SHIFT);
-}
-
-static inline bool
-PyStackRef_IsMalformed(_PyStackRef ref)
-{
-    return (ref.index & Py_TAG_BITS) == Py_TAG_INVALID;
+    return ref.bits == (1 << Py_TAGGED_SHIFT);
 }
 
 static inline bool
@@ -150,12 +186,6 @@ static inline int
 PyStackRef_IsNone(_PyStackRef ref)
 {
     return _Py_stackref_get_object(ref) == Py_None;
-}
-
-static inline bool
-PyStackRef_IsTaggedInt(_PyStackRef ref)
-{
-    return (ref.index & Py_TAG_BITS) == Py_INT_TAG;
 }
 
 static inline PyObject *
@@ -314,7 +344,7 @@ _PyStackRef_FromPyObjectStealMortal(PyObject *obj, const char *filename, int lin
 static inline bool
 PyStackRef_IsHeapSafe(_PyStackRef ref)
 {
-    if ((ref.index & Py_TAG_BITS) != Py_TAG_REFCNT || PyStackRef_IsNull(ref)) {
+    if ((ref.bits & Py_TAG_BITS) != Py_TAG_REFCNT || PyStackRef_IsNull(ref)) {
         // Tagged ints and ERROR are included.
         return true;
     }
@@ -327,7 +357,10 @@ static inline _PyStackRef
 _PyStackRef_MakeHeapSafe(_PyStackRef ref, const char *filename, int linenumber)
 {
     // Special references that can't be closed.
-    if (ref.index < INITIAL_STACKREF_INDEX) {
+    if (PyStackRef_IsTaggedInt(ref) || ref.bits < INITIAL_STACKREF_INDEX) {
+        return ref;
+    }
+    if (PyStackRef_RefcountOnObject(ref)) {
         return ref;
     }
 
@@ -337,7 +370,7 @@ _PyStackRef_MakeHeapSafe(_PyStackRef ref, const char *filename, int linenumber)
     if (heap_safe) {
         // Close old ref and create a new one with the same flags.
         // This is necessary for correct borrow checking.
-        flags = ref.index & Py_TAG_BITS;
+        flags = ref.bits & Py_TAG_BITS;
     } else {
         Py_INCREF(obj);
     }
@@ -357,18 +390,6 @@ _PyStackRef_FromPyObjectNewMortal(PyObject *obj, const char *filename, int linen
 
 extern int PyStackRef_Is(_PyStackRef a, _PyStackRef b);
 
-extern bool PyStackRef_IsTaggedInt(_PyStackRef ref);
-
-extern intptr_t PyStackRef_UntagInt(_PyStackRef ref);
-
-extern _PyStackRef PyStackRef_TagInt(intptr_t i);
-
-/* Increments a tagged int, but does not check for overflow */
-extern _PyStackRef PyStackRef_IncrementTaggedIntNoOverflow(_PyStackRef ref);
-
-extern bool
-PyStackRef_IsNullOrInt(_PyStackRef ref);
-
 #else
 
 static const _PyStackRef PyStackRef_ERROR = { .bits = Py_TAG_INVALID };
@@ -377,33 +398,6 @@ static const _PyStackRef PyStackRef_ERROR = { .bits = Py_TAG_INVALID };
  * PyStackRef_ZERO_BITS has no meaning and should not be used other than by the JIT. */
 static const _PyStackRef PyStackRef_ZERO_BITS = { .bits = 0 };
 
-/* Wrap a pointer in a stack ref.
- * The resulting stack reference is not safe and should only be used
- * in the interpreter to pass values from one uop to another.
- * The GC should never see one of these stack refs. */
-static inline _PyStackRef
-PyStackRef_Wrap(void *ptr)
-{
-    assert(ptr != NULL);
-#ifdef Py_DEBUG
-    assert(((uintptr_t)ptr & Py_TAG_BITS) == 0);
-    return (_PyStackRef){ .bits = ((uintptr_t)ptr) | Py_TAG_INVALID };
-#else
-    return (_PyStackRef){ .bits = (uintptr_t)ptr };
-#endif
-}
-
-static inline void *
-PyStackRef_Unwrap(_PyStackRef ref)
-{
-#ifdef Py_DEBUG
-    assert ((ref.bits & Py_TAG_BITS) == Py_TAG_INVALID);
-    return (void *)(ref.bits & ~Py_TAG_BITS);
-#else
-    return (void *)(ref.bits);
-#endif
-}
-
 static inline bool
 PyStackRef_IsError(_PyStackRef ref)
 {
@@ -411,47 +405,10 @@ PyStackRef_IsError(_PyStackRef ref)
 }
 
 static inline bool
-PyStackRef_IsMalformed(_PyStackRef ref)
-{
-    return (ref.bits & Py_TAG_BITS) == Py_TAG_INVALID;
-}
-
-static inline bool
 PyStackRef_IsValid(_PyStackRef ref)
 {
     /* Invalid values are ERROR and NULL */
     return ref.bits >= Py_INT_TAG;
-}
-
-static inline bool
-PyStackRef_IsTaggedInt(_PyStackRef i)
-{
-    return (i.bits & Py_TAG_BITS) == Py_INT_TAG;
-}
-
-static inline _PyStackRef
-PyStackRef_TagInt(intptr_t i)
-{
-    assert(Py_ARITHMETIC_RIGHT_SHIFT(intptr_t, (intptr_t)(((uintptr_t)i) << Py_TAGGED_SHIFT),
-                                     Py_TAGGED_SHIFT) == i);
-    return (_PyStackRef){ .bits = ((((uintptr_t)i) << Py_TAGGED_SHIFT) | Py_INT_TAG) };
-}
-
-static inline intptr_t
-PyStackRef_UntagInt(_PyStackRef i)
-{
-    assert(PyStackRef_IsTaggedInt(i));
-    intptr_t val = (intptr_t)i.bits;
-    return Py_ARITHMETIC_RIGHT_SHIFT(intptr_t, val, Py_TAGGED_SHIFT);
-}
-
-
-static inline _PyStackRef
-PyStackRef_IncrementTaggedIntNoOverflow(_PyStackRef ref)
-{
-    assert((ref.bits & Py_TAG_BITS) == Py_INT_TAG); // Is tagged int
-    assert((ref.bits & (~Py_TAG_BITS)) != (INTPTR_MAX & (~Py_TAG_BITS))); // Isn't about to overflow
-    return (_PyStackRef){ .bits = ref.bits + (1 << Py_TAGGED_SHIFT) };
 }
 
 /* References to immortal objects always have their tag bit set to Py_TAG_REFCNT
@@ -483,8 +440,6 @@ static const _PyStackRef PyStackRef_NULL = { .bits = PyStackRef_NULL_BITS };
 #define PyStackRef_IsNone(REF) ((REF).bits == (((uintptr_t)&_Py_NoneStruct) | Py_TAG_REFCNT))
 #endif
 
-#define PyStackRef_IsNullOrInt(stackref) (PyStackRef_IsNull(stackref) || PyStackRef_IsTaggedInt(stackref))
-
 #if defined(Py_DEBUG) && !defined(Py_GIL_DISABLED)
 
 static inline void
@@ -512,17 +467,9 @@ PyStackRef_CheckValid(_PyStackRef ref)
 #endif
 
 #ifdef _WIN32
-#define PyStackRef_RefcountOnObject(REF) (((REF).bits & Py_TAG_REFCNT) == 0)
 #define PyStackRef_AsPyObjectBorrow BITS_TO_PTR_MASKED
 #define PyStackRef_Borrow(REF) (_PyStackRef){ .bits = ((REF).bits) | Py_TAG_REFCNT};
 #else
-/* Does this ref not have an embedded refcount and thus not refer to a declared immmortal object? */
-static inline int
-PyStackRef_RefcountOnObject(_PyStackRef ref)
-{
-    return (ref.bits & Py_TAG_REFCNT) == 0;
-}
-
 static inline PyObject *
 PyStackRef_AsPyObjectBorrow(_PyStackRef ref)
 {
@@ -722,6 +669,12 @@ PyStackRef_XCLOSE(_PyStackRef ref)
 
 
 #endif // !defined(Py_GIL_DISABLED) && defined(Py_STACKREF_DEBUG)
+
+static inline bool
+PyStackRef_IsNullOrInt(_PyStackRef ref)
+{
+    return PyStackRef_IsNull(ref) || PyStackRef_IsTaggedInt(ref);
+}
 
 static inline PyTypeObject *
 PyStackRef_TYPE(_PyStackRef stackref) {

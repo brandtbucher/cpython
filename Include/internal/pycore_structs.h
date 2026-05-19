@@ -65,7 +65,7 @@ typedef struct {
 
 typedef union _PyStackRef {
 #if !defined(Py_GIL_DISABLED) && defined(Py_STACKREF_DEBUG)
-    uint64_t index;
+    uint64_t bits;
 #else
     uintptr_t bits;
 #endif

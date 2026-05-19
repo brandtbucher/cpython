@@ -457,9 +457,9 @@
                 }
                 STAT_INC(BINARY_OP, hit);
                 assert(Py_REFCNT(left_o) >= 2 || !PyStackRef_IsHeapSafe(left));
+                PyStackRef_CLOSE_SPECIALIZED(left, _PyUnicode_ExactDealloc);
                 PyObject *temp = PyStackRef_AsPyObjectSteal(*target_local);
                 PyObject *right_o = PyStackRef_AsPyObjectSteal(right);
-                PyStackRef_CLOSE_SPECIALIZED(left, _PyUnicode_ExactDealloc);
                 stack_pointer += -2;
                 ASSERT_WITHIN_STACK_BOUNDS(__FILE__, __LINE__);
                 _PyFrame_SetStackPointer(frame, stack_pointer);

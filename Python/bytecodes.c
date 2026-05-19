@@ -993,14 +993,14 @@ dummy_func(
              * that the string is safe to mutate.
              */
             assert(Py_REFCNT(left_o) >= 2 || !PyStackRef_IsHeapSafe(left));
-            PyObject *temp = PyStackRef_AsPyObjectSteal(*target_local);
-            PyObject *right_o = PyStackRef_AsPyObjectSteal(right);
             /* gh-143403: It's critical to close this reference *before*
              * we append. Otherwise, append can move the underlying
              * unicode object, which will cause a use after free!
              */
             PyStackRef_CLOSE_SPECIALIZED(left, _PyUnicode_ExactDealloc);
             DEAD(left);
+            PyObject *temp = PyStackRef_AsPyObjectSteal(*target_local);
+            PyObject *right_o = PyStackRef_AsPyObjectSteal(right);
             PyUnicode_Append(&temp, right_o);
             _Py_DECREF_SPECIALIZED(right_o, _PyUnicode_ExactDealloc);
             *target_local = PyStackRef_NULL;
@@ -6112,22 +6112,14 @@ dummy_func(
         }
 
         replicate(4:8) op (_GUARD_BIT_IS_SET_POP, (flag -- )) {
-#ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-#else
             uintptr_t bits = flag.bits;
-#endif
             uintptr_t set = (1 << oparg) & bits;
             DEAD(flag);
             AT_END_EXIT_IF(set == 0);
         }
 
         replicate(4:8) op (_GUARD_BIT_IS_UNSET_POP, (flag -- )) {
-#ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-#else
             uintptr_t bits = flag.bits;
-#endif
             uintptr_t set = (1 << oparg) & bits;
             DEAD(flag);
             AT_END_EXIT_IF(set != 0);

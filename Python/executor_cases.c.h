@@ -6374,9 +6374,9 @@
             }
             STAT_INC(BINARY_OP, hit);
             assert(Py_REFCNT(left_o) >= 2 || !PyStackRef_IsHeapSafe(left));
+            PyStackRef_CLOSE_SPECIALIZED(left, _PyUnicode_ExactDealloc);
             PyObject *temp = PyStackRef_AsPyObjectSteal(*target_local);
             PyObject *right_o = PyStackRef_AsPyObjectSteal(right);
-            PyStackRef_CLOSE_SPECIALIZED(left, _PyUnicode_ExactDealloc);
             _PyFrame_SetStackPointer(frame, stack_pointer);
             PyUnicode_Append(&temp, right_o);
             _Py_DECREF_SPECIALIZED(right_o, _PyUnicode_ExactDealloc);
@@ -21196,11 +21196,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21224,11 +21220,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21249,11 +21241,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21277,11 +21265,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21304,11 +21288,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21332,11 +21312,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21357,11 +21333,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21385,11 +21357,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21412,11 +21380,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21440,11 +21404,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21465,11 +21425,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21493,11 +21449,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21520,11 +21472,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21548,11 +21496,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21573,11 +21517,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21601,11 +21541,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21627,11 +21563,7 @@
             _PyStackRef flag;
             oparg = CURRENT_OPARG();
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21654,11 +21586,7 @@
             _PyStackRef _stack_item_0 = _tos_cache0;
             oparg = CURRENT_OPARG();
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21678,11 +21606,7 @@
             _PyStackRef _stack_item_1 = _tos_cache1;
             oparg = CURRENT_OPARG();
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21705,11 +21629,7 @@
             _PyStackRef _stack_item_2 = _tos_cache2;
             oparg = CURRENT_OPARG();
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set == 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21732,11 +21652,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21760,11 +21676,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21785,11 +21697,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21813,11 +21721,7 @@
             oparg = 4;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21840,11 +21744,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21868,11 +21768,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21893,11 +21789,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21921,11 +21813,7 @@
             oparg = 5;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21948,11 +21836,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -21976,11 +21860,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22001,11 +21881,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22029,11 +21905,7 @@
             oparg = 6;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22056,11 +21928,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22084,11 +21952,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22109,11 +21973,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22137,11 +21997,7 @@
             oparg = 7;
             assert(oparg == CURRENT_OPARG());
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22163,11 +22019,7 @@
             _PyStackRef flag;
             oparg = CURRENT_OPARG();
             flag = stack_pointer[-1];
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22190,11 +22042,7 @@
             _PyStackRef _stack_item_0 = _tos_cache0;
             oparg = CURRENT_OPARG();
             flag = _stack_item_0;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22214,11 +22062,7 @@
             _PyStackRef _stack_item_1 = _tos_cache1;
             oparg = CURRENT_OPARG();
             flag = _stack_item_1;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
@@ -22241,11 +22085,7 @@
             _PyStackRef _stack_item_2 = _tos_cache2;
             oparg = CURRENT_OPARG();
             flag = _stack_item_2;
-            #ifdef Py_STACKREF_DEBUG
-            uintptr_t bits = flag.index;
-            #else
             uintptr_t bits = flag.bits;
-            #endif
             uintptr_t set = (1 << oparg) & bits;
             if (set != 0) {
                 UOP_STAT_INC(uopcode, miss);
